@@ -356,7 +356,7 @@ class Application : public BaseGame {
 #else
 			ObjImporter objImporter;
 			R3DCreateStaticModelInfo objinfo = {};
-			objImporter.ImportModel("platform/new/megumin_v4.obj", &objinfo);
+			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
 #endif
