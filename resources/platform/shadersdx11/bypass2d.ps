@@ -1,0 +1,35 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+	float4 albedo = t_unit0.Sample(SampleType, psin.uv);
+	float4 normal = t_unit1.Sample(SampleType, psin.uv);
+	float4 wpos   = t_unit2.Sample(SampleType, psin.uv);
+	float3 N = normalize(normal.xyz);
+
+	float3 ambient = float3(0.1, 0.1, 0.1);
+
+	float3 lightPos   = float3(6, 2.5, 1);
+	float3 lightColor = float3(0.9, 0.8, 0.7);
+
+	float3 DIR = normalize(lightPos - wpos.xyz);
+	float diff = max(dot(N, DIR), 0.0);
+
+	float4 color = float4(ambient + lightColor*diff, 1) * albedo;
+
+	PSOUTPUT pout;
+	pout.color = color;
+	//pout.color = normal;
+	return pout;
+}

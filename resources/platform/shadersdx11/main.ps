@@ -1,0 +1,52 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+
+cbuffer ConstBuffer : register(b0) {
+	float4 color;
+};
+
+Texture2D shaderTexture : register(t0);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+#if 1
+	float4 textureColor = shaderTexture.Sample(SampleType, psin.uv);
+
+	if(textureColor.a < 0.8) {
+		discard;
+	}
+
+	float3 lightDir = {0, 1, 1};
+	float3 normLightDir = normalize(lightDir);
+	float atten = max(dot(normLightDir, psin.normal), 0.0);
+
+	atten += 0.4;
+
+	if(atten > 1) {
+		atten = 1;
+	} else if(atten < 0) {
+		atten = 0;
+	}
+
+
+	PSOUTPUT pout;
+	pout.color.xyz = textureColor.xyz * atten * color.xyz;
+	pout.color.w = 1;
+	return pout;
+#else
+	float4 col = {1, 1, 1, 1};
+
+	PSOUTPUT pout;
+	pout.color = color;
+	return pout;
+#endif
+
+}

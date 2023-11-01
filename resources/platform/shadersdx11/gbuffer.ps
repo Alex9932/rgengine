@@ -1,0 +1,70 @@
+#define NORMALMAP 1
+
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 vpos     : VPOS;
+	float3 normal   : NORMAL;
+	float3 tangent  : TANGENT;
+	float3 binormal : BINORMAL;
+	float2 uv       : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 albedo : SV_Target0; // Albedo
+	float4 normal : SV_Target1; // Normal
+	float4 wpos   : SV_Target2; // WPos
+};
+
+
+cbuffer ConstBuffer : register(b0) {
+	float4 color;
+};
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
+
+	// Texture color
+	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+	if(tColor.a < 0.8) {
+		discard;
+	}
+	
+	// Normal calculation
+
+	float3 N = {0, 0, 0};
+    
+	#if NORMALMAP
+		float3x3 TBN = {psin.tangent, psin.binormal, psin.normal};
+
+		float4 tNormal = t_unit1.Sample(SampleType, psin.uv);
+		N = normalize(tNormal.xyz * 2.0 - 1.0);
+		N = normalize(mul(N, TBN));
+
+	#else
+		N = normalize(psin.normal);
+	#endif
+
+	if(isFrontFace) { N = -N; }
+
+	
+	PSOUTPUT pout;
+
+	// Albedo
+	pout.albedo.xyz = tColor.xyz * color.xyz;
+	pout.albedo.w = 1;
+	
+	// Normal
+	pout.normal.xyz = N;
+	pout.normal.w = 1;
+	
+	// Wpos
+	pout.wpos.xyz = psin.vpos;
+	pout.wpos.w = 1;
+
+	return pout;
+
+
+}
