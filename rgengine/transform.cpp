@@ -6,7 +6,7 @@ namespace Engine {
 	void Transform::Recalculate() {
 
 		mat4 local_transform;
-		mat4_model(&local_transform, this->m_position, this->m_rotation, this->m_scale);
+		mat4_model(&local_transform, this->m_lPosition, this->m_lRotation, this->m_scale);
 
 		if (this->m_parent) {
 			mat4* parent = this->m_parent->GetMatrix();
@@ -14,6 +14,8 @@ namespace Engine {
 		} else {
 			this->m_matrix = local_transform;
 		}
+
+		mat4_decompose(&this->m_wPosition, &this->m_wRotation, NULL, this->m_matrix);
 
 	}
 

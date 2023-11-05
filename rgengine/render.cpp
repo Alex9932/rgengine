@@ -5,9 +5,10 @@
 #include "event.h"
 
 #include "modelsystem.h"
+#include "lightsystem.h"
 
 namespace Engine {
-	namespace Render {
+    namespace Render {
 
         ////////////////////// PUBLIC API ///////////////////////
 
@@ -40,12 +41,13 @@ namespace Engine {
 
         /////////////////////////////////////////////////////////
 
-        static LibraryHandle             handle           = NULL;
-        static Bool                      isRendererLoaded = false;
+        static LibraryHandle        handle                 = NULL;
+        static Bool                 isRendererLoaded       = false;
 
-        static vec2                      wndSize          = {0, 0};
+        static vec2                 wndSize                = { 0, 0 };
 
-        static ModelSystem*              modelSystem      = NULL;
+        static ModelSystem*         modelSystem            = NULL;
+        static LightSystem*         lightSystem            = NULL;
 
         static bool _EventHandler(SDL_Event* event) {
 #if 0
@@ -56,13 +58,13 @@ namespace Engine {
 
             if (event->type == SDL_WINDOWEVENT) {
                 switch (event->window.event) {
-                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                        GetWindowSize(&wndSize);
-                        //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
-                        PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
-                        break;
-                    }
-                    default: { break; }
+                case SDL_WINDOWEVENT_SIZE_CHANGED: {
+                    GetWindowSize(&wndSize);
+                    //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
+                    PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
+                    break;
+                }
+                default: { break; }
                 }
             }
 
@@ -102,20 +104,22 @@ namespace Engine {
             R3D_StartRenderTask    = (PFN_R3D_STARTRENDERTASK)Engine::DL_GetProcAddress(handle, "R3D_StartRenderTask");
 
             modelSystem = RG_NEW_CLASS(GetDefaultAllocator(), ModelSystem)();
+            lightSystem = RG_NEW_CLASS(GetDefaultAllocator(), LightSystem)();
 
         }
 
         void UnloadRenderer() {
 
             RG_DELETE_CLASS(GetDefaultAllocator(), ModelSystem, modelSystem);
-
+            RG_DELETE_CLASS(GetDefaultAllocator(), LightSystem, lightSystem);
+            
             FreeEventHandler(_EventHandler);
             DL_UnloadLibrary(handle);
 
-            ShowWindow  = NULL;
-            Setup       = NULL;
-            Initialize  = NULL;
-            Destroy     = NULL;
+            ShowWindow = NULL;
+            Setup = NULL;
+            Initialize = NULL;
+            Destroy = NULL;
             SwapBuffers = NULL;
             //GetInfo = NULL;
 
@@ -170,6 +174,10 @@ namespace Engine {
 
         void Update() {
 
+            modelSystem->UpdateComponents();
+            lightSystem->UpdateComponents();
+
+
             // TODO
             R3D_StartRenderTask(NULL);
 
@@ -183,6 +191,10 @@ namespace Engine {
 
         ModelSystem* GetModelSystem() {
             return modelSystem;
+        }
+
+        LightSystem* GetLightSystem() {
+            return lightSystem;
         }
 
 	}

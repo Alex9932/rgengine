@@ -6,27 +6,32 @@
 
 enum ComponentType {
 	Component_TAG = 0,              // Name tag        TagComponent
-	Component_MODELCOMPONENT,       // Model component
-	Component_RIGGEDMODELCOMPONENT, // Model component
+	Component_MODELCOMPONENT,       // Model components
+	Component_RIGGEDMODELCOMPONENT, //
+	Component_POINTLIGHT,           // Light sources
+	Component_SPOTLIGHT,            //
 	Component_MAXENUM = 32
 };
 
 namespace Engine {
 
+	class World;
+	class Entity;
 	class TagComponent;
 	class ModelComponent;
 	class RiggedModelComponent;
 
 	class Component {
 		public:
-			Component(ComponentType type)  {
-				this->m_entID = -1;
+			Component(ComponentType type) {
+				this->m_ent  = NULL;
 				this->m_type = type;
 			}
 			~Component() {}
 
-			RG_INLINE UUID GetEntityID() { return this->m_entID; }
-			RG_INLINE void SetEntityID(UUID id) { this->m_entID = id; }
+			RG_INLINE void    SetEntity(Entity* ent) { this->m_ent = ent; }
+			RG_INLINE Entity* GetEntity()            { return this->m_ent; }
+
 			RG_INLINE ComponentType GetComponentType() { return this->m_type; }
 
 			void Update(Float64 dt) {}
@@ -36,14 +41,13 @@ namespace Engine {
 			RG_INLINE RiggedModelComponent* AsRiggedModelComponent() { return (RiggedModelComponent*)this; }
 
         protected:
-            UUID          m_entID;
+            //UUID          m_entID;
+			Entity*	      m_ent;
             ComponentType m_type;
 
 	};
 
 	// Base components
-
-	class World;
 
 	class TagComponent : public Component {
 		private:

@@ -144,6 +144,7 @@
     <ClCompile Include="filesystem.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="kinematicsmodel.cpp" />
+    <ClCompile Include="lightsystem.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="pm2.cpp" />
     <ClCompile Include="pm2importer.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="event.h" />
     <ClInclude Include="filesystem.h" />
     <ClInclude Include="kinematicsmodel.h" />
+    <ClInclude Include="lightsystem.h" />
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2importer.h" />

@@ -54,6 +54,7 @@ typedef void			  (*PFN_R3D_STARTRENDERTASK)(void*);
 namespace Engine {
 
 	class ModelSystem;
+	class LightSystem;
 
 	namespace Render {
 
@@ -94,6 +95,7 @@ namespace Engine {
 		//RG_DECLSPEC void ToggleConsole();
 
 		RG_DECLSPEC ModelSystem* GetModelSystem();
+		RG_DECLSPEC LightSystem* GetLightSystem();
 
 		class ModelImporter {
 			public:

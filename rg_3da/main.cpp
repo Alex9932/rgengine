@@ -338,7 +338,8 @@ class Application : public BaseGame {
 
 			//world  = new World();
 			//camera = new Camera(world, 0.1f, 1000, rgToRadians(75), 1.777f);
-			world  = RG_NEW_CLASS(GetDefaultAllocator(), World)();
+			world = GetWorld();
+
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
 			camera->GetTransform()->SetPosition({0, 1, 3});
 			//camera->GetTransform()->SetRotation({0, 3.1415 / 2, 0});
@@ -404,26 +405,26 @@ class Application : public BaseGame {
 
 #endif
 
-			ent0 = RG_NEW_CLASS(GetDefaultAllocator(), Entity)(world);
+			ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent0->GetTransform()->SetPosition({ 7.4, 0, -1.65 });
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
-			ent0->GetTransform()->Recalculate();
+			//ent0->GetTransform()->Recalculate();
 
-			ent1 = RG_NEW_CLASS(GetDefaultAllocator(), Entity)(world);
+			ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
-			ent1->GetTransform()->Recalculate();
+			//ent1->GetTransform()->Recalculate();
 #if 1
-			ent2 = RG_NEW_CLASS(GetDefaultAllocator(), Entity)(world);
+			ent2 = world->NewEntity();
 			ent2->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle2, kmodel));
 			ent2->GetTransform()->SetPosition({ 9, 0, -0.4 });
 			ent2->GetTransform()->SetRotation({ 0, 1.6, 0 });
 			ent2->GetTransform()->SetScale({ 0.1, 0.1, 0.1 });
-			ent2->GetTransform()->Recalculate();
+			//ent2->GetTransform()->Recalculate();
 #endif
 		}
 		
@@ -435,12 +436,11 @@ class Application : public BaseGame {
 			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
 			Render::R3D_DestroyRiggedModel(ent2->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
 
-			RG_DELETE_CLASS(GetDefaultAllocator(), Entity, ent0);
-			RG_DELETE_CLASS(GetDefaultAllocator(), Entity, ent1);
-			RG_DELETE_CLASS(GetDefaultAllocator(), Entity, ent2);
+			world->FreeEntity(ent0);
+			world->FreeEntity(ent1);
+			world->FreeEntity(ent2);
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
-			RG_DELETE_CLASS(GetDefaultAllocator(), World, world);
 
 		}
 

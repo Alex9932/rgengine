@@ -22,17 +22,18 @@
 #include "window.h"
 #include "render.h"
 #include "timer.h"
+#include "world.h"
 
 void* rg_malloc(size_t size) {
-	if (size > 0x7FFFFFFF) {
-		RG_ERROR_MSG("OUT OF MEMORY!");
-		return NULL;
-	}
-	return malloc(size);
+    if (size > 0x7FFFFFFF) {
+        RG_ERROR_MSG("OUT OF MEMORY!");
+        return NULL;
+    }
+    return malloc(size);
 }
 
 void rg_free(void* ptr) {
-	free(ptr);
+    free(ptr);
 }
 
 namespace Engine {
@@ -71,6 +72,8 @@ namespace Engine {
     static Float64       uptime        = 0.0;
 
     static Timer         timer;
+
+    static World*        world         = NULL;
 
 
     static SDL_AssertState AssertionHandler(const SDL_AssertData* data, void* userdata) {
@@ -304,6 +307,8 @@ namespace Engine {
 
         RegisterEventHandler(_EventHandler);
 
+        world = RG_NEW_CLASS(GetDefaultAllocator(), World)();
+
         //Commands_Initialize();
         //Cvars_Initialize();
 
@@ -351,6 +356,9 @@ namespace Engine {
             HandleEvents();
             UpdateInput();
 
+            core_profiler->StartSection("worldupdate");
+            world->Update();
+
             core_profiler->StartSection("game");
             game_ptr->MainUpdate();
 
@@ -388,6 +396,8 @@ namespace Engine {
         }
 
         // TODO
+
+        RG_DELETE_CLASS(GetDefaultAllocator(), World, world);
 
         Input_Destroy();
         Event_Destroy();
@@ -449,6 +459,10 @@ namespace Engine {
 
     String GetEnginePlatform() {
         return platform_str;
+    }
+
+    World* GetWorld() {
+        return world;
     }
 
 }

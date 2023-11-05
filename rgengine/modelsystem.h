@@ -41,6 +41,8 @@ namespace Engine {
 			ModelSystem();
 			~ModelSystem();
 
+			RG_DECLSPEC void UpdateComponents();
+
 			RG_DECLSPEC ModelComponent* NewModelComponent(R3D_StaticModel* model);
 			RG_DECLSPEC void DeleteModelComponent(ModelComponent* comp);
 

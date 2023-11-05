@@ -48,6 +48,8 @@
 
 namespace Engine {
 
+    class World;
+
     class RG_DECLSPEC BaseGame {
         protected:
             Bool isClient = false;
@@ -88,6 +90,8 @@ namespace Engine {
     RG_DECLSPEC BaseGame* GetGame();
     RG_DECLSPEC String GetEngineVersion();
     RG_DECLSPEC String GetEnginePlatform();
+
+    RG_DECLSPEC World* GetWorld();
 
 }
 

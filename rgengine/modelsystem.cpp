@@ -29,6 +29,21 @@ namespace Engine {
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_ralloc);
 	}
 
+	void ModelSystem::UpdateComponents() {
+
+		Float64 dt = GetDeltaTime();
+
+		std::vector<ModelComponent*>::iterator it = this->m_modelComponents.begin();
+		for (; it != this->m_modelComponents.end(); it++) {
+			(*it)->Update(dt);
+		}
+
+		std::vector<RiggedModelComponent*>::iterator rit = this->m_rmodelComponents.begin();
+		for (; rit != this->m_rmodelComponents.end(); rit++) {
+			(*rit)->Update(dt);
+		}
+	}
+
 	ModelComponent* ModelSystem::NewModelComponent(R3D_StaticModel* model) {
 		ModelComponent* comp = RG_NEW_CLASS(this->m_alloc, ModelComponent)(model);
 		this->m_modelComponents.push_back(comp);
@@ -37,7 +52,7 @@ namespace Engine {
 
 	void ModelSystem::DeleteModelComponent(ModelComponent* comp) {
 		std::vector<ModelComponent*>::iterator it = this->m_modelComponents.begin();
-		for (; it != this->m_modelComponents.end();) {
+		for (; it != this->m_modelComponents.end(); it++) {
 			if(*it = comp) {
 				this->m_modelComponents.erase(it);
 				RG_DELETE_CLASS(this->m_alloc, ModelComponent, comp);
@@ -54,7 +69,7 @@ namespace Engine {
 
 	void ModelSystem::DeleteRiggedModelComponent(RiggedModelComponent* comp) {
 		std::vector<RiggedModelComponent*>::iterator it = this->m_rmodelComponents.begin();
-		for (; it != this->m_rmodelComponents.end();) {
+		for (; it != this->m_rmodelComponents.end(); it++) {
 			if (*it = comp) {
 				this->m_rmodelComponents.erase(it);
 				RG_DELETE_CLASS(this->m_ralloc, RiggedModelComponent, comp);

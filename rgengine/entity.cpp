@@ -21,7 +21,7 @@ namespace Engine {
 	}
 
 	void Entity::AttachComponent(Component* comp) {
-		comp->SetEntityID(this->m_id);
+		comp->SetEntity(this);
 		this->m_components[comp->GetComponentType()] = comp;
 	}
 

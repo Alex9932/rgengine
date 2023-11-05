@@ -178,9 +178,11 @@ void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& m
 
     if (det < 0) { sx = -sx; }
 
-    position->x = matrix.m03;
-    position->y = matrix.m13;
-    position->z = matrix.m23;
+    if (position) {
+        position->x = matrix.m03;
+        position->y = matrix.m13;
+        position->z = matrix.m23;
+    }
 
     mat4 _m = matrix;
 
@@ -200,11 +202,15 @@ void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& m
     _m.m12 *= invSZ;
     _m.m22 *= invSZ;
 
-    mat4ToQuat(quaternion, _m);
+    if (quaternion) {
+        mat4ToQuat(quaternion, _m);
+    }
 
-    scale->x = sx;
-    scale->y = sy;
-    scale->z = sz;
+    if (scale) {
+        scale->x = sx;
+        scale->y = sy;
+        scale->z = sz;
+    }
 }
 
 void mat4ToQuat(quat* dest, const mat4& matrix) {
