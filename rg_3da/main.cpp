@@ -19,6 +19,7 @@
 #include <allocator.h>
 #include <filesystem.h>
 #include <modelsystem.h>
+#include <lightsystem.h>
 #include <kinematicsmodel.h>
 #include <pm2importer.h>
 
@@ -170,7 +171,8 @@ class ObjImporter : public Render::ModelImporter {
 				R3DCreateMaterialInfo matInfo = {};
 				matInfo.albedo = str;
 				matInfo.normal = n_str;
-				matInfo.color = {1, 1, 1};
+				matInfo.pbr    = "platform/textures/def_pbr.png";
+				matInfo.color  = {1, 1, 1};
 				materials[i] = Render::R3D_CreateMaterial(&matInfo);
 
 			}
@@ -444,6 +446,13 @@ class Application : public BaseGame {
 
 			ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+
+			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
+			l->SetColor({ 1, 0.9, 0.8 });
+			l->SetIntensity(10);
+			l->SetOffset({6, 1, 0});
+			ent1->AttachComponent(l);
+
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });

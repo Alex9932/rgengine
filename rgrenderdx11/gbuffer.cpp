@@ -21,39 +21,11 @@ ID3D11ShaderResourceView* GetGBufferShaderResource(Uint32 idx) {
     return resView[idx];
 }
 
-static void _MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resView, ivec2* size, DXGI_FORMAT format, UINT flags) {
-
-    D3D11_TEXTURE2D_DESC tDesc = {};
-    tDesc.Width = size->x;
-    tDesc.Height = size->y;
-    tDesc.MipLevels = 1;
-    tDesc.ArraySize = 1;
-    tDesc.Format = format; // DXGI_FORMAT_D24_UNORM_S8_UINT;
-    tDesc.SampleDesc.Count = 1;
-    tDesc.SampleDesc.Quality = 0;
-    tDesc.Usage = D3D11_USAGE_DEFAULT;
-    tDesc.BindFlags = flags; // D3D11_BIND_DEPTH_STENCIL;
-    tDesc.CPUAccessFlags = 0;
-    tDesc.MiscFlags = 0;
-    DX11_GetDevice()->CreateTexture2D(&tDesc, NULL, buffer);
-
-    if (resView) {
-        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = format;
-        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        srvDesc.Texture2D.MostDetailedMip = 0;
-        srvDesc.Texture2D.MipLevels = -1;
-        HRESULT r = 0;
-        r = DX11_GetDevice()->CreateShaderResourceView(*buffer, &srvDesc, resView);
-        rgLogWarn(RG_LOG_RENDER, "ResView: %d, %lp", r, *resView);
-    }
-}
-
 static void _CreateFramebuffer(ivec2* size) {
-    _MakeTexture(&albedoBuffer, &resView[0], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    _MakeTexture(&normalBuffer, &resView[1], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    _MakeTexture(&wposBuffer,   &resView[2], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    _MakeTexture(&depthBuffer,  NULL,        size, DXGI_FORMAT_D24_UNORM_S8_UINT,  D3D11_BIND_DEPTH_STENCIL);
+    DX11_MakeTexture(&albedoBuffer, &resView[0], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
+    DX11_MakeTexture(&normalBuffer, &resView[1], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
+    DX11_MakeTexture(&wposBuffer,   &resView[2], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
+    DX11_MakeTexture(&depthBuffer,  NULL,        size, DXGI_FORMAT_D24_UNORM_S8_UINT,  D3D11_BIND_DEPTH_STENCIL);
 
     DX11_GetDevice()->CreateRenderTargetView(albedoBuffer, NULL, &albedoView);
     DX11_GetDevice()->CreateRenderTargetView(normalBuffer, NULL, &normalView);

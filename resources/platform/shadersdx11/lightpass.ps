@@ -1,0 +1,139 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+cbuffer LightBuffer : register(b0) {
+	float3 viewPos;
+	float  offset;
+	float3 color;
+	float  intensity;
+	float3 position;
+	int    screenSize;
+};
+
+Texture2D    t_unit0    : register(t0); // Albedo
+Texture2D    t_unit1    : register(t1); // Normal
+Texture2D    t_unit2    : register(t2); // WPos
+SamplerState SampleType : register(s0);
+
+////////////////////////////////////////////////////////////////////
+//                           COMMON PBR                           //
+////////////////////////////////////////////////////////////////////
+
+#define PI 3.14159265359
+
+float DistributionGGX(float3 N, float3 H, float roughness) {
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+    return nom / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    return nom / denom;
+}
+
+float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+float3 fresnelSchlick(float cosTheta, float3 F0) {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+////////////////////////////////////////////////////////////////////
+
+float3 mix(float3 a, float3 b, float c) {
+	return a * (1 - c) + b * c;
+}
+
+float3 CalculateLight(float3 N, float3 V, float3 Pos, float3 albedo, float metallic, float roughness, float emissive) {
+
+	float3 LightColor = color * intensity;
+
+	float3 Lo = float3(0, 0, 0);
+
+    float3 F0 = float3(0.04, 0.04, 0.04); 
+    F0 = mix(F0, albedo, metallic);
+
+	float3 L           = normalize(position - Pos);
+    float3 H           = normalize(V + L);
+    float  dist        = length(position - Pos);
+    //float dist        = 1;
+    float  attenuation = 1.0 / (dist * dist);
+    float3 radiance    = LightColor * attenuation;
+
+	float  NDF = DistributionGGX(N, H, roughness);
+    float  G   = GeometrySmith(N, V, L, roughness);
+    float3 F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+	float3 numerator   = NDF * G * F; 
+    float  denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    float3 specular    = numerator / denominator;
+
+	float3 kS = F;
+    float3 kD = float3(1.0, 1.0, 1.0) - kS;
+    kD *= 1.0 - metallic;
+    float NdotL = max(dot(N, L), 0.0); 
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+
+	float3 E = albedo * emissive;
+
+	return Lo + E;
+
+}
+
+////////////////////////////////////////////////////////////////////
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+	int screenx = screenSize >> 16;
+	int screeny = screenSize & 0x0000FFFF;
+	float2 uv = fragCoord.xy / float2(screenx, screeny);
+
+	// Texture color
+	float4 aColor = t_unit0.Sample(SampleType, uv);
+	float4 nColor = t_unit1.Sample(SampleType, uv);
+	float4 pColor = t_unit2.Sample(SampleType, uv);
+
+	float metallic  = aColor.a;
+    float roughness = nColor.a;
+    float emissive  = pColor.a;
+	
+	float3 N = normalize(nColor.xyz);
+	float3 V = normalize(viewPos - pColor.xyz);
+
+#if 0
+	float3 ambient = float3(0.1, 0.1, 0.1);
+	float3 lightPos   = position;
+	float3 lightColor = color;
+	float4 wpos = pColor;
+	float3 DIR = normalize(lightPos - wpos.xyz);
+	float diff = max(dot(N, DIR), 0.0);
+#endif
+	
+	PSOUTPUT pout;
+
+	pout.color.xyz = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
+	pout.color.w = 1;
+
+	return pout;
+
+
+}

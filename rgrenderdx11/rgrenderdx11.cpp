@@ -12,6 +12,7 @@
 #include "shader.h"
 
 #include "gbuffer.h"
+#include "lightpass.h"
 
 #include <rgmath.h>
 
@@ -128,12 +129,10 @@ void R_SwapBuffers() {
 	shader->Bind();
 
 	ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
-	ID3D11ShaderResourceView* res1 = GetGBufferShaderResource(1);
-	ID3D11ShaderResourceView* res2 = GetGBufferShaderResource(2);
+	ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
 
 	DX11_GetContext()->PSSetShaderResources(0, 1, &res0);
 	DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
-	DX11_GetContext()->PSSetShaderResources(2, 1, &res2);
 
 	UINT stride = sizeof(Float32) * 2;
 	UINT offset = 0;

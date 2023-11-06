@@ -68,7 +68,7 @@ namespace Engine {
                 reader->Read(str_buffer, len);
                 SDL_snprintf(n_str_buffer, 256, "%s/%s", model_root, str_buffer);
 
-                Engine::GetPath(p_str_buffer, 256, RG_PATH_SYSTEM, "textures/def_pbr2.png");
+                Engine::GetPath(p_str_buffer, 256, RG_PATH_SYSTEM, "textures/def_pbr.png");
 
                 vec4 diffuse;
                 reader->Read4F32(diffuse);

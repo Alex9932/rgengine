@@ -9,6 +9,7 @@
 
 #include "shader.h"
 #include "gbuffer.h"
+#include "lightpass.h"
 
 #define R_MATERIALS_COUNT 4096
 #define R_MODELS_COUNT    4096
@@ -92,10 +93,12 @@ void InitializeR3D(ivec2* size) {
 	cBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 
 	CreateGBuffer(size);
+	CreateLightpass(size);
 }
 
 void DestroyR3D() {
 
+	DestroyLightpass();
 	DestroyGBuffer();
 
 	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
@@ -147,12 +150,21 @@ R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	normalInfo.channels = c;
 	normalInfo.data     = data;
 
+	data = RG_STB_load_from_file(info->pbr, &w, &h, &c, 4);
+	TextureInfo prbInfo = {};
+	prbInfo.width    = w;
+	prbInfo.height   = h;
+	prbInfo.channels = c;
+	prbInfo.data     = data;
+
 	material->albedo = RG_NEW_CLASS(RGetAllocator(), Texture)(&albedoInfo);
 	material->normal = RG_NEW_CLASS(RGetAllocator(), Texture)(&normalInfo);
+	material->pbr    = RG_NEW_CLASS(RGetAllocator(), Texture)(&prbInfo);
 	material->color  = info->color;
 
 	RG_STB_image_free(albedoInfo.data);
 	RG_STB_image_free(normalInfo.data);
+	RG_STB_image_free(prbInfo.data);
 
 	return material;
 }
@@ -163,6 +175,7 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 	// TODO
 	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->albedo);
 	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->normal);
+	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->pbr);
 
 	alloc_materials->Deallocate(hmat);
 }
@@ -399,7 +412,8 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 		DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
 
 		mat->albedo->Bind(0);
-		mat->normal ->Bind(1);
+		mat->normal->Bind(1);
+		mat->pbr->Bind(2);
 		DX11_GetContext()->DrawIndexed(minfo->indexCount, idx, 0);
 		idx += minfo->indexCount;
 
@@ -443,6 +457,7 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 	ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 	rqueue->Reset();
 
+	// Geometry pass
 
 	BindGBuffer();
 
@@ -469,6 +484,10 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 	squeue->Clear();
 	rqueue->Clear();
 	GetMatrixAllocator()->Deallocate();
+
+	// Light pass
+
+	DoLightpass();
 
 
 }

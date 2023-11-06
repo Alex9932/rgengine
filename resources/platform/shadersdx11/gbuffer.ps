@@ -22,6 +22,7 @@ cbuffer ConstBuffer : register(b0) {
 
 Texture2D t_unit0 : register(t0);
 Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
 SamplerState SampleType : register(s0);
 
 PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
@@ -49,21 +50,21 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 
 	if(isFrontFace) { N = -N; }
 
+	// PBR Texture
+
+	float4 pbrColor = t_unit2.Sample(SampleType, psin.uv);
+
+	float metallic  = pbrColor.r * pbrColor.r;
+    float roughness = pbrColor.g * pbrColor.g;
+    float emissive  = pbrColor.b * pbrColor.b;
 	
 	PSOUTPUT pout;
-
-	// Albedo
-	pout.albedo.xyz = tColor.xyz * color.xyz;
-	pout.albedo.w = 1;
-	
-	// Normal
-	pout.normal.xyz = N;
-	pout.normal.w = 1;
-	
-	// Wpos
-	pout.wpos.xyz = psin.vpos;
-	pout.wpos.w = 1;
-
+	pout.albedo.xyz = tColor.xyz * color.xyz; // Albedo
+	pout.albedo.w   = metallic;
+	pout.normal.xyz = N;                      // Normal
+	pout.normal.w   = roughness;
+	pout.wpos.xyz   = psin.vpos;              // Wpos
+	pout.wpos.w     = emissive;
 	return pout;
 
 

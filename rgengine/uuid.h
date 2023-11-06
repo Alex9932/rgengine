@@ -9,6 +9,7 @@
 
 #include "rgtypes.h"
 
+#define UUID_DEFINED
 typedef Uint64 UUID;
 
 namespace Engine {

@@ -11,7 +11,12 @@ namespace Engine {
 
 	class PointLight : public Component {
 		public:
-			PointLight()  : Component(Component_POINTLIGHT) {}
+			PointLight()  : Component(Component_POINTLIGHT) {
+				m_offset    = { 0 };
+				m_position  = { 0 };
+				m_color     = { 0 };
+				m_intensity = 0;
+			}
 			~PointLight() {}
 
 			RG_INLINE void Update(Float64 dt) {
@@ -25,6 +30,10 @@ namespace Engine {
 
 			RG_INLINE void    SetIntensity(Float32 intens) { this->m_intensity = intens; }
 			RG_INLINE Float32 GetIntensity()               { return this->m_intensity;   }
+
+			RG_INLINE vec3&   GetPosition()                { return this->m_position; }
+
+			RG_INLINE void    SetOffset(const vec3& off)   { this->m_offset = off; }
 
 		private:
 			vec3    m_offset;

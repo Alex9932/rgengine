@@ -149,6 +149,7 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="dx11.cpp" />
     <ClCompile Include="gbuffer.cpp" />
+    <ClCompile Include="lightpass.cpp" />
     <ClCompile Include="queue.cpp" />
     <ClCompile Include="r3d.cpp" />
     <ClCompile Include="rgrenderdx11.cpp" />
@@ -159,6 +160,7 @@
     <ClInclude Include="buffer.h" />
     <ClInclude Include="dx11.h" />
     <ClInclude Include="gbuffer.h" />
+    <ClInclude Include="lightpass.h" />
     <ClInclude Include="queue.h" />
     <ClInclude Include="r3d.h" />
     <ClInclude Include="rgrenderdx11.h" />
