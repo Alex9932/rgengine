@@ -257,6 +257,9 @@ class ObjImporter : public Render::ModelImporter {
 class Application : public BaseGame {
 	public:
 
+		Entity* ent_test0;
+		Entity* ent_test1;
+
 		Entity* ent0 = NULL;
 		Entity* ent1 = NULL;
 		Entity* ent2 = NULL;
@@ -278,7 +281,8 @@ class Application : public BaseGame {
 
 		void MainUpdate() {
 
-
+			ent_test0->GetTransform()->SetRotation({ 0, (Float32)GetUptime(), 0});
+			ent_test1->GetTransform()->SetRotation({ 0, (Float32)GetUptime() * 0.5f, 0 });
 			
 
 			camera->Update(GetDeltaTime());
@@ -290,6 +294,16 @@ class Application : public BaseGame {
 			Render::R3D_SetCamera(&cam);
 
 			R3D_PushModelInfo info = {};
+
+			info.handle = ent_test0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
+			info.matrix = *ent_test0->GetTransform()->GetMatrix();
+			Render::R3D_PushModel(&info);
+
+			info.handle = ent_test1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
+			info.matrix = *ent_test1->GetTransform()->GetMatrix();
+			Render::R3D_PushModel(&info);
+
+
 			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
 
 			info.matrix = *ent0->GetTransform()->GetMatrix();
@@ -405,6 +419,22 @@ class Application : public BaseGame {
 
 #endif
 
+
+			ent_test0 = world->NewEntity();
+			ent_test0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+			ent_test0->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent_test0->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent_test0->GetTransform()->SetScale({ 1, 1, 1 });
+
+			ent_test1 = world->NewEntity();
+			ent_test1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+			ent_test1->GetTransform()->SetPosition({ 1, 0, 0 });
+			ent_test1->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent_test1->GetTransform()->SetScale({ 1, 1, 1 });
+
+			ent_test1->GetTransform()->SetParent(ent_test0->GetTransform());
+
+
 			ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent0->GetTransform()->SetPosition({ 7.4, 0, -1.65 });
@@ -435,6 +465,9 @@ class Application : public BaseGame {
 			Render::R3D_DestroyStaticModel(ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
 			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
 			Render::R3D_DestroyRiggedModel(ent2->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
+
+			world->FreeEntity(ent_test0);
+			world->FreeEntity(ent_test1);
 
 			world->FreeEntity(ent0);
 			world->FreeEntity(ent1);

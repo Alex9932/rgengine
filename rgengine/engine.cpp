@@ -159,7 +159,8 @@ namespace Engine {
 
     Sint32 ProcessArguments(int argc, String* argv) {
         arg_count = argc;
-        arg_strs = argv;
+        arg_strs  = argv;
+
         for (int i = 0; i < arg_count; ++i) {
             if (rg_streql(arg_strs[i], "-debug")) {
                 is_debug = true;
@@ -228,19 +229,19 @@ namespace Engine {
         game_ptr = game;
         running  = true;
 
+        SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
+
 #if defined(RG_PLATFORM_WINDOWS)
-        signal(SIGINT,  handle_signal);
-        signal(SIGILL,  handle_signal);
-        signal(SIGFPE,  handle_signal);
-        signal(SIGSEGV, handle_signal);
-        signal(SIGTERM, handle_signal);
-        signal(SIGBREAK,handle_signal);
-        signal(SIGABRT, handle_signal);
+        signal(SIGINT,   handle_signal);
+        signal(SIGILL,   handle_signal);
+        signal(SIGFPE,   handle_signal);
+        signal(SIGSEGV,  handle_signal);
+        signal(SIGTERM,  handle_signal);
+        signal(SIGBREAK, handle_signal);
+        signal(SIGABRT,  handle_signal);
 #elif defined(RG_PLATFORM_LINUX)
 
 #endif
-
-        SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
 
         SDL_snprintf(version_str, 64, "%d.%d.%d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH);
         SDL_snprintf(platform_str, 64, "%s", SDL_GetPlatform());
