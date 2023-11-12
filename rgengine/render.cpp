@@ -7,6 +7,9 @@
 #include "modelsystem.h"
 #include "lightsystem.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui/imgui.h"
+
 namespace Engine {
     namespace Render {
 
@@ -116,10 +119,10 @@ namespace Engine {
             FreeEventHandler(_EventHandler);
             DL_UnloadLibrary(handle);
 
-            ShowWindow = NULL;
-            Setup = NULL;
-            Initialize = NULL;
-            Destroy = NULL;
+            ShowWindow  = NULL;
+            Setup       = NULL;
+            Initialize  = NULL;
+            Destroy     = NULL;
             SwapBuffers = NULL;
             //GetInfo = NULL;
 
@@ -151,6 +154,8 @@ namespace Engine {
             GetWindowSize(&wndSize);
 
 
+
+
 #if 0
             rgLogInfo(RG_LOG_SYSTEM, "R3D Test");
             R3DCreateMaterialInfo minfo = {};
@@ -180,6 +185,12 @@ namespace Engine {
 
             // TODO
             R3D_StartRenderTask(NULL);
+
+
+            ImGui::Begin("Window");
+            static float colors[4] = {};
+            ImGui::ColorPicker4("Colors", colors);
+            ImGui::End();
 
 
             Window_Update();

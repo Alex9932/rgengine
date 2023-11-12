@@ -283,9 +283,10 @@ class Application : public BaseGame {
 
 		void MainUpdate() {
 
+#if 0
 			ent_test0->GetTransform()->SetRotation({ 0, (Float32)GetUptime(), 0});
 			ent_test1->GetTransform()->SetRotation({ 0, (Float32)GetUptime() * 0.5f, 0 });
-			
+#endif		
 
 			camera->Update(GetDeltaTime());
 
@@ -297,6 +298,7 @@ class Application : public BaseGame {
 
 			R3D_PushModelInfo info = {};
 
+#if 0
 			info.handle = ent_test0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
 			info.matrix = *ent_test0->GetTransform()->GetMatrix();
 			Render::R3D_PushModel(&info);
@@ -304,7 +306,7 @@ class Application : public BaseGame {
 			info.handle = ent_test1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
 			info.matrix = *ent_test1->GetTransform()->GetMatrix();
 			Render::R3D_PushModel(&info);
-
+#endif
 
 			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
 
@@ -422,6 +424,8 @@ class Application : public BaseGame {
 #endif
 
 
+#if 0
+
 			ent_test0 = world->NewEntity();
 			ent_test0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent_test0->GetTransform()->SetPosition({ 0, 0, 0 });
@@ -436,9 +440,18 @@ class Application : public BaseGame {
 
 			ent_test1->GetTransform()->SetParent(ent_test0->GetTransform());
 
+#endif
+
 
 			ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+
+			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
+			l->SetColor({ 1, 0.5, 0.0 });
+			l->SetIntensity(10);
+			l->SetOffset({ 0, 0, 0 });
+			ent0->AttachComponent(l);
+
 			ent0->GetTransform()->SetPosition({ 7.4, 0, -1.65 });
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
@@ -447,11 +460,11 @@ class Application : public BaseGame {
 			ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
 
-			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
-			l->SetColor({ 1, 0.9, 0.8 });
-			l->SetIntensity(10);
-			l->SetOffset({6, 1, 0});
-			ent1->AttachComponent(l);
+			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
+			l2->SetColor({ 1, 0.9, 0.8 });
+			l2->SetIntensity(10);
+			l2->SetOffset({6, 1, 0});
+			ent1->AttachComponent(l2);
 
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
@@ -475,8 +488,10 @@ class Application : public BaseGame {
 			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
 			Render::R3D_DestroyRiggedModel(ent2->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
 
+#if 0
 			world->FreeEntity(ent_test0);
 			world->FreeEntity(ent_test1);
+#endif
 
 			world->FreeEntity(ent0);
 			world->FreeEntity(ent1);

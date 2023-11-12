@@ -17,6 +17,10 @@
 #include <WinUser.h>
 #endif
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl2.h"
+
 struct Surface {
     SDL_Surface* surface;
     Uint8* data_ptr;
@@ -25,17 +29,19 @@ struct Surface {
 namespace Engine {
 
     // Default screen resolution
-    static const Uint32 w_init_width  = 1600;
-    static const Uint32 w_init_height = 900;
+    static const Uint32  w_init_width     = 1600;
+    static const Uint32  w_init_height    = 900;
 
     static Engine::Timer timer;
-    static Surface icn_surface;
-    static SDL_Window* hwnd_init   = NULL;
-    static SDL_Window* hwnd        = NULL;
-    static Uint32 w_current_width  = 0;
-    static Uint32 w_current_height = 0;
-    static Sint32 limit            = 0; // Set 0 to disable frame-rate limiter
-    static Bool w_fullscreen       = false;
+    static Surface       icn_surface;
+    static SDL_Window*   hwnd_init        = NULL;
+    static SDL_Window*   hwnd             = NULL;
+    static Uint32        w_current_width  = 0;
+    static Uint32        w_current_height = 0;
+    static Sint32        limit            = 0; // Set 0 to disable frame-rate limiter
+    static Bool          w_fullscreen     = false;
+
+    static ImGuiContext* imctx            = NULL;
 
     static Surface _LoadSurfaceFromFile(String path) {
         Surface surface;
@@ -77,9 +83,14 @@ namespace Engine {
     }
 
     void Window_Destroy() {
+
         Render::DestroySubSystem();
         Render::Destroy();
         Render::UnloadRenderer();
+
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext(imctx);
+
         SDL_DestroyWindow(hwnd);
         _FreeSurface(icn_surface);
     }
@@ -91,6 +102,10 @@ namespace Engine {
         hwnd = Render::ShowWindow(w_current_width, w_current_height);
         SDL_assert(hwnd);
         SDL_Delay(500);
+
+        // ImGui
+        imctx = ImGui::CreateContext();
+        ImGui_ImplSDL2_InitForOther(hwnd);
 
         SDL_SetWindowResizable(hwnd, SDL_TRUE);
 
@@ -178,5 +193,9 @@ namespace Engine {
 
     SDL_Surface* GetIconSurface() {
         return icn_surface.surface;
+    }
+
+    ImGuiContext* GetImGuiContext() {
+        return imctx;
     }
 }

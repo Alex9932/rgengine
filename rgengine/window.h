@@ -4,6 +4,8 @@
 #include "rgtypes.h"
 #include "rgvector.h"
 
+struct ImGuiContext;
+
 namespace Engine {
 
     void Window_Initialize(String lib_renderer);
@@ -19,6 +21,8 @@ namespace Engine {
     RG_DECLSPEC void GetWindowSize(vec2* size);
     RG_DECLSPEC void SetFpsLimit(Sint32 fps);
     RG_DECLSPEC SDL_Surface* GetIconSurface();
+
+    RG_DECLSPEC ImGuiContext* GetImGuiContext();
 
 }
 

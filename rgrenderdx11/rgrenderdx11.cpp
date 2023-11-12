@@ -6,6 +6,7 @@
 #include <engine.h>
 #include <event.h>
 #include <render.h>
+#include <window.h>
 
 #include "dx11.h"
 #include "r3d.h"
@@ -15,6 +16,9 @@
 #include "lightpass.h"
 
 #include <rgmath.h>
+
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_impl_dx11.h"
 
 //shadersdx11
 
@@ -80,6 +84,12 @@ void R_Initialize(SDL_Window* wnd) {
 	ivec2 size = {};
 	SDL_GetWindowSize(hwnd, &size.x, &size.y);
 
+	// ImGui
+	ImGui_ImplDX11_Init(DX11_GetDevice(), DX11_GetContext());
+	ImGui_ImplDX11_NewFrame();
+	ImGui::SetCurrentContext(Engine::GetImGuiContext());
+	ImGui::NewFrame();
+
 	InitializeR3D(&size);
 
 	// TEMP
@@ -106,8 +116,8 @@ void R_Initialize(SDL_Window* wnd) {
 void R_Destroy() {
 	rgLogInfo(RG_LOG_RENDER, "Destroy renderer");
 
+	ImGui_ImplDX11_Shutdown();
 	DestroyR3D();
-
 	// TEMP
 	delete vBuffer;
 	delete shader;
@@ -141,7 +151,11 @@ void R_SwapBuffers() {
 	//DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	DX11_GetContext()->Draw(6, 0);
-
+	
+	ImGui::EndFrame();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	ImGui_ImplDX11_NewFrame();
+	ImGui::NewFrame();
 
 	DX11_SwapBuffers();
 }
