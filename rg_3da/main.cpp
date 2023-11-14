@@ -13,6 +13,7 @@
 #include "mmdimporter.h"
 #include "ksmimporter.h"
 
+#include <window.h>
 #include <render.h>
 #include <world.h>
 #include <camera.h>
@@ -31,6 +32,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui/imgui.h>
+
 
 using namespace Engine;
 
@@ -283,10 +289,24 @@ class Application : public BaseGame {
 
 		void MainUpdate() {
 
+			ImGui::Begin("Window");
+			static float colors[4] = {};
+
+			Engine::PointLight* pl = ent0->GetComponent(Component_POINTLIGHT)->AsPointLightComponent();
+
+			ImGui::ColorPicker3("Light color", pl->GetColor().array);
+			ImGui::End();
+
+
 #if 0
 			ent_test0->GetTransform()->SetRotation({ 0, (Float32)GetUptime(), 0});
 			ent_test1->GetTransform()->SetRotation({ 0, (Float32)GetUptime() * 0.5f, 0 });
 #endif		
+
+			ivec2 size = {};
+			Engine::GetWindowSize(&size);
+			camera->SetAspect((Float32)size.x / (Float32)size.y);
+			camera->ReaclculateProjection();
 
 			camera->Update(GetDeltaTime());
 

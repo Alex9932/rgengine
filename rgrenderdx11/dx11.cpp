@@ -13,6 +13,27 @@ static ID3D11RenderTargetView* dx_backbuffer;
 
 static ID3D11RasterizerState* dx_rasterState;
 
+static void _MakeRendertarget() {
+    // Render target
+    ID3D11Texture2D* pBackBuffer = NULL;
+    dx_swapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&pBackBuffer);
+    dx_device->CreateRenderTargetView(pBackBuffer, NULL, &dx_backbuffer);
+    pBackBuffer->Release();
+}
+
+static void _SetViewport(int w, int h) {
+    // Viewport
+    D3D11_VIEWPORT pViewport;
+    ZeroMemory(&pViewport, sizeof(D3D11_VIEWPORT));
+    pViewport.TopLeftX = 0;
+    pViewport.TopLeftY = 0;
+    pViewport.Width = w;
+    pViewport.Height = h;
+    pViewport.MinDepth = 0.0f;
+    pViewport.MaxDepth = 1.0f;
+    dx_ctx->RSSetViewports(1, &pViewport);
+}
+
 void DX11_Initialize(SDL_Window* hwnd) {
     // Get HWND
     SDL_SysWMinfo wminfo = {};
@@ -63,12 +84,8 @@ void DX11_Initialize(SDL_Window* hwnd) {
     RG_ASSERT_MSG(dx_ctx, "Unable to initialize direct3d: D3D11DeviceContext");
     RG_ASSERT_MSG(dx_swapchain, "Unable to initialize direct3d: D3D11SwapChain");
 
-    // Render target
-    ID3D11Texture2D* pBackBuffer = NULL;
-    dx_swapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&pBackBuffer);
-    dx_device->CreateRenderTargetView(pBackBuffer, NULL, &dx_backbuffer);
-    pBackBuffer->Release();
-
+    _MakeRendertarget();
+    _SetViewport(w, h);
 
     D3D11_RASTERIZER_DESC rasterDesc = {};
     rasterDesc.AntialiasedLineEnable = false;
@@ -83,17 +100,6 @@ void DX11_Initialize(SDL_Window* hwnd) {
     rasterDesc.SlopeScaledDepthBias = 0.0f;
 
     dx_device->CreateRasterizerState(&rasterDesc, &dx_rasterState);
-
-    // Viewport
-    D3D11_VIEWPORT pViewport;
-    ZeroMemory(&pViewport, sizeof(D3D11_VIEWPORT));
-    pViewport.TopLeftX = 0;
-    pViewport.TopLeftY = 0;
-    pViewport.Width = w;
-    pViewport.Height = h;
-    pViewport.MinDepth = 0.0f;
-    pViewport.MaxDepth = 1.0f;
-    dx_ctx->RSSetViewports(1, &pViewport);
 }
 
 void DX11_Destroy() {
@@ -118,6 +124,13 @@ void DX11_Clear(Float32* clearColor) {
     dx_ctx->ClearRenderTargetView(dx_backbuffer, clearColor);
 }
 
+void DX11_Resize(ivec2* wndSize) {
+    dx_backbuffer->Release();
+    dx_swapchain->ResizeBuffers(0, wndSize->x, wndSize->y, DXGI_FORMAT_UNKNOWN, 0);
+    _MakeRendertarget();
+    _SetViewport(wndSize->x, wndSize->y);
+}
+
 IDXGISwapChain*      DX11_GetSwapchain() { return dx_swapchain; }
 ID3D11Device*        DX11_GetDevice()    { return dx_device; }
 ID3D11DeviceContext* DX11_GetContext()   { return dx_ctx; }
@@ -129,11 +142,11 @@ void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resVi
     tDesc.Height = size->y;
     tDesc.MipLevels = 1;
     tDesc.ArraySize = 1;
-    tDesc.Format = format; // DXGI_FORMAT_D24_UNORM_S8_UINT;
+    tDesc.Format = format;
     tDesc.SampleDesc.Count = 1;
     tDesc.SampleDesc.Quality = 0;
     tDesc.Usage = D3D11_USAGE_DEFAULT;
-    tDesc.BindFlags = flags; // D3D11_BIND_DEPTH_STENCIL;
+    tDesc.BindFlags = flags;
     tDesc.CPUAccessFlags = 0;
     tDesc.MiscFlags = 0;
     dx_device->CreateTexture2D(&tDesc, NULL, buffer);

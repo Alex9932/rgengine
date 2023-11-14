@@ -18,7 +18,7 @@ namespace Engine {
 
     RG_DECLSPEC SDL_Window* GetWindow();
 
-    RG_DECLSPEC void GetWindowSize(vec2* size);
+    RG_DECLSPEC void GetWindowSize(ivec2* size);
     RG_DECLSPEC void SetFpsLimit(Sint32 fps);
     RG_DECLSPEC SDL_Surface* GetIconSurface();
 

@@ -22,8 +22,11 @@
 
 //shadersdx11
 
-static SDL_Window*        hwnd      = NULL;
-static Engine::Allocator* allocator = NULL;
+static SDL_Window*        hwnd       = NULL;
+static Engine::Allocator* allocator  = NULL;
+
+static ivec2              wndSize    = {0};
+static Bool               wndResized = false;
 
 static bool _EventHandler(SDL_Event* event) {
 
@@ -32,8 +35,10 @@ static bool _EventHandler(SDL_Event* event) {
 		switch (event->user.code) {
 			case RG_EVENT_RENDER_VIEWPORT_RESIZE: {
 				// Resize swapchain
-				vec2* wndSize = (vec2*)event->user.data1;
-				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize->x, (Uint32)wndSize->y);
+				ivec2* wnd_size = (ivec2*)event->user.data1;
+				wndSize = *wnd_size;
+				wndResized = true;
+				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", wnd_size->x, wnd_size->y);
 				break;
 			}
 			default: { break; }
@@ -87,8 +92,7 @@ void R_Initialize(SDL_Window* wnd) {
 	// ImGui
 	ImGui_ImplDX11_Init(DX11_GetDevice(), DX11_GetContext());
 	ImGui_ImplDX11_NewFrame();
-	ImGui::SetCurrentContext(Engine::GetImGuiContext());
-	ImGui::NewFrame();
+	//ImGui::SetCurrentContext(Engine::GetImGuiContext());
 
 	InitializeR3D(&size);
 
@@ -151,11 +155,16 @@ void R_SwapBuffers() {
 	//DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	DX11_GetContext()->Draw(6, 0);
-	
-	ImGui::EndFrame();
+
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	ImGui_ImplDX11_NewFrame();
-	ImGui::NewFrame();
 
 	DX11_SwapBuffers();
+
+	if (wndResized) {
+		wndResized = false;
+		DX11_Resize(&wndSize);
+		ResizeR3D(&wndSize);
+		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
+	}
 }

@@ -47,7 +47,7 @@ namespace Engine {
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
 
-        static vec2                 wndSize                = { 0, 0 };
+        static ivec2                wndSize                = { 0, 0 };
 
         static ModelSystem*         modelSystem            = NULL;
         static LightSystem*         lightSystem            = NULL;
@@ -61,13 +61,19 @@ namespace Engine {
 
             if (event->type == SDL_WINDOWEVENT) {
                 switch (event->window.event) {
-                case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                    GetWindowSize(&wndSize);
-                    //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
-                    PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
-                    break;
-                }
-                default: { break; }
+                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
+
+                        GetWindowSize(&wndSize);
+
+                        ImGuiIO& io = ImGui::GetIO();
+                        io.DisplaySize.x = wndSize.x;
+                        io.DisplaySize.y = wndSize.y;
+
+                        //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
+                        PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
+                        break;
+                    }
+                    default: { break; }
                 }
             }
 
@@ -185,13 +191,6 @@ namespace Engine {
 
             // TODO
             R3D_StartRenderTask(NULL);
-
-
-            ImGui::Begin("Window");
-            static float colors[4] = {};
-            ImGui::ColorPicker4("Colors", colors);
-            ImGui::End();
-
 
             Window_Update();
         }

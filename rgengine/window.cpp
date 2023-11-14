@@ -5,6 +5,8 @@
 #include "engine.h"
 #include "render.h"
 
+#include "event.h"
+
 #define RG_WND_ICON "platform/icon.png"
 #define RG_WND_LOGO "platform/logo.png"
 
@@ -56,6 +58,11 @@ namespace Engine {
         RG_STB_image_free(surface.data_ptr);
     }
 
+    static Bool _EventHandler(SDL_Event* event) {
+        ImGui_ImplSDL2_ProcessEvent(event);
+        return true;
+    }
+
     void Window_Initialize(String lib_renderer) {
         icn_surface = _LoadSurfaceFromFile(RG_WND_ICON);
 
@@ -88,6 +95,8 @@ namespace Engine {
         Render::Destroy();
         Render::UnloadRenderer();
 
+        FreeEventHandler(_EventHandler);
+
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext(imctx);
 
@@ -107,12 +116,27 @@ namespace Engine {
         imctx = ImGui::CreateContext();
         ImGui_ImplSDL2_InitForOther(hwnd);
 
+        ImGuiIO& io = ImGui::GetIO();
+
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+        ImGui::StyleColorsDark();
+        
+        RegisterEventHandler(_EventHandler);
+
+        ImGui_ImplSDL2_NewFrame();
+
+
         SDL_SetWindowResizable(hwnd, SDL_TRUE);
 
         Render::Initialize(hwnd);
         Render::InitSubSystem();
 
         SDL_SetWindowIcon(hwnd, icn_surface.surface);
+
+        ImGui::NewFrame();
 
 #ifdef WINDOWS_ICON
         HINSTANCE handle = ::GetModuleHandle(nullptr);
@@ -135,7 +159,19 @@ namespace Engine {
     }
 
     void Window_Update() {
+        // End frame
+        ImGui::EndFrame();
+        ImGui::Render();
+
+        //ImGuiIO& io = ImGui::GetIO();
+        //io.DisplaySize.x = w_current_width;
+        //io.DisplaySize.y = w_current_height;
+
+        // Begin new frame & swap buffers
+        ImGui_ImplSDL2_NewFrame();
         Render::SwapBuffers();
+        ImGui::NewFrame();
+
         int w, h;
         SDL_GetWindowSize(hwnd, &w, &h);
         w_current_width = w;
@@ -178,13 +214,8 @@ namespace Engine {
         return hwnd;
     }
 
-    void GetWindowSize(vec2* size) {
-        //size->x = w_current_width;
-        //size->y = w_current_height;
-        int w, h;
-        SDL_GetWindowSize(hwnd, &w, &h);
-        size->x = (float)w;
-        size->y = (float)h;
+    void GetWindowSize(ivec2* size) {
+        SDL_GetWindowSize(hwnd, &size->x, &size->y);
     }
 
     void SetFpsLimit(Sint32 fps) {

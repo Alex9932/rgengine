@@ -117,6 +117,13 @@ void DestroyR3D() {
 	RG_DELETE_CLASS(RGetAllocator(), RQueue, riggedQueue);
 }
 
+void ResizeR3D(ivec2* wndSize) {
+
+	ResizeGbuffer(wndSize);
+	ResizeLightpass(wndSize);
+
+}
+
 RQueue* GetStaticQueue() { return staticQueue; }
 RQueue* GetRiggedQueue() { return riggedQueue; }
 

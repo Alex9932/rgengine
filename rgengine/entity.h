@@ -20,6 +20,8 @@ namespace Engine {
 	class TagComponent;
 	class ModelComponent;
 	class RiggedModelComponent;
+	class PointLight;
+	class SpotLight;
 
 	class Component {
 		public:
@@ -39,6 +41,9 @@ namespace Engine {
 			RG_INLINE TagComponent* AsTagComponent() { return (TagComponent*)this; }
 			RG_INLINE ModelComponent* AsModelComponent() { return (ModelComponent*)this; }
 			RG_INLINE RiggedModelComponent* AsRiggedModelComponent() { return (RiggedModelComponent*)this; }
+
+			RG_INLINE PointLight* AsPointLightComponent() { return (PointLight*)this; }
+			RG_INLINE SpotLight* AsSpotLightComponent() { return (SpotLight*)this; }
 
         protected:
             //UUID          m_entID;
