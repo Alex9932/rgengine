@@ -225,6 +225,8 @@ namespace Engine {
 
     // Resource
     Resource* GetResource(String file) {
+        rgLogWarn(RG_LOG_DEBUG, "Open resource: %s", file);
+
         Resource* res = GetResourceInFS(file);
         if (res != NULL) { return res; }
 

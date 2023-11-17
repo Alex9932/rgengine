@@ -3,6 +3,7 @@
 #include <rgmath.h>
 #include <render.h>
 #include <lightsystem.h>
+#include <filesystem.h>
 
 #include "shader.h"
 #include "buffer.h"
@@ -199,7 +200,11 @@ void CreateLightpass(ivec2* size) {
 	description.inputCount   = 1;
 	description.descriptions = &inputDescription;
 
-	lightshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, "platform/shadersdx11/lightpass.vs", "platform/shadersdx11/lightpass.ps", false);
+    char lp_vs[128];
+    char lp_ps[128];
+    Engine::GetPath(lp_vs, 128, RG_PATH_SYSTEM, "shadersdx11/lightpass.vs");
+    Engine::GetPath(lp_ps, 128, RG_PATH_SYSTEM, "shadersdx11/lightpass.ps");
+	lightshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
 
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;

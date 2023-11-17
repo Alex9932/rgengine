@@ -16,6 +16,7 @@
 #include "lightpass.h"
 
 #include <rgmath.h>
+#include <filesystem.h>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_impl_dx11.h"
@@ -98,18 +99,23 @@ void R_Initialize(SDL_Window* wnd) {
 
 	// TEMP
 	InputDescription staticDescriptions[1] = {};
-	staticDescriptions[0].name = "POSITION";
+	staticDescriptions[0].name      = "POSITION";
 	staticDescriptions[0].inputSlot = 0;
-	staticDescriptions[0].format = INPUT_R32G32_FLOAT;
+	staticDescriptions[0].format    = INPUT_R32G32_FLOAT;
 	PipelineDescription desc = {};
-	desc.inputCount = 1;
+	desc.inputCount   = 1;
 	desc.descriptions = staticDescriptions;
-	shader = new Shader(&desc, "platform/shadersdx11/bypass2d.vs", "platform/shadersdx11/bypass2d.ps", false);
+
+	char bp2d_vs[128];
+	char bp2d_ps[128];
+	Engine::GetPath(bp2d_vs, 128, RG_PATH_SYSTEM, "shadersdx11/bypass2d.vs");
+	Engine::GetPath(bp2d_ps, 128, RG_PATH_SYSTEM, "shadersdx11/bypass2d.ps");
+	shader = new Shader(&desc, bp2d_vs, bp2d_ps, false);
 
 	BufferCreateInfo vbufferInfo = {};
-	vbufferInfo.type = BUFFER_VERTEX;
+	vbufferInfo.type   = BUFFER_VERTEX;
 	vbufferInfo.access = BUFFER_GPU_ONLY;
-	vbufferInfo.usage = BUFFER_DEFAULT;
+	vbufferInfo.usage  = BUFFER_DEFAULT;
 	vbufferInfo.length = sizeof(quad_data);
 	vBuffer = new Buffer(&vbufferInfo);
 	vBuffer->SetData(0, vbufferInfo.length, quad_data);

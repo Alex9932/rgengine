@@ -4,6 +4,7 @@
 #include "rgrenderdx11.h"
 #include <rshared.h>
 #include <rgstb.h>
+#include <filesystem.h>
 
 #include <rgmath.h>
 
@@ -62,7 +63,9 @@ void InitializeR3D(ivec2* size) {
 	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
 
 	// Compute shader
-	skeletonShader = RG_NEW_CLASS(RGetAllocator(), ComputeShader)("platform/shadersdx11/skeleton.cs", false);
+	char skel_cs[128];
+	Engine::GetPath(skel_cs, 128, RG_PATH_SYSTEM, "shadersdx11/skeleton.cs");
+	skeletonShader = RG_NEW_CLASS(RGetAllocator(), ComputeShader)(skel_cs, false);
 
 	// Gbuffer shader
 	InputDescription staticDescriptions[4] = {};
@@ -82,7 +85,12 @@ void InitializeR3D(ivec2* size) {
 	staticDescription.inputCount = 4;
 	staticDescription.descriptions = staticDescriptions;
 
-	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, "platform/shadersdx11/gbuffer.vs", "platform/shadersdx11/gbuffer.ps", false);
+	char gbuff_vs[128];
+	char gbuff_ps[128];
+	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.vs");
+	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.ps");
+	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
+
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
 	bInfo.usage = BUFFER_DYNAMIC;

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <d3dcompiler.h>
 
+#include <filesystem.h>
+
 // Compile shaders
 // fxc /T vs_5_0 /E vmain /Fo vmain.cso main.vs
 // fxc /T ps_5_0 /E pmain /Fo pmain.cso main.ps
@@ -81,34 +83,33 @@ static void PrintErrorMessage(ID3D10Blob* b) {
 
 ShaderCode Shader::LoadShaders(String vs, String ps) {
     ShaderCode code = {};
-#if 1
+
     ID3D10Blob* errmsg = 0;
     ID3D10Blob* vsBuffer = 0;
     ID3D10Blob* psBuffer = 0;
     HRESULT     result;
 
-    wchar_t VERTEXSHADER[256];
-    wchar_t PIXELSHADER[256];
-    wsprintf(VERTEXSHADER, L"%hs", vs);
-    wsprintf(PIXELSHADER, L"%hs", ps);
+    Resource* v_res = Engine::GetResource(vs);
 
-    //result = D3DCompile(vbuffer, vlen, "vertex", NULL, NULL, "vmain", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vsBuffer, &errmsg);
-    //result = D3DCompile(pbuffer, plen, "pixel", NULL, NULL, "pmain", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &psBuffer, &errmsg);
-
-    result = D3DCompileFromFile(VERTEXSHADER, NULL, NULL, "vmain", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vsBuffer, &errmsg);
+    result = D3DCompile(v_res->data, v_res->length, "vertex", NULL, NULL, "vmain", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vsBuffer, &errmsg);
     if (FAILED(result)) {
         rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
         if (errmsg) {
             PrintErrorMessage(errmsg);
         }
     }
-    result = D3DCompileFromFile(PIXELSHADER, NULL, NULL, "pmain", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &psBuffer, &errmsg);
+    Engine::FreeResource(v_res);
+
+    Resource* p_res = Engine::GetResource(ps);
+    result = D3DCompile(p_res->data, p_res->length, "pixel", NULL, NULL, "pmain", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &psBuffer, &errmsg);
     if (FAILED(result)) {
         rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
         if (errmsg) {
             PrintErrorMessage(errmsg);
         }
     }
+    Engine::FreeResource(p_res);
+
 
     DX11_GetDevice()->CreateVertexShader(vsBuffer->GetBufferPointer(), vsBuffer->GetBufferSize(), NULL, &vshader);
     DX11_GetDevice()->CreatePixelShader(psBuffer->GetBufferPointer(), psBuffer->GetBufferSize(), NULL, &pshader);
@@ -119,15 +120,13 @@ ShaderCode Shader::LoadShaders(String vs, String ps) {
 
     vsBuffer->Release();
     psBuffer->Release();
-#endif
+
     return code;
 }
 
 ShaderCode Shader::LoadCompiledShaders(String vs, String ps) {
     rgLogInfo(RG_LOG_RENDER, "Loading shaders: %s %s\n", vs, ps);
-    ID3D10Blob* errmsg = 0;
-    ID3D10Blob* vsBuffer = 0;
-    ID3D10Blob* psBuffer = 0;
+
     HRESULT     result;
 
     void* vbuffer = NULL;
@@ -135,29 +134,17 @@ ShaderCode Shader::LoadCompiledShaders(String vs, String ps) {
     long  vlen = 0;
     long  plen = 0;
 
-    FILE* vfile = fopen(vs, "r");
-    if (!vfile) {
-        rgLogError(RG_LOG_RENDER, "VS File not found!\n");
-    }
-    fseek(vfile, 0, SEEK_END);
-    vlen = ftell(vfile);
-    fseek(vfile, 0, SEEK_SET);
-    vbuffer = RGetAllocator()->Allocate(vlen);
-    ZeroMemory(vbuffer, vlen);
-    fread(vbuffer, 1, vlen, vfile);
-    fclose(vfile);
+    Resource* v_res = Engine::GetResource(vs);
+    vlen = v_res->length;
+    vbuffer = RGetAllocator()->Allocate(v_res->length);
+    SDL_memcpy(vbuffer, v_res->data, v_res->length);
+    Engine::FreeResource(v_res);
 
-    FILE* pfile = fopen(ps, "r");
-    if (!pfile) {
-        rgLogError(RG_LOG_RENDER, "PS File not found!\n");
-    }
-    fseek(pfile, 0, SEEK_END);
-    plen = ftell(pfile);
-    fseek(pfile, 0, SEEK_SET);
-    pbuffer = RGetAllocator()->Allocate(plen);
-    ZeroMemory(pbuffer, plen);
-    fread(pbuffer, 1, plen, pfile);
-    fclose(pfile);
+    Resource* p_res = Engine::GetResource(ps);
+    plen = p_res->length;
+    pbuffer = RGetAllocator()->Allocate(p_res->length);
+    SDL_memcpy(pbuffer, p_res->data, p_res->length);
+    Engine::FreeResource(p_res);
 
     result = DX11_GetDevice()->CreateVertexShader(vbuffer, vlen, NULL, &vshader);
     result = DX11_GetDevice()->CreatePixelShader(pbuffer, plen, NULL, &pshader);
@@ -175,25 +162,31 @@ ComputeShader::ComputeShader(String cs, bool compiled) {
     HRESULT     result;
     ID3DBlob*   csBlob = NULL;
     ID3D10Blob* errmsg = NULL;
-    wchar_t     COMPUTESHADER[256];
-
-    wsprintf(COMPUTESHADER, L"%hs", cs);
 
     UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
     if (Engine::IsDebug()) {
         flags |= D3DCOMPILE_DEBUG;
     }
 
-    result = D3DCompileFromFile(COMPUTESHADER, NULL, NULL, "main", "cs_5_0", flags, 0, &csBlob, &errmsg);
-    if (FAILED(result)) {
-        rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
-        if (errmsg) {
-            PrintErrorMessage(errmsg);
+    Resource* c_res = Engine::GetResource(cs);
+
+    if (!compiled) {
+        result = D3DCompile(c_res->data, c_res->length, "pixel", NULL, NULL, "main", "cs_5_0", flags, 0, &csBlob, &errmsg);
+        if (FAILED(result)) {
+            rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
+            if (errmsg) {
+                PrintErrorMessage(errmsg);
+            }
         }
+
+        DX11_GetDevice()->CreateComputeShader(csBlob->GetBufferPointer(), csBlob->GetBufferSize(), NULL, &this->cshader);
+        csBlob->Release();
+
+    } else {
+        DX11_GetDevice()->CreateComputeShader(c_res->data, c_res->length, NULL, &this->cshader);
     }
 
-    result = DX11_GetDevice()->CreateComputeShader(csBlob->GetBufferPointer(), csBlob->GetBufferSize(), NULL, &this->cshader);
-    csBlob->Release();
+    Engine::FreeResource(c_res);
 
 }
 
