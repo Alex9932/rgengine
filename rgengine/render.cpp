@@ -7,6 +7,9 @@
 #include "modelsystem.h"
 #include "lightsystem.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui/imgui.h"
+
 namespace Engine {
     namespace Render {
 
@@ -44,7 +47,7 @@ namespace Engine {
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
 
-        static vec2                 wndSize                = { 0, 0 };
+        static ivec2                wndSize                = { 0, 0 };
 
         static ModelSystem*         modelSystem            = NULL;
         static LightSystem*         lightSystem            = NULL;
@@ -58,13 +61,19 @@ namespace Engine {
 
             if (event->type == SDL_WINDOWEVENT) {
                 switch (event->window.event) {
-                case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                    GetWindowSize(&wndSize);
-                    //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
-                    PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
-                    break;
-                }
-                default: { break; }
+                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
+
+                        GetWindowSize(&wndSize);
+
+                        ImGuiIO& io = ImGui::GetIO();
+                        io.DisplaySize.x = wndSize.x;
+                        io.DisplaySize.y = wndSize.y;
+
+                        //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
+                        PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
+                        break;
+                    }
+                    default: { break; }
                 }
             }
 
@@ -116,10 +125,10 @@ namespace Engine {
             FreeEventHandler(_EventHandler);
             DL_UnloadLibrary(handle);
 
-            ShowWindow = NULL;
-            Setup = NULL;
-            Initialize = NULL;
-            Destroy = NULL;
+            ShowWindow  = NULL;
+            Setup       = NULL;
+            Initialize  = NULL;
+            Destroy     = NULL;
             SwapBuffers = NULL;
             //GetInfo = NULL;
 
@@ -151,6 +160,8 @@ namespace Engine {
             GetWindowSize(&wndSize);
 
 
+
+
 #if 0
             rgLogInfo(RG_LOG_SYSTEM, "R3D Test");
             R3DCreateMaterialInfo minfo = {};
@@ -180,7 +191,6 @@ namespace Engine {
 
             // TODO
             R3D_StartRenderTask(NULL);
-
 
             Window_Update();
         }

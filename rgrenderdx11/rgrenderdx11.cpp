@@ -6,6 +6,7 @@
 #include <engine.h>
 #include <event.h>
 #include <render.h>
+#include <window.h>
 
 #include "dx11.h"
 #include "r3d.h"
@@ -16,10 +17,16 @@
 
 #include <rgmath.h>
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_impl_dx11.h"
+
 //shadersdx11
 
-static SDL_Window*        hwnd      = NULL;
-static Engine::Allocator* allocator = NULL;
+static SDL_Window*        hwnd       = NULL;
+static Engine::Allocator* allocator  = NULL;
+
+static ivec2              wndSize    = {0};
+static Bool               wndResized = false;
 
 static bool _EventHandler(SDL_Event* event) {
 
@@ -28,8 +35,10 @@ static bool _EventHandler(SDL_Event* event) {
 		switch (event->user.code) {
 			case RG_EVENT_RENDER_VIEWPORT_RESIZE: {
 				// Resize swapchain
-				vec2* wndSize = (vec2*)event->user.data1;
-				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize->x, (Uint32)wndSize->y);
+				ivec2* wnd_size = (ivec2*)event->user.data1;
+				wndSize = *wnd_size;
+				wndResized = true;
+				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", wnd_size->x, wnd_size->y);
 				break;
 			}
 			default: { break; }
@@ -80,6 +89,11 @@ void R_Initialize(SDL_Window* wnd) {
 	ivec2 size = {};
 	SDL_GetWindowSize(hwnd, &size.x, &size.y);
 
+	// ImGui
+	ImGui_ImplDX11_Init(DX11_GetDevice(), DX11_GetContext());
+	ImGui_ImplDX11_NewFrame();
+	//ImGui::SetCurrentContext(Engine::GetImGuiContext());
+
 	InitializeR3D(&size);
 
 	// TEMP
@@ -106,8 +120,8 @@ void R_Initialize(SDL_Window* wnd) {
 void R_Destroy() {
 	rgLogInfo(RG_LOG_RENDER, "Destroy renderer");
 
+	ImGui_ImplDX11_Shutdown();
 	DestroyR3D();
-
 	// TEMP
 	delete vBuffer;
 	delete shader;
@@ -142,6 +156,15 @@ void R_SwapBuffers() {
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	DX11_GetContext()->Draw(6, 0);
 
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	ImGui_ImplDX11_NewFrame();
 
 	DX11_SwapBuffers();
+
+	if (wndResized) {
+		wndResized = false;
+		DX11_Resize(&wndSize);
+		ResizeR3D(&wndSize);
+		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
+	}
 }

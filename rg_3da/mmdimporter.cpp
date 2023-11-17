@@ -86,7 +86,7 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MeshInfo** info) {
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		pmd_material* mat = &pmd->materials[i];
 		if (mat->file_name[0] == '\0') {
-			SDL_snprintf(texturePath, 128, "platform/toon/toon%02d.bmp", mat->toon_number);
+			SDL_snprintf(texturePath, 128, "platform/toon/toon%02d.png", mat->toon_number);
 		}
 		else {
 			SDL_snprintf(texturePath, 128, "%s/%s", pmd->path, mat->file_name);

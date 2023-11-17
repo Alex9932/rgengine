@@ -14,6 +14,7 @@ void DX11_BindDefaultFramebuffer();
 void DX11_SwapBuffers();
 
 void DX11_Clear(Float32* clearColor);
+void DX11_Resize(ivec2* wndSize);
 
 IDXGISwapChain* DX11_GetSwapchain();
 ID3D11Device* DX11_GetDevice();

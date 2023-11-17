@@ -50,6 +50,7 @@ typedef struct R3D_BoneBuffer {
 
 void InitializeR3D(ivec2* size);
 void DestroyR3D();
+void ResizeR3D(ivec2* wndSize);
 
 RQueue* GetStaticQueue();
 RQueue* GetRiggedQueue();

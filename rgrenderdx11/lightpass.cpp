@@ -170,6 +170,8 @@ static ID3D11RenderTargetView*   outputView    = NULL;
 
 static ID3D11RasterizerState*    rasterState   = NULL;
 
+static ID3D11BlendState*         blendState    = NULL;
+
 static void _CreateBuffers(ivec2* size) {
 	Uint32 screenx = size->x & 0x0000FFFF;
 	Uint32 screeny = size->y & 0x0000FFFF;
@@ -190,19 +192,19 @@ static void _DestroyBuffers() {
 void CreateLightpass(ivec2* size) {
 
 	InputDescription inputDescription = {};
-	inputDescription.name = "POSITION";
+	inputDescription.name      = "POSITION";
 	inputDescription.inputSlot = 0;
-	inputDescription.format = INPUT_R32G32B32_FLOAT;
+	inputDescription.format    = INPUT_R32G32B32_FLOAT;
 	PipelineDescription description = {};
-	description.inputCount = 1;
+	description.inputCount   = 1;
 	description.descriptions = &inputDescription;
 
 	lightshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, "platform/shadersdx11/lightpass.vs", "platform/shadersdx11/lightpass.ps", false);
 
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
-	bInfo.usage = BUFFER_DYNAMIC;
-	bInfo.type = BUFFER_CONSTANT;
+	bInfo.usage  = BUFFER_DYNAMIC;
+	bInfo.type   = BUFFER_CONSTANT;
 	bInfo.length = sizeof(ShaderConstants);
 	cBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 	bInfo.length = sizeof(ShaderLight);
@@ -226,23 +228,37 @@ void CreateLightpass(ivec2* size) {
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.AntialiasedLineEnable = false;
-	rasterDesc.CullMode = D3D11_CULL_NONE;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0.0f;
-	rasterDesc.DepthClipEnable = true;
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.CullMode              = D3D11_CULL_NONE;
+	rasterDesc.DepthBias             = 0;
+	rasterDesc.DepthBiasClamp        = 0.0f;
+	rasterDesc.DepthClipEnable       = true;
+	rasterDesc.FillMode              = D3D11_FILL_SOLID;
 	rasterDesc.FrontCounterClockwise = false;
-	rasterDesc.MultisampleEnable = false;
-	rasterDesc.ScissorEnable = false;
-	rasterDesc.SlopeScaledDepthBias = 0.0f;
+	rasterDesc.MultisampleEnable     = false;
+	rasterDesc.ScissorEnable         = false;
+	rasterDesc.SlopeScaledDepthBias  = 0.0f;
 
 	DX11_GetDevice()->CreateRasterizerState(&rasterDesc, &rasterState);
+
+    D3D11_BLEND_DESC blendDesc = {};
+    blendDesc.AlphaToCoverageEnable  = false;
+    blendDesc.IndependentBlendEnable = false;
+    blendDesc.RenderTarget[0].BlendEnable    = true;
+    blendDesc.RenderTarget[0].BlendOp        = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].BlendOpAlpha   = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].SrcBlend       = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlend      = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    DX11_GetDevice()->CreateBlendState(&blendDesc, &blendState);
 
 	_CreateBuffers(size);
 }
 
 void DestroyLightpass() {
 	rasterState->Release();
+    blendState->Release();
 	_DestroyBuffers();
 	RG_DELETE_CLASS(RGetAllocator(), Shader, lightshader);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
@@ -257,9 +273,11 @@ void ResizeLightpass(ivec2* size) {
 }
 
 void DoLightpass() {
+    float blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	ID3D11DeviceContext* ctx = DX11_GetContext();
 	ctx->OMSetRenderTargets(1, &outputView, NULL);
+    ctx->OMSetBlendState(blendState, blendFactor, 0xffffffff);
 	ctx->RSSetState(rasterState);
 
 	Float32 clearColor[] = { 0, 0, 0, 1 };
@@ -313,7 +331,7 @@ void DoLightpass() {
 
 	}
 
-
+    ctx->OMSetBlendState(NULL, blendFactor, 0xffffffff);
 }
 
 ID3D11ShaderResourceView* GetLightpassShaderResource() {
