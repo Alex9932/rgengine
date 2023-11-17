@@ -15,6 +15,8 @@
 #include "gbuffer.h"
 #include "lightpass.h"
 
+#include "loader.h"
+
 #include <rgmath.h>
 #include <filesystem.h>
 
@@ -23,11 +25,11 @@
 
 //shadersdx11
 
-static SDL_Window*        hwnd       = NULL;
-static Engine::Allocator* allocator  = NULL;
+static SDL_Window*        hwnd           = NULL;
+static Engine::Allocator* allocator      = NULL;
 
-static ivec2              wndSize    = {0};
-static Bool               wndResized = false;
+static ivec2              wndSize        = {0};
+static Bool               wndResized     = false;
 
 static bool _EventHandler(SDL_Event* event) {
 
@@ -85,6 +87,7 @@ void R_Initialize(SDL_Window* wnd) {
 	SDL_SetWindowTitle(hwnd, "rgEngine - D3D11");
 
 	DX11_Initialize(hwnd);
+	
 	Engine::RegisterEventHandler(_EventHandler);
 
 	ivec2 size = {};
@@ -94,6 +97,8 @@ void R_Initialize(SDL_Window* wnd) {
 	ImGui_ImplDX11_Init(DX11_GetDevice(), DX11_GetContext());
 	ImGui_ImplDX11_NewFrame();
 	//ImGui::SetCurrentContext(Engine::GetImGuiContext());
+
+	LoaderInit();
 
 	InitializeR3D(&size);
 
@@ -110,14 +115,14 @@ void R_Initialize(SDL_Window* wnd) {
 	char bp2d_ps[128];
 	Engine::GetPath(bp2d_vs, 128, RG_PATH_SYSTEM, "shadersdx11/bypass2d.vs");
 	Engine::GetPath(bp2d_ps, 128, RG_PATH_SYSTEM, "shadersdx11/bypass2d.ps");
-	shader = new Shader(&desc, bp2d_vs, bp2d_ps, false);
+	shader = RG_NEW_CLASS(allocator, Shader)(&desc, bp2d_vs, bp2d_ps, false);
 
 	BufferCreateInfo vbufferInfo = {};
 	vbufferInfo.type   = BUFFER_VERTEX;
 	vbufferInfo.access = BUFFER_GPU_ONLY;
 	vbufferInfo.usage  = BUFFER_DEFAULT;
 	vbufferInfo.length = sizeof(quad_data);
-	vBuffer = new Buffer(&vbufferInfo);
+	vBuffer = RG_NEW_CLASS(allocator, Buffer)(&vbufferInfo);
 	vBuffer->SetData(0, vbufferInfo.length, quad_data);
 
 	rgLogInfo(RG_LOG_RENDER, "Initialized D3D11 rendering backend");
@@ -129,8 +134,10 @@ void R_Destroy() {
 	ImGui_ImplDX11_Shutdown();
 	DestroyR3D();
 	// TEMP
-	delete vBuffer;
-	delete shader;
+	RG_DELETE_CLASS(allocator, Buffer, vBuffer);
+	RG_DELETE_CLASS(allocator, Shader, shader);
+
+	LoaderDestroy();
 
 	DX11_Destroy();
 	Engine::FreeEventHandler(_EventHandler);
@@ -167,10 +174,36 @@ void R_SwapBuffers() {
 
 	DX11_SwapBuffers();
 
+	DoLoadTextures();
+
 	if (wndResized) {
 		wndResized = false;
 		DX11_Resize(&wndSize);
 		ResizeR3D(&wndSize);
 		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
 	}
+}
+
+void R_GetInfo(RenderInfo* info) {
+
+	R3DStats r3d_stats = {};
+	GetR3DStats(&r3d_stats);
+
+	info->render_name       = "Direct3D 11 Renderer";
+	info->renderer          = DX11_GetGraphicsCardName();
+
+	info->shared_memory      = 0;
+	info->dedicated_memory   = 0;
+
+	info->textures_memory    = GetTextureMemory();
+	info->buffers_memory     = GetBufferMemory();
+
+	info->textures_inQueue   = 0;
+	info->textures_loaded    = r3d_stats.texturesLoaded;
+
+	info->meshes_loaded      = r3d_stats.modelsLoaded;
+
+	info->r3d_draw_calls     = r3d_stats.drawCalls;
+	info->r3d_dispatch_calls = r3d_stats.dispatchCalls;
+
 }

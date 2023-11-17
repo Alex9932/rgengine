@@ -21,7 +21,7 @@ namespace Engine {
         PFN_R_INITIALIZE            Initialize             = NULL;
         PFN_R_DESTROY               Destroy                = NULL;
         PFN_R_SWAPBUFFERS           SwapBuffers            = NULL;
-        //PFN_R_GETINFO               GetInfo                = NULL;
+        PFN_R_GETINFO               GetInfo                = NULL;
 
         // R3D
         PFN_R3D_CREATEMATERIAL      R3D_CreateMaterial     = NULL;
@@ -91,7 +91,7 @@ namespace Engine {
             Initialize  = (PFN_R_INITIALIZE)Engine::DL_GetProcAddress(handle, "R_Initialize");
             Destroy     = (PFN_R_DESTROY)Engine::DL_GetProcAddress(handle, "R_Destroy");
             SwapBuffers = (PFN_R_SWAPBUFFERS)Engine::DL_GetProcAddress(handle, "R_SwapBuffers");
-            //GetInfo = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
+            GetInfo     = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
 
             // R3D
             R3D_CreateMaterial     = (PFN_R3D_CREATEMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_CreateMaterial");
@@ -130,7 +130,7 @@ namespace Engine {
             Initialize  = NULL;
             Destroy     = NULL;
             SwapBuffers = NULL;
-            //GetInfo = NULL;
+            GetInfo = NULL;
 
             R3D_CreateMaterial     = NULL;
             R3D_DestroyMaterial    = NULL;

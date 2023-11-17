@@ -19,6 +19,29 @@ typedef struct R3D_BoneBuffer R3D_BoneBuffer;
 
 //
 
+typedef struct RenderInfo {
+	String render_name; // Name in renderer module
+	String renderer;    // Graphics card name
+
+	// Memory
+	Uint64 shared_memory;    // 0 - Unknown
+	Uint64 dedicated_memory; // 0 - Unknown
+	Uint64 textures_memory;  // Textures memory
+	Uint64 buffers_memory;   // Buffers memory
+
+	// Textures
+	Uint32 textures_inQueue;
+	Uint32 textures_loaded;
+
+	// Meshes
+	Uint32 meshes_loaded;
+
+	//
+	Uint32 r3d_draw_calls;
+	Uint32 r3d_dispatch_calls;
+
+} RenderInfo;
+
 typedef struct R3D_Vertex {
 	vec3 pos;
 	vec3 norm;

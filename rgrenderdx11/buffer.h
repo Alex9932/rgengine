@@ -42,8 +42,11 @@ class Buffer {
 		ID3D11Buffer* GetHandle() { return this->buffer; }
 
 	private:
-		ID3D11Buffer* buffer = NULL;
-		BufferAccess  access = BUFFER_GPU_ONLY;
+		Uint64        bufferLen = 0;
+		ID3D11Buffer* buffer    = NULL;
+		BufferAccess  access    = BUFFER_GPU_ONLY;
 };
+
+Uint64 GetBufferMemory();
 
 #endif

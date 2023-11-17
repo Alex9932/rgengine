@@ -19,6 +19,7 @@ void DX11_Resize(ivec2* wndSize);
 IDXGISwapChain* DX11_GetSwapchain();
 ID3D11Device* DX11_GetDevice();
 ID3D11DeviceContext* DX11_GetContext();
+String DX11_GetGraphicsCardName();
 
 void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resView, ivec2* size, DXGI_FORMAT format, UINT flags);
 

@@ -8,7 +8,7 @@ struct TextureInfo {
 	Uint32 width;
 	Uint32 height;
 	Uint32 channels;
-	Uint8* data;
+	void*  data;
 };
 
 class Texture {
@@ -20,8 +20,10 @@ class Texture {
 
 	private:
 		ID3D11ShaderResourceView* shaderResource = NULL;
-		ID3D11Texture2D* texture = NULL;
+		ID3D11Texture2D*          texture        = NULL;
+		Uint64                    memLength      = 0;
 };
 
+Uint64 GetTextureMemory();
 
 #endif

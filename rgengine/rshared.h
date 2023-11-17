@@ -13,6 +13,7 @@ extern "C" {
 	extern RG_DECLSPEC void        R_Initialize(SDL_Window* hwnd);
 	extern RG_DECLSPEC void        R_Destroy();
 	extern RG_DECLSPEC void        R_SwapBuffers();
+	extern RG_DECLSPEC void        R_GetInfo(RenderInfo* info);
 
 	extern RG_DECLSPEC R3D_Material*    R3D_CreateMaterial(R3DCreateMaterialInfo* info);
 	extern RG_DECLSPEC void             R3D_DestroyMaterial(R3D_Material* hmat);

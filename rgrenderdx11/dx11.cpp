@@ -13,6 +13,8 @@ static ID3D11RenderTargetView* dx_backbuffer;
 
 static ID3D11RasterizerState* dx_rasterState;
 
+static char gCardName[128] = { 0 };
+
 static void _MakeRendertarget() {
     // Render target
     ID3D11Texture2D* pBackBuffer = NULL;
@@ -50,7 +52,8 @@ void DX11_Initialize(SDL_Window* hwnd) {
     DXGI_ADAPTER_DESC desc = {};
     for (Uint32 i = 0; pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND; i++) {
         pAdapter->GetDesc(&desc);
-        rgLogInfo(RG_LOG_RENDER, "Direct3D: %ls", desc.Description);
+        SDL_snprintf(gCardName, 128, "%ls", desc.Description);
+        rgLogInfo(RG_LOG_RENDER, "Direct3D: %s", gCardName);
         break;
     }
     pFactory->Release();
@@ -131,9 +134,11 @@ void DX11_Resize(ivec2* wndSize) {
     _SetViewport(wndSize->x, wndSize->y);
 }
 
-IDXGISwapChain*      DX11_GetSwapchain() { return dx_swapchain; }
-ID3D11Device*        DX11_GetDevice()    { return dx_device; }
-ID3D11DeviceContext* DX11_GetContext()   { return dx_ctx; }
+IDXGISwapChain*      DX11_GetSwapchain()        { return dx_swapchain; }
+ID3D11Device*        DX11_GetDevice()           { return dx_device; }
+ID3D11DeviceContext* DX11_GetContext()          { return dx_ctx; }
+
+String               DX11_GetGraphicsCardName() { return gCardName; }
 
 void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resView, ivec2* size, DXGI_FORMAT format, UINT flags) {
 

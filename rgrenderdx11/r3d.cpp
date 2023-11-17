@@ -3,7 +3,6 @@
 #include "dx11.h"
 #include "rgrenderdx11.h"
 #include <rshared.h>
-#include <rgstb.h>
 #include <filesystem.h>
 
 #include <rgmath.h>
@@ -11,6 +10,8 @@
 #include "shader.h"
 #include "gbuffer.h"
 #include "lightpass.h"
+
+#include "loader.h"
 
 #define R_MATERIALS_COUNT 4096
 #define R_MODELS_COUNT    4096
@@ -51,6 +52,12 @@ static mat4 cam_proj = {};
 static mat4 cam_view = {};
 static vec3 cam_pos  = {};
 static vec3 cam_rot  = {};
+
+// Stats
+static Uint32 texturesLoaded = 0;
+static Uint32 modelsLoaded   = 0;
+static Uint32 drawCalls      = 0;
+static Uint32 dispatchCalls  = 0;
 
 void InitializeR3D(ivec2* size) {
 	alloc_materials    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MaterialPool", R_MATERIALS_COUNT, sizeof(R3D_Material));
@@ -142,13 +149,28 @@ vec3* GetCameraRotation()   { return &cam_rot; }
 
 LinearAllocator* GetMatrixAllocator() { return alloc_matrices; }
 
+void GetR3DStats(R3DStats* stats) {
+	stats->texturesLoaded = texturesLoaded;
+	stats->modelsLoaded   = modelsLoaded;
+	stats->drawCalls      = drawCalls;
+	stats->dispatchCalls  = dispatchCalls;
+}
+
 ////// PUBLIC API //////
 
 R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	R3D_Material* material = (R3D_Material*)alloc_materials->Allocate();
 
 	rgLogInfo(RG_LOG_RENDER, "Material: %p", material);
-	
+
+	LoaderPushTexture(info->albedo, &material->albedo);
+	LoaderPushTexture(info->normal, &material->normal);
+	LoaderPushTexture(info->pbr, &material->pbr);
+	material->color = info->color;
+
+	texturesLoaded += 3;
+
+#if 0
 	int w, h, c;
 	Uint8* data = RG_STB_load_from_file(info->albedo, &w, &h, &c, 4);
 
@@ -177,9 +199,10 @@ R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	material->pbr    = RG_NEW_CLASS(RGetAllocator(), Texture)(&prbInfo);
 	material->color  = info->color;
 
-	RG_STB_image_free(albedoInfo.data);
-	RG_STB_image_free(normalInfo.data);
-	RG_STB_image_free(prbInfo.data);
+	RG_STB_image_free((Uint8*)albedoInfo.data);
+	RG_STB_image_free((Uint8*)normalInfo.data);
+	RG_STB_image_free((Uint8*)prbInfo.data);
+#endif
 
 	return material;
 }
@@ -188,9 +211,10 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 	rgLogInfo(RG_LOG_RENDER, "Free material: %p", hmat);
 
 	// TODO
-	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->albedo);
-	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->normal);
-	RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->pbr);
+	Texture* defaultTexture = GetDefaultTexture();
+	if (hmat->albedo != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->albedo); texturesLoaded--; }
+	if (hmat->normal != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->normal); texturesLoaded--; }
+	if (hmat->pbr != defaultTexture)    { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->pbr);    texturesLoaded--; }
 
 	alloc_materials->Deallocate(hmat);
 }
@@ -225,6 +249,8 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info) {
 	staticModel->info = (R3D_MeshInfo*)RGetAllocator()->Allocate(l);
 	SDL_memcpy(staticModel->info, info->info, l);
 
+	modelsLoaded += staticModel->mCount;
+
 	return staticModel;
 }
 
@@ -238,6 +264,8 @@ void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->vBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->iBuffer);
 	RGetAllocator()->Deallocate(hsmdl->info);
+
+	modelsLoaded += hsmdl->mCount;
 
 	alloc_staticmodels->Deallocate(hsmdl);
 }
@@ -317,10 +345,23 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info) {
 	result = DX11_GetDevice()->CreateShaderResourceView(riggedModel->i_vertex->GetHandle(), &srvDesc, &riggedModel->i_srv_vtx);
 	result = DX11_GetDevice()->CreateShaderResourceView(riggedModel->i_weight->GetHandle(), &srvDesc, &riggedModel->i_srv_wht);
 
+	modelsLoaded += riggedModel->s_model.mCount;
+
 	return riggedModel;
 }
 
 void R3D_DestroyRiggedModel(R3D_RiggedModel* hrmdl) {
+
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.vBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.iBuffer);
+	RGetAllocator()->Deallocate(hrmdl->s_model.info);
+	hrmdl->s_srv->Release();
+
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->i_vertex);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->i_weight);
+	hrmdl->i_srv_vtx->Release();
+	hrmdl->i_srv_wht->Release();
+	modelsLoaded -= hrmdl->s_model.mCount;
 
 	alloc_riggedmodels->Deallocate(hrmdl);
 }
@@ -430,12 +471,16 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 		mat->normal->Bind(1);
 		mat->pbr->Bind(2);
 		DX11_GetContext()->DrawIndexed(minfo->indexCount, idx, 0);
+		drawCalls++;
 		idx += minfo->indexCount;
 
 	}
 }
 
 void R3D_StartRenderTask(void* RESERVERD_PTR) {
+	drawCalls     = 0;
+	dispatchCalls = 0;
+
 	RQueue* squeue = GetStaticQueue();
 	RQueue* rqueue = GetRiggedQueue();
 
@@ -466,6 +511,7 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 		ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 
 		skeletonShader->Dispatch({ 10000, 1, 1 });
+		dispatchCalls++;
 	}
 
 	uav = NULL;

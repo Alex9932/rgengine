@@ -2,6 +2,8 @@
 #include "dx11.h"
 #include <engine.h>
 
+static Uint64 texturesMemory = 0;
+
 static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
 	switch (channels) {
 		case 1:  return DXGI_FORMAT_R8_UNORM;
@@ -44,13 +46,23 @@ Texture::Texture(TextureInfo* info) {
 	srvDesc.Texture2D.MipLevels = -1;
 	DX11_GetDevice()->CreateShaderResourceView(this->texture, &srvDesc, &this->shaderResource);
 	DX11_GetContext()->GenerateMips(this->shaderResource);
+
+	this->memLength = info->width * info->height * info->channels;
+
+	texturesMemory += this->memLength;
 }
 
 Texture::~Texture() {
 	this->texture->Release();
 	this->shaderResource->Release();
+
+	texturesMemory -= this->memLength;
 }
 
 void Texture::Bind(Uint32 idx) {
 	DX11_GetContext()->PSSetShaderResources(idx, 1, &this->shaderResource);
+}
+
+Uint64 GetTextureMemory() {
+	return texturesMemory;
 }

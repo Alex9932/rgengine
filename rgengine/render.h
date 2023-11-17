@@ -31,7 +31,7 @@ typedef void              (*PFN_R_SETUP)();
 typedef void              (*PFN_R_INITIALIZE)(SDL_Window*);
 typedef void              (*PFN_R_DESTROY)();
 typedef void              (*PFN_R_SWAPBUFFERS)();
-//typedef void              (*PFN_R_GETINFO)(RenderInfo*);
+typedef void              (*PFN_R_GETINFO)(RenderInfo*);
 
 typedef R3D_Material*     (*PFN_R3D_CREATEMATERIAL)(R3DCreateMaterialInfo*);
 typedef void              (*PFN_R3D_DESTROYMATERIAL)(R3D_Material*);
@@ -64,7 +64,7 @@ namespace Engine {
 		extern RG_DECLSPEC PFN_R_INITIALIZE            Initialize;
 		extern RG_DECLSPEC PFN_R_DESTROY               Destroy;
 		extern RG_DECLSPEC PFN_R_SWAPBUFFERS           SwapBuffers;
-		//extern RG_DECLSPEC PFN_R_GETINFO               GetInfo;
+		extern RG_DECLSPEC PFN_R_GETINFO               GetInfo;
 
 		// R3D
 		extern RG_DECLSPEC PFN_R3D_CREATEMATERIAL      R3D_CreateMaterial;

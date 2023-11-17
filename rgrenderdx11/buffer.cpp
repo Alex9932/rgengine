@@ -2,8 +2,11 @@
 #include "dx11.h"
 #include <engine.h>
 
+static Uint64 buffersLength = 0;
+
 Buffer::Buffer(BufferCreateInfo* info) {
-    this->access = info->access;
+    this->access    = info->access;
+    this->bufferLen = info->length;
     D3D11_BUFFER_DESC buff = {};
     buff.Usage          = (D3D11_USAGE)info->usage;
     buff.ByteWidth      = info->length;
@@ -13,10 +16,12 @@ Buffer::Buffer(BufferCreateInfo* info) {
     buff.StructureByteStride = info->stride;
     HRESULT result = DX11_GetDevice()->CreateBuffer(&buff, NULL, &this->buffer);
     RG_ASSERT_MSG(this->buffer, "Unable to create buffer: D3D11Buffer");
+    buffersLength += this->bufferLen;
 }
 
 Buffer::~Buffer() {
     this->buffer->Release();
+    buffersLength -= this->bufferLen;
 }
 
 void Buffer::SetData(Uint32 offset, Uint32 length, void* data) {
@@ -30,4 +35,8 @@ void Buffer::SetData(Uint32 offset, Uint32 length, void* data) {
         SDL_memcpy(&mdata[offset], data, length);
         DX11_GetContext()->Unmap(this->buffer, 0);
     }
+}
+
+Uint64 GetBufferMemory() {
+    return buffersLength;
 }

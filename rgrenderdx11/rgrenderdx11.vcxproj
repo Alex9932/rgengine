@@ -151,6 +151,7 @@
     <ClCompile Include="gbuffer.cpp" />
     <ClCompile Include="imgui_impl_dx11.cpp" />
     <ClCompile Include="lightpass.cpp" />
+    <ClCompile Include="loader.cpp" />
     <ClCompile Include="queue.cpp" />
     <ClCompile Include="r3d.cpp" />
     <ClCompile Include="rgrenderdx11.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="gbuffer.h" />
     <ClInclude Include="imgui_impl_dx11.h" />
     <ClInclude Include="lightpass.h" />
+    <ClInclude Include="loader.h" />
     <ClInclude Include="queue.h" />
     <ClInclude Include="r3d.h" />
     <ClInclude Include="rgrenderdx11.h" />

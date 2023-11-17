@@ -8,6 +8,13 @@
 #include "rgvector.h"
 #include "queue.h"
 
+typedef struct R3DStats {
+	Uint32 texturesLoaded = 0;
+	Uint32 modelsLoaded = 0;
+	Uint32 drawCalls = 0;
+	Uint32 dispatchCalls = 0;
+} R3DStats;
+
 enum ModelType {
 	R_MODEL_STATIC = 0,
 	R_MODEL_RIGGED = 1
@@ -61,5 +68,7 @@ vec3* GetCameraPosition();
 vec3* GetCameraRotation();
 
 Engine::LinearAllocator* GetMatrixAllocator();
+
+void GetR3DStats(R3DStats* stats);
 
 #endif

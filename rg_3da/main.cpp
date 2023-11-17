@@ -289,12 +289,29 @@ class Application : public BaseGame {
 
 		void MainUpdate() {
 
+			RenderInfo renderer_info = {};
+			Render::GetInfo(&renderer_info);
+
 			ImGui::Begin("Window");
 			static float colors[4] = {};
 
 			Engine::PointLight* pl = ent0->GetComponent(Component_POINTLIGHT)->AsPointLightComponent();
 
 			ImGui::ColorPicker3("Light color", pl->GetColor().array);
+
+			ImGui::SeparatorText("Renderer stats");
+
+			ImGui::Text("Name: %s", renderer_info.render_name);
+			ImGui::Text("Renderer: %s", renderer_info.renderer);
+
+			ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory / 1024);
+			ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory / 1024);
+
+			ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
+			ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
+
+			ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
+
 			ImGui::End();
 
 
