@@ -30,6 +30,7 @@ typedef struct RenderInfo {
 	Uint64 buffers_memory;   // Buffers memory
 
 	// Textures
+	Uint32 textures_left;
 	Uint32 textures_inQueue;
 	Uint32 textures_loaded;
 

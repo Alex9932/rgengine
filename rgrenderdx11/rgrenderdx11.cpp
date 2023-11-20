@@ -189,8 +189,8 @@ void R_GetInfo(RenderInfo* info) {
 	R3DStats r3d_stats = {};
 	GetR3DStats(&r3d_stats);
 
-	info->render_name       = "Direct3D 11 Renderer";
-	info->renderer          = DX11_GetGraphicsCardName();
+	info->render_name        = "Direct3D 11 Renderer";
+	info->renderer           = DX11_GetGraphicsCardName();
 
 	info->shared_memory      = 0;
 	info->dedicated_memory   = 0;
@@ -198,7 +198,8 @@ void R_GetInfo(RenderInfo* info) {
 	info->textures_memory    = GetTextureMemory();
 	info->buffers_memory     = GetBufferMemory();
 
-	info->textures_inQueue   = 0;
+	info->textures_left      = TexturesInQueue();
+	info->textures_inQueue   = TexturesLeft();
 	info->textures_loaded    = r3d_stats.texturesLoaded;
 
 	info->meshes_loaded      = r3d_stats.modelsLoaded;

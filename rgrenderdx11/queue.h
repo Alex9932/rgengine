@@ -13,8 +13,9 @@ class RQueue {
 
 		void* Next();
 
-		RG_INLINE Uint32 Size()  { return this->m_len; }
-		RG_INLINE void   Reset() { this->m_ptr = 0;    }
+		RG_INLINE Uint32 Size()    { return this->m_len; }
+		RG_INLINE Uint32 Current() { return this->m_ptr; }
+		RG_INLINE void   Reset()   { this->m_ptr = 0;    }
 
 	private:
 		void** m_data = NULL;

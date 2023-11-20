@@ -3,6 +3,8 @@
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") 
 #endif
 
+#include <rgentrypoint.h>
+
 #include <stdio.h>
 #include <engine.h>
 #include <rgmath.h>
@@ -287,31 +289,100 @@ class Application : public BaseGame {
 		~Application() {
 		}
 
+		void ImGuiInputVector3(String label, vec3* vec) {
+
+			//float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
+			//float pos = ItemSpacing;
+
+			//ImGui::SameLine(pos);
+			//ImGui::InputFloat("##X", &vec->x);
+			
+			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
+
+			//ImGui::SameLine(100);
+			//ImGui::InputFloat("##Y", &vec->y);
+			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
+
+			
+			//ImGui::SameLine(pos);
+			//ImGui::InputFloat("Z", &vec->z);
+			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
+
+			ImGui::PushItemWidth(50);
+
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+			ImGui::InputFloat("##X", &vec->x);
+			ImGui::PopStyleColor();
+			ImGui::SameLine();
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
+			ImGui::InputFloat("##Y", &vec->y);
+			ImGui::PopStyleColor();
+			ImGui::SameLine();
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 255, 255));
+			ImGui::InputFloat("##Z", &vec->z);
+			ImGui::PopStyleColor();
+
+			ImGui::SameLine();
+			ImGui::Text(label);
+
+			ImGui::PopItemWidth();
+
+		}
+
 		void MainUpdate() {
 
 			RenderInfo renderer_info = {};
 			Render::GetInfo(&renderer_info);
 
-			ImGui::Begin("Window");
+			ImGui::Begin("Renderer stats");
+
+#if 0
 			static float colors[4] = {};
-
 			Engine::PointLight* pl = ent0->GetComponent(Component_POINTLIGHT)->AsPointLightComponent();
-
 			ImGui::ColorPicker3("Light color", pl->GetColor().array);
-
-			ImGui::SeparatorText("Renderer stats");
+#endif
 
 			ImGui::Text("Name: %s", renderer_info.render_name);
 			ImGui::Text("Renderer: %s", renderer_info.renderer);
 
-			ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory / 1024);
-			ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory / 1024);
+			ImGui::Separator();
 
-			ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
+			ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory >> 10);
 			ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
+
+			ImGui::Separator();
 
 			ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
 
+			ImGui::Separator();
+
+			ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
+			ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
+			ImGui::Text("Textures to load/queued: %d/%d", renderer_info.textures_inQueue, renderer_info.textures_left);
+
+			Float32 f = 1;
+			if (renderer_info.textures_inQueue != 0) {
+				f = 1.0f - ((Float32)renderer_info.textures_left / (Float32)renderer_info.textures_inQueue);
+			}
+
+			ImGui::ProgressBar(f);
+
+			ImGui::Separator();
+
+			ImGui::Text("Fps: %.2f", 1.0f / Engine::GetDeltaTime());
+
+
+			ImGui::End();
+
+
+			ImGui::Begin("Camera");
+			vec3 pos = camera->GetTransform()->GetPosition();
+			vec3 rot = camera->GetTransform()->GetRotation();
+
+			ImGuiInputVector3("Position", &pos);
+			ImGuiInputVector3("Rotation", &rot);
+
+			
 			ImGui::End();
 
 
@@ -396,9 +467,9 @@ class Application : public BaseGame {
 			world = GetWorld();
 
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
-			camera->GetTransform()->SetPosition({0, 1, 3});
+			camera->GetTransform()->SetPosition({5.16, 1.49, 0.1});
 			//camera->GetTransform()->SetRotation({0, 3.1415 / 2, 0});
-			camera->GetTransform()->SetRotation({ 0, 0, 0 });
+			camera->GetTransform()->SetRotation({ 0.11, 1.28, 0 });
 
 			//pmd_file* pmd = pmd_load("mmd_models/Rin_Kagamine.pmd");
 			//pmd_file* pmd = pmd_load("mmd_models/Rin_Kagamene_act2.pmd");
@@ -544,9 +615,8 @@ class Application : public BaseGame {
 
 };
 
-#undef main
-int main(int argc, char** argv) {
-	ProcessArguments(argc, (String*)argv);
+int EntryPoint(int argc, String* argv) {
+
 	Application app;
 	Initialize(&app);
 
@@ -585,3 +655,5 @@ int main(int argc, char** argv) {
 	Start();
 	return 0;
 }
+
+rgmain(EntryPoint)

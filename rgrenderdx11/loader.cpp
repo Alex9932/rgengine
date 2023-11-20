@@ -78,3 +78,11 @@ void DoLoadTextures() {
 
 	t_pool->Deallocate(block);
 }
+
+Uint32 TexturesInQueue() {
+	return t_queue->Size() - t_queue->Current();
+}
+
+Uint32 TexturesLeft() {
+	return t_queue->Size();
+}

@@ -287,6 +287,9 @@
     <ClInclude Include="imgui\imgui_internal.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="rgentrypoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="rgengine.rc">
