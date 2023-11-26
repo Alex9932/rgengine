@@ -28,9 +28,16 @@ struct InputDescription {
     InputDataFormat format;
 };
 
+struct SamplerDescription {
+    D3D11_TEXTURE_ADDRESS_MODE u;
+    D3D11_TEXTURE_ADDRESS_MODE v;
+    D3D11_TEXTURE_ADDRESS_MODE w;
+};
+
 struct PipelineDescription {
-    Uint32 inputCount;
-    InputDescription* descriptions;
+    Uint32              inputCount;
+    InputDescription*   descriptions;
+    SamplerDescription* sampler;
 };
 
 class Shader {

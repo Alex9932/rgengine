@@ -74,7 +74,7 @@ SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 	return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_SHOWN);
 }
 
-void R_Setup() {
+void R_Setup(RenderSetupInfo* info) {
 	allocator = new Engine::STDAllocator("DX11 allocator");
 	//Engine::RegisterAllocator(allocator);
 }
@@ -107,9 +107,14 @@ void R_Initialize(SDL_Window* wnd) {
 	staticDescriptions[0].name      = "POSITION";
 	staticDescriptions[0].inputSlot = 0;
 	staticDescriptions[0].format    = INPUT_R32G32_FLOAT;
+	SamplerDescription sampler = {};
+	sampler.u = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampler.v = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampler.w = D3D11_TEXTURE_ADDRESS_CLAMP;
 	PipelineDescription desc = {};
 	desc.inputCount   = 1;
 	desc.descriptions = staticDescriptions;
+	desc.sampler	  = &sampler;
 
 	char bp2d_vs[128];
 	char bp2d_ps[128];

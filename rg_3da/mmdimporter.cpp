@@ -294,6 +294,24 @@ Engine::Animation* VMDImporter::ImportAnimation(String path, Engine::KinematicsM
 		keyframe.translation = motion->position;
 		keyframe.rotation    = motion->rotation;
 		keyframe.timestamp   = motion->frame;
+
+		keyframe.interp_x.x = motion->interpolation[0]  / 127.0f;
+		keyframe.interp_x.y = motion->interpolation[4]  / 127.0f;
+		keyframe.interp_x.z = motion->interpolation[8]  / 127.0f;
+		keyframe.interp_x.w = motion->interpolation[12] / 127.0f;
+		keyframe.interp_y.x = motion->interpolation[16] / 127.0f;
+		keyframe.interp_y.y = motion->interpolation[20] / 127.0f;
+		keyframe.interp_y.z = motion->interpolation[24] / 127.0f;
+		keyframe.interp_y.w = motion->interpolation[28] / 127.0f;
+		keyframe.interp_z.x = motion->interpolation[32] / 127.0f;
+		keyframe.interp_z.y = motion->interpolation[36] / 127.0f;
+		keyframe.interp_z.z = motion->interpolation[40] / 127.0f;
+		keyframe.interp_z.w = motion->interpolation[44] / 127.0f;
+		keyframe.interp_r.x = motion->interpolation[48] / 127.0f;
+		keyframe.interp_r.y = motion->interpolation[52] / 127.0f;
+		keyframe.interp_r.z = motion->interpolation[56] / 127.0f;
+		keyframe.interp_r.w = motion->interpolation[60] / 127.0f;
+
 		track->AddKeyFrame(&keyframe);
 		if (last < motion->frame) {
 			last = motion->frame;

@@ -12,10 +12,42 @@ Texture2D t_unit1 : register(t1);
 SamplerState SampleType : register(s0);
 
 PSOUTPUT pmain(PSINPUT psin) {
+
+#if 0
+
 	float4 albedo = t_unit0.Sample(SampleType, psin.uv);
 	float4 light  = t_unit1.Sample(SampleType, psin.uv);
 
 	float3 c = albedo.rgb * light.rgb;
+
+#else
+
+	float redOffset   =  0.009;
+	float greenOffset =  0.006;
+	float blueOffset  = -0.006;
+
+	float2 mouseFocusPoint = { 0.509167, 0.598 };
+
+	float2 direction = psin.uv - mouseFocusPoint;
+
+	float2 rOffset = {redOffset,   redOffset  };
+	float2 gOffset = {greenOffset, greenOffset};
+	float2 bOffset = {blueOffset,  blueOffset };
+
+	float4 pixelColor;
+	pixelColor.r  = t_unit0.Sample(SampleType, psin.uv + (direction * rOffset)).r;
+	pixelColor.g  =	t_unit0.Sample(SampleType, psin.uv + (direction * gOffset)).g;
+	pixelColor.ba = t_unit0.Sample(SampleType, psin.uv + (direction * bOffset)).ba;
+	
+	float4 lightColor;
+	lightColor.r  = t_unit1.Sample(SampleType, psin.uv + (direction * rOffset)).r;
+	lightColor.g  =	t_unit1.Sample(SampleType, psin.uv + (direction * gOffset)).g;
+	lightColor.ba = t_unit1.Sample(SampleType, psin.uv + (direction * bOffset)).ba;
+
+	float3 c = pixelColor.rgb * lightColor.rgb;
+
+#endif
+
 	// HDR tonemapping
 	c = c / (c + float3(1.0, 1.0, 1.0));
 	// gamma correct

@@ -105,7 +105,7 @@ namespace Engine {
 
         if (event->type == SDL_WINDOWEVENT) {
             switch (event->window.event) {
-                case SDL_WINDOWEVENT_LEAVE: { SetFpsLimit(15); break; }
+                case SDL_WINDOWEVENT_LEAVE: { SetFpsLimit(-1); break; }
                 case SDL_WINDOWEVENT_ENTER: { SetFpsLimit(-1); break; }
                 default: { break; }
             }

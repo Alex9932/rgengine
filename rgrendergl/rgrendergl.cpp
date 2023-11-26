@@ -43,7 +43,7 @@ SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 	return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_OPENGL);
 }
 
-void R_Setup() {
+void R_Setup(RenderSetupInfo* info) {
 	allocator = new Engine::STDAllocator("OpenGL allocator");
 }
 

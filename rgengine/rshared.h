@@ -9,11 +9,13 @@ extern "C" {
 #endif
 
 	extern RG_DECLSPEC SDL_Window* R_ShowWindow(Uint32 w, Uint32 h);
-	extern RG_DECLSPEC void        R_Setup();
+	extern RG_DECLSPEC void        R_Setup(RenderSetupInfo* info);
 	extern RG_DECLSPEC void        R_Initialize(SDL_Window* hwnd);
 	extern RG_DECLSPEC void        R_Destroy();
 	extern RG_DECLSPEC void        R_SwapBuffers();
 	extern RG_DECLSPEC void        R_GetInfo(RenderInfo* info);
+
+	//extern RG_DECLSPEC void        R_SetInfo(RenderInfo* info);
 
 	extern RG_DECLSPEC R3D_Material*    R3D_CreateMaterial(R3DCreateMaterialInfo* info);
 	extern RG_DECLSPEC void             R3D_DestroyMaterial(R3D_Material* hmat);

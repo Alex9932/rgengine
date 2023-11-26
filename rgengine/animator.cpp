@@ -26,6 +26,19 @@ namespace Engine {
         *f2 = second;
     }
 
+    static Float64 Bezier(vec4* points, Float64 dt) {
+        float t = 0.5f;
+        float s = 0.5f;
+        for (int i = 0; i < 15; i++) {
+            float zero = (3 * s * s * t * points->x) + (3 * s * t * t * points->z) + (t * t * t) - dt;
+            if (SDL_fabsf(zero) < 0.00001f) { break; }
+            if (zero > 0) { t -= 1 / (4 * SDL_powf(2, i)); }
+            else { t += 1 / (4 * SDL_powf(2, i)); }
+            s = 1 - t;
+        }
+        return (3 * s * s * t * points->y) + (3 * s * t * t * points->w) + (t * t * t);
+    }
+
     void Animator::Update(double dt) {
         Uint32 bone_count = this->model->GetBoneCount();
 
@@ -101,11 +114,21 @@ namespace Engine {
             //if(anim_dt < 0) { anim_dt = 0; }
             //if(anim_dt > 1) { anim_dt = 1; }
 
-            // TODO: Use Bezier curves
+            // TODO: Use Bezier curvess
             // Temporary used linear interpolation
 
+            Float64 x = Bezier(&frame1->interp_x, anim_dt);
+            Float64 y = Bezier(&frame1->interp_y, anim_dt);
+            Float64 z = Bezier(&frame1->interp_z, anim_dt);
+            Float64 r = Bezier(&frame1->interp_r, anim_dt);
+
+            //bone->position.x = rgLerp(frame1->translation.x, frame2->translation.x, x);
+            //bone->position.y = rgLerp(frame1->translation.y, frame2->translation.y, y);
+            //bone->position.z = rgLerp(frame1->translation.z, frame2->translation.z, z);
+            //bone->position = bone->offset_pos + bone->position;
+
             bone->position = bone->offset_pos + frame1->translation.lerp(frame2->translation, (float)anim_dt);
-            bone->rotation = frame1->rotation.slerp(frame2->rotation, (float)anim_dt);
+            bone->rotation = frame1->rotation.slerp(frame2->rotation, (float)r);
 
             bone->position.x = bone->position.x;
             bone->position.y = bone->position.y;

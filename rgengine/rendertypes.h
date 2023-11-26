@@ -11,6 +11,12 @@ enum IndexType {
 	RG_INDEX_U8  = 1  // !!! DO NOT RECOMENDED TO USE !!!
 };
 
+enum RenderFrags {
+	RG_RENDER_FULLSCREEN = 1,
+	RG_RENDER_USE3D = 2,
+	RG_RENDER_ = 4,
+};
+
 // Backend handle
 typedef struct R3D_Material R3D_Material;
 typedef struct R3D_StaticModel R3D_StaticModel;
@@ -18,6 +24,14 @@ typedef struct R3D_RiggedModel R3D_RiggedModel;
 typedef struct R3D_BoneBuffer R3D_BoneBuffer;
 
 //
+
+typedef struct RenderSetupInfo {
+
+	RenderFrags flags;
+	
+	// TODO
+
+} RenderSetupInfo;
 
 typedef struct RenderInfo {
 	String render_name; // Name in renderer module

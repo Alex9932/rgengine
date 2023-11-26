@@ -270,6 +270,8 @@ class Application : public BaseGame {
 		Entity* ent_test0;
 		Entity* ent_test1;
 
+		Entity* ent_light0;
+
 		Entity* ent0 = NULL;
 		Entity* ent1 = NULL;
 		Entity* ent2 = NULL;
@@ -390,6 +392,9 @@ class Application : public BaseGame {
 			ent_test0->GetTransform()->SetRotation({ 0, (Float32)GetUptime(), 0});
 			ent_test1->GetTransform()->SetRotation({ 0, (Float32)GetUptime() * 0.5f, 0 });
 #endif		
+
+			ent_light0->GetTransform()->SetPosition({ SDL_sinf(GetUptime() * 0.7) * 9, 1.8, 0 });
+
 
 			ivec2 size = {};
 			Engine::GetWindowSize(&size);
@@ -549,6 +554,13 @@ class Application : public BaseGame {
 			ent_test1->GetTransform()->SetParent(ent_test0->GetTransform());
 
 #endif
+
+			ent_light0 = world->NewEntity();
+			Engine::PointLight* lsrc = Render::GetLightSystem()->NewPointLight();
+			lsrc->SetColor({ 1, 0.7, 0.4 });
+			lsrc->SetIntensity(5);
+			lsrc->SetOffset({ 0, 0, 0 });
+			ent_light0->AttachComponent(lsrc);
 
 
 			ent0 = world->NewEntity();

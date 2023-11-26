@@ -3,10 +3,16 @@
 #include <render.h>
 #include <imgui/imgui.h>
 
+#include "viewport.h"
+
 class Application : public Engine::BaseGame {
+	private:
+		Viewport* viewport = NULL;
+		// Other components
+
 	public:
 		Application() {
-			this->isClient = true;
+			this->isClient   = true;
 			this->isGraphics = true;
 		}
 
@@ -122,6 +128,9 @@ class Application : public Engine::BaseGame {
 			ImGui::ColorPicker4("Select color", color.array);
 			ImGui::End();
 
+		
+			viewport->DrawComponent();
+
 
 			if (testDisable) {
 				ImGui::EndDisabled();
@@ -195,9 +204,11 @@ class Application : public Engine::BaseGame {
 		}
 
 		void Initialize() {
+			viewport = new Viewport();
 		}
 
 		void Quit() {
+			delete viewport;
 		}
 };
 

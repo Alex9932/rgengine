@@ -15,6 +15,10 @@ typedef struct BoneKeyFrame {
     quat rotation;
     vec3 translation;
     vec3 scale;
+    vec4 interp_x;
+    vec4 interp_y;
+    vec4 interp_z;
+    vec4 interp_r;
 } BoneKeyFrame;
 
 namespace Engine {
