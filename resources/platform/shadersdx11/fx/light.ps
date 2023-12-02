@@ -8,13 +8,18 @@ struct PSOUTPUT {
 };
 
 Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
 SamplerState SampleType : register(s0);
 
 PSOUTPUT pmain(PSINPUT psin) {
 
-	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+	float4 albedo = t_unit0.Sample(SampleType, psin.uv);
+	float4 light  = t_unit1.Sample(SampleType, psin.uv);
+
+	float3 c = albedo.rgb * light.rgb;
 
 	PSOUTPUT pout;
-	pout.color = tColor;
+	pout.color.rgb = c;
+	pout.color.a   = 1;
 	return pout;
 }

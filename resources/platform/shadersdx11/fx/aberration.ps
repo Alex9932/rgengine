@@ -1,0 +1,36 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+
+	float redOffset   =  0.009;
+	float greenOffset =  0.006;
+	float blueOffset  = -0.006;
+
+	float2 mouseFocusPoint = { 0.509167, 0.598 };
+
+	float2 direction = psin.uv - mouseFocusPoint;
+
+	float2 rOffset = {redOffset,   redOffset  };
+	float2 gOffset = {greenOffset, greenOffset};
+	float2 bOffset = {blueOffset,  blueOffset };
+
+	float4 pixelColor;
+	pixelColor.r  = t_unit0.Sample(SampleType, psin.uv + (direction * rOffset)).r;
+	pixelColor.g  =	t_unit0.Sample(SampleType, psin.uv + (direction * gOffset)).g;
+	pixelColor.ba = t_unit0.Sample(SampleType, psin.uv + (direction * bOffset)).ba;
+
+	PSOUTPUT pout;
+	pout.color.rgb = pixelColor.rgb;
+	pout.color.a   = 1;
+	return pout;
+}

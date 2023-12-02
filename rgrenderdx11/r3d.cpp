@@ -10,6 +10,7 @@
 #include "shader.h"
 #include "gbuffer.h"
 #include "lightpass.h"
+#include "postprocess.h"
 
 #include "loader.h"
 
@@ -109,12 +110,14 @@ void InitializeR3D(ivec2* size) {
 
 	CreateGBuffer(size);
 	CreateLightpass(size);
+	CreateFX(size);
 }
 
 void DestroyR3D() {
 
 	DestroyLightpass();
 	DestroyGBuffer();
+	DestroyFX();
 
 	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
 
@@ -136,6 +139,7 @@ void ResizeR3D(ivec2* wndSize) {
 
 	ResizeGbuffer(wndSize);
 	ResizeLightpass(wndSize);
+	ResizeFX(wndSize);
 
 }
 
@@ -549,6 +553,10 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 	// Light pass
 
 	DoLightpass();
+
+	// Postprocess
+
+	DoPostprocess();
 
 
 }

@@ -7,6 +7,12 @@
 
 #define DX_DEBUG 0
 
+typedef struct RenderTarget {
+	ID3D11Texture2D*          texture;
+	ID3D11ShaderResourceView* resView;
+	ID3D11RenderTargetView*   rtView;
+} RenderTarget;
+
 void DX11_Initialize(SDL_Window* hwnd);
 void DX11_Destroy();
 
@@ -22,5 +28,8 @@ ID3D11DeviceContext* DX11_GetContext();
 String DX11_GetGraphicsCardName();
 
 void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resView, ivec2* size, DXGI_FORMAT format, UINT flags);
+
+void DX11_MakeRenderTarget(RenderTarget* rt, ivec2* size, DXGI_FORMAT format);
+void DX11_FreeRenderTarget(RenderTarget* rt);
 
 #endif

@@ -167,3 +167,14 @@ void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resVi
         //rgLogWarn(RG_LOG_RENDER, "ResView: %d, %lp", r, *resView);
     }
 }
+
+void DX11_MakeRenderTarget(RenderTarget* rt, ivec2* size, DXGI_FORMAT format) {
+    DX11_MakeTexture(&rt->texture, &rt->resView, size, format, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
+    DX11_GetDevice()->CreateRenderTargetView(rt->texture, NULL, &rt->rtView);
+}
+
+void DX11_FreeRenderTarget(RenderTarget* rt) {
+    rt->resView->Release();
+    rt->rtView->Release();
+    rt->texture->Release();
+}

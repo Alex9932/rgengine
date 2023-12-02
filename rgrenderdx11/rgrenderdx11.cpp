@@ -20,6 +20,8 @@
 #include <rgmath.h>
 #include <filesystem.h>
 
+#include "postprocess.h"
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_impl_dx11.h"
 
@@ -160,11 +162,12 @@ void R_SwapBuffers() {
 	// Draw gbuffer data
 	shader->Bind();
 
-	ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
-	ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
+	//ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
+	//ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
+	ID3D11ShaderResourceView* res0 = FXGetOuputTexture();
 
 	DX11_GetContext()->PSSetShaderResources(0, 1, &res0);
-	DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
+	//DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
 
 	UINT stride = sizeof(Float32) * 2;
 	UINT offset = 0;

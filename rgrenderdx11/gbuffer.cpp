@@ -1,36 +1,28 @@
 #include "gbuffer.h"
 #include "dx11.h"
 
-static ID3D11Texture2D* albedoBuffer;
-static ID3D11Texture2D* normalBuffer;
-static ID3D11Texture2D* wposBuffer;
-static ID3D11Texture2D* depthBuffer;
+// Render targets
+static RenderTarget             rendertargets[3];
 
-static ID3D11ShaderResourceView* resView[3];
+// Depth buffer
+static ID3D11Texture2D*         depthBuffer      = NULL;
+static ID3D11DepthStencilView*  depthStencilView = NULL;
 
-static ID3D11RenderTargetView* albedoView;
-static ID3D11RenderTargetView* normalView;
-static ID3D11RenderTargetView* wposView;
-static ID3D11DepthStencilView* depthStencilView;
-
-static ID3D11DepthStencilState* depthStencilState;
-
-static ID3D11RasterizerState* rasterState;
+// States
+static ID3D11RasterizerState*   rasterState       = NULL;
+static ID3D11DepthStencilState* depthStencilState = NULL;
 
 ID3D11ShaderResourceView* GetGBufferShaderResource(Uint32 idx) {
-    return resView[idx];
+    return rendertargets[idx].resView;
 }
 
 static void _CreateFramebuffer(ivec2* size) {
-    DX11_MakeTexture(&albedoBuffer, &resView[0], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    DX11_MakeTexture(&normalBuffer, &resView[1], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    DX11_MakeTexture(&wposBuffer,   &resView[2], size, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
-    DX11_MakeTexture(&depthBuffer,  NULL,        size, DXGI_FORMAT_D24_UNORM_S8_UINT,  D3D11_BIND_DEPTH_STENCIL);
 
-    DX11_GetDevice()->CreateRenderTargetView(albedoBuffer, NULL, &albedoView);
-    DX11_GetDevice()->CreateRenderTargetView(normalBuffer, NULL, &normalView);
-    DX11_GetDevice()->CreateRenderTargetView(wposBuffer,   NULL, &wposView);
+    DX11_MakeRenderTarget(&rendertargets[0], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
+    DX11_MakeRenderTarget(&rendertargets[1], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
+    DX11_MakeRenderTarget(&rendertargets[2], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
 
+    DX11_MakeTexture(&depthBuffer, NULL, size, DXGI_FORMAT_D24_UNORM_S8_UINT, D3D11_BIND_DEPTH_STENCIL);
     D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
     depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
@@ -40,18 +32,12 @@ static void _CreateFramebuffer(ivec2* size) {
 }
 
 static void _DestroyFramebuffer() {
-    resView[0]->Release();
-    resView[1]->Release();
-    resView[2]->Release();
 
-    albedoView->Release();
-    normalView->Release();
-    wposView->Release();
+    DX11_FreeRenderTarget(&rendertargets[0]);
+    DX11_FreeRenderTarget(&rendertargets[1]);
+    DX11_FreeRenderTarget(&rendertargets[2]);
+
     depthStencilView->Release();
-
-    albedoBuffer->Release();
-    normalBuffer->Release();
-    wposBuffer->Release();
     depthBuffer->Release();
 }
 
@@ -110,9 +96,9 @@ void BindGBuffer() {
     ID3D11DeviceContext* ctx = DX11_GetContext();
 
     ID3D11RenderTargetView* buffers[] = {
-        albedoView,
-        normalView,
-        wposView
+        rendertargets[0].rtView,
+        rendertargets[1].rtView,
+        rendertargets[2].rtView
     };
     ctx->OMSetRenderTargets(3, buffers, depthStencilView);
     ctx->OMSetDepthStencilState(depthStencilState, 1);

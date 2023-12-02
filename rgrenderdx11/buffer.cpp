@@ -14,7 +14,18 @@ Buffer::Buffer(BufferCreateInfo* info) {
     buff.CPUAccessFlags = info->access;
     buff.MiscFlags      = info->miscflags;
     buff.StructureByteStride = info->stride;
-    HRESULT result = DX11_GetDevice()->CreateBuffer(&buff, NULL, &this->buffer);
+    
+    D3D11_SUBRESOURCE_DATA data = {};
+    data.pSysMem = info->initialData;
+    data.SysMemPitch = 1;
+    data.SysMemSlicePitch = info->length;
+
+    D3D11_SUBRESOURCE_DATA* dataptr = NULL;
+    if (info->initialData) {
+        dataptr = &data;
+    }
+
+    HRESULT result = DX11_GetDevice()->CreateBuffer(&buff, dataptr, &this->buffer);
     RG_ASSERT_MSG(this->buffer, "Unable to create buffer: D3D11Buffer");
     buffersLength += this->bufferLen;
 }

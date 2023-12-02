@@ -628,42 +628,8 @@ class Application : public BaseGame {
 };
 
 int EntryPoint(int argc, String* argv) {
-
 	Application app;
 	Initialize(&app);
-
-#if 0
-	rgLogWarn(RG_LOG_SYSTEM, "~ ~ ~ ~ ~ ~ ~");
-
-	rgLogWarn(RG_LOG_SYSTEM, "Linear alloc test");
-	LinearAllocator* alloc = new LinearAllocator("Test linear alloc", 4096);
-
-	void* p0 = alloc->Allocate(128);
-	void* p1 = alloc->Allocate(256);
-	void* p2 = alloc->Allocate(128);
-	void* p3 = alloc->Allocate(512);
-	rgLogWarn(RG_LOG_SYSTEM, "P0: %p", p0);
-	rgLogWarn(RG_LOG_SYSTEM, "P1: %p", p1);
-	rgLogWarn(RG_LOG_SYSTEM, "P2: %p", p2);
-	rgLogWarn(RG_LOG_SYSTEM, "P3: %p", p3);
-	alloc->Deallocate();
-	p0 = alloc->Allocate(128);
-	p1 = alloc->Allocate(256);
-	p2 = alloc->Allocate(128);
-	p3 = alloc->Allocate(512);
-	rgLogWarn(RG_LOG_SYSTEM, "P0: %p", p0);
-	rgLogWarn(RG_LOG_SYSTEM, "P1: %p", p1);
-	rgLogWarn(RG_LOG_SYSTEM, "P2: %p", p2);
-	rgLogWarn(RG_LOG_SYSTEM, "P3: %p", p3);
-	alloc->Deallocate();
-
-	rgLogWarn(RG_LOG_SYSTEM, "Done");
-
-	delete alloc;
-
-	rgLogWarn(RG_LOG_SYSTEM, "~ ~ ~ ~ ~ ~ ~");
-#endif
-
 	Start();
 	return 0;
 }

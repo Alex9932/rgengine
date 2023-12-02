@@ -31,6 +31,7 @@ struct BufferCreateInfo {
 	BufferAccess access;
 	Uint32       miscflags;
 	Uint32       stride;
+	void*        initialData;
 };
 
 class Buffer {
