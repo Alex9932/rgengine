@@ -32,4 +32,6 @@ void DX11_MakeTexture(ID3D11Texture2D** buffer, ID3D11ShaderResourceView** resVi
 void DX11_MakeRenderTarget(RenderTarget* rt, ivec2* size, DXGI_FORMAT format);
 void DX11_FreeRenderTarget(RenderTarget* rt);
 
+void DX11_SetViewport(int w, int h);
+
 #endif

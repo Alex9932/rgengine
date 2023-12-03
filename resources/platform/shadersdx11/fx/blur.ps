@@ -1,0 +1,45 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+    float Directions;
+    float Quality;
+    float Size;
+    int   ScreenSize;
+};
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+	float Pi = 3.1415 * 2;
+
+	int screenx = ScreenSize>> 16;
+	int screeny = ScreenSize& 0x0000FFFF;
+
+	float2 Resolution = float2(screenx, screeny);
+
+	float2 Radius = Size / Resolution;
+	float2 uv = fragCoord.xy/Resolution;
+
+	float4 tColor = t_unit0.Sample(SampleType, uv);
+
+	for(float d=0.0; d<Pi; d+=Pi/Directions) {
+		for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality) {
+			tColor += t_unit0.Sample(SampleType, uv + float2(cos(d),sin(d))*Radius*i);
+		}
+	}
+
+	tColor /= Quality * Directions - 15.0;
+
+	PSOUTPUT pout;
+	pout.color = tColor;
+	return pout;
+}

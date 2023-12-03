@@ -1,0 +1,51 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+    float Directions;
+    float Quality;
+    float Size;
+    int   ScreenSize;
+};
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+	int screenx = ScreenSize >> 16;
+	int screeny = ScreenSize & 0x0000FFFF;
+	float2 resolution = float2(screenx, screeny);
+
+	float xsize = 1.0 / resolution.x;
+
+	// Kernel
+	float offsets[11] = {0,0,0,0,0,0,0,0,0,0,0};
+	for(int i = -5; i < 5; i++) {
+		offsets[i + 5] = i * xsize;
+	}
+
+	float4 tColor = {0, 0, 0, 0};
+
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[0],  0)) * 0.0093;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[1],  0)) * 0.028002;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[2],  0)) * 0.065984;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[3],  0)) * 0.121703;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[4],  0)) * 0.175713;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[5],  0)) * 0.198596;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[6],  0)) * 0.175713;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[7],  0)) * 0.121703;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[8],  0)) * 0.065984;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[9],  0)) * 0.028002;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(offsets[10], 0)) * 0.0093;
+
+	PSOUTPUT pout;
+	pout.color = tColor;
+	return pout;
+}

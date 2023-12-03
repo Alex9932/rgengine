@@ -1,0 +1,26 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+
+	float threshold = 0.9;
+
+	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+
+	float4 c = {0, 0, 0, 1};
+	float val = max(tColor.r, max(tColor.g, tColor.b));
+	if(val > threshold) { c = tColor; }
+
+	PSOUTPUT pout;
+	pout.color = c;
+	return pout;
+}

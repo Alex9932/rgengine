@@ -10,13 +10,17 @@ struct PSOUTPUT {
 Texture2D t_unit0 : register(t0);
 SamplerState SampleType : register(s0);
 
+cbuffer ConstBuffer : register(b0) {
+	float4 offset;
+	float4 focusPoint;
+};
+
 PSOUTPUT pmain(PSINPUT psin) {
 
-	float redOffset   =  0.009;
-	float greenOffset =  0.006;
-	float blueOffset  = -0.006;
-
-	float2 mouseFocusPoint = { 0.509167, 0.598 };
+	float redOffset   = offset.x;
+	float greenOffset = offset.y;
+	float blueOffset  = offset.z;
+	float2 mouseFocusPoint = focusPoint.xy;
 
 	float2 direction = psin.uv - mouseFocusPoint;
 

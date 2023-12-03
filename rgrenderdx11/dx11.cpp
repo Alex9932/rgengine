@@ -23,19 +23,6 @@ static void _MakeRendertarget() {
     pBackBuffer->Release();
 }
 
-static void _SetViewport(int w, int h) {
-    // Viewport
-    D3D11_VIEWPORT pViewport;
-    ZeroMemory(&pViewport, sizeof(D3D11_VIEWPORT));
-    pViewport.TopLeftX = 0;
-    pViewport.TopLeftY = 0;
-    pViewport.Width = w;
-    pViewport.Height = h;
-    pViewport.MinDepth = 0.0f;
-    pViewport.MaxDepth = 1.0f;
-    dx_ctx->RSSetViewports(1, &pViewport);
-}
-
 void DX11_Initialize(SDL_Window* hwnd) {
     // Get HWND
     SDL_SysWMinfo wminfo = {};
@@ -88,7 +75,7 @@ void DX11_Initialize(SDL_Window* hwnd) {
     RG_ASSERT_MSG(dx_swapchain, "Unable to initialize direct3d: D3D11SwapChain");
 
     _MakeRendertarget();
-    _SetViewport(w, h);
+    DX11_SetViewport(w, h);
 
     D3D11_RASTERIZER_DESC rasterDesc = {};
     rasterDesc.AntialiasedLineEnable = false;
@@ -131,7 +118,7 @@ void DX11_Resize(ivec2* wndSize) {
     dx_backbuffer->Release();
     dx_swapchain->ResizeBuffers(0, wndSize->x, wndSize->y, DXGI_FORMAT_UNKNOWN, 0);
     _MakeRendertarget();
-    _SetViewport(wndSize->x, wndSize->y);
+    DX11_SetViewport(wndSize->x, wndSize->y);
 }
 
 IDXGISwapChain*      DX11_GetSwapchain()        { return dx_swapchain; }
@@ -177,4 +164,15 @@ void DX11_FreeRenderTarget(RenderTarget* rt) {
     rt->resView->Release();
     rt->rtView->Release();
     rt->texture->Release();
+}
+
+void DX11_SetViewport(int w, int h) {
+    D3D11_VIEWPORT pViewport = {};
+    pViewport.TopLeftX = 0;
+    pViewport.TopLeftY = 0;
+    pViewport.Width    = w;
+    pViewport.Height   = h;
+    pViewport.MinDepth = 0.0f;
+    pViewport.MaxDepth = 1.0f;
+    dx_ctx->RSSetViewports(1, &pViewport);
 }
