@@ -8,6 +8,7 @@
 #include <lightsystem.h>
 #include <world.h>
 #include <imgui/imgui.h>
+#include <imgui/ImGuizmo.h>
 
 #include "viewport.h"
 
@@ -26,12 +27,13 @@ class Application : public BaseGame {
 
 		// Temp
 		Entity*   ent0     = NULL;
+		Entity*   ent1     = NULL;
 
 	public:
 		Application() {
 			this->isClient   = true;
 			this->isGraphics = true;
-			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_FULLSCREEN);
+			Render::SetRenderFlags(RG_RENDER_USE3D);
 		}
 
 		~Application() {
@@ -51,9 +53,14 @@ class Application : public BaseGame {
 			R3D_PushModelInfo info = {};
 			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
 			info.matrix = *ent0->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info); 
+			Render::R3D_PushModel(&info);
+			info.handle = ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
+			info.matrix = *ent1->GetTransform()->GetMatrix();
+			Render::R3D_PushModel(&info);
 
 			////////
+
+			ImGuizmo::BeginFrame();
 
 			static Float32 progress = 0;
 			static Bool testDisable = false;
@@ -144,6 +151,8 @@ class Application : public BaseGame {
 				ImGui::BeginDisabled();
 			}
 
+			World* world = GetWorld();
+			viewport->SetImGuizmoRect();
 
 			ImGui::Begin("Window 1");
 			ImGui::Text("Text 1");
@@ -151,10 +160,41 @@ class Application : public BaseGame {
 			ImGui::Text("Text 3");
 			ImGui::End();
 
-			ImGui::Begin("Window 2");
-			ImGui::Text("Text 1");
-			ImGui::Text("Text 2");
-			ImGui::Text("Text 3");
+			ImGui::Begin("World");
+			if(ImGui::TreeNode("Entities")) {
+				Uint32 len = world->GetEntityCount();
+				for (Uint32 i = 0; i < len; i++) {
+					Entity* ent = world->GetEntity(i);
+					Transform* transform = ent->GetTransform();
+					mat4 model = *transform->GetMatrix();
+					char ent_name[128];
+					TagComponent* tag = ent->GetComponent(Component_TAG)->AsTagComponent();
+					if (tag) {
+						SDL_snprintf(ent_name, 128, "%s", tag->GetString());
+					} else {
+						SDL_snprintf(ent_name, 128, "%lx", ent->GetID());
+					}
+					if(ImGui::TreeNode(ent_name)) {
+						ImGui::InputFloat3("Position", transform->GetPosition().array);
+						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
+
+						mat4 view = {};
+
+						mat4_view(&view, camera->GetTransform()->GetPosition(), camera->GetTransform()->GetRotation());
+						ImGuizmo::Manipulate(view.m, camera->GetProjection()->m, ImGuizmo::TRANSLATE, ImGuizmo::WORLD, model.m);
+
+						vec3 pos = {};
+						//quat rot = {};
+						mat4_decompose(&pos, NULL, NULL, model);
+						
+						transform->SetPosition(pos);
+						//transform->SetRotation(rot);
+
+						ImGui::TreePop();
+					}
+				}
+				ImGui::TreePop();
+			}
 			ImGui::End();
 
 			ImGui::Begin("Window 3");
@@ -164,7 +204,6 @@ class Application : public BaseGame {
 
 		
 			viewport->DrawComponent();
-
 
 			if (testDisable) {
 				ImGui::EndDisabled();
@@ -243,7 +282,7 @@ class Application : public BaseGame {
 
 			// Initialize camera
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 100, rgToRadians(75), 1.777f);
-			camera->GetTransform()->SetPosition({ 0, 0.85f, 0 });
+			camera->GetTransform()->SetPosition({ 0, 0.85f, 1.6 });
 			camera->GetTransform()->SetRotation({ 0, 0, 0 });
 
 			// Viewport
@@ -252,20 +291,30 @@ class Application : public BaseGame {
 			// Temp
 			Render::ObjImporter objImporter;
 			R3DCreateStaticModelInfo objinfo = {};
-			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
+			objImporter.FreeModelData(&objinfo);
+
+			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
 
 			ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
-			ent0->GetTransform()->SetPosition({ 0, 0, -1.6 });
+			ent0->GetTransform()->SetPosition({ 0, 0, 8 });
 			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 
+			ent1 = world->NewEntity();
+			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+			ent1->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent1->GetTransform()->SetScale({ 1, 1, 1 });
+
 			PointLight* l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
-			l->SetIntensity(10);
-			l->SetOffset({ -0.86, 2.56, 1.21 });
+			l->SetIntensity(30);
+			l->SetOffset({ -0.86, 2.56, -5.21 });
 			ent0->AttachComponent(l);
 
 		}
@@ -276,8 +325,11 @@ class Application : public BaseGame {
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
 
 			World* world = GetWorld();
+
 			Render::R3D_DestroyStaticModel(ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
 			world->FreeEntity(ent0);
+			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
+			world->FreeEntity(ent1);
 		}
 };
 

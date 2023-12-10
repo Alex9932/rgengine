@@ -13,6 +13,12 @@ void UIComponent::DrawComponent() {
 
 	ImGui::Begin(m_wndname);
 
+	ImVec2 _wndpos  = ImGui::GetWindowPos();
+	ivec2 wndpos = { _wndpos.x, _wndpos.y };
+	if (this->m_wndpos.x != wndpos.x || this->m_wndpos.y != wndpos.y) {
+		OnReposition(wndpos);
+	}
+
 	ImVec2 _wndsize = ImGui::GetWindowSize();
 	ivec2 wndsize = { _wndsize.x, _wndsize.y };
 
@@ -27,4 +33,8 @@ void UIComponent::DrawComponent() {
 
 void UIComponent::OnResize(ivec2 newsize) {
 	this->m_wndsize = newsize;
+}
+
+void UIComponent::OnReposition(ivec2 newpos) {
+	this->m_wndpos = newpos;
 }

@@ -12,6 +12,8 @@ class Viewport : public UIComponent {
 		virtual void Draw();
 		virtual void OnResize(ivec2 newsize);
 
+		void SetImGuizmoRect();
+
 	private:
 		Engine::Camera* m_camera;
 
