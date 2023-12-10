@@ -1,0 +1,125 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+#define RG_SMAPLE_LEVEL 0
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+Texture2D t_unit3 : register(t3);
+Texture2D t_unit4 : register(t4);
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+	row_major float4x4 proj;
+	row_major float4x4 view;
+	row_major float4x4 viewProj;
+	row_major float4x4 invProj;
+	row_major float4x4 invView;
+	float4 camera_position;
+	int screen_size;
+};
+
+float3 GetViewNormal(float2 uv) {
+	float4 N = t_unit1.SampleLevel(SampleType, uv, RG_SMAPLE_LEVEL);
+	N.w = 0;
+	float4 ss = mul(N, view);
+	//ss /= ss.w;
+	return ss.xyz;
+}
+
+float GetDepth(float2 uv) {
+	return t_unit4.SampleLevel(SampleType, uv, RG_SMAPLE_LEVEL).r;
+}
+
+bool IsOutside(float2 ray) {
+	return (ray.x > 1 || ray.y > 1 || ray.x < 0 || ray.y < 0) ? true : false;
+}
+
+float3 TraceRay(float3 rayPos, float3 dir, int count) {
+	float depth;
+	float3 hColor = 0;
+	bool  hit = false;
+	
+	for(int i = 0; i < count; i++) {
+		rayPos += dir;
+		if(IsOutside(rayPos.xy)) {
+			break;
+		}
+
+		depth = GetDepth(rayPos.xy);
+		float diff = rayPos.z - depth;
+		if(diff >= 0 && diff < 0.00001) {
+			hit = true;
+			hColor = t_unit3.SampleLevel(SampleType, rayPos.xy, RG_SMAPLE_LEVEL).rgb;
+			break;
+		}
+	}
+
+	return hColor;
+}
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+	int screenx = screen_size >> 16;
+	int screeny = screen_size & 0x0000FFFF;
+	
+	float2 noproj_uv = fragCoord.xy/float2(screenx, screeny);
+
+
+	float4 alb_met = t_unit0.Sample(SampleType, noproj_uv);
+	float4 nor_rou = t_unit1.Sample(SampleType, noproj_uv);
+	float4 wps_emi = t_unit2.Sample(SampleType, noproj_uv);
+	
+	float3 albedo    = alb_met.rgb;
+	float3 normal    = normalize(nor_rou.xyz);
+	float3 wpos      = wps_emi.xyz;
+	float  metallic  = alb_met.a;
+	float  roughness = nor_rou.a;
+	float  emissive  = wps_emi.a;
+
+	float maxRayDistance = 20;
+
+	float3 pixelPosition = 0;
+	pixelPosition.xy = noproj_uv;
+
+	// View normal
+	float3 normalView = GetViewNormal(pixelPosition.xy);
+	float pixelDepth = GetDepth(pixelPosition.xy);
+	pixelPosition.z = pixelDepth;
+
+	float4 posView = mul(float4(pixelPosition * float3(2, 2, 1) - float3(1, 1, 0), 1), invProj);
+	posView /= posView.w;
+
+	float3 reflection = normalize(reflect(posView.xyz, normalView));
+	//if(reflection.z > 0) {
+	//	discard;
+	//}
+
+	float3 rayEndPositionView = posView.xyz + reflection * maxRayDistance;
+
+	float4 rayEndPosition = mul(float4(rayEndPositionView, 1), proj);
+	rayEndPosition /= rayEndPosition.w;
+	rayEndPosition.xyz = (rayEndPosition.xyz + 1) / 2;
+	float3 rayDirection = rayEndPosition.xyz - pixelPosition;
+
+	int2 ssStartPos = int2(pixelPosition.x * screenx, pixelPosition.y * screeny);
+	int2 ssEndPos   = int2(rayEndPosition.x * screenx, rayEndPosition.y * screeny);
+	int2 ssDistance = ssEndPos - ssStartPos;
+	uint ssMaxDist  = uint(max(abs(ssDistance.x), abs(ssDistance.y))) / 2;
+	rayDirection /= max(ssMaxDist, 0.001);
+
+	float3 tColor = pixelDepth;//TraceRay(pixelPosition, rayDirection, ssMaxDist);
+
+	PSOUTPUT pout;
+	pout.color.rgb = tColor;
+	pout.color.a   = 1;
+	return pout;
+
+}

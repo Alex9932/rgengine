@@ -49,6 +49,12 @@
     <Filter Include="Source Files\imgui">
       <UniqueIdentifier>{723e7cef-16a6-44f5-b145-43fa591a0833}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\importer">
+      <UniqueIdentifier>{8fa826eb-810c-4c89-ae1d-bd99c967a75c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\importer">
+      <UniqueIdentifier>{fd36c66e-f948-4bcd-89b6-0a9d2ee778a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -120,9 +126,6 @@
     <ClCompile Include="pm2.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="pm2importer.cpp">
-      <Filter>Source Files\render</Filter>
-    </ClCompile>
     <ClCompile Include="animator.cpp">
       <Filter>Source Files\animation</Filter>
     </ClCompile>
@@ -158,6 +161,12 @@
     </ClCompile>
     <ClCompile Include="imgui\ImGuizmo.cpp">
       <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="objimporter.cpp">
+      <Filter>Source Files\importer</Filter>
+    </ClCompile>
+    <ClCompile Include="pm2importer.cpp">
+      <Filter>Source Files\importer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -239,9 +248,6 @@
     <ClInclude Include="pm2.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="pm2importer.h">
-      <Filter>Header Files\render</Filter>
-    </ClInclude>
     <ClInclude Include="kinematicsmodel.h">
       <Filter>Header Files\animation</Filter>
     </ClInclude>
@@ -289,6 +295,12 @@
     </ClInclude>
     <ClInclude Include="rgentrypoint.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pm2importer.h">
+      <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="objimporter.h">
+      <Filter>Header Files\importer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

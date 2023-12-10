@@ -6,8 +6,12 @@
 #include "gbuffer.h"
 #include "lightpass.h"
 
+#include "r3d.h"
+
 #include <filesystem.h>
 #include <allocator.h>
+
+#include <rgmatrix.h>
 
 #include <engine.h>
 
@@ -53,7 +57,8 @@ class FX {
 	public:
 		FX(ivec2* size, String shader) {
 			DX11_MakeRenderTarget(&m_target, size, DXGI_FORMAT_R16G16B16A16_FLOAT);
-			m_shader = _MakeShader("base.vs", shader);
+			m_shader   = _MakeShader("base.vs", shader);
+			m_viewport = *size;
 		}
 
 		virtual ~FX() {
@@ -78,7 +83,11 @@ class FX {
 			m_constants = b;
 		}
 
+		ivec2* GetSize() { return &m_viewport; }
+
 		void Draw() {
+			DX11_SetViewport(m_viewport.x, m_viewport.y);
+
 			ID3D11DeviceContext* ctx = DX11_GetContext();
 			ID3D11Buffer* vbuffer = quadbuffer->GetHandle();
 			UINT stride = sizeof(Float32) * 2;
@@ -101,8 +110,9 @@ class FX {
 		}
 
 	private:
-		RenderTarget m_target = {};
-		Shader*      m_shader = NULL;
+		RenderTarget m_target   = {};
+		Shader*      m_shader   = NULL;
+		ivec2        m_viewport = {};
 
 		ID3D11ShaderResourceView* m_input[16] = {}; // Max 16 input images
 		ID3D11Buffer*             m_constants = NULL;
@@ -111,7 +121,6 @@ class FX {
 };
 
 static ivec2 viewport    = {};
-static ivec2 subViewport = {};
 
 struct ABufferData {
 	vec4 offset;
@@ -125,72 +134,51 @@ struct BBufferData {
 	int   ScreenSize;
 };
 
+struct SSRBufferData {
+	mat4 proj;
+	mat4 view;
+	mat4 viewProj;
+	mat4 invProj;
+	mat4 invView;
+	vec4 camera_position;
+	int screen_size;
+};
+
 static FX* lightpass;
+
+static FX* ssr;
+static Buffer*       ssrBuffer;
+static SSRBufferData ssrData;
 
 static FX* aberration;
 static Buffer* aberrationBuffer;
 static ABufferData  aberrationData;
 
+
+// Bloom
 static FX* contrast;
 
-static FX* blurx;
-static FX* blury;
+static FX* blurx1;
+static FX* blury1;
+static FX* blurx2;
+static FX* blury2;
+static FX* blurx3;
+static FX* blury3;
 static Buffer* blurBuffer;
 static BBufferData  blurData;
+
+
 
 static FX* mix;
 
 static FX* tonemapping;
 
-//static RenderTarget lightpass;
-//static Shader*      lightShader;
-
-//static RenderTarget aberration;
-//static Shader*      aberrationShader;
-//static Buffer*      aberrationBuffer;
-//static ABufferData  aberrationData;
-
-//static RenderTarget contrast;
-//static Shader*      contrastShader;
-
-//static RenderTarget tonemapping;
-//static Shader*      tonemappingShader;
-
-//static RenderTarget blur;
-//static Shader*      blurShader;
-//static Buffer*      blurBuffer;
-//static BBufferData  blurData;
-
-//static RenderTarget mix;
-//static Shader*      mixShader;
-
 static ID3D11RasterizerState* rasterState = NULL;
 
-static void _CreateBuffers(ivec2* size) {
-	viewport.x = size->x;
-	viewport.y = size->y;
-	subViewport.x = size->x;// / 4;
-	subViewport.y = size->y;// / 4;
-
-	//DX11_MakeRenderTarget(&lightpass,   &viewport,    DXGI_FORMAT_R16G16B16A16_FLOAT);
-	//DX11_MakeRenderTarget(&aberration,  &viewport,    DXGI_FORMAT_R16G16B16A16_FLOAT);
-	//DX11_MakeRenderTarget(&tonemapping, &viewport,    DXGI_FORMAT_R16G16B16A16_FLOAT);
-	//DX11_MakeRenderTarget(&contrast,    &subViewport, DXGI_FORMAT_R16G16B16A16_FLOAT);
-	//DX11_MakeRenderTarget(&blur,        &subViewport, DXGI_FORMAT_R16G16B16A16_FLOAT);
-	//DX11_MakeRenderTarget(&mix,         &viewport,    DXGI_FORMAT_R16G16B16A16_FLOAT);
-}
-
-static void _DestroyBuffers() {
-	//DX11_FreeRenderTarget(&lightpass);
-	//DX11_FreeRenderTarget(&aberration);
-	//DX11_FreeRenderTarget(&tonemapping);
-	//DX11_FreeRenderTarget(&contrast);
-	//DX11_FreeRenderTarget(&blur);
-	//DX11_FreeRenderTarget(&mix);
-}
 
 void CreateFX(ivec2* size) {
-	_CreateBuffers(size);
+	viewport.x = size->x;
+	viewport.y = size->y;
 
 	// Raster state
 	D3D11_RASTERIZER_DESC rasterDesc = {};
@@ -225,62 +213,170 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length      = sizeof(BBufferData);
 	blurBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
+	abufferInfo.length      = sizeof(SSRBufferData);
+	ssrBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
+
 
 	lightpass   = RG_NEW_CLASS(RGetAllocator(), FX)(size, "light.ps");
+
+	ssr         = RG_NEW_CLASS(RGetAllocator(), FX)(size, "reflection.ps");
+
 	aberration  = RG_NEW_CLASS(RGetAllocator(), FX)(size, "aberration.ps");
 	tonemapping = RG_NEW_CLASS(RGetAllocator(), FX)(size, "tonemapping.ps");
 	contrast    = RG_NEW_CLASS(RGetAllocator(), FX)(size, "contrast.ps");
 
-	blurx = RG_NEW_CLASS(RGetAllocator(), FX)(&subViewport, "blurx.ps");
-	blury = RG_NEW_CLASS(RGetAllocator(), FX)(&subViewport, "blury.ps");
+	ivec2 subSize = *size;
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
 
 	mix = RG_NEW_CLASS(RGetAllocator(), FX)(size, "mix.ps");
-
-	//lightShader       = _MakeShader("base.vs", "light.ps");
-	//aberrationShader  = _MakeShader("base.vs", "aberration.ps");
-	//tonemappingShader = _MakeShader("base.vs", "tonemapping.ps");
-	//contrastShader    = _MakeShader("base.vs", "contrast.ps");
-	//blurShader        = _MakeShader("base.vs", "blurx.ps");
-	//mixShader         = _MakeShader("base.vs", "mix.ps");
 }
 
 void DestroyFX() {
-	_DestroyBuffers();
 	rasterState->Release();
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, quadbuffer);
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, aberrationBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, blurBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, lightpass);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssr);
+
 	RG_DELETE_CLASS(RGetAllocator(), FX, aberration);
 	RG_DELETE_CLASS(RGetAllocator(), FX, tonemapping);
+
 	RG_DELETE_CLASS(RGetAllocator(), FX, contrast);
 
-	RG_DELETE_CLASS(RGetAllocator(), FX, blurx);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blury);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx1);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury1);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx2);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury2);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx3);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury3);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
-
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, lightShader);
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, aberrationShader);
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, tonemappingShader);
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, contrastShader);
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, blurShader);
-	//RG_DELETE_CLASS(RGetAllocator(), Shader, mixShader);
 }
 
 void ResizeFX(ivec2* size) {
-	_DestroyBuffers();
-	_CreateBuffers(size);
+	viewport.x = size->x;
+	viewport.y = size->y;
 
 	lightpass->Resize(size);
+
+	ssr->Resize(size);
+
 	aberration->Resize(size);
 	tonemapping->Resize(size);
 	contrast->Resize(size);
-	blurx->Resize(&subViewport);
-	blury->Resize(&subViewport);
+
+	ivec2 subSize = *size;
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx1->Resize(&subSize);
+	blury1->Resize(&subSize);
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx2->Resize(&subSize);
+	blury2->Resize(&subSize);
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx3->Resize(&subSize);
+	blury3->Resize(&subSize);
+
 	mix->Resize(size);
+}
+
+static inline Uint32 PackVector(ivec2* vec) {
+	Uint32 x = vec->x & 0x0000FFFF;
+	Uint32 y = vec->y & 0x0000FFFF;
+	Uint32 shiftx = x << 16;
+	return shiftx | y;
+}
+
+static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
+
+	blurData.Directions = 16.0;
+	blurData.Quality = 3.0;
+	blurData.Size = 8.0;
+
+	// Apply threshold
+
+	contrast->SetInput(0, entry);
+	contrast->Draw();
+
+	// Downscale blur
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blurx1->SetInput(0, contrast->GetOutput());
+	blurx1->SetConstants(blurBuffer->GetHandle());
+	blurx1->Draw();
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blury1->SetInput(0, blurx1->GetOutput());
+	blury1->SetConstants(blurBuffer->GetHandle());
+	blury1->Draw();
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blurx2->SetInput(0, blury1->GetOutput());
+	blurx2->SetConstants(blurBuffer->GetHandle());
+	blurx2->Draw();
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blury2->SetInput(0, blurx2->GetOutput());
+	blury2->SetConstants(blurBuffer->GetHandle());
+	blury2->Draw();
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blurx3->SetInput(0, blury2->GetOutput());
+	blurx3->SetConstants(blurBuffer->GetHandle());
+	blurx3->Draw();
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	blury3->SetInput(0, blurx3->GetOutput());
+	blury3->SetConstants(blurBuffer->GetHandle());
+	blury3->Draw();
+
+	// Upscale blur
+
+	blurx2->SetInput(0, blury3->GetOutput());
+	blurx2->SetConstants(blurBuffer->GetHandle());
+	blurx2->Draw();
+
+	blury2->SetInput(0, blurx2->GetOutput());
+	blury2->SetConstants(blurBuffer->GetHandle());
+	blury2->Draw();
+
+	blurx1->SetInput(0, blury2->GetOutput());
+	blurx1->SetConstants(blurBuffer->GetHandle());
+	blurx1->Draw();
+
+	blury1->SetInput(0, blurx1->GetOutput());
+	blury1->SetConstants(blurBuffer->GetHandle());
+	blury1->Draw();
+
+	return blury1->GetOutput();
 }
 
 void DoPostprocess() {
@@ -297,35 +393,39 @@ void DoPostprocess() {
 	lightpass->SetInput(1, GetLightpassShaderResource());
 	lightpass->Draw();
 
-	// Contrast
-	contrast->SetInput(0, lightpass->GetOutput());
-	contrast->Draw();
+	ID3D11ShaderResourceView* lightpass_output = GetLightpassShaderResource();
 
-	// Blur
-	blurData.Directions = 16.0;
-	blurData.Quality = 3.0;
-	blurData.Size = 8.0;
+	// SSR
+
+	ssrData.proj = *GetCameraProjection();
+	ssrData.view = *GetCameraView();
+	ssrData.viewProj = ssrData.proj * ssrData.view;
+
+	mat4_inverse(&ssrData.invProj, ssrData.proj);
+	mat4_inverse(&ssrData.invView, ssrData.view);
+	ssrData.camera_position.xyz = *GetCameraPosition();
+	ssrData.camera_position.w = 1;
+
 	Uint32 screenx = viewport.x & 0x0000FFFF;
 	Uint32 screeny = viewport.y & 0x0000FFFF;
 	Uint32 shiftx = screenx << 16;
-	blurData.ScreenSize = shiftx | screeny;
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	ssrData.screen_size = shiftx | screeny;
 
-	DX11_SetViewport(subViewport.x, subViewport.y);
+	ssrBuffer->SetData(0, sizeof(SSRBufferData), &ssrData);
+	ssr->SetInput(0, GetGBufferShaderResource(0));
+	ssr->SetInput(1, GetGBufferShaderResource(1));
+	ssr->SetInput(2, GetGBufferShaderResource(2));
+	ssr->SetInput(3, lightpass_output);
+	ssr->SetInput(4, GetGBufferDepth());
+	ssr->SetConstants(ssrBuffer->GetHandle());
+	ssr->Draw();
 
-	blurx->SetInput(0, contrast->GetOutput());
-	blurx->SetConstants(blurBuffer->GetHandle());
-	blurx->Draw();
-
-	blury->SetInput(0, blurx->GetOutput());
-	blury->SetConstants(blurBuffer->GetHandle());
-	blury->Draw();
-
-	DX11_SetViewport(viewport.x, viewport.y);
+	// Bloom
+	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
 
 	// Mix
-	mix->SetInput(0, blury->GetOutput());
-	mix->SetInput(1, lightpass->GetOutput());
+	mix->SetInput(0, bloomResult);
+	mix->SetInput(1, lightpass_output);
 	mix->Draw();
 
 	// Tonemapping
@@ -426,5 +526,8 @@ void DoPostprocess() {
 }
 
 ID3D11ShaderResourceView* FXGetOuputTexture() {
-	return tonemapping->GetOutput();
+	//return tonemapping->GetOutput();
+	//return mix->GetOutput();
+	return GetLightpassShaderResource();
+	//return ssr->GetOutput();
 }

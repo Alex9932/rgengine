@@ -52,6 +52,8 @@ namespace Engine {
         static ModelSystem*         modelSystem            = NULL;
         static LightSystem*         lightSystem            = NULL;
 
+        static RenderSetupInfo      setupParams            = {};
+
         static bool _EventHandler(SDL_Event* event) {
 #if 0
             if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_F11) {
@@ -206,6 +208,15 @@ namespace Engine {
         LightSystem* GetLightSystem() {
             return lightSystem;
         }
+
+        RenderSetupInfo* GetSetupParams() {
+            return &setupParams;
+        }
+
+        void SetRenderFlags(RenderFlags flags) {
+            setupParams.flags = flags;
+        }
+
 
 	}
 }

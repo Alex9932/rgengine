@@ -2,16 +2,18 @@
 #define _VIEWPORT_H
 
 #include "component.h"
+#include <camera.h>
 
 class Viewport : public UIComponent {
 	public:
-		Viewport();
+		Viewport(Engine::Camera* camera);
 		~Viewport();
 
 		virtual void Draw();
 		virtual void OnResize(ivec2 newsize);
 
 	private:
+		Engine::Camera* m_camera;
 
 };
 

@@ -36,10 +36,10 @@ namespace Engine {
 			RG_INLINE void    SetOffset(const vec3& off)   { this->m_offset = off; }
 
 		private:
-			vec3    m_offset;
-			vec3    m_position;
-			Float32 m_intensity;
-			vec3    m_color;
+			vec3    m_offset    = {};
+			vec3    m_position  = {};
+			Float32 m_intensity = 0;
+			vec3    m_color     = {};
 	};
 
 	class SpotLight : public Component {
@@ -66,11 +66,11 @@ namespace Engine {
 			RG_INLINE Float32 GetIntensity()                { return this->m_intensity;   }
 
 		private:
-			vec3    m_offset;
-			vec3    m_position;
-			Float32 m_intensity;
-			vec3    m_color;
-			vec3    m_direction;
+			vec3    m_offset    = {};
+			vec3    m_position  = {};
+			Float32 m_intensity = 0;
+			vec3    m_color     = {};
+			vec3    m_direction = {};
 	};
 
 	class LightSystem {

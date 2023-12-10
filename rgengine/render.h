@@ -6,28 +6,9 @@
 
 #define RG_EVENT_RENDER_VIEWPORT_RESIZE 0x00010001
 
-/*
-
-Material {
-  textures[]
-  color
-  ...
-}
-
-Model {
-  Vertices
-  Indices
-  Mesh[] {
-    MeshData
-	Material
-  }
-}
-
-*/
-
 // Render core
 typedef SDL_Window*       (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
-typedef void              (*PFN_R_SETUP)();
+typedef void              (*PFN_R_SETUP)(RenderSetupInfo*);
 typedef void              (*PFN_R_INITIALIZE)(SDL_Window*);
 typedef void              (*PFN_R_DESTROY)();
 typedef void              (*PFN_R_SWAPBUFFERS)();
@@ -96,6 +77,9 @@ namespace Engine {
 
 		RG_DECLSPEC ModelSystem* GetModelSystem();
 		RG_DECLSPEC LightSystem* GetLightSystem();
+
+		RG_DECLSPEC RenderSetupInfo* GetSetupParams();
+		RG_DECLSPEC void SetRenderFlags(RenderFlags flags);
 
 		class ModelImporter {
 			public:

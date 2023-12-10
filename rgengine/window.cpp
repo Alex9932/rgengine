@@ -85,7 +85,7 @@ namespace Engine {
         }
 
         Render::LoadRenderer(lib_renderer);
-        Render::Setup();
+        Render::Setup(Render::GetSetupParams());
 
     }
 

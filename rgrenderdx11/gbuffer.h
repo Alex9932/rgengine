@@ -5,6 +5,7 @@
 #include <d3d11.h>
 
 ID3D11ShaderResourceView* GetGBufferShaderResource(Uint32 idx);
+ID3D11ShaderResourceView* GetGBufferDepth();
 
 void CreateGBuffer(ivec2* size);
 void DestroyGBuffer();

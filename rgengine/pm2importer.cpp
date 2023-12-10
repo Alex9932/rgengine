@@ -5,6 +5,7 @@
 #include "filesystem.h"
 #include "engine.h"
 #include "allocator.h"
+#include "rgstring.h"
 
 #define RG_PM2_RECALCULATE_NORMALS  0
 #define RG_PM2_RECALCULATE_TANGENTS 0
@@ -58,17 +59,24 @@ namespace Engine {
             for (Uint32 i = 0; i < header.materials; i++) {
                 SDL_memset(d_str_buffer, 0, 256);
                 SDL_memset(n_str_buffer, 0, 256);
+                SDL_memset(p_str_buffer, 0, 256);
 
                 Uint32 len = reader->ReadU32();
                 SDL_memset(str_buffer, 0, 256);
                 reader->Read(str_buffer, len);
                 SDL_snprintf(d_str_buffer, 256, "%s/%s", model_root, str_buffer);
+
                 len = reader->ReadU32();
                 SDL_memset(str_buffer, 0, 256);
                 reader->Read(str_buffer, len);
                 SDL_snprintf(n_str_buffer, 256, "%s/%s", model_root, str_buffer);
 
-                Engine::GetPath(p_str_buffer, 256, RG_PATH_SYSTEM, "textures/def_pbr.png");
+                Sint32 slash = Engine::rg_strcharate(str_buffer, '/');
+                str_buffer[slash] = 0;
+
+                //rgLogInfo(RG_LOG_RENDER, "String: %s", str_buffer);
+                //Engine::GetPath(p_str_buffer, 256, RG_PATH_SYSTEM, "textures/def_pbr.png");
+                SDL_snprintf(p_str_buffer, 256, "%s/%s/pbr.png", model_root, str_buffer);
 
                 vec4 diffuse;
                 reader->Read4F32(diffuse);

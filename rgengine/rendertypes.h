@@ -5,17 +5,19 @@
 #include "rgvector.h"
 #include "rgmatrix.h"
 
+#include "imgui/imgui.h"
+
 enum IndexType {
 	RG_INDEX_U32 = 4,
 	RG_INDEX_U16 = 2,
 	RG_INDEX_U8  = 1  // !!! DO NOT RECOMENDED TO USE !!!
 };
 
-enum RenderFrags {
-	RG_RENDER_FULLSCREEN = 1,
-	RG_RENDER_USE3D = 2,
-	RG_RENDER_ = 4,
-};
+typedef Uint32 RenderFlags;
+
+#define RG_RENDER_FULLSCREEN 1
+#define RG_RENDER_USE3D      2
+#define RG_RENDER_RESERVED   4
 
 // Backend handle
 typedef struct R3D_Material R3D_Material;
@@ -27,7 +29,7 @@ typedef struct R3D_BoneBuffer R3D_BoneBuffer;
 
 typedef struct RenderSetupInfo {
 
-	RenderFrags flags;
+	RenderFlags flags;
 	
 	// TODO
 
@@ -51,9 +53,12 @@ typedef struct RenderInfo {
 	// Meshes
 	Uint32 meshes_loaded;
 
-	//
+	// Action
 	Uint32 r3d_draw_calls;
 	Uint32 r3d_dispatch_calls;
+
+	////////////////
+	void* r3d_renderResult; // (OpenGL - GLuint, D3D11 - ID3D11ShaderResourceView*)
 
 } RenderInfo;
 

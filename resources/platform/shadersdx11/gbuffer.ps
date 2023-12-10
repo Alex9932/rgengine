@@ -10,9 +10,9 @@ struct PSINPUT {
 };
 
 struct PSOUTPUT {
-	float4 albedo : SV_Target0; // Albedo
-	float4 normal : SV_Target1; // Normal
-	float4 wpos   : SV_Target2; // WPos
+	float4 albedo : SV_Target0; // Albedo, metallic;
+	float4 normal : SV_Target1; // Normal, roughness;
+	float4 wpos   : SV_Target2; // WPos, emissive;
 };
 
 

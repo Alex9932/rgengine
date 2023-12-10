@@ -33,6 +33,8 @@ static Engine::Allocator* allocator      = NULL;
 static ivec2              wndSize        = {0};
 static Bool               wndResized     = false;
 
+static RenderFlags        flags;
+
 static bool _EventHandler(SDL_Event* event) {
 
 	if (event->type == Engine::GetUserEventID()) {
@@ -58,7 +60,7 @@ Engine::Allocator* RGetAllocator() {
 	return allocator;
 }
 
-// TEMPORARY DATA //
+// NOT TEMPORARY DATA //
 
 static Float32 quad_data[] = {
 	-1,  1,  1,  1,  1, -1,
@@ -73,12 +75,17 @@ static Buffer* vBuffer = NULL;
 // PUBLIC API
 
 SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
+	wndSize.x = w;
+	wndSize.y = h;
 	return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_SHOWN);
 }
 
 void R_Setup(RenderSetupInfo* info) {
 	allocator = new Engine::STDAllocator("DX11 allocator");
 	//Engine::RegisterAllocator(allocator);
+
+	flags = info->flags;
+
 }
 
 void R_Initialize(SDL_Window* wnd) {
@@ -153,29 +160,31 @@ void R_Destroy() {
 }
 
 void R_SwapBuffers() {
+	DX11_SetViewport(wndSize.x, wndSize.y);
 
     vec4 clearColor = { 0, 0, 0, 1 };
 
 	DX11_BindDefaultFramebuffer();
 	DX11_Clear((Float32*)&clearColor);
 
-	// Draw gbuffer data
-	shader->Bind();
+	if (RG_CHECK_FLAG(flags, RG_RENDER_FULLSCREEN)) {
+		shader->Bind();
 
-	//ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
-	//ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
-	ID3D11ShaderResourceView* res0 = FXGetOuputTexture();
+		//ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
+		//ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
+		ID3D11ShaderResourceView* res0 = FXGetOuputTexture();
 
-	DX11_GetContext()->PSSetShaderResources(0, 1, &res0);
-	//DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
+		DX11_GetContext()->PSSetShaderResources(0, 1, &res0);
+		//DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
 
-	UINT stride = sizeof(Float32) * 2;
-	UINT offset = 0;
-	ID3D11Buffer* vbuffer = vBuffer->GetHandle();
-	DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	//DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
-	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	DX11_GetContext()->Draw(6, 0);
+		UINT stride = sizeof(Float32) * 2;
+		UINT offset = 0;
+		ID3D11Buffer* vbuffer = vBuffer->GetHandle();
+		DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
+		//DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
+		DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		DX11_GetContext()->Draw(6, 0);
+	}
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	ImGui_ImplDX11_NewFrame();
@@ -214,5 +223,7 @@ void R_GetInfo(RenderInfo* info) {
 
 	info->r3d_draw_calls     = r3d_stats.drawCalls;
 	info->r3d_dispatch_calls = r3d_stats.dispatchCalls;
+
+	info->r3d_renderResult   = FXGetOuputTexture();
 
 }

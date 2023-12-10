@@ -5,26 +5,44 @@
 static RenderTarget             rendertargets[3];
 
 // Depth buffer
-static ID3D11Texture2D*         depthBuffer      = NULL;
-static ID3D11DepthStencilView*  depthStencilView = NULL;
+static ID3D11Texture2D*          depthBuffer      = NULL;
+static ID3D11DepthStencilView*   depthStencilView = NULL;
+static ID3D11ShaderResourceView* depthResView     = NULL;
 
 // States
 static ID3D11RasterizerState*   rasterState       = NULL;
 static ID3D11DepthStencilState* depthStencilState = NULL;
 
+static ivec2 viewport;
+
 ID3D11ShaderResourceView* GetGBufferShaderResource(Uint32 idx) {
     return rendertargets[idx].resView;
 }
 
+ID3D11ShaderResourceView* GetGBufferDepth() {
+    return depthResView;
+}
+
 static void _CreateFramebuffer(ivec2* size) {
+
+    viewport = *size;
 
     DX11_MakeRenderTarget(&rendertargets[0], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
     DX11_MakeRenderTarget(&rendertargets[1], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
     DX11_MakeRenderTarget(&rendertargets[2], size, DXGI_FORMAT_R16G16B16A16_FLOAT);
 
-    DX11_MakeTexture(&depthBuffer, NULL, size, DXGI_FORMAT_D24_UNORM_S8_UINT, D3D11_BIND_DEPTH_STENCIL);
+    DX11_MakeTexture(&depthBuffer, NULL, size, DXGI_FORMAT_R32_TYPELESS, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL);
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.MipLevels = -1;
+    HRESULT r = 0;
+    r = DX11_GetDevice()->CreateShaderResourceView(depthBuffer, &srvDesc, &depthResView);
+
     D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
-    depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;// DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX11_GetDevice()->CreateDepthStencilView(depthBuffer, &depthStencilViewDesc, &depthStencilView);
@@ -39,6 +57,7 @@ static void _DestroyFramebuffer() {
 
     depthStencilView->Release();
     depthBuffer->Release();
+    depthResView->Release();
 }
 
 void CreateGBuffer(ivec2* size) {
@@ -105,6 +124,8 @@ void BindGBuffer() {
     ctx->RSSetState(rasterState);
 
     //ctx->ClearRenderTargetView(dx_backbuffer, clearColor);
-    ctx->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0.0f);
+    ctx->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    DX11_SetViewport(viewport.x, viewport.y);
 
 }

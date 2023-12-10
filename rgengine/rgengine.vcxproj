@@ -111,7 +111,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -154,6 +154,7 @@
     <ClCompile Include="kinematicsmodel.cpp" />
     <ClCompile Include="lightsystem.cpp" />
     <ClCompile Include="logger.cpp" />
+    <ClCompile Include="objimporter.cpp" />
     <ClCompile Include="pm2.cpp" />
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
@@ -193,6 +194,7 @@
     <ClInclude Include="kinematicsmodel.h" />
     <ClInclude Include="lightsystem.h" />
     <ClInclude Include="modelsystem.h" />
+    <ClInclude Include="objimporter.h" />
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="resource.h" />

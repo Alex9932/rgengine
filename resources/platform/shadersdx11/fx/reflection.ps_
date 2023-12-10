@@ -1,0 +1,149 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+#define RG_SMAPLE_LEVEL 0
+
+
+#define g_maxBinarySearchStep 40
+#define g_FarPlaneDist        100
+#define g_rayStepScale        1.05
+#define g_maxThickness        1.8
+#define g_maxRayLength        20
+#define g_maxRayStep          70
+#define g_depthbias           0.0001
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+Texture2D t_unit3 : register(t3);
+Texture2D t_unit4 : register(t4); // Depth-stencil buffer
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+	row_major float4x4 proj;
+	row_major float4x4 view;
+	row_major float4x4 viewProj;
+	row_major float4x4 invProj;
+	row_major float4x4 invView;
+	float4 camera_position;
+	int screen_size;
+};
+
+float3 GetUVLinearDepth(float3 pos, float farPlane) {
+	float4 ss = mul(float4(pos, 1), proj);
+	float3 uvd = 0;
+	uvd.xy = ss.xy / ss.w;
+	uvd.xy = uvd.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
+	uvd.z  = ss.z / farPlane;
+	return uvd;
+}
+
+float GetDepth(float2 uv) {
+#if 0
+	float3 wpos = t_unit2.SampleLevel(SampleType, uv, RG_SMAPLE_LEVEL).xyz;
+	float4 ss = mul(float4(wpos, 1), viewProj);
+	return ss.z / ss.w;
+#else
+	return t_unit4.Sample(SampleType, uv).r;
+#endif
+}
+
+float Noise(float2 uv) { return frac( sin( dot( uv, float2( 12.9898, 78.233 ) ) ) * 43758.5453 ); }
+
+float4 BinarySearch(float3 dir, float3 viewPos) {
+
+	float3 texCoord = 0;
+	float  depth = 0;
+	float  diff  = 0;
+
+	[loop]
+	for(int i = 0; i < g_maxBinarySearchStep; ++i) {
+		texCoord = GetUVLinearDepth(viewPos, g_FarPlaneDist);
+		depth = GetDepth(texCoord.xy);
+		diff = depth - texCoord.z;
+		if(diff > 0) {
+			viewPos += dir;
+			dir *= 0.5;
+		}
+
+		viewPos -= dir;
+	}
+
+	texCoord = GetUVLinearDepth(viewPos, g_FarPlaneDist);
+	depth = GetDepth(texCoord.xy);
+	diff = abs(depth - texCoord.z);
+
+	float4 result = 0;
+	if(texCoord.z < 0.9 && diff < g_depthbias) {
+		result.rgb = t_unit3.SampleLevel(SampleType, texCoord.xy, RG_SMAPLE_LEVEL).rgb;
+		result.a   = 1;
+	}
+
+	return result;
+}
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+	int screenx = screen_size >> 16;
+	int screeny = screen_size & 0x0000FFFF;
+	
+	//float2 noproj_uv = fragCoord.xy/float2(screenx, screeny);
+	float2 noproj_uv = psin.uv;
+
+	float4 alb_met = t_unit0.Sample(SampleType, noproj_uv);
+	float4 nor_rou = t_unit1.Sample(SampleType, noproj_uv);
+	float4 wps_emi = t_unit2.Sample(SampleType, noproj_uv);
+	
+	float3 albedo    = alb_met.rgb;
+	float3 normal    = normalize(nor_rou.xyz);
+	float3 wpos      = wps_emi.xyz;
+	float  metallic  = alb_met.a;
+	float  roughness = nor_rou.a;
+	float  emissive  = wps_emi.a;
+
+	//////////////////////////////////////////////////////////
+
+	float3 viewPos    = mul(float4(wpos, 1), view).xyz;
+	float3 viewNormal = normalize(mul(float4(normal, 0), view).xyz);
+
+	float3 incidentVec = normalize(viewPos);
+
+	float3 reflectVec = normalize(reflect(incidentVec, viewNormal)) * g_rayStepScale;
+	float3 reflectPos = viewPos;
+	float thickness = g_maxThickness / g_FarPlaneDist;
+
+	float4 result = 0;
+
+	[loop]
+	for ( int i = 0; i < g_maxRayStep; ++i ) {
+		float3 texCoord = GetUVLinearDepth(reflectPos, g_FarPlaneDist);
+
+		// Depth map
+		float depth = GetDepth(texCoord.xy);
+
+		float diff = texCoord.z - depth;
+		if(diff > g_depthbias && diff < thickness) {
+			float4 relf_color = BinarySearch(reflectVec, reflectPos);
+			float fade = 1 - pow(length(texCoord.xy - 0.5) * 2, 2);
+			relf_color.a *= pow(0.75, (length(reflectPos - viewPos) / g_maxRayLength)) * fade;
+			result = relf_color;
+			break;
+		} else {
+			reflectPos += (i + Noise(texCoord.xy)) * reflectVec;
+		}
+
+	}
+
+	//////////////////////////////////////////////////////////
+
+	PSOUTPUT pout;
+	pout.color.rgb = result.rgb;
+	pout.color.a   = 1;
+	return pout;
+}

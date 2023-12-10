@@ -309,6 +309,14 @@ union vec4 {
     __m128 m;
     float array[4];
     struct {
+        vec3 xyz;
+        float w;
+    };
+    struct {
+        vec3 rgb;
+        float w;
+    };
+    struct {
         float x;
         float y;
         float z;
@@ -320,6 +328,10 @@ union vec4 {
         float b;
         float a;
     };
+
+    //vec4() { x = 0; y = 0; z = 0; w = 0; }
+    //vec4(float _x, float _y, float _z, float _w) { x = _x; y = _y; z = _z; w = _w; }
+    //vec4(vec3 v3, float _w) { x = v3.x; y = v3.y; z = v3.z; w = _w; }
 
     RG_INLINE vec4 operator+(float a) {
         vec4 r;
@@ -449,6 +461,8 @@ union quat {
         float z;
         float w;
     };
+
+    //quat() { x = 0; y = 0; z = 0; w = 0; }
 
     RG_INLINE quat operator*(const quat& q) {
         quat r;

@@ -26,13 +26,41 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	float ysize = 1.0 / resolution.y;
 
 	// Kernel
+	float offsets[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	for(int i = -7; i < 7; i++) {
+		offsets[i + 7] = i * ysize;
+	}
+
+	float3 tColor = {0, 0, 0};
+
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[0])).rgb * 0.0005;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[1])).rgb * 0.0024;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[2])).rgb * 0.0092;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[3])).rgb * 0.0278;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[4])).rgb * 0.0656;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[5])).rgb * 0.1210;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[6])).rgb * 0.1747;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[7])).rgb * 0.1974;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[8])).rgb * 0.1747;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[9])).rgb * 0.1210;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[10])).rgb * 0.0656;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[11])).rgb * 0.0278;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[12])).rgb * 0.0092;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[13])).rgb * 0.0024;
+	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[14])).rgb * 0.0005;
+	
+	PSOUTPUT pout;
+	pout.color.rgb = tColor;
+	pout.color.w = 1;
+	return pout;
+
+#if 0
+	// Kernel
 	float offsets[11] = {0,0,0,0,0,0,0,0,0,0,0};
 	for(int i = -5; i < 5; i++) {
 		offsets[i + 5] = i * ysize;
 	}
-
 	float4 tColor = {0, 0, 0, 0};
-
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[0])) * 0.0093;
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[1])) * 0.028002;
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[2])) * 0.065984;
@@ -44,8 +72,10 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[8])) * 0.065984;
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[9])) * 0.028002;
 	tColor += t_unit0.Sample(SampleType, psin.uv + float2(0, offsets[10])) * 0.0093;
-
+	
 	PSOUTPUT pout;
 	pout.color = tColor;
 	return pout;
+#endif
+
 }

@@ -1,25 +1,59 @@
 #include <rgentrypoint.h>
 
+#include <allocator.h>
+#include <camera.h>
+
 #include <render.h>
+#include <modelsystem.h>
+#include <lightsystem.h>
+#include <world.h>
 #include <imgui/imgui.h>
 
 #include "viewport.h"
 
-class Application : public Engine::BaseGame {
+// Temp
+#include <objimporter.h>
+
+
+using namespace Engine;
+
+class Application : public BaseGame {
 	private:
 		Viewport* viewport = NULL;
 		// Other components
+
+		Camera*   camera   = NULL;
+
+		// Temp
+		Entity*   ent0     = NULL;
 
 	public:
 		Application() {
 			this->isClient   = true;
 			this->isGraphics = true;
+			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_FULLSCREEN);
 		}
 
 		~Application() {
 		}
 
 		void MainUpdate() {
+
+			// Update camera
+			camera->Update(GetDeltaTime());
+			R3D_CameraInfo cam = {};
+			cam.projection = *camera->GetProjection();
+			cam.position = camera->GetTransform()->GetPosition();
+			cam.rotation = camera->GetTransform()->GetRotation();
+			Render::R3D_SetCamera(&cam);
+
+			///////////
+			R3D_PushModelInfo info = {};
+			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
+			info.matrix = *ent0->GetTransform()->GetMatrix();
+			Render::R3D_PushModel(&info); 
+
+			////////
 
 			static Float32 progress = 0;
 			static Bool testDisable = false;
@@ -153,7 +187,7 @@ class Application : public Engine::BaseGame {
 
 				ImGui::End();
 
-				progress += Engine::GetDeltaTime() * 0.333f;
+				progress += GetDeltaTime() * 0.333f;
 
 				if (progress > 1) {
 					testDisable = false;
@@ -164,7 +198,7 @@ class Application : public Engine::BaseGame {
 
 			if (isStats) {
 				RenderInfo renderer_info = {};
-				Engine::Render::GetInfo(&renderer_info);
+				Render::GetInfo(&renderer_info);
 
 				ImGui::Begin("Renderer stats");
 
@@ -195,7 +229,7 @@ class Application : public Engine::BaseGame {
 
 				ImGui::Separator();
 
-				ImGui::Text("Fps: %.2f", 1.0f / Engine::GetDeltaTime());
+				ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
 
 				ImGui::End();
 
@@ -204,19 +238,54 @@ class Application : public Engine::BaseGame {
 		}
 
 		void Initialize() {
-			viewport = new Viewport();
+
+			World* world = GetWorld();
+
+			// Initialize camera
+			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 100, rgToRadians(75), 1.777f);
+			camera->GetTransform()->SetPosition({ 0, 0.85f, 0 });
+			camera->GetTransform()->SetRotation({ 0, 0, 0 });
+
+			// Viewport
+			viewport = new Viewport(camera);
+
+			// Temp
+			Render::ObjImporter objImporter;
+			R3DCreateStaticModelInfo objinfo = {};
+			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
+			objImporter.FreeModelData(&objinfo);
+
+			ent0 = world->NewEntity();
+			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+			ent0->GetTransform()->SetPosition({ 0, 0, -1.6 });
+			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent0->GetTransform()->SetScale({ 1, 1, 1 });
+
+			PointLight* l = Render::GetLightSystem()->NewPointLight();
+			l->SetColor({ 1, 0.9, 0.8 });
+			l->SetIntensity(10);
+			l->SetOffset({ -0.86, 2.56, 1.21 });
+			ent0->AttachComponent(l);
+
 		}
 
 		void Quit() {
 			delete viewport;
+
+			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
+
+			World* world = GetWorld();
+			Render::R3D_DestroyStaticModel(ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
+			world->FreeEntity(ent0);
 		}
 };
 
 int EntryPoint(int argc, String* argv) {
 
 	Application app;
-	Engine::Initialize(&app);
-	Engine::Start();
+	Initialize(&app);
+	Start();
 
 	return 0;
 

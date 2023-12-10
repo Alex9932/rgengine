@@ -1,0 +1,21 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+
+	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+
+	PSOUTPUT pout;
+	pout.color = tColor;
+	return pout;
+
+}
