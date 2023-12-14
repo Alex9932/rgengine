@@ -1,10 +1,9 @@
 #include "viewport.h"
 #include <imgui/imgui.h>
-#include <imgui/ImGuizmo.h>
 
 #include <render.h>
 
-Viewport::Viewport(Engine::Camera* camera) : UIComponent("Viewport") {
+Viewport::Viewport(Engine::Camera* camera) : UIComponent("Viewport", ImGuiWindowFlags_NoScrollbar) {
 	m_camera = camera;
 }
 
@@ -13,21 +12,31 @@ Viewport::~Viewport() {
 
 void Viewport::Draw() {
 	//ImGui::Text("Viewport size: %dx%d", m_wndsize.x, m_wndsize.y);
-	ImVec2 padding = { 0, 0 };
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
 
 	RenderInfo info = {};
 	Engine::Render::GetInfo(&info);
 	ImVec2 size;
 	size.x = m_wndsize.x;
-	size.y = m_wndsize.y-16;
+	size.y = m_wndsize.y;
 	ImGui::Image((ImTextureID)info.r3d_renderResult, size);
 
-	ImGui::PopStyleVar();
+	if (m_manipulate) {
+		m_manipulate = false;
+
+		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+		ImGuizmo::SetRect(m_wndpos.x, m_wndpos.y, m_wndsize.x, m_wndsize.y);
+
+		mat4 view = {};
+		mat4_view(&view, m_camera->GetTransform()->GetPosition(), m_camera->GetTransform()->GetRotation());
+		ImGuizmo::Manipulate(view.m, m_camera->GetProjection()->m, m_op, m_mode, m_model->m);
+		mat4_decompose(&m_pos, &m_rot, &m_scale, *m_model);
+		m_isResult = true;
+	}
+
 }
 
 void Viewport::OnResize(ivec2 newsize) {
-	rgLogInfo(RG_LOG_SYSTEM, "Viewport size: %dx%d", newsize.x, newsize.y);
+	//rgLogInfo(RG_LOG_SYSTEM, "Viewport size: %dx%d", newsize.x, newsize.y);
 	this->m_wndsize = newsize;
 
 	m_camera->SetAspect((Float32)newsize.x / (Float32)newsize.y);

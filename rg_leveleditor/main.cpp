@@ -59,8 +59,9 @@ class Application : public BaseGame {
 			Render::R3D_PushModel(&info);
 
 			////////
-
 			ImGuizmo::BeginFrame();
+			viewport->SetImGuizmoRect();
+
 
 			static Float32 progress = 0;
 			static Bool testDisable = false;
@@ -82,7 +83,7 @@ class Application : public BaseGame {
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+				window_flags |=  ImGuiWindowFlags_NoNavFocus;
 			} else {
 				dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
 			}
@@ -152,7 +153,6 @@ class Application : public BaseGame {
 			}
 
 			World* world = GetWorld();
-			viewport->SetImGuizmoRect();
 
 			ImGui::Begin("Window 1");
 			ImGui::Text("Text 1");
@@ -178,17 +178,15 @@ class Application : public BaseGame {
 						ImGui::InputFloat3("Position", transform->GetPosition().array);
 						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
 
-						mat4 view = {};
+						if (viewport->IsManipulationResult()) {
+							ManipulateResult result = {};
+							viewport->GetManipulateResult(&result);
+							transform->SetPosition(result.pos);
+							transform->SetScale(result.scale);
+							transform->Recalculate();
+						}
 
-						mat4_view(&view, camera->GetTransform()->GetPosition(), camera->GetTransform()->GetRotation());
-						ImGuizmo::Manipulate(view.m, camera->GetProjection()->m, ImGuizmo::TRANSLATE, ImGuizmo::WORLD, model.m);
-
-						vec3 pos = {};
-						//quat rot = {};
-						mat4_decompose(&pos, NULL, NULL, model);
-						
-						transform->SetPosition(pos);
-						//transform->SetRotation(rot);
+						viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
 
 						ImGui::TreePop();
 					}
@@ -202,8 +200,10 @@ class Application : public BaseGame {
 			ImGui::ColorPicker4("Select color", color.array);
 			ImGui::End();
 
-		
+			ImVec2 padding = { 0, 0 };
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
 			viewport->DrawComponent();
+			ImGui::PopStyleVar();
 
 			if (testDisable) {
 				ImGui::EndDisabled();
@@ -314,7 +314,7 @@ class Application : public BaseGame {
 			PointLight* l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
 			l->SetIntensity(30);
-			l->SetOffset({ -0.86, 2.56, -5.21 });
+			l->SetOffset({ -0.86, 2.56, 0.21 });
 			ent0->AttachComponent(l);
 
 		}

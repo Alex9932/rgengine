@@ -2,10 +2,11 @@
 #define _UICOMPONENT_H
 
 #include <rgvector.h>
+#include <imgui/imgui.h>
 
 class UIComponent {
 	public:
-		UIComponent(String name);
+		UIComponent(String name, ImU32 flags = 0);
 		~UIComponent();
 
 		void DrawComponent();
@@ -18,6 +19,7 @@ class UIComponent {
 		ivec2 m_wndsize = {};
 		ivec2 m_wndpos  = {};
 		char  m_wndname[64];
+		ImU32 m_flags   = 0;
 
 };
 

@@ -55,6 +55,18 @@ typedef struct PM2_V2_MeshInfo {
 	Uint32 indices;
 } PM2_V2_MeshInfo;
 
+typedef struct PM2_V3_Material {
+	PM2_String albedo;
+	PM2_String normal;
+	PM2_String pbr;
+	PM2_Color color;
+} PM2_V3_Material;
+
+typedef struct PM2_V3_MeshInfo {
+	Uint32 material;
+	Uint32 indices;
+} PM2_V3_MeshInfo;
+
 typedef struct PM2_Vertex {
 	PM2_Vec3 position;
 	PM2_Vec3 normal;

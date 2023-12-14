@@ -1,0 +1,1 @@
+"../x64/Release/rg_3da.exe" -render rgrenderdx11.dll -fsjson fsgame.json

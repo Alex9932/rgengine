@@ -1,9 +1,8 @@
 #include "component.h"
 
-#include <imgui/imgui.h>
-
-UIComponent::UIComponent(String name) {
+UIComponent::UIComponent(String name, ImU32 flags) {
 	SDL_snprintf(m_wndname, 64, "%s", name);
+	m_flags = flags;
 }
 
 UIComponent::~UIComponent() {
@@ -11,7 +10,7 @@ UIComponent::~UIComponent() {
 
 void UIComponent::DrawComponent() {
 
-	ImGui::Begin(m_wndname);
+	ImGui::Begin(m_wndname, NULL, m_flags);
 
 	ImVec2 _wndpos  = ImGui::GetWindowPos();
 	ivec2 wndpos = { _wndpos.x, _wndpos.y };
