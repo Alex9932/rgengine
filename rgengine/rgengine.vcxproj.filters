@@ -55,6 +55,9 @@
     <Filter Include="Header Files\importer">
       <UniqueIdentifier>{fd36c66e-f948-4bcd-89b6-0a9d2ee778a9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\imgui\dirent">
+      <UniqueIdentifier>{f1a693b1-9a03-4ba3-a875-d031eae4af29}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -167,6 +170,9 @@
     </ClCompile>
     <ClCompile Include="pm2importer.cpp">
       <Filter>Source Files\importer</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\ImGuiFileDialog.cpp">
+      <Filter>Source Files\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -301,6 +307,15 @@
     </ClInclude>
     <ClInclude Include="objimporter.h">
       <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\ImGuiFileDialog.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\ImGuiFileDialogConfig.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\dirent\dirent.h">
+      <Filter>Header Files\imgui\dirent</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

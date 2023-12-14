@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rgengine", "rgengine\rgengine.vcxproj", "{3433ADC7-2C91-44AE-A002-C157086F3DFF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rgrenderdx11", "rgrenderdx11\rgrenderdx11.vcxproj", "{6A815404-8723-4E1E-A63C-D3D09265D24A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3433ADC7-2C91-44AE-A002-C157086F3DFF} = {3433ADC7-2C91-44AE-A002-C157086F3DFF}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rg_3da", "rg_3da\rg_3da.vcxproj", "{5E620F87-4403-49A5-A467-61CA9E6CDD5C}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -14,8 +17,21 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rg_3da", "rg_3da\rg_3da.vcx
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rgrendergl", "rgrendergl\rgrendergl.vcxproj", "{BA8EC568-9D66-4249-BD3E-FF8D7231C244}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3433ADC7-2C91-44AE-A002-C157086F3DFF} = {3433ADC7-2C91-44AE-A002-C157086F3DFF}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rg_leveleditor", "rg_leveleditor\rg_leveleditor.vcxproj", "{79F91B4B-8F0D-4AD3-A0A3-995F3BD27750}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3433ADC7-2C91-44AE-A002-C157086F3DFF} = {3433ADC7-2C91-44AE-A002-C157086F3DFF}
+		{6A815404-8723-4E1E-A63C-D3D09265D24A} = {6A815404-8723-4E1E-A63C-D3D09265D24A}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rg_modeleditor", "rg_modeleditor\rg_modeleditor.vcxproj", "{D37D1EE3-F56D-4914-9C06-F50C94FD1994}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3433ADC7-2C91-44AE-A002-C157086F3DFF} = {3433ADC7-2C91-44AE-A002-C157086F3DFF}
+		{6A815404-8723-4E1E-A63C-D3D09265D24A} = {6A815404-8723-4E1E-A63C-D3D09265D24A}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +81,14 @@ Global
 		{79F91B4B-8F0D-4AD3-A0A3-995F3BD27750}.Release|x64.Build.0 = Release|x64
 		{79F91B4B-8F0D-4AD3-A0A3-995F3BD27750}.Release|x86.ActiveCfg = Release|Win32
 		{79F91B4B-8F0D-4AD3-A0A3-995F3BD27750}.Release|x86.Build.0 = Release|Win32
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Debug|x64.ActiveCfg = Debug|x64
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Debug|x64.Build.0 = Debug|x64
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Debug|x86.ActiveCfg = Debug|Win32
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Debug|x86.Build.0 = Debug|Win32
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Release|x64.ActiveCfg = Release|x64
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Release|x64.Build.0 = Release|x64
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Release|x86.ActiveCfg = Release|Win32
+		{D37D1EE3-F56D-4914-9C06-F50C94FD1994}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

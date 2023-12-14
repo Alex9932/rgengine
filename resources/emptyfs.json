@@ -1,0 +1,7 @@
+{
+  "platform": "platform",
+  "gamedata": "gamedata",
+  "userdata": "userdata",
+  "filesystem": [
+  ]
+}

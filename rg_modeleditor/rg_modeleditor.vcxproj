@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -21,10 +21,9 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3433adc7-2c91-44ae-a002-c157086f3dff}</ProjectGuid>
-    <RootNamespace>rgengine</RootNamespace>
+    <ProjectGuid>{d37d1ee3-f56d-4914-9c06-f50c94fd1994}</ProjectGuid>
+    <RootNamespace>rgmodeleditor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>rgengine</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,13 +40,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -105,13 +104,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\Source\vstudio\rgengine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Source\vstudio\rgengine\rgengine;D:\Source\vstudio\rgengine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;rgengine.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\x64\Debug;D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -122,112 +121,19 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\Source\vstudio\rgengine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Source\vstudio\rgengine\rgengine;D:\Source\vstudio\rgengine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;rgengine.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\x64\Release;D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="allocator.cpp" />
-    <ClCompile Include="animation.cpp" />
-    <ClCompile Include="animator.cpp" />
-    <ClCompile Include="camera.cpp" />
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="engine.cpp" />
-    <ClCompile Include="event.cpp" />
-    <ClCompile Include="filesystem.cpp" />
-    <ClCompile Include="imgui\imgui.cpp" />
-    <ClCompile Include="imgui\ImGuiFileDialog.cpp" />
-    <ClCompile Include="imgui\ImGuizmo.cpp" />
-    <ClCompile Include="imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui_impl_sdl2.cpp" />
-    <ClCompile Include="imgui\imgui_neo_internal.cpp" />
-    <ClCompile Include="imgui\imgui_neo_sequencer.cpp" />
-    <ClCompile Include="imgui\imgui_tables.cpp" />
-    <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="input.cpp" />
-    <ClCompile Include="kinematicsmodel.cpp" />
-    <ClCompile Include="lightsystem.cpp" />
-    <ClCompile Include="logger.cpp" />
-    <ClCompile Include="objimporter.cpp" />
-    <ClCompile Include="pm2.cpp" />
-    <ClCompile Include="pm2importer.cpp" />
-    <ClCompile Include="profiler.cpp" />
-    <ClCompile Include="render.cpp" />
-    <ClCompile Include="rgmath.cpp" />
-    <ClCompile Include="rgmatrix.cpp" />
-    <ClCompile Include="rgstb.cpp" />
-    <ClCompile Include="rgstring.cpp" />
-    <ClCompile Include="world.cpp" />
-    <ClCompile Include="timer.cpp" />
-    <ClCompile Include="entity.cpp" />
-    <ClCompile Include="transform.cpp" />
-    <ClCompile Include="utf8.cpp" />
-    <ClCompile Include="uuid.cpp" />
-    <ClCompile Include="window.cpp" />
-    <ClCompile Include="modelsystem.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="allocator.h" />
-    <ClInclude Include="animation.h" />
-    <ClInclude Include="animator.h" />
-    <ClInclude Include="camera.h" />
-    <ClInclude Include="engine.h" />
-    <ClInclude Include="entity.h" />
-    <ClInclude Include="event.h" />
-    <ClInclude Include="filesystem.h" />
-    <ClInclude Include="imgui\dirent\dirent.h" />
-    <ClInclude Include="imgui\imconfig.h" />
-    <ClInclude Include="imgui\imgui.h" />
-    <ClInclude Include="imgui\ImGuiFileDialog.h" />
-    <ClInclude Include="imgui\ImGuiFileDialogConfig.h" />
-    <ClInclude Include="imgui\ImGuizmo.h" />
-    <ClInclude Include="imgui\imgui_impl_sdl2.h" />
-    <ClInclude Include="imgui\imgui_internal.h" />
-    <ClInclude Include="imgui\imgui_neo_internal.h" />
-    <ClInclude Include="imgui\imgui_neo_sequencer.h" />
-    <ClInclude Include="imgui\imstb_rectpack.h" />
-    <ClInclude Include="imgui\imstb_textedit.h" />
-    <ClInclude Include="imgui\imstb_truetype.h" />
-    <ClInclude Include="kinematicsmodel.h" />
-    <ClInclude Include="lightsystem.h" />
-    <ClInclude Include="modelsystem.h" />
-    <ClInclude Include="objimporter.h" />
-    <ClInclude Include="pm2.h" />
-    <ClInclude Include="pm2importer.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="rgentrypoint.h" />
-    <ClInclude Include="world.h" />
-    <ClInclude Include="input.h" />
-    <ClInclude Include="logger.h" />
-    <ClInclude Include="profiler.h" />
-    <ClInclude Include="render.h" />
-    <ClInclude Include="rendertypes.h" />
-    <ClInclude Include="rgmath.h" />
-    <ClInclude Include="rgmatrix.h" />
-    <ClInclude Include="rgstb.h" />
-    <ClInclude Include="rgstring.h" />
-    <ClInclude Include="rgtypes.h" />
-    <ClInclude Include="rgvector.h" />
-    <ClInclude Include="rshared.h" />
-    <ClInclude Include="timer.h" />
-    <ClInclude Include="transform.h" />
-    <ClInclude Include="utf8.h" />
-    <ClInclude Include="uuid.h" />
-    <ClInclude Include="window.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="rgengine.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\resources\platform\icon.png" />
-    <Image Include="icon1.ico" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
