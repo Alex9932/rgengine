@@ -22,6 +22,8 @@ class Application : public BaseGame {
 		~Application() {
 		}
 
+		String GetName() { return "Model editor"; }
+
 		void MainUpdate() {
 			ImGui::Begin("Model");
 

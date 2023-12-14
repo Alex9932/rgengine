@@ -8,12 +8,13 @@
 
  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
  SPDX-License-Identifier: MIT
- Copyright (c) 2018-2019 Alex9932
+ Copyright (c) 2018-2023 Alex9932
 
  THIRDPATY SOFTWERE
  Used libraries:
   * Mujs by Artifex.                          <https://artifex.com/>
   * SDL2 by Simple DirectMedia Layer project. <https://www.libsdl.org/credits.php>
+  * Dear ImGui.                               <https://github.com/ocornut/imgui/tree/docking>
 
 
  The above copyright notice and this permission notice shall be included in all
@@ -34,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         161
+#define RG_BUILD         181
 #define RG_VERSION_MAJ   0
 #define RG_VERSION_MIN   6
-#define RG_VERSION_PATCH 2
+#define RG_VERSION_PATCH 3
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);

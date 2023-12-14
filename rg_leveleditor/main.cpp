@@ -39,6 +39,8 @@ class Application : public BaseGame {
 		~Application() {
 		}
 
+		String GetName() { return "Level editor"; }
+
 		void MainUpdate() {
 
 			// Update camera
