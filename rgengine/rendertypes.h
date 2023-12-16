@@ -87,26 +87,46 @@ typedef struct R3DCreateMaterialInfo {
 	vec3   color;
 } R3DCreateMaterialInfo;
 
-typedef struct R3DCreateStaticModelInfo {
-	R3D_MeshInfo* info;
+typedef struct R3D_MaterialInfo {
+	char   albedo[128];
+	char   normal[128];
+	char   pbr[128];
+	vec3   color;
+} R3D_MaterialInfo;
+
+typedef struct R3D_MatMeshInfo {
+	Uint32 materialIdx;
+	Uint32 indexCount;
+} R3D_MatMeshInfo;
+
+typedef struct R3DStaticModelInfo {
+	R3D_MaterialInfo* matInfo;
+	Uint32            matCount;
+
+	R3D_MatMeshInfo* mInfo;
+	Uint32           mCount;
+
 	R3D_Vertex*   vertices;
 	void*         indices;
 	Uint32        vCount;
 	Uint32        iCount;
-	Uint32        mCount;
 	IndexType     iType;
-} R3DCreateStaticModelInfo;
+} R3DStaticModelInfo;
 
-typedef struct R3DCreateRiggedModelInfo {
-	R3D_MeshInfo* info;
+typedef struct R3DRiggedModelInfo {
+	R3D_MaterialInfo* matInfo;
+	Uint32            matCount;
+
+	R3D_MatMeshInfo* mInfo;
+	Uint32           mCount;
+
 	R3D_Vertex*   vertices;
 	R3D_Weight*   weights;
 	void*         indices;
 	Uint32        vCount;
 	Uint32        iCount;
-	Uint32        mCount;
 	IndexType     iType;
-} R3DCreateRiggedModelInfo;
+} R3DRiggedModelInfo;
 
 typedef struct R3DCreateBoneBufferInfo {
 	Uint32 len;

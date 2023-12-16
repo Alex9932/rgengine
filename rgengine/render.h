@@ -17,10 +17,10 @@ typedef void              (*PFN_R_GETINFO)(RenderInfo*);
 typedef R3D_Material*     (*PFN_R3D_CREATEMATERIAL)(R3DCreateMaterialInfo*);
 typedef void              (*PFN_R3D_DESTROYMATERIAL)(R3D_Material*);
 
-typedef R3D_StaticModel*  (*PFN_R3D_CREATESTATICMODEL)(R3DCreateStaticModelInfo*);
+typedef R3D_StaticModel*  (*PFN_R3D_CREATESTATICMODEL)(R3DStaticModelInfo*);
 typedef void              (*PFN_R3D_DESTROYSTATICMODEL)(R3D_StaticModel*);
 
-typedef R3D_RiggedModel*  (*PFN_R3D_CREATERIGGEDMODEL)(R3DCreateRiggedModelInfo*);
+typedef R3D_RiggedModel*  (*PFN_R3D_CREATERIGGEDMODEL)(R3DRiggedModelInfo*);
 typedef void              (*PFN_R3D_DESTROYRIGGEDMODEL)(R3D_RiggedModel*);
 
 typedef R3D_BoneBuffer*   (*PFN_R3D_CREATEBONEBUFFER)(R3DCreateBoneBufferInfo*);
@@ -80,15 +80,6 @@ namespace Engine {
 
 		RG_DECLSPEC RenderSetupInfo* GetSetupParams();
 		RG_DECLSPEC void SetRenderFlags(RenderFlags flags);
-
-		class ModelImporter {
-			public:
-				ModelImporter()  {}
-				~ModelImporter() {}
-
-				void ImportModel(String path, R3DCreateStaticModelInfo* info) {}
-				void FreeModelData(R3DCreateStaticModelInfo* info) {}
-		};
 
 	}
 }

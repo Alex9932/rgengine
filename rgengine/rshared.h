@@ -20,10 +20,10 @@ extern "C" {
 	extern RG_DECLSPEC R3D_Material*    R3D_CreateMaterial(R3DCreateMaterialInfo* info);
 	extern RG_DECLSPEC void             R3D_DestroyMaterial(R3D_Material* hmat);
 
-	extern RG_DECLSPEC R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info);
+	extern RG_DECLSPEC R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info);
 	extern RG_DECLSPEC void				R3D_DestroyStaticModel(R3D_StaticModel* hsmdl);
 
-	extern RG_DECLSPEC R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info);
+	extern RG_DECLSPEC R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info);
 	extern RG_DECLSPEC void				R3D_DestroyRiggedModel(R3D_RiggedModel* hsmdl);
 
 	extern RG_DECLSPEC R3D_BoneBuffer*  R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info);

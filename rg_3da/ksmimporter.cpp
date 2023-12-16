@@ -1,5 +1,7 @@
 #include "ksmimporter.h"
 
+#if KSM_ENABLED
+
 #include <rgmath.h>
 #include <rgstring.h>
 #include <filesystem.h>
@@ -273,3 +275,5 @@ void KSMImporter::FreeModelData(R3DCreateStaticModelInfo* info) {
     rg_free(info->indices);
     rg_free(info->info);
 }
+
+#endif

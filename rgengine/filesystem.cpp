@@ -104,7 +104,7 @@ namespace Engine {
     }
 
     void FS_ReplaceSeparators(char* dst, String src) {
-        Uint32 len = (Uint32)SDL_strlen(dst);
+        Uint32 len = (Uint32)SDL_strlen(src);
         for (Uint32 i = 0; i < len; i++) {
             if (src[i] != '\\') { dst[i] = src[i]; }
             else { dst[i] = '/'; }

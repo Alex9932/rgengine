@@ -299,13 +299,13 @@ class Application : public BaseGame {
 			//pmd_file* pmd = pmd_load("mmd_models/Miku_Hatsune.pmd");
 #if 0
 			PMDImporter pmdImporter;
-			R3DCreateStaticModelInfo pmdinfo = {};
+			R3DStaticModelInfo pmdinfo = {};
 			pmdImporter.ImportModel("mmd_models/Rin_Kagamine.pmd", &pmdinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&pmdinfo);
 			pmdImporter.FreeModelData(&pmdinfo);
 #else
-			Render::ObjImporter objImporter;
-			R3DCreateStaticModelInfo objinfo = {};
+			ObjImporter objImporter;
+			R3DStaticModelInfo objinfo = {};
 			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
@@ -314,22 +314,22 @@ class Application : public BaseGame {
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("gamedata/sponza_old/sponza.obj");
 
 #if 1
-			Render::PM2Importer pm2Importer;
-			R3DCreateStaticModelInfo pm2info = {};
+			PM2Importer pm2Importer;
+			R3DStaticModelInfo pm2info = {};
 			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 #endif
 #if 0
 			ObjImporter objImporter;
-			R3DCreateStaticModelInfo objinfo = {};
+			R3DStaticModelInfo objinfo = {};
 			objImporter.ImportModel("gamedata/sponza_old/sponza2.obj", &objinfo);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
 #endif
 #if 0
 			KSMImporter ksmImporter("gamedata/ksm");
-			R3DCreateStaticModelInfo ksminfo = {};
+			R3DStaticModelInfo ksminfo = {};
 			ksmImporter.ImportModel("sponza", &ksminfo);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&ksminfo);
 			ksmImporter.FreeModelData(&ksminfo);
@@ -340,7 +340,7 @@ class Application : public BaseGame {
 			String modelname = "mmd_models/Miku_Hatsune.pmd";
 
 			PMDImporter pmdImporter;
-			R3DCreateRiggedModelInfo pmdinfo = {};
+			R3DRiggedModelInfo pmdinfo = {};
 			pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
 			R3D_RiggedModel* mdl_handle2 = Render::R3D_CreateRiggedModel(&pmdinfo);
 			pmdImporter.FreeRiggedModelData(&pmdinfo);

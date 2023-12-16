@@ -1,7 +1,7 @@
 #ifndef _MMDIMPORTER_H
 #define _MMDIMPORTER_H
 
-#include "render.h"
+#include <importer.h>
 //#include <animation.h>
 
 namespace Engine {
@@ -9,16 +9,16 @@ namespace Engine {
 	class Animation;
 }
 
-class PMDImporter : public Engine::Render::ModelImporter {
+class PMDImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
 	public:
 		RG_INLINE PMDImporter()  {}
 		RG_INLINE ~PMDImporter() {}
 
-		void ImportModel(String path, R3DCreateStaticModelInfo* info);
-		void FreeModelData(R3DCreateStaticModelInfo* info);
+		void ImportModel(String path, R3DStaticModelInfo* info);
+		void FreeModelData(R3DStaticModelInfo* info);
 
-		void ImportRiggedModel(String path, R3DCreateRiggedModelInfo* info);
-		void FreeRiggedModelData(R3DCreateRiggedModelInfo* info);
+		void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
+		void FreeRiggedModelData(R3DRiggedModelInfo* info);
 
 		Engine::KinematicsModel* ImportKinematicsModel(String path);
 

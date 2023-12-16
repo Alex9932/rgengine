@@ -31,8 +31,6 @@ namespace Engine {
 			Float32 m_fov;
 			Float32 m_aspect;
 			mat4    m_proj;
-			vec3    m_dir;
-			Float32 m_speed;
 
 	};
 

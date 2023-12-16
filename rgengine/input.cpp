@@ -48,7 +48,7 @@ namespace Engine {
     }
 
     void Input_Destroy() {
-
+        FreeEventHandler(InputHandler);
     }
 
     void UpdateInput() {

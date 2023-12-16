@@ -2,8 +2,10 @@
 
 #include <allocator.h>
 #include <camera.h>
+#include <freecameracontroller.h>
 
 #include <render.h>
+#include <window.h>
 #include <modelsystem.h>
 #include <lightsystem.h>
 #include <world.h>
@@ -23,7 +25,8 @@ class Application : public BaseGame {
 		Viewport* viewport = NULL;
 		// Other components
 
-		Camera*   camera   = NULL;
+		Camera*               camera     = NULL;
+		FreeCameraController* camcontrol = NULL;
 
 		// Temp
 		Entity*   ent0     = NULL;
@@ -44,6 +47,7 @@ class Application : public BaseGame {
 		void MainUpdate() {
 
 			// Update camera
+			camcontrol->Update();
 			camera->Update(GetDeltaTime());
 			R3D_CameraInfo cam = {};
 			cam.projection = *camera->GetProjection();
@@ -280,20 +284,26 @@ class Application : public BaseGame {
 
 		void Initialize() {
 
+			SetFpsLimit(100);
+			
+
 			World* world = GetWorld();
 
 			// Initialize camera
-			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 100, rgToRadians(75), 1.777f);
+			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
 			camera->GetTransform()->SetPosition({ 0, 0.85f, 1.6 });
 			camera->GetTransform()->SetRotation({ 0, 0, 0 });
+
+			camcontrol = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
 
 			// Viewport
 			viewport = new Viewport(camera);
 
 			// Temp
-			Render::ObjImporter objImporter;
-			R3DCreateStaticModelInfo objinfo = {};
-			objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
+			ObjImporter objImporter;
+			R3DStaticModelInfo objinfo = {};
+			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
+			objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
 
@@ -324,6 +334,7 @@ class Application : public BaseGame {
 		void Quit() {
 			delete viewport;
 
+			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
 
 			World* world = GetWorld();

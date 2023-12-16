@@ -50,11 +50,6 @@ typedef struct PM2_V2_Material {
 	PM2_Color color;
 } PM2_V2_Material;
 
-typedef struct PM2_V2_MeshInfo {
-	Uint32 material;
-	Uint32 indices;
-} PM2_V2_MeshInfo;
-
 typedef struct PM2_V3_Material {
 	PM2_String albedo;
 	PM2_String normal;
@@ -62,10 +57,10 @@ typedef struct PM2_V3_Material {
 	PM2_Color color;
 } PM2_V3_Material;
 
-typedef struct PM2_V3_MeshInfo {
+typedef struct PM2_MeshInfo {
 	Uint32 material;
 	Uint32 indices;
-} PM2_V3_MeshInfo;
+} PM2_MeshInfo;
 
 typedef struct PM2_Vertex {
 	PM2_Vec3 position;
@@ -73,9 +68,5 @@ typedef struct PM2_Vertex {
 	PM2_Vec3 tangent;
 	PM2_Vec2 uv;
 } PM2_Vertex;
-
-#if 0
-RG_DECLSPEC R3D_StaticModel* PM2_LoadModel(String path);
-#endif
 
 #endif

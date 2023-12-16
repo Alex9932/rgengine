@@ -8,7 +8,15 @@
 #include "pmd.h"
 #include "vmd.h"
 
-static void LoadPMD(String file, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx) {
+#include <render.h>
+#include <filesystem.h>
+
+static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx) {
+
+	char file[256];
+	SDL_memset(file, 0, 256);
+	Engine::FS_ReplaceSeparators(file, p);
+
 	pmd_file* pmd = pmd_load(file);
 	*pmd_ptr = pmd;
 
@@ -73,35 +81,35 @@ static void LoadPMD(String file, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** 
 
 }
 
-static void LoadPMDMaterials(pmd_file* pmd, R3D_MeshInfo** info) {
+static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
 
 	// Load materials (rewrite this)
-	R3D_MeshInfo* meshInfo = (R3D_MeshInfo*)rg_malloc(sizeof(R3D_MeshInfo) * pmd->material_count);
-	R3DCreateMaterialInfo matInfo = {};
-	char texturePath[128] = {};
-	matInfo.albedo = texturePath;
-	matInfo.normal = "platform/textures/def_normal.png";
-	matInfo.pbr = "platform/textures/def_pbr.png";
+	R3D_MaterialInfo* matsInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * pmd->material_count);
+	R3D_MatMeshInfo*  mmInfo   = (R3D_MatMeshInfo*)rg_malloc(sizeof(R3D_MatMeshInfo) * pmd->material_count);
+
+	Float32 colorMul = 2;
 
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		pmd_material* mat = &pmd->materials[i];
 		if (mat->file_name[0] == '\0') {
-			SDL_snprintf(texturePath, 128, "platform/toon/toon%02d.png", mat->toon_number);
-		}
-		else {
-			SDL_snprintf(texturePath, 128, "%s/%s", pmd->path, mat->file_name);
+			SDL_snprintf(matsInfo[i].albedo, 128, "platform/toon/toon%02d.png", mat->toon_number);
+		} else {
+			SDL_snprintf(matsInfo[i].albedo, 128, "%s/%s", pmd->path, mat->file_name);
 		}
 
-		matInfo.color.r = mat->colors.r * 2;
-		matInfo.color.g = mat->colors.g * 2;
-		matInfo.color.b = mat->colors.b * 2;
-		R3D_Material* r3dmat = Engine::Render::R3D_CreateMaterial(&matInfo);
+		SDL_snprintf(matsInfo[i].normal, 128, "platform/textures/def_normal.png");
+		SDL_snprintf(matsInfo[i].pbr, 128, "platform/textures/def_pbr.png");
 
-		meshInfo[i].indexCount = mat->surface_count;
-		meshInfo[i].material = r3dmat;
+		matsInfo[i].color.r = mat->colors.r * colorMul;
+		matsInfo[i].color.g = mat->colors.g * colorMul;
+		matsInfo[i].color.b = mat->colors.b * colorMul;
+
+		mmInfo[i].indexCount  = mat->surface_count;
+		mmInfo[i].materialIdx = i;
 	}
 
-	*info = meshInfo;
+	*info     = matsInfo;
+	*meshinfo = mmInfo;
 }
 
 static void LoadPMDWeights(pmd_file* pmd, R3D_Weight** w) {
@@ -121,63 +129,81 @@ static void LoadPMDWeights(pmd_file* pmd, R3D_Weight** w) {
 	*w = weights;
 }
 
-void PMDImporter::ImportModel(String path, R3DCreateStaticModelInfo* info) {
-	pmd_file*     pmd;
-	R3D_Vertex*   vertices;
-	Uint16*       indices;
-	R3D_MeshInfo* meshInfo;
+void PMDImporter::ImportModel(String path, R3DStaticModelInfo* info) {
+	pmd_file*         pmd;
+	R3D_Vertex*       vertices;
+	Uint16*           indices;
+	R3D_MaterialInfo* materialInfo;
+	R3D_MatMeshInfo*  meshInfo;
 
 	LoadPMD(path, &pmd, &vertices, &indices);
-	LoadPMDMaterials(pmd, &meshInfo);
+	LoadPMDMaterials(pmd, &materialInfo , &meshInfo);
 
-	//R3DCreateStaticModelInfo info = {};
-	info->vCount   = pmd->vertex_count;
-	info->vertices = vertices;
-	info->iCount   = pmd->index_count;
-	info->indices  = indices;
-	info->iType    = RG_INDEX_U16;
+
+	// Materials
+	info->matInfo  = materialInfo;
+	info->matCount = pmd->material_count;
+
+	// Meshes
+	info->mInfo    = meshInfo;
 	info->mCount   = pmd->material_count;
-	info->info     = meshInfo;
+
+	// Data
+	info->vertices = vertices;
+	info->vCount   = pmd->vertex_count;
+	info->indices  = indices;
+	info->iCount   = pmd->index_count;
+	info->iType    = RG_INDEX_U16;
 
 	pmd_free(pmd);
 
 }
 
-void PMDImporter::FreeModelData(R3DCreateStaticModelInfo* info) {
+void PMDImporter::FreeModelData(R3DStaticModelInfo* info) {
 	rg_free(info->vertices);
 	rg_free(info->indices);
-	rg_free(info->info);
+	rg_free(info->matInfo);
+	rg_free(info->mInfo);
 }
 
-void PMDImporter::ImportRiggedModel(String path, R3DCreateRiggedModelInfo* info) {
-	pmd_file*     pmd;
-	R3D_Vertex*   vertices;
-	R3D_Weight*   weights;
-	Uint16*       indices;
-	R3D_MeshInfo* meshInfo;
+void PMDImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
+	pmd_file*         pmd;
+	R3D_Vertex*       vertices;
+	R3D_Weight*       weights;
+	Uint16*           indices;
+	R3D_MaterialInfo* materialInfo;
+	R3D_MatMeshInfo*  meshInfo;
 
 	LoadPMD(path, &pmd, &vertices, &indices);
-	LoadPMDMaterials(pmd, &meshInfo);
+	LoadPMDMaterials(pmd, &materialInfo, &meshInfo);
 	LoadPMDWeights(pmd, &weights);
 
-	info->vCount   = pmd->vertex_count;
-	info->vertices = vertices;
-	info->iCount   = pmd->index_count;
-	info->indices  = indices;
-	info->iType    = RG_INDEX_U16;
+	// Materials
+	info->matInfo  = materialInfo;
+	info->matCount = pmd->material_count;
+
+	// Meshes
+	info->mInfo    = meshInfo;
 	info->mCount   = pmd->material_count;
-	info->info     = meshInfo;
+
+	// Data
+	info->vertices = vertices;
 	info->weights  = weights;
+	info->vCount   = pmd->vertex_count;
+	info->indices  = indices;
+	info->iCount   = pmd->index_count;
+	info->iType    = RG_INDEX_U16;
 
 	pmd_free(pmd);
 
 }
 
-void PMDImporter::FreeRiggedModelData(R3DCreateRiggedModelInfo* info) {
+void PMDImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
 	rg_free(info->vertices);
 	rg_free(info->indices);
 	rg_free(info->weights);
-	rg_free(info->info);
+	rg_free(info->matInfo);
+	rg_free(info->mInfo);
 }
 
 // TODO: Rewrite this

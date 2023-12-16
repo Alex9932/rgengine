@@ -1,8 +1,11 @@
 #ifndef _KSMIMPORTER_H
 #define _KSMIMPORTER_H
 
+#define KSM_ENABLED 0
+
 #include "render.h"
 
+#if KSM_ENABLED
 class KSMImporter : public Engine::Render::ModelImporter {
 	private:
 		char assets[256];
@@ -15,5 +18,6 @@ class KSMImporter : public Engine::Render::ModelImporter {
 		void FreeModelData(R3DCreateStaticModelInfo* info);
 
 };
+#endif
 
 #endif

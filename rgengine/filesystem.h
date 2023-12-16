@@ -50,6 +50,23 @@ namespace Engine {
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src);
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
+
+    static void FixPath(char* dst, String str) {
+        size_t len = SDL_strlen(str);
+        Uint32 j = 0;
+
+        for (size_t k = 0; k < len; k++) {
+            if (k != 0 && str[k - 1] == '\\' && str[k] == '\\') { continue; }
+            if (str[k] == '\\') {
+                dst[j] = '/';
+                j++;
+                continue;
+            }
+            dst[j] = str[k];
+            j++;
+        }
+    }
+
     // RFS packages
     RG_DECLSPEC Sint32 Mount(String file);
     RG_DECLSPEC void Umount(Sint32 fs_uid);

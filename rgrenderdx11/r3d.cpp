@@ -223,7 +223,7 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 	alloc_materials->Deallocate(hmat);
 }
 
-R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info) {
+R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	R3D_StaticModel* staticModel = (R3D_StaticModel*)alloc_staticmodels->Allocate();
 	staticModel->type = R_MODEL_STATIC;
 
@@ -249,9 +249,25 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info) {
 	staticModel->iType  = info->iType;
 	staticModel->mCount = info->mCount;
 
-	Uint32 l = sizeof(R3D_MeshInfo) * info->mCount;
-	staticModel->info = (R3D_MeshInfo*)RGetAllocator()->Allocate(l);
-	SDL_memcpy(staticModel->info, info->info, l);
+	staticModel->info = (R3D_MeshInfo*)RGetAllocator()->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+
+	R3D_Material** materials = (R3D_Material**)RGetAllocator()->Allocate(sizeof(R3D_MeshInfo) * info->matCount);
+
+	for (Uint32 i = 0; i < info->matCount; i++) {
+		R3DCreateMaterialInfo creatematinfo = {};
+		creatematinfo.albedo = info->matInfo[i].albedo;
+		creatematinfo.normal = info->matInfo[i].normal;
+		creatematinfo.pbr    = info->matInfo[i].pbr;
+		creatematinfo.color  = info->matInfo[i].color;
+		materials[i] = R3D_CreateMaterial(&creatematinfo);
+	}
+
+	for (Uint32 i = 0; i < info->mCount; i++) {
+		staticModel->info[i].indexCount = info->mInfo[i].indexCount;
+		staticModel->info[i].material   = materials[info->mInfo[i].materialIdx];
+	}
+
+	RGetAllocator()->Deallocate(materials);
 
 	modelsLoaded += staticModel->mCount;
 
@@ -261,9 +277,9 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info) {
 void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 	rgLogInfo(RG_LOG_RENDER, "Free static model: %p", hsmdl);
 
-	//for (Uint32 i = 0; i < hsmdl->mCount; i++) {
-	//	R3D_DestroyMaterial(hsmdl->info[i].material);
-	//}
+	for (Uint32 i = 0; i < hsmdl->mCount; i++) {
+		R3D_DestroyMaterial(hsmdl->info[i].material);
+	}
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->vBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->iBuffer);
@@ -274,7 +290,7 @@ void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 	alloc_staticmodels->Deallocate(hsmdl);
 }
 
-R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info) {
+R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 	R3D_RiggedModel* riggedModel = (R3D_RiggedModel*)alloc_riggedmodels->Allocate();
 	riggedModel->type = R_MODEL_RIGGED;
 	HRESULT result;
@@ -305,9 +321,26 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info) {
 	riggedModel->s_model.iType  = info->iType;
 	riggedModel->s_model.mCount = info->mCount;
 
-	Uint32 l = sizeof(R3D_MeshInfo) * info->mCount;
-	riggedModel->s_model.info = (R3D_MeshInfo*)RGetAllocator()->Allocate(l);
-	SDL_memcpy(riggedModel->s_model.info, info->info, l);
+	riggedModel->s_model.info = (R3D_MeshInfo*)RGetAllocator()->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+
+	R3D_Material** materials = (R3D_Material**)RGetAllocator()->Allocate(sizeof(R3D_MeshInfo) * info->matCount);
+
+	for (Uint32 i = 0; i < info->matCount; i++) {
+		R3DCreateMaterialInfo creatematinfo = {};
+		creatematinfo.albedo = info->matInfo[i].albedo;
+		creatematinfo.normal = info->matInfo[i].normal;
+		creatematinfo.pbr = info->matInfo[i].pbr;
+		creatematinfo.color = info->matInfo[i].color;
+		materials[i] = R3D_CreateMaterial(&creatematinfo);
+	}
+
+	for (Uint32 i = 0; i < info->mCount; i++) {
+		riggedModel->s_model.info[i].indexCount = info->mInfo[i].indexCount;
+		riggedModel->s_model.info[i].material = materials[info->mInfo[i].materialIdx];
+	}
+
+	RGetAllocator()->Deallocate(materials);
+
 
 	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 	uavDesc.Format              = DXGI_FORMAT_UNKNOWN;
@@ -355,6 +388,10 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info) {
 }
 
 void R3D_DestroyRiggedModel(R3D_RiggedModel* hrmdl) {
+
+	for (Uint32 i = 0; i < hrmdl->s_model.mCount; i++) {
+		R3D_DestroyMaterial(hrmdl->s_model.info[i].material);
+	}
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.vBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.iBuffer);

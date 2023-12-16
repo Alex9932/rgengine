@@ -6,20 +6,18 @@
 #ifndef _OBJIMPORTER_H
 #define _OBJIMPORTER_H
 
-#include "render.h"
+#include "importer.h"
 
 namespace Engine {
-	namespace Render {
 
-		class ObjImporter : public ModelImporter {
-			public:
-				ObjImporter()  {}
-				~ObjImporter() {}
-				RG_DECLSPEC void ImportModel(String path, R3DCreateStaticModelInfo* info);
-				RG_DECLSPEC void FreeModelData(R3DCreateStaticModelInfo* info);
-		};
+	class ObjImporter : public ModelImporter {
+		public:
+			ObjImporter()  {}
+			~ObjImporter() {}
+			RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
+			RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
+	};
 
-	}
 }
 
 #endif

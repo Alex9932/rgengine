@@ -9,7 +9,7 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 
 }
 
-R3D_StaticModel* R3D_CreateStaticModel(R3DCreateStaticModelInfo* info) {
+R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	return NULL;
 }
 
@@ -17,7 +17,7 @@ void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 
 }
 
-R3D_RiggedModel* R3D_CreateRiggedModel(R3DCreateRiggedModelInfo* info) {
+R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 	return NULL;
 }
 

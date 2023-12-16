@@ -126,9 +126,6 @@
     <ClCompile Include="modelsystem.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
-    <ClCompile Include="pm2.cpp">
-      <Filter>Source Files\core</Filter>
-    </ClCompile>
     <ClCompile Include="animator.cpp">
       <Filter>Source Files\animation</Filter>
     </ClCompile>
@@ -173,6 +170,12 @@
     </ClCompile>
     <ClCompile Include="imgui\ImGuiFileDialog.cpp">
       <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="freecameracontroller.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="lookatcameracontroller.cpp">
+      <Filter>Source Files\render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -316,6 +319,15 @@
     </ClInclude>
     <ClInclude Include="imgui\dirent\dirent.h">
       <Filter>Header Files\imgui\dirent</Filter>
+    </ClInclude>
+    <ClInclude Include="importer.h">
+      <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="freecameracontroller.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="lookatcameracontroller.h">
+      <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

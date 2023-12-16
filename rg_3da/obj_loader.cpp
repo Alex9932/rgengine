@@ -1,5 +1,7 @@
 #include "obj_loader.h"
 
+#if CUSTOM_OBJ_ENABLED
+
 #include <rgmath.h>
 #include <filesystem.h>
 #include <rgstring.h>
@@ -459,3 +461,5 @@ R3D_StaticModel* OBJ_ToModel(String p) {
 
     return ret;
 }
+
+#endif
