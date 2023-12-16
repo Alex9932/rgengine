@@ -62,19 +62,6 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::R3D_SetCamera(&cam);
 
-			// TEMP
-			R3D_PushModelInfo info = {};
-			info.handle = ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent_bg->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
-
-			ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
-			if (component) {
-				info.handle = component->GetHandle();
-				info.matrix = *ent_model->GetTransform()->GetMatrix();
-				Render::R3D_PushModel(&info);
-			}
-
 
 			ImGui::Begin("Model");
 
@@ -157,6 +144,23 @@ class Application : public BaseGame {
 
 				ImGuiFileDialog::Instance()->Close();
 			}
+
+
+
+
+			// TEMP
+			R3D_PushModelInfo info = {};
+			info.handle = ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
+			info.matrix = *ent_bg->GetTransform()->GetMatrix();
+			Render::R3D_PushModel(&info);
+
+			ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+			if (component) {
+				info.handle = component->GetHandle();
+				info.matrix = *ent_model->GetTransform()->GetMatrix();
+				Render::R3D_PushModel(&info);
+			}
+
 		}
 
 		void Initialize() {

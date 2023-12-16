@@ -19,6 +19,7 @@
 #include <render.h>
 #include <world.h>
 #include <camera.h>
+#include <freecameracontroller.h>
 #include <allocator.h>
 #include <filesystem.h>
 #include <modelsystem.h>
@@ -95,6 +96,7 @@ class Application : public BaseGame {
 
 		World*  world  = NULL;
 		Camera* camera = NULL;
+		FreeCameraController* camcontrol = NULL;
 
 		Animation* anim;
 
@@ -219,6 +221,7 @@ class Application : public BaseGame {
 			camera->SetAspect((Float32)size.x / (Float32)size.y);
 			camera->ReaclculateProjection();
 
+			camcontrol->Update();
 			camera->Update(GetDeltaTime());
 
 			R3D_CameraInfo cam = {};
@@ -293,6 +296,7 @@ class Application : public BaseGame {
 			camera->GetTransform()->SetPosition({5.16, 1.49, 0.1});
 			//camera->GetTransform()->SetRotation({0, 3.1415 / 2, 0});
 			camera->GetTransform()->SetRotation({ 0.11, 1.28, 0 });
+			camcontrol = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
 
 			//pmd_file* pmd = pmd_load("mmd_models/Rin_Kagamine.pmd");
 			//pmd_file* pmd = pmd_load("mmd_models/Rin_Kagamene_act2.pmd");
@@ -436,6 +440,7 @@ class Application : public BaseGame {
 			world->FreeEntity(ent1);
 			world->FreeEntity(ent2);
 
+			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
 
 		}

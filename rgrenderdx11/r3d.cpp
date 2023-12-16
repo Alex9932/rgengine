@@ -274,12 +274,31 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	return staticModel;
 }
 
+static void FreeMaterials(R3D_StaticModel* model) {
+	// TEMP
+	std::vector<R3D_Material*> deleted;
+	for (Uint32 i = 0; i < model->mCount; i++) {
+		R3D_Material* mat = model->info[i].material;
+
+		std::vector<R3D_Material*>::iterator it = deleted.begin();
+		Bool del = true;
+		for (; it != deleted.end(); it++) {
+			if (*it == mat) {
+				del = false;
+			}
+		}
+
+		if (del) {
+			deleted.push_back(mat);
+			R3D_DestroyMaterial(mat);
+		}
+	}
+}
+
 void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 	rgLogInfo(RG_LOG_RENDER, "Free static model: %p", hsmdl);
 
-	for (Uint32 i = 0; i < hsmdl->mCount; i++) {
-		R3D_DestroyMaterial(hsmdl->info[i].material);
-	}
+	FreeMaterials(hsmdl);
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->vBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hsmdl->iBuffer);
@@ -389,9 +408,7 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 
 void R3D_DestroyRiggedModel(R3D_RiggedModel* hrmdl) {
 
-	for (Uint32 i = 0; i < hrmdl->s_model.mCount; i++) {
-		R3D_DestroyMaterial(hrmdl->s_model.info[i].material);
-	}
+	FreeMaterials(&hrmdl->s_model);
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.vBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hrmdl->s_model.iBuffer);
