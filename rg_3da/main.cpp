@@ -308,17 +308,19 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&pmdinfo);
 			pmdImporter.FreeModelData(&pmdinfo);
 #else
-			ObjImporter objImporter;
+			PM2Importer pm2Importer;
+			//ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
-			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/megumin/v4.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
-			objImporter.FreeModelData(&objinfo);
+			//objImporter.FreeModelData(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
 #endif
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("platform/new/megumin_v4.obj");
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("gamedata/sponza_old/sponza.obj");
 
 #if 1
-			PM2Importer pm2Importer;
 			R3DStaticModelInfo pm2info = {};
 			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);

@@ -8,17 +8,22 @@
 #include <rgstring.h>
 
 #include <camera.h>
+#include <window.h>
 #include <lookatcameracontroller.h>
 
 #include <objimporter.h>
 #include <pm2importer.h>
+#include <pm2exporter.h>
 
 #include <imgui/ImGuiFileDialog.h>
+#include <imgui/ImGuizmo.h>
 
 using namespace Engine;
 
 static ObjImporter objImporter;
 static PM2Importer pm2Importer;
+
+static PM2Exporter pm2exporter;
 
 static R3DStaticModelInfo modelInfo = {};
 
@@ -62,6 +67,11 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::R3D_SetCamera(&cam);
 
+			ivec2 scrsize;
+			GetWindowSize(&scrsize);
+
+			ImGuizmo::BeginFrame();
+			ImGuizmo::SetRect(0, 0, scrsize.x, scrsize.y);
 
 			ImGui::Begin("Model");
 
@@ -72,6 +82,23 @@ class Application : public BaseGame {
 				ImGui::Text("Vertices: %d", modelInfo.vCount);
 				ImGui::Text("Indices: %d", modelInfo.iCount);
 				ImGui::Text("Index size: %d", modelInfo.iType);
+
+				ImGuizmo::OPERATION m_op   = ImGuizmo::SCALE;
+				ImGuizmo::MODE      m_mode = ImGuizmo::LOCAL;
+
+				vec3 scale = {};
+				mat4 view  = {};
+				mat4 model = *ent_model->GetTransform()->GetMatrix();
+				mat4_view(&view, camera->GetTransform()->GetPosition(), camera->GetTransform()->GetRotation());
+				ImGuizmo::Manipulate(view.m, camera->GetProjection()->m, m_op, m_mode, model.m);
+
+				//mat4_decompose(&m_pos, &m_rot, &m_scale, model);
+				mat4_decompose(NULL, NULL, &scale, model);
+				ent_model->GetTransform()->SetScale(scale);
+
+				scale = ent_model->GetTransform()->GetScale();
+				ImGui::InputFloat3("Scale", scale.array);
+				ent_model->GetTransform()->SetScale(scale);
 
 				ImGui::Text("Materials");
 				char mat_name[64];
@@ -87,11 +114,13 @@ class Application : public BaseGame {
 					}
 				}
 
+
+
 			}
 
 			if (isModelLoaded) {
 				if (ImGui::Button("Save as")) {
-					
+					ImGuiFileDialog::Instance()->OpenDialog("Save model", "Choose File", ".pm2", ".");
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Close")) {
@@ -138,6 +167,10 @@ class Application : public BaseGame {
 					R3D_StaticModel* mdl_handle = Render::R3D_CreateStaticModel(&modelInfo);
 					ent_model->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
 
+					ent_model->GetTransform()->SetPosition({ 0, 0, 0 });
+					ent_model->GetTransform()->SetRotation({ 0, 0, 0 });
+					ent_model->GetTransform()->SetScale({ 1, 1, 1 });
+
 					isModelLoaded = true;
 
 				}
@@ -145,6 +178,14 @@ class Application : public BaseGame {
 				ImGuiFileDialog::Instance()->Close();
 			}
 
+
+			if (ImGuiFileDialog::Instance()->Display("Save model")) {
+				if (ImGuiFileDialog::Instance()->IsOk()) {
+					std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+					pm2exporter.ExportModel(filePathName.c_str(), &modelInfo, ent_model->GetTransform()->GetMatrix());
+				}
+				ImGuiFileDialog::Instance()->Close();
+			}
 
 
 

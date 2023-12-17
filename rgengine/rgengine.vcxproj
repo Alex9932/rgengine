@@ -158,6 +158,7 @@
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="lookatcameracontroller.cpp" />
     <ClCompile Include="objimporter.cpp" />
+    <ClCompile Include="pm2exporter.cpp" />
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="render.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="engine.h" />
     <ClInclude Include="entity.h" />
     <ClInclude Include="event.h" />
+    <ClInclude Include="exporter.h" />
     <ClInclude Include="filesystem.h" />
     <ClInclude Include="freecameracontroller.h" />
     <ClInclude Include="imgui\dirent\dirent.h" />
@@ -204,6 +206,7 @@
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="objimporter.h" />
     <ClInclude Include="pm2.h" />
+    <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />

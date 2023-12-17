@@ -19,8 +19,8 @@ namespace Engine {
 			RiggedModelImporter() {}
 			~RiggedModelImporter() {}
 
-			void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
-			void FreeRiggedModelData(R3DRiggedModelInfo* info);
+			void ImportRiggedModel(String path, R3DRiggedModelInfo* info) {}
+			void FreeRiggedModelData(R3DRiggedModelInfo* info) {}
 	};
 }
 

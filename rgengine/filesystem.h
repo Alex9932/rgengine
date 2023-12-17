@@ -157,7 +157,7 @@ namespace Engine {
         public:
             FSWriter(String file);
             virtual ~FSWriter();
-            virtual void Write(void* ptr, size_t len);
+            virtual void Write(const void* ptr, size_t len);
             RG_FORCE_INLINE size_t GetOffset() { return m_offset; }
             RG_FORCE_INLINE FILE* GetHandle() { return m_handle; }
     };

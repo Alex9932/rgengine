@@ -17,21 +17,46 @@ namespace Engine {
 
 		Transform* camTransform = m_camptr->GetTransform();
 
-		Float32 sens = 0.1f;
+		Float32 sens = 0.025f;
 
 		if (IsButtonDown(3)) {
 			Float64 dx = GetMouseDX();
 			Float64 dy = GetMouseDY();
 
-			m_angles.x -= dx * sens;
-			m_angles.y += dy * sens;
+			m_angles.x -= dx * sens * 2;
+			m_angles.y += dy * sens * 2;
 
 			vec3 rot = { m_angles.y, -m_angles.x, 0};
 			camTransform->SetRotation(rot);
 
 		}
 
-		Float32 mwheel = (Float32)GetMouseDW() * 0.123f;
+		if (IsButtonDown(2)) {
+			vec3 cam_fwd = { 0, 0, -1 };
+			vec3 cam_up = { 0, 1, 0 };
+
+			mat4 view_matrix = MAT4_IDENTITY();
+
+			vec3 rot = m_camptr->GetTransform()->GetRotation();
+			mat4 rx, ry, rz, ryz;
+			mat4_rotatex(&rx, -rot.x);
+			mat4_rotatey(&ry, -rot.y);
+			mat4_rotatez(&rz, -rot.z);
+			ryz = rz * ry;
+			view_matrix = ryz * rx;
+
+			vec3 rotated_fwd = view_matrix * cam_fwd;
+			vec3 rotated_up = view_matrix * cam_up;
+			vec3 left = rotated_up.cross(rotated_fwd);
+
+			vec3 delta = {};
+			delta += left       * GetMouseDX() * sens;
+			delta += rotated_up * GetMouseDY() * sens;
+
+			m_center += delta;
+		}
+
+		Float32 mwheel = (Float32)GetMouseDW() * sens;
 		m_length -= mwheel;
 
 		// Recalculate position;
@@ -47,9 +72,6 @@ namespace Engine {
 
 		//rgLogInfo(RG_LOG_SYSTEM, "Camera at: %f %f %f, len: %f, Angles: %f %f", camera_coord.x, camera_coord.y, camera_coord.z, m_length, m_angles.x, m_angles.y);
 
-
-		vec3    m_center;
-		Float32 m_length;
 
 	}
 

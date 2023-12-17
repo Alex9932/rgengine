@@ -177,6 +177,9 @@
     <ClCompile Include="lookatcameracontroller.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="pm2exporter.cpp">
+      <Filter>Source Files\importer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -328,6 +331,12 @@
     </ClInclude>
     <ClInclude Include="lookatcameracontroller.h">
       <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="exporter.h">
+      <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="pm2exporter.h">
+      <Filter>Header Files\importer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -306,7 +306,7 @@ namespace Engine {
 
     FSWriter::FSWriter(String file) : FSOutputStream() { this->m_handle = fopen(file, "wb"); }
     FSWriter::~FSWriter() { fclose(this->m_handle); }
-    void FSWriter::Write(void* ptr, size_t len) { fwrite(ptr, len, 1, this->m_handle); this->m_offset += len; }
+    void FSWriter::Write(const void* ptr, size_t len) { fwrite(ptr, len, 1, this->m_handle); this->m_offset += len; }
 
     FSMemoryInputStream::FSMemoryInputStream(void* ptr, size_t len) {
         this->m_ptr = ptr;
