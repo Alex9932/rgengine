@@ -117,6 +117,8 @@ namespace Engine {
             modelSystem = RG_NEW_CLASS(GetDefaultAllocator(), ModelSystem)();
             lightSystem = RG_NEW_CLASS(GetDefaultAllocator(), LightSystem)();
 
+            isRendererLoaded = true;
+
         }
 
         void UnloadRenderer() {
@@ -132,7 +134,7 @@ namespace Engine {
             Initialize  = NULL;
             Destroy     = NULL;
             SwapBuffers = NULL;
-            GetInfo = NULL;
+            GetInfo     = NULL;
 
             R3D_CreateMaterial     = NULL;
             R3D_DestroyMaterial    = NULL;
@@ -209,6 +211,20 @@ namespace Engine {
             return lightSystem;
         }
 
+        R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
+            if (isRendererLoaded) {
+                return R3D_CreateBoneBuffer(info);
+            } else {
+               return NULL;
+            }
+        }
+
+        void DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
+            if (isRendererLoaded) {
+                R3D_DestroyBoneBuffer(hbuff);
+            }
+        }
+
         RenderSetupInfo* GetSetupParams() {
             return &setupParams;
         }
@@ -216,7 +232,6 @@ namespace Engine {
         void SetRenderFlags(RenderFlags flags) {
             setupParams.flags = flags;
         }
-
 
 	}
 }

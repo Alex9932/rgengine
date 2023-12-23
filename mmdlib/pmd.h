@@ -191,7 +191,7 @@ typedef struct pmd_file {
 
 } pmd_file;
 
-pmd_file* pmd_load(const char* file);
-void pmd_free(pmd_file* ptr);
+RG_DECLSPEC pmd_file* pmd_load(const char* file);
+RG_DECLSPEC void pmd_free(pmd_file* ptr);
 
 #endif /* PMD_H_ */

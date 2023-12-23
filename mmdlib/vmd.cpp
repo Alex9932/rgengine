@@ -5,6 +5,7 @@
  *      Author: alex9932
  */
 
+#define DLL_EXPORT
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "vmd.h"

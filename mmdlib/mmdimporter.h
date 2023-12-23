@@ -14,13 +14,13 @@ class PMDImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
 		RG_INLINE PMDImporter()  {}
 		RG_INLINE ~PMDImporter() {}
 
-		void ImportModel(String path, R3DStaticModelInfo* info);
-		void FreeModelData(R3DStaticModelInfo* info);
+		RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
+		RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
 
-		void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
-		void FreeRiggedModelData(R3DRiggedModelInfo* info);
+		RG_DECLSPEC void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
+		RG_DECLSPEC void FreeRiggedModelData(R3DRiggedModelInfo* info);
 
-		Engine::KinematicsModel* ImportKinematicsModel(String path);
+		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(String path);
 
 };
 
@@ -30,7 +30,7 @@ class VMDImporter {
 		RG_INLINE ~VMDImporter() {}
 
 		// TODO: Import animation from vmd file
-		Engine::Animation* ImportAnimation(String path, Engine::KinematicsModel* model);
+		RG_DECLSPEC Engine::Animation* ImportAnimation(String path, Engine::KinematicsModel* model);
 };
 
 #endif

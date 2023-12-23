@@ -9,10 +9,10 @@
 #include <engine.h>
 #include <rgmath.h>
 
-#include "pmd.h"
+#include <pmd.h>
 
 //#include "obj_loader.h"
-#include "mmdimporter.h"
+#include <mmdimporter.h>
 #include "ksmimporter.h"
 
 #include <window.h>

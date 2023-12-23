@@ -5,6 +5,8 @@
  *      Author: alex9932
  */
 
+#define DLL_EXPORT
+
 #include "pmd.h"
 
 #ifndef STD_PMD
@@ -42,7 +44,9 @@ pmd_file* pmd_load(String file) {
 		rgLogWarn(RG_LOG_SYSTEM, "PMD v%f is not supported!", pmd->version);
 	}
 
-	Engine::FS_PathFrom(pmd->path, file, 256);
+	char path[256] = {};
+	Engine::FS_ReplaceSeparators(path, file);
+	Engine::FS_PathFrom(pmd->path, path, 256);
 
 	reader->Read(pmd->name, 20);
 	reader->Read(pmd->comment, 256);

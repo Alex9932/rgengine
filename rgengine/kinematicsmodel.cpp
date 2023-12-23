@@ -12,18 +12,20 @@ namespace Engine {
             BoneInfo* binfo = &info->bones_info[i];
             SDL_memset(bone->name, 0, 32);
             SDL_strlcpy(bone->name, binfo->name, 32);
-            bone->hash = rgCRC32(bone->name, SDL_strlen(bone->name));
-            bone->parent = binfo->parent;
-            bone->id = i;
-            bone->position = { 0, 0, 0 };
+
+            bone->hash       = rgCRC32(bone->name, SDL_strlen(bone->name));
+            bone->parent     = binfo->parent;
+            bone->id         = i;
+            bone->position   = { 0, 0, 0 };
             bone->rotation.x = 0;
             bone->rotation.y = 0;
             bone->rotation.z = 0;
             bone->rotation.w = 1;
-            bone->offset = binfo->offset;
+            bone->offset     = binfo->offset;
             bone->offset_pos = binfo->offset_pos;
-            bone->has_limit = binfo->has_limit;
+            bone->has_limit  = binfo->has_limit;
             bone->limitation = binfo->limitation;
+            bone->transform  = MAT4_IDENTITY();
             //rgLogInfo(RG_LOG_SYSTEM, "Bone: %d -> %d (%d), %s (%d) %d", i, bone->parent, binfo->parent, bone->name, SDL_strlen(bone->name), bone->hash);
         }
         for (Uint32 i = 0; i < this->iklist_count; i++) {
@@ -32,6 +34,7 @@ namespace Engine {
 
         this->handle = info->buffer_handle;
         this->animator = RG_NEW_CLASS(Engine::GetDefaultAllocator(), Animator)(this);
+        RebuildSkeleton();
     }
 
     KinematicsModel::~KinematicsModel() {

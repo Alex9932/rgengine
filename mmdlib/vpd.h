@@ -26,7 +26,7 @@ typedef struct vpd_pose {
 	vpd_bone* bones;
 } vpd_pose;
 
-vpd_pose* vpd_fromFile(const char* file);
-void vpd_free(vpd_pose* ptr);
+RG_DECLSPEC vpd_pose* vpd_fromFile(const char* file);
+RG_DECLSPEC void vpd_free(vpd_pose* ptr);
 
 #endif /* VPD_H_ */

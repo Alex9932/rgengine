@@ -78,6 +78,8 @@ namespace Engine {
 		RG_DECLSPEC ModelSystem* GetModelSystem();
 		RG_DECLSPEC LightSystem* GetLightSystem();
 
+		RG_DECLSPEC R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBoneBufferInfo* info);
+
 		RG_DECLSPEC RenderSetupInfo* GetSetupParams();
 		RG_DECLSPEC void SetRenderFlags(RenderFlags flags);
 

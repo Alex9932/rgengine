@@ -1,4 +1,4 @@
-﻿//#define DLL_EXPORT
+﻿#define DLL_EXPORT
 #include "mmdimporter.h"
 
 #define RG_PMD_RECALCULATE_TANGENTS 0
@@ -213,6 +213,8 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	BoneInfo bones_info[1024];
 	mat4 bone_matrices[1024];
 
+	const char CONSTNAME[] = { 0xE3, 0x81, 0xB2, 0xE3, 0x81, 0x96, 0x00 };//"ひざ";
+
 	for (Uint32 i = 0; i < pmd->bones_count; i++) {
 		pmd_bone* bone = &pmd->bones[i];
 		mat4 parent = MAT4_IDENTITY();
@@ -239,17 +241,13 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 		bones_info[i].parent = bone->parent;
 		SDL_strlcpy(bones_info[i].name, bone->name, 32);
 
-		//const char* CONSTNAME = "ひざ";
-		//rgLogWarn(RG_LOG_GAME, "Bone: cmp %s %s", bones_info[i].name, CONSTNAME);
-
 		bones_info[i].has_limit = false;
-		//if (strstr(bones_info[i].name, CONSTNAME) != NULL) {
-		if (strstr(bones_info[i].name, "ひざ") != NULL) {
+		if (strstr(bones_info[i].name, CONSTNAME) != NULL) {
 			bones_info[i].has_limit = true;
 			bones_info[i].limitation = { 1, 0, 0 };
 		}
 
-		Uint32 hash = rgCRC32(bones_info[i].name, SDL_strlen(bones_info[i].name));
+		//Uint32 hash = rgCRC32(bones_info[i].name, SDL_strlen(bones_info[i].name));
 		//rgLogWarn(RG_LOG_GAME, "Bone: %d p: %d, name: %s - %d", i, bones_info[i].parent, bones_info[i].name, hash);
 		//PRINTMATRIX(bone_matrices[i]);
 		//PRINTMATRIX(bones_info[i].offset);
@@ -273,7 +271,7 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	R3DCreateBoneBufferInfo binfo = {};
 	binfo.len         = sizeof(mat4) * pmd->bones_count;
 	binfo.initialData = NULL;
-	R3D_BoneBuffer* bone_buffer = Engine::Render::R3D_CreateBoneBuffer(&binfo);
+	R3D_BoneBuffer* bone_buffer = Engine::Render::CreateBoneBuffer(&binfo);
 
 	// Kinematics model
 	KinematicsModelCreateInfo info = {};

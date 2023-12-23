@@ -4,6 +4,7 @@
 #include <modelsystem.h>
 #include <lightsystem.h>
 #include <world.h>
+#include <filesystem.h>
 
 #include <rgstring.h>
 
@@ -15,6 +16,11 @@
 #include <pm2importer.h>
 #include <pm2exporter.h>
 
+#include <mmdimporter.h>
+
+#include <kinematicsmodel.h>
+#include <animation.h>
+
 #include <imgui/ImGuiFileDialog.h>
 #include <imgui/ImGuizmo.h>
 
@@ -22,15 +28,22 @@ using namespace Engine;
 
 static ObjImporter objImporter;
 static PM2Importer pm2Importer;
+static PMDImporter pmdimporter;
+
+static VMDImporter vmdImporter;
 
 static PM2Exporter pm2exporter;
 
-static R3DStaticModelInfo modelInfo = {};
+static R3DStaticModelInfo modelInfo       = {};
+static R3DRiggedModelInfo rmodelInfo      = {};
+static KinematicsModel*   kinematicsModel = NULL;
+static Animation*         animation       = NULL;
 
 class Application : public BaseGame {
 	private:
 
 		Bool isModelLoaded = false;
+		Bool isAnimated    = false;
 		char currentModel[256];
 
 		// Camera
@@ -79,22 +92,35 @@ class Application : public BaseGame {
 				ImGui::Text("Current model: %s", currentModel);
 				// TODO
 
-				ImGui::Text("Vertices: %d", modelInfo.vCount);
-				ImGui::Text("Indices: %d", modelInfo.iCount);
-				ImGui::Text("Index size: %d", modelInfo.iType);
+				if (isAnimated) {
+					ImGui::Text("Vertices: %d", rmodelInfo.vCount);
+					ImGui::Text("Indices: %d", rmodelInfo.iCount);
+					ImGui::Text("Index size: %d", rmodelInfo.iType);
+				} else {
+					ImGui::Text("Vertices: %d", modelInfo.vCount);
+					ImGui::Text("Indices: %d", modelInfo.iCount);
+					ImGui::Text("Index size: %d", modelInfo.iType);
+				}
 
-				ImGuizmo::OPERATION m_op   = ImGuizmo::SCALE;
+				ImGuizmo::OPERATION m_op   = ImGuizmo::ROTATE;
 				ImGuizmo::MODE      m_mode = ImGuizmo::LOCAL;
 
+				vec3 pos   = {}; // UNUSED
 				vec3 scale = {};
+				quat rot   = {};
 				mat4 view  = {};
 				mat4 model = *ent_model->GetTransform()->GetMatrix();
 				mat4_view(&view, camera->GetTransform()->GetPosition(), camera->GetTransform()->GetRotation());
 				ImGuizmo::Manipulate(view.m, camera->GetProjection()->m, m_op, m_mode, model.m);
 
 				//mat4_decompose(&m_pos, &m_rot, &m_scale, model);
-				mat4_decompose(NULL, NULL, &scale, model);
+				mat4_decompose(&pos, &rot, &scale, model);
 				ent_model->GetTransform()->SetScale(scale);
+
+				vec3 angles = rot.toEuler();
+				ent_model->GetTransform()->SetRotation(angles);
+
+
 
 				scale = ent_model->GetTransform()->GetScale();
 				ImGui::InputFloat3("Scale", scale.array);
@@ -102,8 +128,19 @@ class Application : public BaseGame {
 
 				ImGui::Text("Materials");
 				char mat_name[64];
-				for (Uint32 i = 0; i < modelInfo.matCount; i++) {
-					R3D_MaterialInfo* mat = &modelInfo.matInfo[i];
+				Uint32 matCount = 0;
+				if (isAnimated) {
+					matCount = rmodelInfo.matCount;
+				} else {
+					matCount = modelInfo.matCount;
+				}
+				for (Uint32 i = 0; i < matCount; i++) {
+					R3D_MaterialInfo* mat = NULL;
+					if (isAnimated) {
+						mat = &rmodelInfo.matInfo[i];
+					} else {
+						mat = &modelInfo.matInfo[i];
+					}
 					SDL_snprintf(mat_name, 64, "Material %d", i);
 					if (ImGui::TreeNode(mat_name)) {
 						ImGui::InputText("Albedo", mat->albedo, 128);
@@ -114,8 +151,6 @@ class Application : public BaseGame {
 					}
 				}
 
-
-
 			}
 
 			if (isModelLoaded) {
@@ -125,20 +160,43 @@ class Application : public BaseGame {
 				ImGui::SameLine();
 				if (ImGui::Button("Close")) {
 
-					ModelComponent* component   = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
-					R3D_StaticModel* mdl_handle = component->GetHandle();
+					if (isAnimated) {
+						RiggedModelComponent* component = ent_model->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+						R3D_RiggedModel* mdl_handle = component->GetHandle();
+						ent_model->DetachComponent(Component_RIGGEDMODELCOMPONENT);
+						Render::GetModelSystem()->DeleteRiggedModelComponent(component);
+						Render::R3D_DestroyRiggedModel(mdl_handle);
+						pmdimporter.FreeRiggedModelData(&rmodelInfo);
+						delete kinematicsModel;
+					} else {
+						ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+						R3D_StaticModel* mdl_handle = component->GetHandle();
+						ent_model->DetachComponent(Component_MODELCOMPONENT);
+						Render::GetModelSystem()->DeleteModelComponent(component);
+						Render::R3D_DestroyStaticModel(mdl_handle);
+						pm2Importer.FreeModelData(&modelInfo);
+					}
 
-					ent_model->DetachComponent(Component_MODELCOMPONENT);
-					Render::GetModelSystem()->DeleteModelComponent(component);
 
-					Render::R3D_DestroyStaticModel(mdl_handle);
-
-					pm2Importer.FreeModelData(&modelInfo);
 					isModelLoaded = false;
+					isAnimated = false;
+				}
+
+				if (isAnimated && !animation) {
+					ImGui::SameLine();
+					if (ImGui::Button("Load animation")) {
+						ImGuiFileDialog::Instance()->OpenDialog("Open animation", "Choose File", ".vmd,.anm", ".");
+					}
+				}
+				if (isAnimated && animation) {
+					if (ImGui::Button("Unload animation")) {
+						delete animation;
+						animation = NULL;
+					}
 				}
 			} else {
 				if (ImGui::Button("Load model")) {
-					ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".obj,.pm2", ".");
+					ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".obj,.pm2,.pmd", ".");
 				}
 			}
 			ImGui::End();
@@ -154,27 +212,64 @@ class Application : public BaseGame {
 			if (ImGuiFileDialog::Instance()->Display("Open model")) {
 				if (ImGuiFileDialog::Instance()->IsOk()) {
 					std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-
 					SDL_memcpy(currentModel, filePathName.c_str(), filePathName.length() + 1);
+
+					Engine::FS_ReplaceSeparators(currentModel);
 					rgLogInfo(RG_LOG_SYSTEM, "Opened: %s", currentModel);
-
-					if (rg_strenw(currentModel, ".obj")) {
-						objImporter.ImportModel(currentModel, &modelInfo);
-					} else if (rg_strenw(currentModel, ".pm2")) {
-						pm2Importer.ImportModel(currentModel, &modelInfo);
-					}
-
-					R3D_StaticModel* mdl_handle = Render::R3D_CreateStaticModel(&modelInfo);
-					ent_model->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
 
 					ent_model->GetTransform()->SetPosition({ 0, 0, 0 });
 					ent_model->GetTransform()->SetRotation({ 0, 0, 0 });
 					ent_model->GetTransform()->SetScale({ 1, 1, 1 });
 
+					if (rg_strenw(currentModel, ".obj")) {
+						objImporter.ImportModel(currentModel, &modelInfo);
+					} else if (rg_strenw(currentModel, ".pm2")) {
+						pm2Importer.ImportModel(currentModel, &modelInfo);
+					} else if (rg_strenw(currentModel, ".pmd")) {
+						ent_model->GetTransform()->SetScale({ 0.1, 0.1, 0.1 });
+						pmdimporter.ImportRiggedModel(currentModel, &rmodelInfo);
+						kinematicsModel = pmdimporter.ImportKinematicsModel(currentModel);
+						isAnimated = true;
+					} else if (rg_strenw(currentModel, ".pmx")) {
+						RG_ERROR_MSG("NOT IMPLEMENTED YET!");
+						isAnimated = true;
+					}
+
+					if (isAnimated) {
+						R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&rmodelInfo);
+						ent_model->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle, kinematicsModel));
+					} else {
+						R3D_StaticModel* mdl_handle = Render::R3D_CreateStaticModel(&modelInfo);
+						ent_model->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
+					}
+
+
 					isModelLoaded = true;
 
 				}
 
+				ImGuiFileDialog::Instance()->Close();
+			}
+
+			if (ImGuiFileDialog::Instance()->Display("Open animation")) {
+				if (ImGuiFileDialog::Instance()->IsOk()) {
+					std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+
+					char currentAnimation[256];
+					SDL_memcpy(currentAnimation, filePathName.c_str(), filePathName.length() + 1);
+
+					Engine::FS_ReplaceSeparators(currentAnimation);
+					rgLogInfo(RG_LOG_SYSTEM, "Opened: %s", currentAnimation);
+
+					if (rg_strenw(currentAnimation, ".vmd")) {
+						animation = vmdImporter.ImportAnimation(currentAnimation, kinematicsModel);
+						animation->SetRepeat(true);
+						kinematicsModel->GetAnimator()->PlayAnimation(animation);
+					}
+					else if (rg_strenw(currentAnimation, ".anm")) {
+						RG_ERROR_MSG("NOT IMPLEMENTED YET!");
+					}
+				}
 				ImGuiFileDialog::Instance()->Close();
 			}
 
@@ -187,7 +282,12 @@ class Application : public BaseGame {
 				ImGuiFileDialog::Instance()->Close();
 			}
 
-
+			if (isAnimated) {
+				kinematicsModel->GetAnimator()->Update(GetDeltaTime());
+				kinematicsModel->RebuildSkeleton();
+				kinematicsModel->SolveCCDIK();
+				kinematicsModel->RecalculateTransform();
+			}
 
 			// TEMP
 			R3D_PushModelInfo info = {};
@@ -195,10 +295,28 @@ class Application : public BaseGame {
 			info.matrix = *ent_bg->GetTransform()->GetMatrix();
 			Render::R3D_PushModel(&info);
 
+			info.matrix = *ent_model->GetTransform()->GetMatrix();
+
+			// Draw static model
 			ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
 			if (component) {
 				info.handle = component->GetHandle();
-				info.matrix = *ent_model->GetTransform()->GetMatrix();
+				Render::R3D_PushModel(&info);
+			}
+
+			// Draw animated model
+			RiggedModelComponent* rcomponent = ent_model->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+			if (rcomponent) {
+
+				R3DBoneBufferUpdateInfo binfo = {};
+				binfo.offset = 0;
+				binfo.data   = kinematicsModel->GetTransforms();
+				binfo.handle = kinematicsModel->GetBufferHandle();
+				binfo.length = sizeof(mat4) * kinematicsModel->GetBoneCount();
+				Render::R3D_UpdateBoneBuffer(&binfo);
+
+				info.handle = rcomponent->GetHandle();
+				info.handle_bonebuffer = kinematicsModel->GetBufferHandle();
 				Render::R3D_PushModel(&info);
 			}
 
@@ -217,9 +335,13 @@ class Application : public BaseGame {
 
 
 			R3DStaticModelInfo objinfo = {};
-			objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
+			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
+			//R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
+			//objImporter.FreeModelData(&objinfo);
+
+			pm2Importer.ImportModel("gamedata/greenscreen/scene.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
-			objImporter.FreeModelData(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
 
 			ent_bg = world->NewEntity();
 			ent_bg->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
@@ -247,8 +369,22 @@ class Application : public BaseGame {
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
 
 			World* world = GetWorld();
+
+			///////////////////////////////////////////////////////////////////
+
+			if (animation) {
+				delete animation;
+			}
+
 			Render::GetLightSystem()->DeletePointLight(ent_bg->GetComponent(Component_POINTLIGHT)->AsPointLightComponent());
-			Render::R3D_DestroyStaticModel(ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
+			if (isAnimated) {
+				Render::R3D_DestroyRiggedModel(ent_bg->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
+			} else {
+				Render::R3D_DestroyStaticModel(ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
+			}
+
+			///////////////////////////////////////////////////////////////////
+
 			world->FreeEntity(ent_bg);
 
 			world->FreeEntity(ent_model);

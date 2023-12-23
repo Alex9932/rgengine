@@ -53,7 +53,7 @@ typedef struct vmd_file {
 	vmd_camera* cameras;
 } vmd_file;
 
-vmd_file* vmd_load(String file);
-void vmd_free(vmd_file* ptr);
+RG_DECLSPEC vmd_file* vmd_load(String file);
+RG_DECLSPEC void vmd_free(vmd_file* ptr);
 
 #endif /* VMD_H_ */
