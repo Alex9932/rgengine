@@ -348,8 +348,8 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 		R3DCreateMaterialInfo creatematinfo = {};
 		creatematinfo.albedo = info->matInfo[i].albedo;
 		creatematinfo.normal = info->matInfo[i].normal;
-		creatematinfo.pbr = info->matInfo[i].pbr;
-		creatematinfo.color = info->matInfo[i].color;
+		creatematinfo.pbr    = info->matInfo[i].pbr;
+		creatematinfo.color  = info->matInfo[i].color;
 		materials[i] = R3D_CreateMaterial(&creatematinfo);
 	}
 

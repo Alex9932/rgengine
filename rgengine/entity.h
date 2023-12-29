@@ -3,6 +3,7 @@
 
 #include "transform.h"
 #include "uuid.h"
+#include "allocator.h"
 
 enum ComponentType {
 	Component_TAG = 0,              // Name tag        TagComponent
@@ -30,6 +31,7 @@ namespace Engine {
 				this->m_type = type;
 			}
 			~Component() {}
+			virtual void Destroy() {}
 
 			RG_INLINE void    SetEntity(Entity* ent) { this->m_ent = ent; }
 			RG_INLINE Entity* GetEntity()            { return this->m_ent; }
@@ -38,12 +40,11 @@ namespace Engine {
 
 			void Update(Float64 dt) {}
 
-			RG_INLINE TagComponent* AsTagComponent() { return (TagComponent*)this; }
-			RG_INLINE ModelComponent* AsModelComponent() { return (ModelComponent*)this; }
+			RG_INLINE TagComponent*         AsTagComponent()         { return (TagComponent*)this; }
+			RG_INLINE ModelComponent*       AsModelComponent()       { return (ModelComponent*)this; }
 			RG_INLINE RiggedModelComponent* AsRiggedModelComponent() { return (RiggedModelComponent*)this; }
-
-			RG_INLINE PointLight* AsPointLightComponent() { return (PointLight*)this; }
-			RG_INLINE SpotLight* AsSpotLightComponent() { return (SpotLight*)this; }
+			RG_INLINE PointLight*           AsPointLightComponent()  { return (PointLight*)this; }
+			RG_INLINE SpotLight*            AsSpotLightComponent()   { return (SpotLight*)this; }
 
         protected:
             //UUID          m_entID;
@@ -64,6 +65,8 @@ namespace Engine {
 				SDL_strlcpy(this->string, tag, 256);
 			}
 			~TagComponent() {}
+
+			void Destroy() { RG_DELETE(TagComponent, this); }
 			RG_INLINE String GetString() { return this->string; }
 			RG_INLINE void SetString(String tag) { SDL_strlcpy(this->string, tag, 256); }
 	};

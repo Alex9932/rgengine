@@ -35,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         186
+#define RG_BUILD         190
 #define RG_VERSION_MAJ   0
 #define RG_VERSION_MIN   6
-#define RG_VERSION_PATCH 4
+#define RG_VERSION_PATCH 5
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);

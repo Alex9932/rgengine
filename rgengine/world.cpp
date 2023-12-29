@@ -5,9 +5,20 @@
 #include "entity.h"
 #include "engine.h"
 
+#include "render.h"
+#include "modelsystem.h"
+#include "lightsystem.h"
+
 #define RG_ENTITY_COUNT 4096
 
 namespace Engine {
+
+	static void FreeComponents(Entity* ent) {
+		for (Uint32 i = 0; i < Component_MAXENUM; i++) {
+			Component* c = ent->GetComponent((ComponentType)i);
+			if (c) { c->Destroy(); }
+		}
+	}
 
 	World::World() {
 		this->m_allocTransform = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Transform pool", RG_ENTITY_COUNT, sizeof(Transform));
@@ -38,7 +49,8 @@ namespace Engine {
 		for (; it != this->m_entities.end(); it++) {
 			if (*it = e) {
 				this->m_entities.erase(it);
-				m_allocEntity->Deallocate(e);
+				FreeComponents(e);
+				RG_DELETE_CLASS(m_allocEntity, Entity, e);
 				break;
 			}
 		}
@@ -68,6 +80,21 @@ namespace Engine {
 			}
 		}
 		return NULL;
+	}
+
+	void World::ClearWorld() {
+
+		for (Uint32 i = 0; i < m_entities.size(); i++) {
+			Entity* ent = m_entities[i];
+			
+			FreeComponents(ent);
+
+			RG_DELETE_CLASS(m_allocEntity, Entity, ent);
+		}
+
+		//m_allocTransform->DeallocateAll();
+		m_allocEntity->DeallocateAll();
+		m_entities.clear();
 	}
 
 }

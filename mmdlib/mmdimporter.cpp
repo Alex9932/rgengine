@@ -11,6 +11,8 @@
 #include <render.h>
 #include <filesystem.h>
 
+using namespace Engine;
+
 static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx) {
 
 	char file[256];
@@ -207,7 +209,7 @@ void PMDImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
 }
 
 // TODO: Rewrite this
-Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
+KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	pmd_file* pmd = pmd_load(file);
 
 	BoneInfo bones_info[1024];
@@ -271,7 +273,7 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	R3DCreateBoneBufferInfo binfo = {};
 	binfo.len         = sizeof(mat4) * pmd->bones_count;
 	binfo.initialData = NULL;
-	R3D_BoneBuffer* bone_buffer = Engine::Render::CreateBoneBuffer(&binfo);
+	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
 
 	// Kinematics model
 	KinematicsModelCreateInfo info = {};
@@ -280,7 +282,8 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	info.ik_count      = ik;
 	info.ik_info       = ik_links;
 	info.buffer_handle = bone_buffer;
-	Engine::KinematicsModel* kmodel = new Engine::KinematicsModel(&info);
+	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
+	//KinematicsModel* kmodel = new KinematicsModel(&info);
 
 	rg_free(ik_links);
 	pmd_free(pmd);
@@ -288,11 +291,11 @@ Engine::KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	return kmodel;
 }
 
-Engine::Animation* VMDImporter::ImportAnimation(String path, Engine::KinematicsModel* model) {
+Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 	vmd_file* vmd = vmd_load(path);
 
-	Engine::Animation* animation = new Engine::Animation();
+	Animation* animation = new Animation();
 	Uint32 last = 0;
 	for (Uint32 i = 0; i < vmd->motion_count; i++) {
 		vmd_motion* motion = &vmd->motions[i];
@@ -304,9 +307,9 @@ Engine::Animation* VMDImporter::ImportAnimation(String path, Engine::KinematicsM
 			continue;
 		}
 
-		Engine::AnimationTrack* track = animation->GetBoneAnimationTrack(hash);
+		AnimationTrack* track = animation->GetBoneAnimationTrack(hash);
 		if (track == NULL) {
-			track = new Engine::AnimationTrack(motion->bone_name);
+			track = new AnimationTrack(motion->bone_name);
 			animation->AddBoneAnimationTrack(track);
 			//rgLogInfo(RG_LOG_SYSTEM, "Adding: %s - CRC: %d", motion->bone_name, hash);
 		}

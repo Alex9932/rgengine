@@ -85,22 +85,15 @@ static void RecalculateTangetns(Uint32 vCount, R3D_Vertex* vertices, Uint32 star
 class Application : public BaseGame {
 	public:
 
-		Entity* ent_test0;
-		Entity* ent_test1;
+		KinematicsModel* kmodel;
 
 		Entity* ent_light0;
-
-		Entity* ent0 = NULL;
-		Entity* ent1 = NULL;
-		Entity* ent2 = NULL;
 
 		World*  world  = NULL;
 		Camera* camera = NULL;
 		FreeCameraController* camcontrol = NULL;
 
 		Animation* anim;
-
-
 
 		Application() {
 			this->isClient   = true;
@@ -112,23 +105,6 @@ class Application : public BaseGame {
 		}
 
 		void ImGuiInputVector3(String label, vec3* vec) {
-
-			//float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
-			//float pos = ItemSpacing;
-
-			//ImGui::SameLine(pos);
-			//ImGui::InputFloat("##X", &vec->x);
-			
-			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
-
-			//ImGui::SameLine(100);
-			//ImGui::InputFloat("##Y", &vec->y);
-			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
-
-			
-			//ImGui::SameLine(pos);
-			//ImGui::InputFloat("Z", &vec->z);
-			//pos += ImGui::GetItemRectSize().x + ItemSpacing;
 
 			ImGui::PushItemWidth(50);
 
@@ -230,38 +206,7 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::R3D_SetCamera(&cam);
 
-			R3D_PushModelInfo info = {};
-
-#if 0
-			info.handle = ent_test0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent_test0->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
-
-			info.handle = ent_test1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent_test1->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
-#endif
-
-			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-
-			info.matrix = *ent0->GetTransform()->GetMatrix();
-			//mat4_model(&info.matrix, { 7.4, 0, -1.65 }, { 0, -0.8f, 0 }, { 1, 1, 1 });
-			
-			//mat4_model(&info.matrix, { 1, 0, 0 }, { 0, (Float32)GetUptime() * 0.8f, 0 }, { 0.1f, 0.1f, 0.1f });
-			Render::R3D_PushModel(&info);
-
-			info.handle = ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			//mat4_model(&info.matrix, { -1, 0, 0 }, { 0, 0, 0 }, { 0.01f, 0.01f, 0.01f });
-
-			info.matrix = *ent1->GetTransform()->GetMatrix();
-			//mat4_model(&info.matrix, { 0, 0, 0 }, { 0, 0, 0 }, { 1, 1, 1 });
-			Render::R3D_PushModel(&info);
-
-			Engine::RiggedModelComponent* rmdl = ent2->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
-
-
-			//R3DBoneBufferUpdateInfo
-			KinematicsModel* kmodel = rmdl->GetKinematicsModel();
+		
 
 			kmodel->GetAnimator()->Update(GetDeltaTime());
 			kmodel->RebuildSkeleton();
@@ -277,12 +222,6 @@ class Application : public BaseGame {
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
 
-
-			info.handle = rmdl->GetHandle();
-			info.handle_bonebuffer = rmdl->GetKinematicsModel()->GetBufferHandle();
-			//mat4_model(&info.matrix, { 9, 0, -0.4 }, { 0, 1.6, 0 }, { 0.1, 0.1, 0.1 });
-			info.matrix = *ent2->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
 
 		}
 		
@@ -350,7 +289,7 @@ class Application : public BaseGame {
 			pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
 			R3D_RiggedModel* mdl_handle2 = Render::R3D_CreateRiggedModel(&pmdinfo);
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
-			KinematicsModel* kmodel = pmdImporter.ImportKinematicsModel(modelname);
+			kmodel = pmdImporter.ImportKinematicsModel(modelname);
 
 			VMDImporter vmdImporter;
 			anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
@@ -363,13 +302,13 @@ class Application : public BaseGame {
 
 #if 0
 
-			ent_test0 = world->NewEntity();
+			Entity* ent_test0 = world->NewEntity();
 			ent_test0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent_test0->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent_test0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent_test0->GetTransform()->SetScale({ 1, 1, 1 });
 
-			ent_test1 = world->NewEntity();
+			Entity* ent_test1 = world->NewEntity();
 			ent_test1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent_test1->GetTransform()->SetPosition({ 1, 0, 0 });
 			ent_test1->GetTransform()->SetRotation({ 0, 0, 0 });
@@ -387,7 +326,7 @@ class Application : public BaseGame {
 			ent_light0->AttachComponent(lsrc);
 
 
-			ent0 = world->NewEntity();
+			Entity* ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 
 			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
@@ -400,9 +339,8 @@ class Application : public BaseGame {
 
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
-			//ent0->GetTransform()->Recalculate();
 
-			ent1 = world->NewEntity();
+			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
 
 			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
@@ -414,14 +352,12 @@ class Application : public BaseGame {
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
-			//ent1->GetTransform()->Recalculate();
 #if 1
-			ent2 = world->NewEntity();
+			Entity* ent2 = world->NewEntity();
 			ent2->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle2, kmodel));
 			ent2->GetTransform()->SetPosition({ 9, 0, -0.4f });
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			//ent2->GetTransform()->Recalculate();
 #endif
 		}
 		
@@ -429,18 +365,7 @@ class Application : public BaseGame {
 
 			delete anim;
 
-			Render::R3D_DestroyStaticModel(ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
-			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
-			Render::R3D_DestroyRiggedModel(ent2->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
-
-#if 0
-			world->FreeEntity(ent_test0);
-			world->FreeEntity(ent_test1);
-#endif
-
-			world->FreeEntity(ent0);
-			world->FreeEntity(ent1);
-			world->FreeEntity(ent2);
+			world->ClearWorld();
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);

@@ -4,6 +4,9 @@
 #include "engine.h"
 #include "event.h"
 
+#include "world.h"
+#include "kinematicsmodel.h"
+
 #include "modelsystem.h"
 #include "lightsystem.h"
 
@@ -187,13 +190,36 @@ namespace Engine {
 
         }
 
+        static void RenderWorld(World* world) {
+            R3D_PushModelInfo info = {};
+
+            for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
+                Entity* ent = world->GetEntity(i);
+
+                info.matrix = *ent->GetTransform()->GetMatrix();
+
+                ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+                if (mc) {
+                    info.handle_static = mc->GetHandle();
+                    Render::R3D_PushModel(&info);
+                }
+
+                RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+                if (rmc) {
+                    info.handle_rigged     = rmc->GetHandle();
+                    info.handle_bonebuffer = rmc->GetKinematicsModel()->GetBufferHandle();
+                    Render::R3D_PushModel(&info);
+                }
+            }
+        }
+
         void Update() {
 
             modelSystem->UpdateComponents();
             lightSystem->UpdateComponents();
 
+            RenderWorld(Engine::GetWorld());
 
-            // TODO
             R3D_StartRenderTask(NULL);
 
             Window_Update();

@@ -14,6 +14,7 @@ namespace Engine {
 		public:
 			ModelComponent(R3D_StaticModel* model);
 			~ModelComponent();
+			virtual void Destroy();
 
 			RG_INLINE R3D_StaticModel* GetHandle() { return this->m_handle; }
 
@@ -25,6 +26,7 @@ namespace Engine {
 		public:
 			RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl);
 			~RiggedModelComponent();
+			virtual void Destroy();
 
 			RG_INLINE R3D_RiggedModel* GetHandle()			{ return this->m_handle; }
 			RG_INLINE KinematicsModel* GetKinematicsModel() { return this->m_kmodel; }

@@ -19,6 +19,8 @@ namespace Engine {
 			}
 			~PointLight() {}
 
+			virtual void Destroy();
+
 			RG_INLINE void Update(Float64 dt) {
 				if (this->m_ent) {
 					this->m_position = this->m_ent->GetTransform()->GetWorldPosition() + this->m_offset;
@@ -46,6 +48,8 @@ namespace Engine {
 		public:
 			SpotLight() : Component(Component_SPOTLIGHT) {}
 			~SpotLight() {}
+
+			virtual void Destroy();
 
 			RG_INLINE void Update(Float64 dt) {
 				if (this->m_ent) {

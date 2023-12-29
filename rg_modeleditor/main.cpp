@@ -50,9 +50,6 @@ class Application : public BaseGame {
 		Camera*                 camera     = NULL;
 		LookatCameraController* camcontrol = NULL;
 
-		// Background entity
-		Entity* ent_bg    = NULL;
-
 		// Model entity
 		Entity* ent_model = NULL;
 
@@ -190,6 +187,7 @@ class Application : public BaseGame {
 				}
 				if (isAnimated && animation) {
 					if (ImGui::Button("Unload animation")) {
+						kinematicsModel->GetAnimator()->PlayAnimation(NULL);
 						delete animation;
 						animation = NULL;
 					}
@@ -282,27 +280,13 @@ class Application : public BaseGame {
 				ImGuiFileDialog::Instance()->Close();
 			}
 
-			if (isAnimated) {
+			if (isAnimated && kinematicsModel) {
 				kinematicsModel->GetAnimator()->Update(GetDeltaTime());
 				kinematicsModel->RebuildSkeleton();
 				kinematicsModel->SolveCCDIK();
 				kinematicsModel->RecalculateTransform();
 			}
 
-			// TEMP
-			R3D_PushModelInfo info = {};
-			info.handle = ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent_bg->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
-
-			info.matrix = *ent_model->GetTransform()->GetMatrix();
-
-			// Draw static model
-			ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
-			if (component) {
-				info.handle = component->GetHandle();
-				Render::R3D_PushModel(&info);
-			}
 
 			// Draw animated model
 			RiggedModelComponent* rcomponent = ent_model->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
@@ -314,10 +298,6 @@ class Application : public BaseGame {
 				binfo.handle = kinematicsModel->GetBufferHandle();
 				binfo.length = sizeof(mat4) * kinematicsModel->GetBoneCount();
 				Render::R3D_UpdateBoneBuffer(&binfo);
-
-				info.handle = rcomponent->GetHandle();
-				info.handle_bonebuffer = kinematicsModel->GetBufferHandle();
-				Render::R3D_PushModel(&info);
 			}
 
 		}
@@ -343,7 +323,7 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
-			ent_bg = world->NewEntity();
+			Entity* ent_bg = world->NewEntity();
 			ent_bg->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent_bg->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent_bg->GetTransform()->SetRotation({ 0, 0, 0 });
@@ -376,18 +356,8 @@ class Application : public BaseGame {
 				delete animation;
 			}
 
-			Render::GetLightSystem()->DeletePointLight(ent_bg->GetComponent(Component_POINTLIGHT)->AsPointLightComponent());
-			if (isAnimated) {
-				Render::R3D_DestroyRiggedModel(ent_bg->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent()->GetHandle());
-			} else {
-				Render::R3D_DestroyStaticModel(ent_bg->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
-			}
 
-			///////////////////////////////////////////////////////////////////
-
-			world->FreeEntity(ent_bg);
-
-			world->FreeEntity(ent_model);
+			world->ClearWorld();
 		}
 };
 

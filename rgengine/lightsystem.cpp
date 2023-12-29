@@ -1,10 +1,19 @@
 #define DLL_EXPORT
 #include "lightsystem.h"
 #include "engine.h"
+#include "render.h"
 
 #define RG_LIGHTPOOL_SIZE 4096
 
 namespace Engine {
+
+	void PointLight::Destroy() {
+		Render::GetLightSystem()->DeletePointLight(this);
+	}
+
+	void SpotLight::Destroy() {
+		Render::GetLightSystem()->DeleteSpotLight(this);
+	}
 
 	LightSystem::LightSystem() {
 		this->m_palloc = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Pointlight pool", RG_LIGHTPOOL_SIZE, sizeof(PointLight));

@@ -1,5 +1,7 @@
 #include "modelsystem.h"
 #include "engine.h"
+#include "render.h"
+#include "kinematicsmodel.h"
 
 #define RG_MODELPOOL_SIZE 4096
 
@@ -11,12 +13,22 @@ namespace Engine {
 
 	ModelComponent::~ModelComponent() { }
 
+	void ModelComponent::Destroy() {
+		Render::R3D_DestroyStaticModel(GetHandle());
+	}
+
 	RiggedModelComponent::RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
 		this->m_handle = rmdl;
 		this->m_kmodel = kmdl;
 	}
 
 	RiggedModelComponent::~RiggedModelComponent() { }
+
+	void RiggedModelComponent::Destroy() {
+		Render::R3D_DestroyBoneBuffer(m_kmodel->GetBufferHandle());
+		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
+		Render::R3D_DestroyRiggedModel(GetHandle());
+	}
 
 
 	ModelSystem::ModelSystem() {

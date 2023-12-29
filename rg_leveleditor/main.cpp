@@ -16,6 +16,7 @@
 
 // Temp
 #include <objimporter.h>
+#include <pm2importer.h>
 
 
 using namespace Engine;
@@ -27,10 +28,6 @@ class Application : public BaseGame {
 
 		Camera*               camera     = NULL;
 		FreeCameraController* camcontrol = NULL;
-
-		// Temp
-		Entity*   ent0     = NULL;
-		Entity*   ent1     = NULL;
 
 	public:
 		Application() {
@@ -55,16 +52,7 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::R3D_SetCamera(&cam);
 
-			///////////
-			R3D_PushModelInfo info = {};
-			info.handle = ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent0->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
-			info.handle = ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle();
-			info.matrix = *ent1->GetTransform()->GetMatrix();
-			Render::R3D_PushModel(&info);
 
-			////////
 			ImGuizmo::BeginFrame();
 			viewport->SetImGuizmoRect();
 
@@ -301,23 +289,24 @@ class Application : public BaseGame {
 
 			// Temp
 			ObjImporter objImporter;
+			PM2Importer pm2Importer;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
 			objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
 
-			objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/megumin/v4.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
-			objImporter.FreeModelData(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
 
-			ent0 = world->NewEntity();
+			Entity* ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent0->GetTransform()->SetPosition({ 0, 0, 8 });
 			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 
-			ent1 = world->NewEntity();
+			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
 			ent1->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
@@ -339,10 +328,8 @@ class Application : public BaseGame {
 
 			World* world = GetWorld();
 
-			Render::R3D_DestroyStaticModel(ent0->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
-			world->FreeEntity(ent0);
-			Render::R3D_DestroyStaticModel(ent1->GetComponent(Component_MODELCOMPONENT)->AsModelComponent()->GetHandle());
-			world->FreeEntity(ent1);
+			world->ClearWorld();
+
 		}
 };
 

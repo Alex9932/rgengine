@@ -69,6 +69,9 @@ namespace Engine {
 #else
         if (blocks.size() != 0) {
             rgLogError(RG_LOG_SYSTEM, "%s => Validation failed: Free all allocated blocks by calling 'Deallocate' function!", name);
+//            for (Uint32 i = 0; i < blocks.size(); i++) {
+//                rgLogError(RG_LOG_SYSTEM, "%s => Allocated block[%db] at: 0x%x", name, blocks[i].len, blocks[i].ptr);
+//            }
         }
 
 #if RG_ALLOCATOR_DEBUG
@@ -96,7 +99,7 @@ namespace Engine {
 
         total += len;
 #if RG_ALLOCATOR_DEBUG
-        rgLogError(RG_LOG_SYSTEM, "ALLOC [%s] -> Block at: %p, len: %ld", this->name, b.ptr, b.len);
+        rgLogWarn(RG_LOG_SYSTEM, "ALLOC [%s] -> Block at: %p, len: %ld", this->name, b.ptr, b.len);
 #endif
         return b.ptr;
     }
@@ -109,7 +112,7 @@ namespace Engine {
                     total -= it->len;
                     rg_free(it->ptr);
 #if RG_ALLOCATOR_DEBUG
-                    rgLogError(RG_LOG_SYSTEM, "FREE  [%s] -> Block at: %p, len: %ld", this->name, it->ptr, it->len);
+                    rgLogWarn(RG_LOG_SYSTEM, "FREE  [%s] -> Block at: %p, len: %ld", this->name, it->ptr, it->len);
 #endif
                     blocks.erase(it);
                     return;
@@ -130,6 +133,9 @@ namespace Engine {
     }
 
     LinearAllocator::~LinearAllocator() {
+        if (this->m_cur != this->m_base) {
+            rgLogError(RG_LOG_SYSTEM, "%s => Validation failed: Free all allocated blocks by calling 'Deallocate' function!", name);
+        }
         rg_free(this->m_base);
     }
 
@@ -163,7 +169,10 @@ namespace Engine {
     }
 
     PoolAllocator::~PoolAllocator() {
-        this->pool_allocatedBlocks = 0;
+        if (this->pool_allocatedBlocks != 0) {
+            rgLogError(RG_LOG_SYSTEM, "%s => Validation failed: Free all allocated blocks by calling 'Deallocate' function!", name);
+        }
+
         rg_free(this->pool_ptr);
     }
 
