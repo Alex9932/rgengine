@@ -165,7 +165,7 @@ namespace Engine {
 			for (Uint32 i = 0; i < info->iCount; i++) {
 				indicesptr[i] = GetIndex(info, i);
 			}
-		} else if(indexsize == 2) {
+		} else if(indexsize == 4) {
 			Uint32* indicesptr = (Uint32*)indices;
 			for (Uint32 i = 0; i < info->iCount; i++) {
 				indicesptr[i] = GetIndex(info, i);
