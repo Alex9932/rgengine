@@ -124,11 +124,13 @@ namespace Engine {
 
             // 'len' argument will be ignored!
             RG_DECLSPEC void* Allocate(size_t len);
-            RG_DECLSPEC void Deallocate(void* ptr);
-            RG_DECLSPEC void DeallocateAll();
+            RG_DECLSPEC void  Deallocate(void* ptr);
+            RG_DECLSPEC void  DeallocateAll();
+
 
             // Alias for 'void* Allocate(size_t len)'
-            RG_INLINE void* Allocate() { return Allocate(0); }
+            RG_INLINE void* Allocate()       { return Allocate(0); }
+            RG_INLINE void* GetBasePointer() { return pool_ptr; }
 
             RG_INLINE size_t GetAllocatedMemory() { return this->ul_bc * this->bs; }           // Returns TOTAL used memory by pool
             RG_INLINE size_t GetUsedMemory() { return this->pool_allocatedBlocks * this->bs; } // Returns ALLOCATED memory

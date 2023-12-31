@@ -111,7 +111,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,7 +130,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>D:\Source\vstudio\rgengine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -166,6 +166,7 @@
     <ClCompile Include="rgmatrix.cpp" />
     <ClCompile Include="rgstb.cpp" />
     <ClCompile Include="rgstring.cpp" />
+    <ClCompile Include="soundsystem.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="entity.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
+    <ClInclude Include="soundsystem.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="logger.h" />

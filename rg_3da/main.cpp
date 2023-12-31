@@ -34,6 +34,10 @@
 #undef max
 #include <objimporter.h>
 
+#include <soundsystem.h>
+#include <rgstb.h>
+
+#include <event.h>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
@@ -82,6 +86,25 @@ static void RecalculateTangetns(Uint32 vCount, R3D_Vertex* vertices, Uint32 star
 
 }
 
+
+static Camera*      camera;
+static SoundBuffer* soundbuffer;
+
+static bool EHandler(SDL_Event* event) {
+
+	if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_E) {
+		PlaySoundInfo info = {};
+		info.buffer   = soundbuffer;
+		info.position = camera->GetTransform()->GetPosition();
+		info.volume   = 0.2f;
+		info.speed    = 1;
+		GetSoundSystem()->PlaySound(&info);
+	}
+
+	return true;
+}
+
+
 class Application : public BaseGame {
 	public:
 
@@ -90,7 +113,6 @@ class Application : public BaseGame {
 		Entity* ent_light0;
 
 		World*  world  = NULL;
-		Camera* camera = NULL;
 		FreeCameraController* camcontrol = NULL;
 
 		Animation* anim;
@@ -189,7 +211,7 @@ class Application : public BaseGame {
 			ent_test1->GetTransform()->SetRotation({ 0, (Float32)GetUptime() * 0.5f, 0 });
 #endif		
 
-			ent_light0->GetTransform()->SetPosition({ SDL_sinf(GetUptime() * 0.7) * 9, 1.8, 0 });
+			//ent_light0->GetTransform()->SetPosition({ SDL_sinf(GetUptime() * 0.7) * 9, 1.8, 0 });
 
 
 			ivec2 size = {};
@@ -255,6 +277,11 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			//objImporter.FreeModelData(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
+
+			pm2Importer.ImportModel("gamedata/models/lamp/lamp.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle3 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
 #endif
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("platform/new/megumin_v4.obj");
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("gamedata/sponza_old/sponza.obj");
@@ -322,7 +349,7 @@ class Application : public BaseGame {
 			Engine::PointLight* lsrc = Render::GetLightSystem()->NewPointLight();
 			lsrc->SetColor({ 1, 0.7f, 0.4f });
 			lsrc->SetIntensity(5);
-			lsrc->SetOffset({ 0, 0, 0 });
+			lsrc->SetOffset({ 6, 2.6f, 1 });
 			ent_light0->AttachComponent(lsrc);
 
 
@@ -331,8 +358,8 @@ class Application : public BaseGame {
 
 			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.5, 0.0 });
-			l->SetIntensity(2);
-			l->SetOffset({ -0.86, 1.56, -0.21 });
+			l->SetIntensity(0.3f);
+			l->SetOffset({ -0.84, 1.56, -0.18 });
 			ent0->AttachComponent(l);
 
 			ent0->GetTransform()->SetPosition({ 7.4f, 0, -1.65f });
@@ -342,16 +369,45 @@ class Application : public BaseGame {
 
 			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
-
-			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
-			l2->SetColor({ 1, 0.9f, 0.8f });
-			l2->SetIntensity(10);
-			l2->SetOffset({6, 1, 0});
-			ent1->AttachComponent(l2);
-
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
+
+
+			Entity* ent3 = world->NewEntity();
+			ent3->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle3));
+			ent3->GetTransform()->SetPosition({ 6, 0, 1 });
+			ent3->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent3->GetTransform()->SetScale({ 1, 1, 1 });
+
+			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
+			l2->SetColor({ 1, 0.7f, 0.4f });
+			l2->SetIntensity(5);
+			l2->SetOffset({ 0, 1.6f, 0 });
+			ent3->AttachComponent(l2);
+
+
+			SoundSystem* ss = GetSoundSystem();
+
+
+			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);
+			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);
+
+			stb_vorbis_info vi = RG_STB_vorbis_get_info(sound.stream);
+			SoundBufferCreateInfo sbinfo = {};
+
+			sbinfo.channels = vi.channels;
+			sbinfo.samplerate = vi.sample_rate;
+			//sbinfo.samples = 
+			Uint32 len = RG_STB_vorbis_stream_length_in_samples(sound.stream) * vi.channels;
+			sbinfo.samples = len;
+			sbinfo.data = rg_malloc(sizeof(Uint16) * len);
+			RG_STB_vorbis_get_samples_short_interleaved(sound.stream, vi.channels, (short*)sbinfo.data, len);
+			soundbuffer = ss->CreateBuffer(&sbinfo);
+			RG_STB_vorbis_close(&sound);
+			rg_free(sbinfo.data);
+
+
 #if 1
 			Entity* ent2 = world->NewEntity();
 			ent2->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle2, kmodel));
@@ -359,6 +415,8 @@ class Application : public BaseGame {
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif
+
+			RegisterEventHandler(EHandler);
 		}
 		
 		void Quit() {

@@ -24,6 +24,8 @@
 #include "timer.h"
 #include "world.h"
 
+#include "soundsystem.h"
+
 void* rg_malloc(size_t size) {
     if (size > 0x7FFFFFFF) {
         RG_ERROR_MSG("OUT OF MEMORY!");
@@ -74,6 +76,8 @@ namespace Engine {
     static Timer         timer;
 
     static World*        world         = NULL;
+
+    static SoundSystem*  soundsystem   = NULL;
 
 
     static SDL_AssertState AssertionHandler(const SDL_AssertData* data, void* userdata) {
@@ -320,7 +324,7 @@ namespace Engine {
         if (game_ptr->IsClient()) {
             Window_Show();
             //SoundSystem_Initialize();
-            //soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
+            soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
         }
 
         //physicssystem = RG_NEW_CLASS(std_allocator, PhysicsSystem)();
@@ -368,7 +372,7 @@ namespace Engine {
                 Render::Update();
                 //core_profiler->StartSection("audio");
                 //GetSoundSystem()->Update(GetDeltaTime());
-                //soundsystem->Update(GetDeltaTime());
+                soundsystem->Update(GetDeltaTime());
             }
 
             core_profiler->StartSection("other");
@@ -391,7 +395,7 @@ namespace Engine {
         //RG_DELETE_CLASS(std_allocator, World, world);
 
         if (game_ptr->IsClient()) {
-            //RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
+            RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
             //DestroySoundSystem();
             Window_Destroy();
         }
@@ -464,6 +468,10 @@ namespace Engine {
 
     World* GetWorld() {
         return world;
+    }
+
+    SoundSystem* GetSoundSystem() {
+        return soundsystem;
     }
 
 }

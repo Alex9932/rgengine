@@ -155,7 +155,7 @@ namespace Engine {
     PoolAllocator::PoolAllocator(String name, size_t poolSize, size_t blockSize) : Allocator(name) {
         this->m_poolSize  = poolSize;
         this->m_blockSize = blockSize;
-        this->pool_ptr = rg_malloc(poolSize * blockSize);
+        this->pool_ptr    = rg_malloc(poolSize * blockSize);
         this->DeallocateAll();
     }
 

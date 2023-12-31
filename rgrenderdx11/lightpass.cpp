@@ -326,7 +326,7 @@ void DoLightpass() {
 		light.intensity = l->GetIntensity();
 		light.pos       = l->GetPosition();
 
-        Float32 s = light.intensity * 3;
+        Float32 s = light.intensity * 10;
         mat4_model(&constants.model, l->GetPosition(), { 0, 0, 0 }, {s, s, s});
 
 		cBuffer->SetData(0, sizeof(ShaderConstants), &constants);

@@ -11,6 +11,7 @@ enum ComponentType {
 	Component_RIGGEDMODELCOMPONENT, //
 	Component_POINTLIGHT,           // Light sources
 	Component_SPOTLIGHT,            //
+	Component_SOUNDSOURCE,          //
 	Component_MAXENUM = 32
 };
 
@@ -23,6 +24,7 @@ namespace Engine {
 	class RiggedModelComponent;
 	class PointLight;
 	class SpotLight;
+	class SoundSource;
 
 	class Component {
 		public:
@@ -45,6 +47,7 @@ namespace Engine {
 			RG_INLINE RiggedModelComponent* AsRiggedModelComponent() { return (RiggedModelComponent*)this; }
 			RG_INLINE PointLight*           AsPointLightComponent()  { return (PointLight*)this; }
 			RG_INLINE SpotLight*            AsSpotLightComponent()   { return (SpotLight*)this; }
+			RG_INLINE SoundSource*          AsSoundSourceComponent() { return (SoundSource*)this; }
 
         protected:
             //UUID          m_entID;

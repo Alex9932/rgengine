@@ -58,6 +58,12 @@
     <Filter Include="Header Files\imgui\dirent">
       <UniqueIdentifier>{f1a693b1-9a03-4ba3-a875-d031eae4af29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\sound">
+      <UniqueIdentifier>{c951a75e-44e9-4bbc-bdc0-bb7f67c919dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sound">
+      <UniqueIdentifier>{953eea33-e752-4f80-9f8e-e91b5cfb9c5d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -179,6 +185,9 @@
     </ClCompile>
     <ClCompile Include="pm2exporter.cpp">
       <Filter>Source Files\importer</Filter>
+    </ClCompile>
+    <ClCompile Include="soundsystem.cpp">
+      <Filter>Source Files\sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -337,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="pm2exporter.h">
       <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="soundsystem.h">
+      <Filter>Header Files\sound</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -35,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         190
+#define RG_BUILD         191
 #define RG_VERSION_MAJ   0
 #define RG_VERSION_MIN   6
-#define RG_VERSION_PATCH 5
+#define RG_VERSION_PATCH 6
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);
@@ -50,6 +50,7 @@
 namespace Engine {
 
     class World;
+    class SoundSystem;
 
     class RG_DECLSPEC BaseGame {
         protected:
@@ -93,6 +94,8 @@ namespace Engine {
     RG_DECLSPEC String GetEnginePlatform();
 
     RG_DECLSPEC World* GetWorld();
+
+    RG_DECLSPEC SoundSystem* GetSoundSystem();
 
 }
 
