@@ -32,20 +32,22 @@ namespace Engine {
 		void*  data;
 	} SoundBufferCreateInfo;
 
-	// Source for SoundBuffer & StreamBuffer
-	class SoundSource : public Component {
-		public:
-			SoundSource();
-			~SoundSource();
-
-			void Destroy();
-			void Update(Float64 dt);
-
-		private:
-
+	enum SoundBufferType {
+		SBType_STATIC = 0,
+		SBType_STREAM
 	};
 
-	class SoundBuffer {
+	class ISoundBuffer {
+		public:
+			ISoundBuffer() {}
+			~ISoundBuffer() {}
+			RG_INLINE SoundBufferType GetBufferType() { return m_type; }
+
+		protected:
+			SoundBufferType m_type;
+	};
+
+	class SoundBuffer : public ISoundBuffer {
 		public:
 			SoundBuffer(SoundBufferCreateInfo* info);
 			~SoundBuffer();
@@ -56,7 +58,7 @@ namespace Engine {
 			ALenum m_format = 0;
 	};
 
-	class StreamBuffer {
+	class StreamBuffer : public ISoundBuffer {
 		public:
 			StreamBuffer();
 			~StreamBuffer();
@@ -65,8 +67,21 @@ namespace Engine {
 
 	};
 
+	// Source for SoundBuffer & StreamBuffer
+	class SoundSource : public Component {
+		public:
+			SoundSource();
+			~SoundSource();
 
+			void Destroy();
+			void Update(Float64 dt);
 
+		private:
+			ISoundBuffer* buffer;
+
+	};
+
+	typedef struct Source;
 	typedef struct PlaySoundInfo {
 		SoundBuffer* buffer;
 		vec3         position;
@@ -88,10 +103,11 @@ namespace Engine {
 
 		private:
 			std::vector<SoundSource*> m_sourcecomponents;
-			PoolAllocator* m_sourcepool = NULL;
-
+			Source*        m_sourcepool = NULL;
 			ALCdevice*     m_device     = NULL;
 			ALCcontext*    m_ctx        = NULL;
+
+			Source* RequestSource();
 
 	};
 

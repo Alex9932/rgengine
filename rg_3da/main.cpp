@@ -391,7 +391,7 @@ class Application : public BaseGame {
 
 
 			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);
-			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);
+			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/ak47/ak47_shoot1.ogg", NULL, NULL);
 
 			stb_vorbis_info vi = RG_STB_vorbis_get_info(sound.stream);
 			SoundBufferCreateInfo sbinfo = {};
@@ -406,7 +406,6 @@ class Application : public BaseGame {
 			soundbuffer = ss->CreateBuffer(&sbinfo);
 			RG_STB_vorbis_close(&sound);
 			rg_free(sbinfo.data);
-
 
 #if 1
 			Entity* ent2 = world->NewEntity();
