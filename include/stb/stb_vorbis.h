@@ -134,6 +134,7 @@ extern "C" {
 
 	// get general information about the file
 	extern stb_vorbis_info stb_vorbis_get_info(stb_vorbis *f);
+	extern void stb_vorbis_get_info_ptr(stb_vorbis* f, stb_vorbis_info* d);
 
 	// get the last error detected (clears it, too)
 	extern int stb_vorbis_get_error(stb_vorbis *f);
@@ -4275,7 +4276,7 @@ int stb_vorbis_get_sample_offset(stb_vorbis *f)
 		return -1;
 }
 
-stb_vorbis_info stb_vorbis_get_info(stb_vorbis *f)
+stb_vorbis_info stb_vorbis_get_info(stb_vorbis* f)
 {
 	stb_vorbis_info d;
 	d.channels = f->channels;
@@ -4286,6 +4287,27 @@ stb_vorbis_info stb_vorbis_get_info(stb_vorbis *f)
 	d.max_frame_size = f->blocksize_1 >> 1;
 	return d;
 }
+
+/*
+***********************************
+  RGENGINE PART
+***********************************
+*/
+void stb_vorbis_get_info_ptr(stb_vorbis* f, stb_vorbis_info* d)
+{
+	d->channels = f->channels;
+	d->sample_rate = f->sample_rate;
+	d->setup_memory_required = f->setup_memory_required;
+	d->setup_temp_memory_required = f->setup_temp_memory_required;
+	d->temp_memory_required = f->temp_memory_required;
+	d->max_frame_size = f->blocksize_1 >> 1;
+}
+
+/*
+***********************************
+***********************************
+***********************************
+*/
 
 int stb_vorbis_get_error(stb_vorbis *f)
 {

@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /resources/vmd/1
 /resources/vmd/Model
+/resources/gamedata/sounds/music/chipi chipi chapa chapa(looped).ogg
+/resources/gamedata/sounds/music/pesnya-so-vi-paciki-na-mocikax.ogg
+/resources/gamedata/sounds/music/radio.ogg

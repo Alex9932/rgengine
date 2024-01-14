@@ -50,6 +50,8 @@
 	#error "INVALID ENVIRONMENT"
 #endif
 
+#define RG_SET_FLAG(var, flag) (var |= flag)
+#define RG_RESET_FLAG(var, flag) (var &= (~flag))
 #define RG_CHECK_FLAG(var, flag) (var & flag)
 
 #ifdef RG_ENV64

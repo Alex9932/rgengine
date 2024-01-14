@@ -24,6 +24,9 @@
 #include <imgui/ImGuiFileDialog.h>
 #include <imgui/ImGuizmo.h>
 
+#include <soundsystem.h>
+#include <rgstb.h>
+
 using namespace Engine;
 
 static ObjImporter objImporter;
@@ -340,6 +343,19 @@ class Application : public BaseGame {
 			ent_model->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent_model->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent_model->GetTransform()->SetScale({ 1, 1, 1 });
+
+			SoundSystem* ss = Engine::GetSoundSystem();
+			
+			SoundSource* src = ss->NewSoundSource();
+			ent_bg->AttachComponent(src);
+
+			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/music/radio.ogg", NULL, NULL);
+			StreamBuffer* stream = new StreamBuffer(sound.stream);
+
+
+			src->SetBuffer(stream);
+			src->SetRepeat(true);
+			src->Play();
 
 		}
 

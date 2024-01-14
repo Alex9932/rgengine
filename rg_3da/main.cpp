@@ -414,6 +414,7 @@ class Application : public BaseGame {
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif
+			// FJJrVPVfvnmZdAt
 
 			RegisterEventHandler(EHandler);
 		}

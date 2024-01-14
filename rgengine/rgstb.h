@@ -23,6 +23,7 @@ RG_DECLSPEC void   RG_STB_image_free(Uint8* data);
 // STB Vorbis
 RG_DECLSPEC RG_STB_VORBIS   RG_STB_vorbis_open_file(String path, int* error, const stb_vorbis_alloc* alloc);
 RG_DECLSPEC stb_vorbis_info RG_STB_vorbis_get_info(stb_vorbis* f);
+RG_DECLSPEC void            RG_STB_vorbis_get_info_ptr(stb_vorbis* f, stb_vorbis_info* d);
 RG_DECLSPEC Uint32          RG_STB_vorbis_stream_length_in_samples(stb_vorbis* f);
 RG_DECLSPEC Float32         RG_STB_vorbis_stream_length_in_seconds(stb_vorbis* f);
 RG_DECLSPEC Sint32          RG_STB_vorbis_get_samples_short_interleaved(stb_vorbis* f, int channels, short* buffer, int num_shorts);

@@ -4,6 +4,8 @@
 #include "entity.h"
 #include "allocator.h"
 
+#include "rgstb.h"
+
 #include <AL/al.h>
 #include <AL/alc.h>
 
@@ -21,6 +23,17 @@ Functions:
  - Playsound ( Buffer sound, vec3 position )
  - Source.Playstream ( StreamBuffer stream )
 
+*/
+
+#define RG_SOUND_LOOPING 0x00000001
+#define RG_SOUND_PAUSED  0x00000002
+#define RG_SOUND_ENDED   0x00000004
+/* RESERVED
+#define RG_SOUND_ 0x00000008
+#define RG_SOUND_ 0x00000010
+#define RG_SOUND_ 0x00000020
+#define RG_SOUND_ 0x00000040
+#define RG_SOUND_ 0x00000080
 */
 
 namespace Engine {
@@ -41,16 +54,25 @@ namespace Engine {
 		public:
 			ISoundBuffer() {}
 			~ISoundBuffer() {}
-			RG_INLINE SoundBufferType GetBufferType() { return m_type; }
+			virtual void Update() {}
+			virtual void Play() {}
+			virtual void Stop() {}
+			virtual void Pause() {}
+			RG_INLINE SoundBufferType GetBufferType()  { return m_type;   }
+			RG_INLINE SoundSource*    GetSource()      { return m_source; }
+
+			RG_INLINE void SetSource(SoundSource* src) { m_source = src;  }
 
 		protected:
-			SoundBufferType m_type;
+			SoundBufferType m_type   = SBType_STATIC;
+			SoundSource*    m_source = NULL;
 	};
 
 	class SoundBuffer : public ISoundBuffer {
 		public:
 			SoundBuffer(SoundBufferCreateInfo* info);
 			~SoundBuffer();
+			virtual void Update() {}
 			RG_INLINE ALuint GetBuffer() { return m_buffer; }
 
 		private:
@@ -60,10 +82,20 @@ namespace Engine {
 
 	class StreamBuffer : public ISoundBuffer {
 		public:
-			StreamBuffer();
-			~StreamBuffer();
+			RG_DECLSPEC StreamBuffer(stb_vorbis* stream);
+			RG_DECLSPEC ~StreamBuffer();
+			virtual void Update();
+			virtual void Play();
+			virtual void Stop();
+			virtual void Pause();
 
 		private:
+			stb_vorbis*     m_stream;
+			stb_vorbis_info m_info;
+			ALuint          m_buffers[2];
+			ALenum          m_format  = 0;
+			Uint32          m_flags   = 0;
+			Uint32          m_current = 0;
 
 	};
 
@@ -73,11 +105,27 @@ namespace Engine {
 			SoundSource();
 			~SoundSource();
 
-			void Destroy();
+			virtual void Destroy();
 			void Update(Float64 dt);
 
+			RG_DECLSPEC void SetBuffer(ISoundBuffer* buffer);
+
+			RG_DECLSPEC void Play();
+			RG_DECLSPEC void Stop();
+			RG_DECLSPEC void Pause();
+
+			RG_DECLSPEC void SetRepeat(Bool repeat);
+
+			RG_DECLSPEC Bool IsPaused();
+			RG_DECLSPEC Bool IsEnded();
+			RG_DECLSPEC Bool IsLooping();
+
+			RG_INLINE ALuint GetSource() { return m_source; }
+
 		private:
-			ISoundBuffer* buffer;
+			ISoundBuffer* m_buffer = NULL;
+			ALuint        m_source = 0;
+			Uint32        m_flags  = 0;
 
 	};
 
@@ -97,11 +145,15 @@ namespace Engine {
 			RG_DECLSPEC SoundBuffer* CreateBuffer(SoundBufferCreateInfo* info);
 			RG_DECLSPEC void DestroyBuffer(SoundBuffer* ptr);
 
+			RG_DECLSPEC SoundSource* NewSoundSource();
+			RG_DECLSPEC void DeleteSoundSource(SoundSource* comp);
+
 			RG_DECLSPEC void PlaySound(PlaySoundInfo* info);
 
 			void Update(Float64 dt);
 
 		private:
+			Engine::PoolAllocator*    m_alloc;
 			std::vector<SoundSource*> m_sourcecomponents;
 			Source*        m_sourcepool = NULL;
 			ALCdevice*     m_device     = NULL;

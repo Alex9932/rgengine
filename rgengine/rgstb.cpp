@@ -36,6 +36,10 @@ stb_vorbis_info RG_STB_vorbis_get_info(stb_vorbis* f) {
     return stb_vorbis_get_info(f);
 }
 
+void RG_STB_vorbis_get_info_ptr(stb_vorbis* f, stb_vorbis_info* d) {
+    stb_vorbis_get_info_ptr(f, d);
+}
+
 Uint32 RG_STB_vorbis_stream_length_in_samples(stb_vorbis* f) {
     return stb_vorbis_stream_length_in_samples(f);
 }
