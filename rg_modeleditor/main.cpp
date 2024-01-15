@@ -56,6 +56,8 @@ class Application : public BaseGame {
 		// Model entity
 		Entity* ent_model = NULL;
 
+		PointLight* l = NULL;
+
 
 	public:
 		Application() {
@@ -202,13 +204,16 @@ class Application : public BaseGame {
 			}
 			ImGui::End();
 
-			static vec3    color     = {};
-			static Float32 intensity = 0;
+			static vec3    color     = l->GetColor();
+			static Float32 intensity = l->GetIntensity();
 
 			ImGui::Begin("Light");
 			ImGui::InputFloat("Intensity", &intensity);
 			ImGui::ColorPicker3("Color", color.array);
 			ImGui::End();
+
+			l->SetColor(color);
+			l->SetIntensity(intensity);
 
 			if (ImGuiFileDialog::Instance()->Display("Open model")) {
 				if (ImGuiFileDialog::Instance()->IsOk()) {
@@ -332,7 +337,7 @@ class Application : public BaseGame {
 			ent_bg->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent_bg->GetTransform()->SetScale({ 1, 1, 1 });
 
-			PointLight* l = Render::GetLightSystem()->NewPointLight();
+			l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
 			l->SetIntensity(50);
 			l->SetOffset({ -1.86, 2.96, 1.81 });
@@ -349,7 +354,7 @@ class Application : public BaseGame {
 			SoundSource* src = ss->NewSoundSource();
 			ent_bg->AttachComponent(src);
 
-			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/music/radio.ogg", NULL, NULL);
+			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/music/caramellooped.ogg", NULL, NULL);
 			StreamBuffer* stream = new StreamBuffer(sound.stream);
 
 
