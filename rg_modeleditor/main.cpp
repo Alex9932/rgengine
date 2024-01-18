@@ -6,6 +6,8 @@
 #include <world.h>
 #include <filesystem.h>
 
+#include <event.h>
+
 #include <rgstring.h>
 
 #include <camera.h>
@@ -41,6 +43,38 @@ static R3DStaticModelInfo modelInfo       = {};
 static R3DRiggedModelInfo rmodelInfo      = {};
 static KinematicsModel*   kinematicsModel = NULL;
 static Animation*         animation       = NULL;
+
+static SoundSource* src = NULL;
+
+static StreamBuffer* stream;
+static StreamBuffer* stream2;
+
+static Bool EHandler(SDL_Event* event) {
+	if (event->type != SDL_KEYDOWN) { return true; }
+
+	if (event->key.keysym.scancode == SDL_SCANCODE_R) {
+		src->Pause();
+	}
+	if (event->key.keysym.scancode == SDL_SCANCODE_T) {
+		src->Play();
+	}
+	if (event->key.keysym.scancode == SDL_SCANCODE_Y) {
+		src->Stop();
+	}
+
+	if (event->key.keysym.scancode == SDL_SCANCODE_Q) {
+		src->Stop();
+		src->SetBuffer(stream);
+		src->Play();
+	}
+	if (event->key.keysym.scancode == SDL_SCANCODE_E) {
+		src->Stop();
+		src->SetBuffer(stream2);
+		src->Play();
+	}
+
+	return true;
+}
 
 class Application : public BaseGame {
 	private:
@@ -351,16 +385,21 @@ class Application : public BaseGame {
 
 			SoundSystem* ss = Engine::GetSoundSystem();
 			
-			SoundSource* src = ss->NewSoundSource();
+			src = ss->NewSoundSource();
 			ent_bg->AttachComponent(src);
 
 			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/music/caramellooped.ogg", NULL, NULL);
-			StreamBuffer* stream = new StreamBuffer(sound.stream);
+			stream = new StreamBuffer(sound.stream);
+
+			RG_STB_VORBIS sound2 = RG_STB_vorbis_open_file("gamedata/sounds/music/chipi chipi chapa chapa(looped).ogg", NULL, NULL);
+			stream2 = new StreamBuffer(sound2.stream);
 
 
 			src->SetBuffer(stream);
 			src->SetRepeat(true);
 			src->Play();
+
+			RegisterEventHandler(EHandler);
 
 		}
 
