@@ -3,7 +3,7 @@
 ### Features:
 - Point lights
 - ImGUI
-- ~~Audio~~ (WIP)
+- Audio (Testing)
 - Skeletal animation
 - ~~Screen-space reflections~~ (broken)
 
