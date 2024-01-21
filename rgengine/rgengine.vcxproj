@@ -166,6 +166,8 @@
     <ClCompile Include="rgmatrix.cpp" />
     <ClCompile Include="rgstb.cpp" />
     <ClCompile Include="rgstring.cpp" />
+    <ClCompile Include="soundbuffer.cpp" />
+    <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="timer.cpp" />
@@ -211,6 +213,8 @@
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
+    <ClInclude Include="soundbuffer.h" />
+    <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="input.h" />

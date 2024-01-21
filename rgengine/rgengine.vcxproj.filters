@@ -189,6 +189,12 @@
     <ClCompile Include="soundsystem.cpp">
       <Filter>Source Files\sound</Filter>
     </ClCompile>
+    <ClCompile Include="soundbuffer.cpp">
+      <Filter>Source Files\sound</Filter>
+    </ClCompile>
+    <ClCompile Include="soundsource.cpp">
+      <Filter>Source Files\sound</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -348,6 +354,12 @@
       <Filter>Header Files\importer</Filter>
     </ClInclude>
     <ClInclude Include="soundsystem.h">
+      <Filter>Header Files\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="soundbuffer.h">
+      <Filter>Header Files\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="soundsource.h">
       <Filter>Header Files\sound</Filter>
     </ClInclude>
   </ItemGroup>
