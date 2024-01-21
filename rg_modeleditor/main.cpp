@@ -7,6 +7,7 @@
 #include <filesystem.h>
 
 #include <event.h>
+#include <input.h>
 
 #include <rgstring.h>
 
@@ -50,6 +51,19 @@ static StreamBuffer* stream;
 static StreamBuffer* stream2;
 
 static Bool EHandler(SDL_Event* event) {
+	if (event->type != SDL_MOUSEWHEEL) { return true; }
+
+	if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
+		Float32 v = Engine::GetSoundSystem()->GetVolume();
+		//v += GetMouseDW() * 0.1f;
+		v += event->wheel.y * 0.1f;
+		Engine::GetSoundSystem()->SetVolume(v);
+		rgLogInfo(RG_LOG_SYSTEM, "Volume: %f", v);
+	}
+
+	return true;
+}
+static Bool EHandler2(SDL_Event* event) {
 	if (event->type != SDL_KEYDOWN) { return true; }
 
 	if (event->key.keysym.scancode == SDL_SCANCODE_R) {
@@ -97,7 +111,7 @@ class Application : public BaseGame {
 		Application() {
 			this->isClient = true;
 			this->isGraphics = true;
-			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_FULLSCREEN);
+			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_FULLSCREEN | RG_RENDER_NOLIGHT);
 		}
 
 		~Application() {
@@ -388,18 +402,15 @@ class Application : public BaseGame {
 			src = ss->NewSoundSource();
 			ent_bg->AttachComponent(src);
 
-			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/music/caramellooped.ogg", NULL, NULL);
-			stream = new StreamBuffer(sound.stream);
-
-			RG_STB_VORBIS sound2 = RG_STB_vorbis_open_file("gamedata/sounds/music/chipi chipi chapa chapa(looped).ogg", NULL, NULL);
-			stream2 = new StreamBuffer(sound2.stream);
-
+			stream  = new StreamBuffer("gamedata/sounds/music/caramellooped.ogg");
+			stream2 = new StreamBuffer("gamedata/sounds/music/chipi chipi chapa chapa(looped).ogg");
 
 			src->SetBuffer(stream);
 			src->SetRepeat(true);
 			src->Play();
 
 			RegisterEventHandler(EHandler);
+			RegisterEventHandler(EHandler2);
 
 		}
 
@@ -407,6 +418,10 @@ class Application : public BaseGame {
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), LookatCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
+
+			src->Stop();
+			delete stream;
+			delete stream2;
 
 			World* world = GetWorld();
 

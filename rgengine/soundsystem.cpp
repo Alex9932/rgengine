@@ -48,10 +48,11 @@ namespace Engine {
 		alGenSources(1, &m_source);
 	}
 
-	SoundSource::~SoundSource() { Destroy(); }
+	SoundSource::~SoundSource() { }
 
 	void SoundSource::Destroy() {
 		alDeleteSources(1, &m_source);
+		Engine::GetSoundSystem()->DeleteSoundSource(this);
 	}
 
 	void SoundSource::Update(Float64 dt) {
@@ -135,9 +136,9 @@ namespace Engine {
 	/////////////////////////////////////////////////////
 	// Stream buffer
 	/////////////////////////////////////////////////////
-	StreamBuffer::StreamBuffer(stb_vorbis* stream) {
+	StreamBuffer::StreamBuffer(String stream) {
 		m_type   = SBType_STREAM;
-		m_stream = stream;
+		m_stream = RG_STB_vorbis_open_file(stream, NULL, NULL);
 		alGenBuffers(2, m_buffers);
 
 		//m_info = RG_STB_vorbis_get_info(stream);
@@ -146,6 +147,7 @@ namespace Engine {
 
 	StreamBuffer::~StreamBuffer() {
 		alDeleteBuffers(2, m_buffers);
+		RG_STB_vorbis_close(&m_stream);
 	}
 
 	void StreamBuffer::Update() {
@@ -162,10 +164,10 @@ namespace Engine {
 			alSourceUnqueueBuffers(m_source->GetSource(), 1, &buff);
 			//m_current = (m_current++) & 1;
 
-			if (!RefillBufferData(buff, m_stream)) {
+			if (!RefillBufferData(buff, m_stream.stream)) {
 				if (m_source->IsLooping()) {
-					RG_STB_vorbis_seek_start(m_stream);
-					RefillBufferData(buff, m_stream);
+					RG_STB_vorbis_seek_start(m_stream.stream);
+					RefillBufferData(buff, m_stream.stream);
 				} else {
 					RG_SET_FLAG(m_flags, RG_SOUND_ENDED);
 				}
@@ -185,11 +187,11 @@ namespace Engine {
 			rgLogInfo(RG_LOG_SYSTEM, "Initial queue buffers");
 			// Queue 2 buffers
 			m_current = 0;
-			RefillBufferData(m_buffers[m_current], m_stream);
+			RefillBufferData(m_buffers[m_current], m_stream.stream);
 			alSourceQueueBuffers(m_source->GetSource(), 1, &m_buffers[m_current]);
 			m_current = (m_current++) & 1;
 
-			RefillBufferData(m_buffers[m_current], m_stream);
+			RefillBufferData(m_buffers[m_current], m_stream.stream);
 			alSourceQueueBuffers(m_source->GetSource(), 1, &m_buffers[m_current]);
 			m_current = (m_current++) & 1;
 
@@ -213,7 +215,7 @@ namespace Engine {
 			alSourceUnqueueBuffers(m_source->GetSource(), proc, buff);
 		}
 
-		RG_STB_vorbis_seek_start(m_stream);
+		RG_STB_vorbis_seek_start(m_stream.stream);
 
 	}
 
@@ -236,6 +238,9 @@ namespace Engine {
 		if (!alcMakeContextCurrent(m_ctx)) {
 			RG_ERROR_MSG("Failed to create ALC context!");
 		}
+
+		// Setup OpenAL
+		alListenerf(AL_GAIN, m_volume);
 
 		// Make sources
 		for (Uint32 i = 0; i < RG_SOURCEPOOL_SIZE; i++) {
@@ -276,7 +281,9 @@ namespace Engine {
 		std::vector<SoundSource*>::iterator it = m_sourcecomponents.begin();
 		for (; it != m_sourcecomponents.end(); it++) {
 			if (*it = comp) {
-				m_sourcecomponents.erase(it);
+				*it = std::move(m_sourcecomponents.back());
+				m_sourcecomponents.pop_back();
+				//m_sourcecomponents.erase(it);
 				RG_DELETE_CLASS(m_alloc, SoundSource, comp);
 				break;
 			}
@@ -326,6 +333,13 @@ namespace Engine {
 			(*ssit)->Update(dt);
 		}
 
+	}
+
+	void SoundSystem::SetVolume(Float32 v) {
+		m_volume = v;
+		if (m_volume > 1) { m_volume = 1; }
+		else if (m_volume < 0) { m_volume = 0; }
+		alListenerf(AL_GAIN, m_volume);
 	}
 
 	Source* SoundSystem::RequestSource() {

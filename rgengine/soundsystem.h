@@ -30,7 +30,6 @@ Functions:
 #define RG_SOUND_ENDED   0x00000004
 #define RG_SOUND_PLAYING 0x00000008
 /* RESERVED
-#define RG_SOUND_ 0x00000008
 #define RG_SOUND_ 0x00000010
 #define RG_SOUND_ 0x00000020
 #define RG_SOUND_ 0x00000040
@@ -83,7 +82,7 @@ namespace Engine {
 
 	class StreamBuffer : public ISoundBuffer {
 		public:
-			RG_DECLSPEC StreamBuffer(stb_vorbis* stream);
+			RG_DECLSPEC StreamBuffer(String stream);
 			RG_DECLSPEC ~StreamBuffer();
 			virtual void Update();
 			virtual void Play();
@@ -91,7 +90,7 @@ namespace Engine {
 			virtual void Pause();
 
 		private:
-			stb_vorbis*     m_stream;
+			RG_STB_VORBIS   m_stream;
 			stb_vorbis_info m_info;
 			ALuint          m_buffers[2];
 			ALenum          m_format  = 0;
@@ -153,12 +152,17 @@ namespace Engine {
 
 			void Update(Float64 dt);
 
+			Float32 GetVolume() { return m_volume; }
+			RG_DECLSPEC void SetVolume(Float32 v);
+
 		private:
 			Engine::PoolAllocator*    m_alloc;
 			std::vector<SoundSource*> m_sourcecomponents;
 			Source*        m_sourcepool = NULL;
 			ALCdevice*     m_device     = NULL;
 			ALCcontext*    m_ctx        = NULL;
+
+			Float32        m_volume     = 0.1f;
 
 			Source* RequestSource();
 

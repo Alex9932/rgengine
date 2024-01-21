@@ -18,6 +18,7 @@ typedef Uint32 RenderFlags;
 #define RG_RENDER_FULLSCREEN 1
 #define RG_RENDER_USE3D      2
 #define RG_RENDER_RESERVED   4
+#define RG_RENDER_NOLIGHT    8
 
 // Backend handle
 typedef struct R3D_Material R3D_Material;

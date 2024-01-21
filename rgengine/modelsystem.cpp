@@ -15,6 +15,7 @@ namespace Engine {
 
 	void ModelComponent::Destroy() {
 		Render::R3D_DestroyStaticModel(GetHandle());
+		Render::GetModelSystem()->DeleteModelComponent(this);
 	}
 
 	RiggedModelComponent::RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
@@ -28,6 +29,7 @@ namespace Engine {
 		Render::R3D_DestroyBoneBuffer(m_kmodel->GetBufferHandle());
 		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
 		Render::R3D_DestroyRiggedModel(GetHandle());
+		Render::GetModelSystem()->DeleteRiggedModelComponent(this);
 	}
 
 
@@ -66,7 +68,9 @@ namespace Engine {
 		std::vector<ModelComponent*>::iterator it = this->m_modelComponents.begin();
 		for (; it != this->m_modelComponents.end(); it++) {
 			if(*it = comp) {
-				this->m_modelComponents.erase(it);
+				*it = std::move(m_modelComponents.back());
+				m_modelComponents.pop_back();
+				//this->m_modelComponents.erase(it);
 				RG_DELETE_CLASS(this->m_alloc, ModelComponent, comp);
 				break;
 			}
@@ -83,7 +87,9 @@ namespace Engine {
 		std::vector<RiggedModelComponent*>::iterator it = this->m_rmodelComponents.begin();
 		for (; it != this->m_rmodelComponents.end(); it++) {
 			if (*it = comp) {
-				this->m_rmodelComponents.erase(it);
+				*it = std::move(m_rmodelComponents.back());
+				m_rmodelComponents.pop_back();
+				//this->m_rmodelComponents.erase(it);
 				RG_DELETE_CLASS(this->m_ralloc, RiggedModelComponent, comp);
 				break;
 			}

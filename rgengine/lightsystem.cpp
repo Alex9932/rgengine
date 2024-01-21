@@ -50,7 +50,9 @@ namespace Engine {
 		std::vector<PointLight*>::iterator it = this->m_pointlights.begin();
 		for (; it != this->m_pointlights.end(); it++) {
 			if (*it = comp) {
-				this->m_pointlights.erase(it);
+				*it = std::move(m_pointlights.back());
+				m_pointlights.pop_back();
+				//this->m_pointlights.erase(it);
 				RG_DELETE_CLASS(this->m_palloc, PointLight, comp);
 				break;
 			}
@@ -67,7 +69,9 @@ namespace Engine {
 		std::vector<SpotLight*>::iterator it = this->m_spotlights.begin();
 		for (; it != this->m_spotlights.end(); it++) {
 			if (*it = comp) {
-				this->m_spotlights.erase(it);
+				*it = std::move(m_spotlights.back());
+				m_spotlights.pop_back();
+				//this->m_spotlights.erase(it);
 				RG_DELETE_CLASS(this->m_salloc, SpotLight, comp);
 				break;
 			}
