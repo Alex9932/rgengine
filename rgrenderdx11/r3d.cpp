@@ -9,6 +9,7 @@
 
 #include "shader.h"
 #include "gbuffer.h"
+#include "shadowbuffer.h"
 #include "lightpass.h"
 #include "postprocess.h"
 
@@ -39,6 +40,7 @@ struct ConstBuffer {
 };
 
 static Shader* shader;
+static Shader* shadowshader;
 static Buffer* mBuffer;
 static Buffer* cBuffer;
 
@@ -99,6 +101,10 @@ void InitializeR3D(ivec2* size) {
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.ps");
 	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
 
+	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.vs");
+	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.ps");
+	shadowshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
+
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
 	bInfo.usage = BUFFER_DYNAMIC;
@@ -108,6 +114,10 @@ void InitializeR3D(ivec2* size) {
 	bInfo.length = sizeof(ConstBuffer);
 	cBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 
+	ivec2 ssize = { 2048, 2048 };
+	//ivec2 ssize = { 4096*2, 4096 * 2 };
+
+	CreateShadowBuffer(&ssize);
 	CreateGBuffer(size);
 	CreateLightpass(size);
 	CreateFX(size);
@@ -115,6 +125,7 @@ void InitializeR3D(ivec2* size) {
 
 void DestroyR3D() {
 
+	DestroyShadowBuffer();
 	DestroyLightpass();
 	DestroyGBuffer();
 	DestroyFX();
@@ -122,6 +133,7 @@ void DestroyR3D() {
 	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
 
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
+	RG_DELETE_CLASS(RGetAllocator(), Shader, shadowshader);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, mBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
 
@@ -137,7 +149,8 @@ void DestroyR3D() {
 
 void ResizeR3D(ivec2* wndSize) {
 
-	ResizeGbuffer(wndSize);
+	//ResizeShadowBuffer(wndSize);
+	ResizeGBuffer(wndSize);
 	ResizeLightpass(wndSize);
 	ResizeFX(wndSize);
 
@@ -424,7 +437,6 @@ void R3D_DestroyRiggedModel(R3D_RiggedModel* hrmdl) {
 	alloc_riggedmodels->Deallocate(hrmdl);
 }
 
-// !!! Not tested !!!
 R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
 	R3D_BoneBuffer* buffer = (R3D_BoneBuffer*)alloc_bonebuffers->Allocate();
 	BufferCreateInfo vbufferInfo = {};
@@ -436,14 +448,6 @@ R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
 	vbufferInfo.stride = sizeof(mat4);
 	vbufferInfo.miscflags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	buffer->bBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
-
-#if 0
-	mat4 data[1024];
-	for (Uint32 i = 0; i < 1024; i++) {
-		data[i] = MAT4_IDENTITY();
-	}
-	buffer->bBuffer->SetData(0, info->len, data);
-#endif
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	srvDesc.Format                = DXGI_FORMAT_UNKNOWN;
@@ -535,18 +539,12 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 	}
 }
 
-void R3D_StartRenderTask(void* RESERVERD_PTR) {
-	drawCalls     = 0;
-	dispatchCalls = 0;
-
+static void DoSkeletonCalculation() {
 	RQueue* squeue = GetStaticQueue();
 	RQueue* rqueue = GetRiggedQueue();
-
-	ID3D11DeviceContext* ctx = DX11_GetContext();
-
-	// Calculate skeletons
 	Uint32 rsize = rqueue->Size() / 3;
 
+	ID3D11DeviceContext* ctx = DX11_GetContext();
 
 	skeletonShader->Bind();
 
@@ -557,26 +555,125 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 
 		R3D_RiggedModel* mdl = (R3D_RiggedModel*)rqueue->Next(); // NOT USED
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();
-		mat4* matrix = (mat4*)rqueue->Next();                    // NOT USED
+		mat4* matrix = (mat4*)rqueue->Next();
+
+		/////////
+		// TMP //
+		/////////
+		if (matrix->m33 < 1) { continue; } // Culled, skip this one
+		/////////
 
 		views[0] = buff->resourceView; // Bone buffer
 		views[1] = mdl->i_srv_vtx;     // Input vertex data
 		views[2] = mdl->i_srv_wht;     // Input weight data
-		uav      = mdl->s_srv;         // Output vertex data
-
+		uav = mdl->s_srv;         // Output vertex data
 
 		ctx->CSSetShaderResources(0, 3, views);
 		ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 
-		skeletonShader->Dispatch({ 10000, 1, 1 });
+		skeletonShader->Dispatch({ 10000, 1, 1 }); // !!!WARNING!!! MAX 10000 Vertices
 		dispatchCalls++;
 	}
 
 	uav = NULL;
 	ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 	rqueue->Reset();
+}
 
-	// Geometry pass
+static void mat4_lookat(mat4* dst, const vec3& pos, const vec3& center, const vec3& up) {
+
+	vec3 _pos = pos;
+	vec3 _cen = center;
+	vec3 _up  = up;
+
+	vec3 _f = _cen - _pos;
+	vec3 f = _f.normalize();
+
+	vec3 _s = _up.cross(f);
+	vec3 s = _s.normalize();
+
+	vec3 u = f.cross(s);
+
+	*dst = MAT4_IDENTITY();
+
+	dst->m00 = s.x;
+	dst->m00 = s.y;
+	dst->m00 = s.z;
+	dst->m00 = u.x;
+	dst->m00 = u.y;
+	dst->m00 = u.z;
+	dst->m00 = f.x;
+	dst->m00 = f.y;
+	dst->m00 = f.z;
+	dst->m00 = -s.dot(pos);
+	dst->m00 = -u.dot(pos);
+	dst->m00 = -f.dot(pos);
+
+	/*
+	vec<3, T, Q> const f(normalize(center - eye));
+	vec<3, T, Q> const s(normalize(cross(up, f)));
+	vec<3, T, Q> const u(cross(f, s));
+	mat<4, 4, T, Q> Result(1);
+	Result[0][0] = s.x;
+	Result[1][0] = s.y;
+	Result[2][0] = s.z;
+	Result[0][1] = u.x;
+	Result[1][1] = u.y;
+	Result[2][1] = u.z;
+	Result[0][2] = f.x;
+	Result[1][2] = f.y;
+	Result[2][2] = f.z;
+	Result[3][0] = -dot(s, eye);
+	Result[3][1] = -dot(u, eye);
+	Result[3][2] = -dot(f, eye);
+	return Result;
+	*/
+}
+
+static void DoShadowmapPass() {
+	RQueue* squeue = GetStaticQueue();
+	RQueue* rqueue = GetRiggedQueue();
+	Uint32 ssize = squeue->Size() / 2;
+	Uint32 rsize = rqueue->Size() / 3;
+
+	ID3D11DeviceContext* ctx = DX11_GetContext();
+
+	BindShadowBuffer();
+
+	// Global light projection (ortho matrix) * Global light direction (rotation matrix)
+	//matrixBuffer.viewproj = *GetCameraProjection() * *GetCameraView();
+	matrixBuffer.viewproj = *GetLightMatrix();
+	shadowshader->Bind();
+
+	ID3D11Buffer* matBuffer = mBuffer->GetHandle();
+	ctx->VSSetConstantBuffers(0, 1, &matBuffer);
+
+	for (Uint32 i = 0; i < ssize; i++) {
+		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
+		mat4* matrix = (mat4*)squeue->Next();
+		if (matrix->m33 < 1) { matrix->m33 = 1; }
+		DrawStaticModel(mdl, matrix);
+	}
+
+	for (Uint32 i = 0; i < rsize; i++) {
+		R3D_RiggedModel* mdl = (R3D_RiggedModel*)rqueue->Next();
+		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
+		mat4* matrix = (mat4*)rqueue->Next();
+		if (matrix->m33 < 1) { matrix->m33 = 1; }
+		DrawStaticModel(&mdl->s_model, matrix);
+	}
+
+	squeue->Reset();
+	rqueue->Reset();
+}
+
+static void DoGBufferPass() {
+
+	RQueue* squeue = GetStaticQueue();
+	RQueue* rqueue = GetRiggedQueue();
+	Uint32 rsize = rqueue->Size() / 3;
+
+	ID3D11DeviceContext* ctx = DX11_GetContext();
 
 	BindGBuffer();
 
@@ -590,6 +687,7 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 	for (Uint32 i = 0; i < ssize; i++) {
 		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
 		mat4* matrix = (mat4*)squeue->Next();
+		if (matrix->m33 < 1) { continue; } // Culled, skip this one
 		DrawStaticModel(mdl, matrix);
 	}
 
@@ -597,20 +695,27 @@ void R3D_StartRenderTask(void* RESERVERD_PTR) {
 		R3D_RiggedModel* mdl = (R3D_RiggedModel*)rqueue->Next();
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
 		mat4* matrix = (mat4*)rqueue->Next();
+		if (matrix->m33 < 1) { continue; } // Culled, skip this one
 		DrawStaticModel(&mdl->s_model, matrix);
 	}
 
-	squeue->Clear();
-	rqueue->Clear();
+	squeue->Reset();
+	rqueue->Reset();
+}
+
+void R3D_StartRenderTask(void* RESERVERD_PTR) {
+	drawCalls     = 0;
+	dispatchCalls = 0;
+
+	DoSkeletonCalculation(); // Calculate skeletons
+	DoShadowmapPass();       // Global shadowmap pass
+	DoGBufferPass();         // Geometry pass
+
+	GetStaticQueue()->Clear();
+	GetRiggedQueue()->Clear();
 	GetMatrixAllocator()->Deallocate();
 
-	// Light pass
-
-	DoLightpass();
-
-	// Postprocess
-
-	DoPostprocess();
-
+	DoLightpass();   // Light pass
+	DoPostprocess(); // Postprocess
 
 }

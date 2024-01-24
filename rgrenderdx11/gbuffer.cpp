@@ -83,8 +83,8 @@ void CreateGBuffer(ivec2* size) {
 
     D3D11_RASTERIZER_DESC rasterDesc = {};
     rasterDesc.AntialiasedLineEnable = false;
-    //rasterDesc.CullMode = D3D11_CULL_FRONT;
-    rasterDesc.CullMode = D3D11_CULL_NONE;
+    rasterDesc.CullMode = D3D11_CULL_FRONT;
+    //rasterDesc.CullMode = D3D11_CULL_NONE;
     rasterDesc.DepthBias = 0;
     rasterDesc.DepthBiasClamp = 0.0f;
     rasterDesc.DepthClipEnable = true;
@@ -105,7 +105,7 @@ void DestroyGBuffer() {
     depthStencilState->Release();
 }
 
-void ResizeGbuffer(ivec2* size) {
+void ResizeGBuffer(ivec2* size) {
     _DestroyFramebuffer();
     _CreateFramebuffer(size);
 }

@@ -273,7 +273,7 @@ class Application : public BaseGame {
 			//ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
-			pm2Importer.ImportModel("gamedata/models/megumin/v4.pm2", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			//objImporter.FreeModelData(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
@@ -290,6 +290,11 @@ class Application : public BaseGame {
 			R3DStaticModelInfo pm2info = {};
 			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
+			pm2Importer.FreeModelData(&pm2info);
+
+
+			pm2Importer.ImportModel("gamedata/models/skybox/geometry.pm2", &pm2info);
+			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 #endif
 #if 0
@@ -414,6 +419,13 @@ class Application : public BaseGame {
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif
+
+			Entity* ent4 = world->NewEntity();
+			ent4->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
+			ent4->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent4->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent4->GetTransform()->SetScale({ 1, 1, 1 });
+
 			// FJJrVPVfvnmZdAt
 
 			RegisterEventHandler(EHandler);

@@ -9,7 +9,7 @@ ID3D11ShaderResourceView* GetGBufferDepth();
 
 void CreateGBuffer(ivec2* size);
 void DestroyGBuffer();
-void ResizeGbuffer(ivec2* size);
+void ResizeGBuffer(ivec2* size);
 void BindGBuffer();
 
 

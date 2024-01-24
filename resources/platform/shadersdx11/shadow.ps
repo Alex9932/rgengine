@@ -1,0 +1,24 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+//	float4 color : SV_Target0;
+};
+
+Texture2D shaderTexture : register(t0); // albedo (if transparent)
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+	float4 textureColor = shaderTexture.Sample(SampleType, psin.uv);
+
+	if(textureColor.a < 0.8) {
+		discard;
+	}
+
+	PSOUTPUT pout;
+	return pout;
+
+}

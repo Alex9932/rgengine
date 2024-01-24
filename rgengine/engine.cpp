@@ -323,13 +323,10 @@ namespace Engine {
 
         if (game_ptr->IsClient()) {
             Window_Show();
-            //SoundSystem_Initialize();
             soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
         }
 
         //physicssystem = RG_NEW_CLASS(std_allocator, PhysicsSystem)();
-
-        //world = RG_NEW_CLASS(std_allocator, World)();
 
         game_ptr->Initialize();
     }
@@ -370,8 +367,7 @@ namespace Engine {
             if (game_ptr->IsClient()) {
                 core_profiler->StartSection("render");
                 Render::Update();
-                //core_profiler->StartSection("audio");
-                //GetSoundSystem()->Update(GetDeltaTime());
+                core_profiler->StartSection("audio");
                 soundsystem->Update(GetDeltaTime());
             }
 
@@ -396,7 +392,6 @@ namespace Engine {
 
         if (game_ptr->IsClient()) {
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
-            //DestroySoundSystem();
             Window_Destroy();
         }
 

@@ -11,6 +11,7 @@
 
 #include "r3d.h"
 #include "gbuffer.h"
+#include "shadowbuffer.h"
 
 Float32 sphere_vertices[] = {
     0.000000, -1.000000,  0.000000,
@@ -56,7 +57,6 @@ Float32 sphere_vertices[] = {
     -0.425323,  0.850654, -0.309011,
     0.162456,  0.850654, -0.499995
 };
-
 Uint16 sphere_indices[] = {
     0, 13, 12,
     1, 13, 15,
@@ -140,6 +140,16 @@ Uint16 sphere_indices[] = {
     13, 1, 14
 };
 
+Float32 quad_vertices[] = {
+    -1, -1, 0,
+    -1,  1, 0,
+     1,  1, 0,
+     1, -1, 0,
+};
+Uint16 quad_indices[] = {
+    0, 1, 2, 2, 3, 0
+};
+
 struct ShaderConstants {
 	mat4 viewproj;
 	mat4 model;
@@ -152,18 +162,26 @@ struct ShaderLight {
 	Float32 intensity;
 	vec3    pos;
 	Uint32  screenSize;
+    mat4    lightMatrix;
 };
 
-static Shader*         lightshader = NULL;
-static Buffer*         cBuffer     = NULL;
-static Buffer*         lBuffer     = NULL;
-static ShaderConstants constants   = {};
-static ShaderLight     light       = {};
+static Shader*         globalshader = NULL;
+static Shader*         pointshader  = NULL;
 
-static ivec2           screenSize  = {0, 0};
+static Buffer*         cBuffer      = NULL;
+static Buffer*         lBuffer      = NULL;
+static ShaderConstants constants    = {};
+static ShaderLight     light        = {};
 
-static Buffer*         vBuffer     = NULL;
-static Buffer*         iBuffer     = NULL;
+static GlobalLight     globallight  = {};
+
+static ivec2           screenSize   = {0, 0};
+
+static Buffer*         vBuffer      = NULL;
+static Buffer*         iBuffer      = NULL;
+
+static Buffer*         vBuffer_quad = NULL;
+static Buffer*         iBuffer_quad = NULL;
 
 static ID3D11Texture2D*          outputBuffer  = NULL;
 static ID3D11ShaderResourceView* outputResView = NULL;
@@ -172,6 +190,8 @@ static ID3D11RenderTargetView*   outputView    = NULL;
 static ID3D11RasterizerState*    rasterState   = NULL;
 
 static ID3D11BlendState*         blendState    = NULL;
+
+static mat4 lightmatrix = {};
 
 static void _CreateBuffers(ivec2* size) {
 	Uint32 screenx = size->x & 0x0000FFFF;
@@ -202,9 +222,12 @@ void CreateLightpass(ivec2* size) {
 
     char lp_vs[128];
     char lp_ps[128];
-    Engine::GetPath(lp_vs, 128, RG_PATH_SYSTEM, "shadersdx11/lightpass.vs");
-    Engine::GetPath(lp_ps, 128, RG_PATH_SYSTEM, "shadersdx11/lightpass.ps");
-	lightshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
+    Engine::GetPath(lp_vs, 128, RG_PATH_SYSTEM, "shadersdx11/accum_common.vs");
+    Engine::GetPath(lp_ps, 128, RG_PATH_SYSTEM, "shadersdx11/accum_global.ps");
+    globalshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
+
+    Engine::GetPath(lp_ps, 128, RG_PATH_SYSTEM, "shadersdx11/accum_point.ps");
+	pointshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
 
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
@@ -215,7 +238,11 @@ void CreateLightpass(ivec2* size) {
 	bInfo.length = sizeof(ShaderLight);
 	lBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 
-    BufferCreateInfo vbufferInfo = {};
+    BufferCreateInfo vbufferInfo;
+    BufferCreateInfo ibufferInfo;
+
+    // Sphere for point light
+    vbufferInfo = {};
     vbufferInfo.type   = BUFFER_VERTEX;
     vbufferInfo.access = BUFFER_GPU_ONLY;
     vbufferInfo.usage  = BUFFER_DEFAULT;
@@ -223,13 +250,32 @@ void CreateLightpass(ivec2* size) {
     vBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
     vBuffer->SetData(0, vbufferInfo.length, sphere_vertices);
 
-    BufferCreateInfo ibufferInfo = {};
+    ibufferInfo = {};
     ibufferInfo.type   = BUFFER_INDEX;
     ibufferInfo.access = BUFFER_GPU_ONLY;
     ibufferInfo.usage  = BUFFER_DEFAULT;
     ibufferInfo.length = sizeof(sphere_indices);
     iBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&ibufferInfo);
     iBuffer->SetData(0, ibufferInfo.length, sphere_indices);
+
+    // Quad for global light
+    vbufferInfo = {};
+    vbufferInfo.type = BUFFER_VERTEX;
+    vbufferInfo.access = BUFFER_GPU_ONLY;
+    vbufferInfo.usage = BUFFER_DEFAULT;
+    vbufferInfo.length = sizeof(quad_vertices);
+    vBuffer_quad = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
+    vBuffer_quad->SetData(0, vbufferInfo.length, quad_vertices);
+
+    ibufferInfo = {};
+    ibufferInfo.type = BUFFER_INDEX;
+    ibufferInfo.access = BUFFER_GPU_ONLY;
+    ibufferInfo.usage = BUFFER_DEFAULT;
+    ibufferInfo.length = sizeof(quad_indices);
+    iBuffer_quad = RG_NEW_CLASS(RGetAllocator(), Buffer)(&ibufferInfo);
+    iBuffer_quad->SetData(0, ibufferInfo.length, quad_indices);
+
+    
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.AntialiasedLineEnable = false;
@@ -259,17 +305,51 @@ void CreateLightpass(ivec2* size) {
     DX11_GetDevice()->CreateBlendState(&blendDesc, &blendState);
 
 	_CreateBuffers(size);
+
+
+    mat4 lproj;
+    mat4 lview;
+
+    mat4_ortho(&lproj, -20, 20, -20, 20, -50, 50);
+    mat4_view(&lview, { -15,20,0 }, { 0.777f, 1.6, 0 });
+
+    lightmatrix = lproj * lview;
+
+    rgLogInfo(RG_LOG_RENDER, "Matrix:\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
+        lproj.m00, lproj.m01, lproj.m02, lproj.m03,
+        lproj.m10, lproj.m11, lproj.m12, lproj.m13,
+        lproj.m20, lproj.m21, lproj.m22, lproj.m23,
+        lproj.m30, lproj.m31, lproj.m32, lproj.m33
+    );
+
+    rgLogInfo(RG_LOG_RENDER, "Matrix:\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
+        lview.m00, lview.m01, lview.m02, lview.m03,
+        lview.m10, lview.m11, lview.m12, lview.m13,
+        lview.m20, lview.m21, lview.m22, lview.m23,
+        lview.m30, lview.m31, lview.m32, lview.m33
+    );
+
+    rgLogInfo(RG_LOG_RENDER, "Matrix:\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
+        lightmatrix.m00, lightmatrix.m01, lightmatrix.m02, lightmatrix.m03,
+        lightmatrix.m10, lightmatrix.m11, lightmatrix.m12, lightmatrix.m13,
+        lightmatrix.m20, lightmatrix.m21, lightmatrix.m22, lightmatrix.m23,
+        lightmatrix.m30, lightmatrix.m31, lightmatrix.m32, lightmatrix.m33
+    );
+
 }
 
 void DestroyLightpass() {
 	rasterState->Release();
     blendState->Release();
 	_DestroyBuffers();
-	RG_DELETE_CLASS(RGetAllocator(), Shader, lightshader);
+    RG_DELETE_CLASS(RGetAllocator(), Shader, globalshader);
+    RG_DELETE_CLASS(RGetAllocator(), Shader, pointshader);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, lBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, vBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, iBuffer);
+    RG_DELETE_CLASS(RGetAllocator(), Buffer, vBuffer_quad);
+    RG_DELETE_CLASS(RGetAllocator(), Buffer, iBuffer_quad);
 }
 
 void ResizeLightpass(ivec2* size) {
@@ -278,6 +358,13 @@ void ResizeLightpass(ivec2* size) {
 }
 
 void DoLightpass() {
+
+    // TMP
+    globallight.color     = { 1, 0.8f, 0.7f };
+    globallight.intensity = 10;
+    globallight.direction = { 1, -1, 1 };
+    globallight.ambient   = 0.4f;
+
     float blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	ID3D11DeviceContext* ctx = DX11_GetContext();
@@ -288,34 +375,34 @@ void DoLightpass() {
 	Float32 clearColor[] = { 0, 0, 0, 1 };
 	ctx->ClearRenderTargetView(outputView, clearColor);
 
-	lightshader->Bind();
-
-    ID3D11ShaderResourceView* resourceViews[3];
+    ID3D11ShaderResourceView* resourceViews[4]; // 4-th shadowmap
     resourceViews[0] = GetGBufferShaderResource(0);
     resourceViews[1] = GetGBufferShaderResource(1);
     resourceViews[2] = GetGBufferShaderResource(2);
+
+    light.viewPos = *GetCameraPosition();
+
+    // Bind shader & input resources
+	pointshader->Bind();
     DX11_GetContext()->PSSetShaderResources(0, 3, resourceViews);
 
+    // Bind buffers
 	UINT stride = sizeof(Float32) * 3;
 	UINT offset = 0;
 	ID3D11Buffer* vbuffer = vBuffer->GetHandle();
-
 	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
 	ctx->IASetIndexBuffer(iBuffer->GetHandle(), DXGI_FORMAT_R16_UINT, 0);
 	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	ID3D11Buffer* constBuffer = cBuffer->GetHandle();
 	ID3D11Buffer* lightBuffer = lBuffer->GetHandle();
 	ctx->VSSetConstantBuffers(0, 1, &constBuffer);
 	ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
 
-	// Point lights
+	// Draw point lights
 	Engine::LightSystem* system = Engine::Render::GetLightSystem();
 
 	constants.viewproj = *GetCameraProjection() * *GetCameraView();
 	constants.model    = MAT4_IDENTITY();
-
-    light.viewPos = *GetCameraPosition();
 
 	Uint32 pCount = system->GetPointLightCount();
 	for (Uint32 i = 0; i < pCount; i++) {
@@ -336,9 +423,49 @@ void DoLightpass() {
 
 	}
 
+    // Bind shader & input resources
+    globalshader->Bind();
+    resourceViews[3] = GetShadowDepth();
+    DX11_GetContext()->PSSetShaderResources(0, 4, resourceViews);
+
+    // Bind buffers
+    stride = sizeof(Float32) * 3;
+    offset = 0;
+    ID3D11Buffer* vbuffer_quad = vBuffer_quad->GetHandle();
+    ctx->IASetVertexBuffers(0, 1, &vbuffer_quad, &stride, &offset);
+    ctx->IASetIndexBuffer(iBuffer_quad->GetHandle(), DXGI_FORMAT_R16_UINT, 0);
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    constBuffer = cBuffer->GetHandle();
+    lightBuffer = lBuffer->GetHandle();
+    ctx->VSSetConstantBuffers(0, 1, &constBuffer);
+    ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
+
+    // Draw global light
+    constants.viewproj = MAT4_IDENTITY();
+    constants.model    = MAT4_IDENTITY();
+
+    light.color       = globallight.color;
+    light.intensity   = globallight.intensity;
+    light.pos         = globallight.direction; // NO POSITION JUST DIRECTION!!!
+    light.offset      = globallight.ambient;
+    light.lightMatrix = lightmatrix;
+
+    cBuffer->SetData(0, sizeof(ShaderConstants), &constants);
+    lBuffer->SetData(0, sizeof(ShaderLight), &light);
+
+    DX11_GetContext()->DrawIndexed(sizeof(quad_indices) / sizeof(Uint16), 0, 0);
+
     ctx->OMSetBlendState(NULL, blendFactor, 0xffffffff);
+}
+
+void SetGlobalLight(GlobalLight* light) {
+    globallight = *light;
 }
 
 ID3D11ShaderResourceView* GetLightpassShaderResource() {
 	return outputResView;
+}
+
+mat4* GetLightMatrix() {
+    return &lightmatrix;
 }
