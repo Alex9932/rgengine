@@ -1,5 +1,9 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#include <windows.h>
+//#include <windows.h>
+
+#include <rgtypes.h>
+
+#ifdef RG_PLATFORM_WINDOWS
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -17,3 +21,4 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+#endif

@@ -1,6 +1,7 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <rgtypes.h>
+
+#ifdef RG_PLATFORM_WINDOWS
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
@@ -13,3 +14,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     return TRUE;
 }
 
+#endif

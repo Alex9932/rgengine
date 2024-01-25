@@ -7,6 +7,8 @@
 
 #include <rgtypes.h>
 
+#ifdef RG_PLATFORM_WINDOWS
+
 BOOL APIENTRY DllMain(HMODULE hmod, DWORD  ul_reason_for_call, LPVOID lpReserved) {
 #if 0
     switch (ul_reason_for_call) {
@@ -23,3 +25,5 @@ BOOL APIENTRY DllMain(HMODULE hmod, DWORD  ul_reason_for_call, LPVOID lpReserved
 #endif
     return TRUE;
 }
+
+#endif
