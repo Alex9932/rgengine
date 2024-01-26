@@ -334,25 +334,25 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	blury1->SetConstants(blurBuffer->GetHandle());
 	blury1->Draw();
 
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurData.ScreenSize = PackVector(blurx2->GetSize());
 	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blurx2->SetInput(0, blury1->GetOutput());
 	blurx2->SetConstants(blurBuffer->GetHandle());
 	blurx2->Draw();
 
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurData.ScreenSize = PackVector(blurx2->GetSize());
 	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blury2->SetInput(0, blurx2->GetOutput());
 	blury2->SetConstants(blurBuffer->GetHandle());
 	blury2->Draw();
 
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurData.ScreenSize = PackVector(blurx3->GetSize());
 	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blurx3->SetInput(0, blury2->GetOutput());
 	blurx3->SetConstants(blurBuffer->GetHandle());
 	blurx3->Draw();
 
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurData.ScreenSize = PackVector(blurx3->GetSize());
 	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blury3->SetInput(0, blurx3->GetOutput());
 	blury3->SetConstants(blurBuffer->GetHandle());
@@ -527,7 +527,7 @@ void DoPostprocess() {
 
 ID3D11ShaderResourceView* FXGetOuputTexture() {
 	//return tonemapping->GetOutput();
-	//return mix->GetOutput();
-	return GetLightpassShaderResource();
+	return mix->GetOutput();
+	//return GetLightpassShaderResource();
 	//return ssr->GetOutput();
 }

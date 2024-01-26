@@ -311,7 +311,7 @@ void CreateLightpass(ivec2* size) {
     mat4 lview;
 
     mat4_ortho(&lproj, -20, 20, -20, 20, -50, 50);
-    mat4_view(&lview, { -15,20,0 }, { 0.777f, 1.6, 0 });
+    mat4_view(&lview, { -15,20,-3 }, { 1.111f, 1.4, 0 });
 
     lightmatrix = lproj * lview;
 
@@ -359,10 +359,15 @@ void ResizeLightpass(ivec2* size) {
 
 void DoLightpass() {
 
+    //mat4* GetCameraProjection() { return &cam_proj; }
+    //mat4* GetCameraView() { return &cam_view; }
+    //vec3* GetCameraPosition() { return &cam_pos; }
+    //vec3* GetCameraRotation() { return &cam_rot; }
+
     // TMP
     globallight.color     = { 1, 0.8f, 0.7f };
     globallight.intensity = 10;
-    globallight.direction = { 1, -1, 1 };
+    globallight.direction = { 1, -1, -0.5 };
     globallight.ambient   = 0.4f;
 
     float blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };

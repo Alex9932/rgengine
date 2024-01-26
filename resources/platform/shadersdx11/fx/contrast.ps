@@ -20,8 +20,13 @@ PSOUTPUT pmain(PSINPUT psin) {
 	float val = max(tColor.r, max(tColor.g, tColor.b));
 	if(val > threshold) { c = tColor; }
 
+	float maxval = 2;
+
 	PSOUTPUT pout;
-	pout.color = c;
+	pout.color.r = max(min(c.r, maxval), 0);
+	pout.color.g = max(min(c.g, maxval), 0);
+	pout.color.b = max(min(c.b, maxval), 0);
+	pout.color.a = 1;
 	return pout;
 }
 
