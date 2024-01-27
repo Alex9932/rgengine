@@ -189,9 +189,18 @@ class Application : public BaseGame {
 			}
 			ImGui::End();
 
-			ImGui::Begin("Window 3");
-			static vec4 color;
-			ImGui::ColorPicker4("Select color", color.array);
+			ImGui::Begin("Global light");
+			//static vec4 color;
+
+			static R3D_GlobalLightDescrition desc;
+
+			ImGui::SliderFloat("Time", &desc.time, 0, 6.283);
+			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 1);
+			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 100);
+			ImGui::ColorPicker4("Color", desc.color.array);
+
+			Render::SetGlobalLight(&desc);
+
 			ImGui::End();
 
 			ImVec2 padding = { 0, 0 };
@@ -288,16 +297,21 @@ class Application : public BaseGame {
 			viewport = new Viewport(camera);
 
 			// Temp
-			ObjImporter objImporter;
+			//ObjImporter objImporter;
 			PM2Importer pm2Importer;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
-			objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
+			//objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/skybox/geometry.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
-			objImporter.FreeModelData(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
+			pm2Importer.ImportModel("gamedata/flatplane/scene.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
 
 			pm2Importer.ImportModel("gamedata/models/megumin/v4.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
+			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* ent0 = world->NewEntity();
@@ -312,11 +326,19 @@ class Application : public BaseGame {
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
+			Entity* ent2 = world->NewEntity();
+			ent2->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle2));
+			ent2->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent2->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent2->GetTransform()->SetScale({ 1, 1, 1 });
+
+			/*
 			PointLight* l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
 			l->SetIntensity(30);
 			l->SetOffset({ -0.86, 2.56, 0.21 });
 			ent0->AttachComponent(l);
+			*/
 
 		}
 

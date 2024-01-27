@@ -195,6 +195,9 @@
     <ClCompile Include="soundsource.cpp">
       <Filter>Source Files\sound</Filter>
     </ClCompile>
+    <ClCompile Include="levelloader.cpp">
+      <Filter>Source Files\world</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -361,6 +364,9 @@
     </ClInclude>
     <ClInclude Include="soundsource.h">
       <Filter>Header Files\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="levelloader.h">
+      <Filter>Header Files\world</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

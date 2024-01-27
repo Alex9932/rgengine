@@ -33,7 +33,7 @@ extern "C" {
 	extern RG_DECLSPEC void				R3D_PushModel(R3D_PushModelInfo* info);
 	extern RG_DECLSPEC void				R3D_SetCamera(R3D_CameraInfo* info);
 
-	extern RG_DECLSPEC void				R3D_StartRenderTask(void* TODO);
+	extern RG_DECLSPEC void				R3D_StartRenderTask(R3D_RenderTaskInfo* info);
 
 #ifdef __cplusplus
 }

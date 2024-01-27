@@ -154,6 +154,7 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="kinematicsmodel.cpp" />
+    <ClCompile Include="levelloader.cpp" />
     <ClCompile Include="lightsystem.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="lookatcameracontroller.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="importer.h" />
     <ClInclude Include="kinematicsmodel.h" />
+    <ClInclude Include="levelloader.h" />
     <ClInclude Include="lightsystem.h" />
     <ClInclude Include="lookatcameracontroller.h" />
     <ClInclude Include="modelsystem.h" />

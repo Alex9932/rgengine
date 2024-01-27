@@ -13,6 +13,8 @@
 #include "gbuffer.h"
 #include "shadowbuffer.h"
 
+#include "engine.h"
+
 Float32 sphere_vertices[] = {
     0.000000, -1.000000,  0.000000,
     0.723607, -0.447220,  0.525725,
@@ -357,6 +359,62 @@ void ResizeLightpass(ivec2* size) {
 	_CreateBuffers(size);
 }
 
+
+
+static void mat4_lookat(mat4* dst, const vec3& pos, const vec3& center, const vec3& up) {
+
+    vec3 _pos = pos;
+    vec3 _cen = center;
+    vec3 _up = up;
+
+    vec3 f = (_pos - _cen).normalize();
+    vec3 s = _up.cross(f).normalize();
+    vec3 u = f.cross(s).normalize();
+
+    *dst = MAT4_IDENTITY();
+
+
+    //mat->m00 = 1; mat->m01 = 0; mat->m02 = 0; mat->m03 = pos.x;
+    //mat->m10 = 0; mat->m11 = 1; mat->m12 = 0; mat->m13 = pos.y;
+    //mat->m20 = 0; mat->m21 = 0; mat->m22 = 1; mat->m23 = pos.z;
+    //mat->m30 = 0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
+
+    dst->m00 = s.x;
+    dst->m01 = s.y;
+    dst->m02 = s.z;
+    dst->m03 = -s.dot(pos);
+
+    dst->m10 = u.x;
+    dst->m11 = u.y;
+    dst->m12 = u.z;
+    dst->m13 = -u.dot(pos);
+
+    dst->m20 = f.x;
+    dst->m21 = f.y;
+    dst->m22 = f.z;
+    dst->m23 = -f.dot(pos);
+
+    /*
+    vec<3, T, Q> const f(normalize(center - eye));
+    vec<3, T, Q> const s(normalize(cross(up, f)));
+    vec<3, T, Q> const u(cross(f, s));
+    mat<4, 4, T, Q> Result(1);
+    Result[0][0] = s.x;
+    Result[1][0] = s.y;
+    Result[2][0] = s.z;
+    Result[0][1] = u.x;
+    Result[1][1] = u.y;
+    Result[2][1] = u.z;
+    Result[0][2] = f.x;
+    Result[1][2] = f.y;
+    Result[2][2] = f.z;
+    Result[3][0] = -dot(s, eye);
+    Result[3][1] = -dot(u, eye);
+    Result[3][2] = -dot(f, eye);
+    return Result;
+    */
+}
+
 void DoLightpass() {
 
     //mat4* GetCameraProjection() { return &cam_proj; }
@@ -364,11 +422,35 @@ void DoLightpass() {
     //vec3* GetCameraPosition() { return &cam_pos; }
     //vec3* GetCameraRotation() { return &cam_rot; }
 
+    /*
+    mat4 lproj;
+    mat4 lview;
+
+    mat4_ortho(&lproj, -20, 20, -20, 20, -50, 50);
+    //mat4_view(&lview, { -15,20,-3 }, { 1.111f, 1.4, 0 });
+
+    //vec3 pos = { -15, 20, SDL_sinf(Engine::GetUptime()) * 8 };
+
+    float phase = 3.1415/2 + 3.1415/8;
+
+    vec3 pos = { SDL_cosf(phase) * 20, SDL_sinf(phase) * 20, 3.5f };
+
+    
+
+    mat4_lookat(&lview, pos, { 0, 0, 0 }, { 0, 1, 0 });
+
+    lightmatrix = lproj * lview;
+
+
+    //pos.z = -pos.z;
+
     // TMP
-    globallight.color     = { 1, 0.8f, 0.7f };
+
+    globallight.color     = { 0.6, 0.5f, 0.5f };
     globallight.intensity = 10;
-    globallight.direction = { 1, -1, -0.5 };
+    globallight.direction = -pos.normalize();// { 1, -1, -0.5 };
     globallight.ambient   = 0.4f;
+    */
 
     float blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -469,6 +551,27 @@ void SetGlobalLight(GlobalLight* light) {
 
 ID3D11ShaderResourceView* GetLightpassShaderResource() {
 	return outputResView;
+}
+
+void SetLightDescription(R3D_GlobalLightDescrition* desc) {
+    mat4 lproj;
+    mat4 lview;
+
+    mat4_ortho(&lproj, -20, 20, -20, 20, -50, 50);
+
+    float phase = desc->time;// 3.1415 / 2 + 3.1415 / 8;
+    vec3 pos = { SDL_cosf(phase) * 20, SDL_sinf(phase) * 20, 3.5f };
+
+    mat4_lookat(&lview, pos, { 0, 0, 0 }, { 0, 1, 0 });
+
+    lightmatrix = lproj * lview;
+
+
+    globallight.color     = desc->color;
+    globallight.intensity = desc->intensity;
+    globallight.direction = -pos.normalize();// { 1, -1, -0.5 };
+    globallight.ambient   = desc->ambient;
+
 }
 
 mat4* GetLightMatrix() {

@@ -57,6 +57,11 @@ namespace Engine {
 
         static RenderSetupInfo      setupParams            = {};
 
+        ////////////////// R3D_RENDER //////////////////
+
+        static R3D_RenderTaskInfo        renderTaskInfo    = {};
+        static R3D_GlobalLightDescrition glightdescription = {};
+
         static bool _EventHandler(SDL_Event* event) {
 #if 0
             if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_F11) {
@@ -89,6 +94,15 @@ namespace Engine {
 
             RegisterEventHandler(_EventHandler);
             handle = Engine::DL_LoadLibrary(path);
+
+
+            glightdescription.ambient = 0.4;
+            glightdescription.intensity = 6;
+            glightdescription.time = 1.7;
+            glightdescription.color = {1, 0.8f, 0.7f};
+
+            renderTaskInfo.globallight = &glightdescription;
+
 
             // Core
             ShowWindow  = (PFN_R_SHOWWINDOW)Engine::DL_GetProcAddress(handle, "R_ShowWindow");
@@ -220,9 +234,13 @@ namespace Engine {
 
             RenderWorld(Engine::GetWorld());
 
-            R3D_StartRenderTask(NULL);
+            R3D_StartRenderTask(&renderTaskInfo);
 
             Window_Update();
+        }
+
+        void SetGlobalLight(R3D_GlobalLightDescrition* desc) {
+            glightdescription = *desc;
         }
 
         //void ToggleConsole() {

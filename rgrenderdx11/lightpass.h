@@ -5,6 +5,8 @@
 #include <rgmatrix.h>
 //#include "dx11.h"
 
+#include <rendertypes.h>
+
 typedef struct GlobalLight {
 	vec3    direction;
 	vec3    color;
@@ -22,6 +24,7 @@ void SetGlobalLight(GlobalLight* light);
 
 struct ID3D11ShaderResourceView* GetLightpassShaderResource();
 
+void  SetLightDescription(R3D_GlobalLightDescrition* desc);
 mat4* GetLightMatrix();
 
 #endif

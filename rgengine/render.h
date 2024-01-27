@@ -30,7 +30,7 @@ typedef void              (*PFN_R3D_UPDATEBONEBUFFER)(R3DBoneBufferUpdateInfo*);
 typedef void              (*PFN_R3D_PUSHMODEL)(R3D_PushModelInfo*);
 typedef void              (*PFN_R3D_SETCAMERA)(R3D_CameraInfo*);
 
-typedef void			  (*PFN_R3D_STARTRENDERTASK)(void*);
+typedef void			  (*PFN_R3D_STARTRENDERTASK)(R3D_RenderTaskInfo*);
 
 namespace Engine {
 
@@ -73,6 +73,9 @@ namespace Engine {
 		void DestroySubSystem();
 
 		RG_DECLSPEC void Update();
+
+		RG_DECLSPEC void SetGlobalLight(R3D_GlobalLightDescrition* desc);
+
 		//RG_DECLSPEC void ToggleConsole();
 
 		RG_DECLSPEC ModelSystem* GetModelSystem();

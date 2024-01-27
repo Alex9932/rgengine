@@ -116,6 +116,7 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	rayDirection /= max(ssMaxDist, 0.001);
 
 	float3 tColor = pixelDepth;//TraceRay(pixelPosition, rayDirection, ssMaxDist);
+	//float3 tColor = TraceRay(pixelPosition, rayDirection, ssMaxDist);
 
 	PSOUTPUT pout;
 	pout.color.rgb = tColor;

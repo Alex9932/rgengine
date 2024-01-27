@@ -36,6 +36,17 @@ typedef struct RenderSetupInfo {
 
 } RenderSetupInfo;
 
+typedef struct R3D_GlobalLightDescrition {
+	vec3    color;
+	Float32 time;
+	Float32 intensity;
+	Float32 ambient;
+} R3D_GlobalLightDescrition;
+
+typedef struct R3D_RenderTaskInfo {
+	R3D_GlobalLightDescrition* globallight;
+} R3D_RenderTaskInfo;
+
 typedef struct RenderInfo {
 	String render_name; // Name in renderer module
 	String renderer;    // Graphics card name

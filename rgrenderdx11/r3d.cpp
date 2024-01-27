@@ -580,56 +580,6 @@ static void DoSkeletonCalculation() {
 	rqueue->Reset();
 }
 
-static void mat4_lookat(mat4* dst, const vec3& pos, const vec3& center, const vec3& up) {
-
-	vec3 _pos = pos;
-	vec3 _cen = center;
-	vec3 _up  = up;
-
-	vec3 _f = _cen - _pos;
-	vec3 f = _f.normalize();
-
-	vec3 _s = _up.cross(f);
-	vec3 s = _s.normalize();
-
-	vec3 u = f.cross(s);
-
-	*dst = MAT4_IDENTITY();
-
-	dst->m00 = s.x;
-	dst->m00 = s.y;
-	dst->m00 = s.z;
-	dst->m00 = u.x;
-	dst->m00 = u.y;
-	dst->m00 = u.z;
-	dst->m00 = f.x;
-	dst->m00 = f.y;
-	dst->m00 = f.z;
-	dst->m00 = -s.dot(pos);
-	dst->m00 = -u.dot(pos);
-	dst->m00 = -f.dot(pos);
-
-	/*
-	vec<3, T, Q> const f(normalize(center - eye));
-	vec<3, T, Q> const s(normalize(cross(up, f)));
-	vec<3, T, Q> const u(cross(f, s));
-	mat<4, 4, T, Q> Result(1);
-	Result[0][0] = s.x;
-	Result[1][0] = s.y;
-	Result[2][0] = s.z;
-	Result[0][1] = u.x;
-	Result[1][1] = u.y;
-	Result[2][1] = u.z;
-	Result[0][2] = f.x;
-	Result[1][2] = f.y;
-	Result[2][2] = f.z;
-	Result[3][0] = -dot(s, eye);
-	Result[3][1] = -dot(u, eye);
-	Result[3][2] = -dot(f, eye);
-	return Result;
-	*/
-}
-
 static void DoShadowmapPass() {
 	RQueue* squeue = GetStaticQueue();
 	RQueue* rqueue = GetRiggedQueue();
@@ -703,9 +653,11 @@ static void DoGBufferPass() {
 	rqueue->Reset();
 }
 
-void R3D_StartRenderTask(void* RESERVERD_PTR) {
+void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
 	drawCalls     = 0;
 	dispatchCalls = 0;
+
+	SetLightDescription(info->globallight);
 
 	DoSkeletonCalculation(); // Calculate skeletons
 	DoShadowmapPass();       // Global shadowmap pass
