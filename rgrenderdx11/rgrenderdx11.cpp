@@ -4,9 +4,11 @@
 #include <rshared.h>
 #include <rgvector.h>
 #include <engine.h>
-#include <event.h>
 #include <render.h>
 #include <window.h>
+
+#include <event.h>
+#include <input.h>
 
 #include "dx11.h"
 #include "r3d.h"
@@ -43,7 +45,7 @@ static bool _EventHandler(SDL_Event* event) {
 			case RG_EVENT_RENDER_VIEWPORT_RESIZE: {
 				// Resize swapchain
 				ivec2* wnd_size = (ivec2*)event->user.data1;
-				wndSize = *wnd_size;
+				wndSize    = *wnd_size;
 				wndResized = true;
 				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", wnd_size->x, wnd_size->y);
 				break;
@@ -51,6 +53,22 @@ static bool _EventHandler(SDL_Event* event) {
 			default: { break; }
 		}
 
+	}
+
+	if (event->type == SDL_KEYDOWN) {
+		switch (event->key.keysym.scancode) {
+			case SDL_SCANCODE_R: {
+				if (Engine::IsKeyDown(SDL_SCANCODE_LSHIFT) && Engine::IsKeyDown(SDL_SCANCODE_LALT)) {
+					// Reload shaders
+					rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
+
+					ReloadShadersR3D();
+
+				}
+				break;
+			}
+			default: { break; }
+		}
 	}
 
 	return true;

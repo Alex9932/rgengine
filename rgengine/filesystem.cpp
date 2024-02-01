@@ -158,6 +158,16 @@ namespace Engine {
         delete allocator;
     }
 
+    void FS_MakeDir(String path) {
+#ifdef RG_PLATFORM_WINDOWS
+        CreateDirectoryA(path, NULL);
+#else
+#error FS_MakeDir is not implemented yet!
+#endif
+    }
+
+
+
     static Bool CheckHash(Uint32 hash) {
         FSMAP::iterator it = filesystems.begin();
         for (; it != filesystems.end(); it++) {

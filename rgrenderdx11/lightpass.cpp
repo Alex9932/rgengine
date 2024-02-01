@@ -212,15 +212,15 @@ static void _DestroyBuffers() {
 	outputView->Release();
 }
 
-void CreateLightpass(ivec2* size) {
+static void LoadShaders() {
 
-	InputDescription inputDescription = {};
-	inputDescription.name      = "POSITION";
-	inputDescription.inputSlot = 0;
-	inputDescription.format    = INPUT_R32G32B32_FLOAT;
-	PipelineDescription description = {};
-	description.inputCount   = 1;
-	description.descriptions = &inputDescription;
+    InputDescription inputDescription = {};
+    inputDescription.name = "POSITION";
+    inputDescription.inputSlot = 0;
+    inputDescription.format = INPUT_R32G32B32_FLOAT;
+    PipelineDescription description = {};
+    description.inputCount = 1;
+    description.descriptions = &inputDescription;
 
     char lp_vs[128];
     char lp_ps[128];
@@ -229,7 +229,17 @@ void CreateLightpass(ivec2* size) {
     globalshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
 
     Engine::GetPath(lp_ps, 128, RG_PATH_SYSTEM, "shadersdx11/accum_point.ps");
-	pointshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
+    pointshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&description, lp_vs, lp_ps, false);
+}
+
+static void FreeShaders() {
+    RG_DELETE_CLASS(RGetAllocator(), Shader, globalshader);
+    RG_DELETE_CLASS(RGetAllocator(), Shader, pointshader);
+}
+
+void CreateLightpass(ivec2* size) {
+
+    LoadShaders();
 
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
@@ -344,14 +354,19 @@ void DestroyLightpass() {
 	rasterState->Release();
     blendState->Release();
 	_DestroyBuffers();
-    RG_DELETE_CLASS(RGetAllocator(), Shader, globalshader);
-    RG_DELETE_CLASS(RGetAllocator(), Shader, pointshader);
+    FreeShaders();
     RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, lBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, vBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, iBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, vBuffer_quad);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, iBuffer_quad);
+}
+
+
+void ReloadShadersLightpass() {
+    FreeShaders();
+    LoadShaders();
 }
 
 void ResizeLightpass(ivec2* size) {

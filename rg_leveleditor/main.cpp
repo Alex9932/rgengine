@@ -14,6 +14,8 @@
 
 #include "viewport.h"
 
+#include "levelexporter.h"
+
 // Temp
 #include <objimporter.h>
 #include <pm2importer.h>
@@ -232,6 +234,7 @@ class Application : public BaseGame {
 				progress += GetDeltaTime() * 0.333f;
 
 				if (progress > 1) {
+					ExportLevel("testlevel");
 					testDisable = false;
 				}
 
@@ -310,7 +313,7 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
-			pm2Importer.ImportModel("gamedata/models/megumin/v4.pm2", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/welder/model.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 

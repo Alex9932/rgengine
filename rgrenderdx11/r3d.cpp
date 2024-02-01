@@ -62,15 +62,8 @@ static Uint32 modelsLoaded   = 0;
 static Uint32 drawCalls      = 0;
 static Uint32 dispatchCalls  = 0;
 
-void InitializeR3D(ivec2* size) {
-	alloc_materials    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MaterialPool", R_MATERIALS_COUNT, sizeof(R3D_Material));
-	alloc_staticmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_StaticModelPool", R_MODELS_COUNT, sizeof(R3D_StaticModel));
-	alloc_riggedmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_RiggedModelPool", R_MODELS_COUNT, sizeof(R3D_RiggedModel));
-	alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
-	alloc_bonebuffers  = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
-	//alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MatrixPool", R_MODELS_COUNT * 2, sizeof(mat4));
-	staticQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 2);
-	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
+
+static void LoadShaders() {
 
 	// Compute shader
 	char skel_cs[128];
@@ -105,6 +98,27 @@ void InitializeR3D(ivec2* size) {
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.ps");
 	shadowshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
 
+}
+
+static void FreeShaders() {
+	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
+
+	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
+	RG_DELETE_CLASS(RGetAllocator(), Shader, shadowshader);
+}
+
+void InitializeR3D(ivec2* size) {
+	alloc_materials    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MaterialPool", R_MATERIALS_COUNT, sizeof(R3D_Material));
+	alloc_staticmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_StaticModelPool", R_MODELS_COUNT, sizeof(R3D_StaticModel));
+	alloc_riggedmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_RiggedModelPool", R_MODELS_COUNT, sizeof(R3D_RiggedModel));
+	alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
+	alloc_bonebuffers  = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
+	//alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MatrixPool", R_MODELS_COUNT * 2, sizeof(mat4));
+	staticQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 2);
+	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
+
+	LoadShaders();
+
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
 	bInfo.usage = BUFFER_DYNAMIC;
@@ -130,10 +144,8 @@ void DestroyR3D() {
 	DestroyGBuffer();
 	DestroyFX();
 
-	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
+	FreeShaders();
 
-	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
-	RG_DELETE_CLASS(RGetAllocator(), Shader, shadowshader);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, mBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
 
@@ -154,6 +166,13 @@ void ResizeR3D(ivec2* wndSize) {
 	ResizeLightpass(wndSize);
 	ResizeFX(wndSize);
 
+}
+
+void ReloadShadersR3D() {
+	FreeShaders();
+	LoadShaders();
+	ReloadShadersLightpass();
+	ReloadShadersFX();
 }
 
 RQueue* GetStaticQueue() { return staticQueue; }

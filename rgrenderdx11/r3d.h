@@ -59,6 +59,8 @@ void InitializeR3D(ivec2* size);
 void DestroyR3D();
 void ResizeR3D(ivec2* wndSize);
 
+void ReloadShadersR3D();
+
 RQueue* GetStaticQueue();
 RQueue* GetRiggedQueue();
 

@@ -18,6 +18,8 @@ void CreateLightpass(ivec2* size);
 void DestroyLightpass();
 void ResizeLightpass(ivec2* size);
 
+void ReloadShadersLightpass();
+
 void DoLightpass();
 
 void SetGlobalLight(GlobalLight* light);

@@ -6,6 +6,7 @@
 void CreateFX(ivec2* size);
 void DestroyFX();
 void ResizeFX(ivec2* size);
+void ReloadShadersFX();
 
 void DoPostprocess();
 

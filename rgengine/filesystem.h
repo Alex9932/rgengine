@@ -28,12 +28,12 @@ enum PathType {
 
 typedef struct Resource {
     Uint32 length;
-    void* data;
+    void*  data;
 } Resource;
 
 typedef struct ResourceStream {
-    FILE* handle;
-    void* fs_handle; // If !!NOT NULL!! - Reading from RFS package
+    FILE*  handle;
+    void*  fs_handle; // If !!NOT NULL!! - Reading from RFS package
     Uint32 file_length;
     Uint32 file_offset; // Must be 0 if 'fs_handle' field == NULL
     Uint32 offset;
@@ -44,13 +44,17 @@ namespace Engine {
     void Filesystem_Initialize(String fsjson);
     void Filesystem_Destroy();
 
+    // Direntry
+    RG_DECLSPEC void FS_MakeDir(String path);
+
+
     // Utility
     RG_DECLSPEC void GetPath(char* dst, size_t maxlen, PathType type, String path);
     RG_DECLSPEC void FS_PathFrom(char* dst, String src, Uint32 len);
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src);
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
-
+#if 1
     static void FixPath(char* dst, String str) {
         size_t len = SDL_strlen(str);
         Uint32 j = 0;
@@ -66,6 +70,7 @@ namespace Engine {
             j++;
         }
     }
+#endif
 
     // RFS packages
     RG_DECLSPEC Sint32 Mount(String file);
@@ -132,7 +137,7 @@ namespace Engine {
 
     class RG_DECLSPEC FSReader : public FSInputStream {
         private:
-            ResourceStream* m_stream = NULL;
+            ResourceStream* m_stream        = NULL;
             size_t          m_readed_blocks = 0;
 
         public:
@@ -151,7 +156,7 @@ namespace Engine {
 
     class RG_DECLSPEC FSWriter : public FSOutputStream {
         private:
-            FILE* m_handle = NULL;
+            FILE*  m_handle = NULL;
             size_t m_offset = 0;
 
         public:
@@ -164,8 +169,8 @@ namespace Engine {
 
     class RG_DECLSPEC FSMemoryInputStream : public FSInputStream {
         private:
-            void* m_ptr = NULL;
-            size_t m_len = 0;
+            void*  m_ptr    = NULL;
+            size_t m_len    = 0;
             size_t m_offset = 0;
 
         public:

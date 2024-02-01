@@ -176,6 +176,57 @@ static FX* tonemapping;
 static ID3D11RasterizerState* rasterState = NULL;
 
 
+static void LoadFX() {
+
+	ivec2* size = &viewport;
+
+	lightpass = RG_NEW_CLASS(RGetAllocator(), FX)(size, "light.ps");
+
+	ssr = RG_NEW_CLASS(RGetAllocator(), FX)(size, "reflection.ps");
+
+	aberration = RG_NEW_CLASS(RGetAllocator(), FX)(size, "aberration.ps");
+	tonemapping = RG_NEW_CLASS(RGetAllocator(), FX)(size, "tonemapping.ps");
+	contrast = RG_NEW_CLASS(RGetAllocator(), FX)(size, "contrast.ps");
+
+	ivec2 subSize = *size;
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
+
+	subSize.x /= 4;
+	subSize.y /= 4;
+	blurx3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
+	blury3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
+
+	mix = RG_NEW_CLASS(RGetAllocator(), FX)(size, "mix.ps");
+}
+
+static void FreeFX() {
+	RG_DELETE_CLASS(RGetAllocator(), FX, lightpass);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssr);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, aberration);
+	RG_DELETE_CLASS(RGetAllocator(), FX, tonemapping);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, contrast);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx1);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury1);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx2);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury2);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blurx3);
+	RG_DELETE_CLASS(RGetAllocator(), FX, blury3);
+
+	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
+}
+
 void CreateFX(ivec2* size) {
 	viewport.x = size->x;
 	viewport.y = size->y;
@@ -216,32 +267,7 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length      = sizeof(SSRBufferData);
 	ssrBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
-
-	lightpass   = RG_NEW_CLASS(RGetAllocator(), FX)(size, "light.ps");
-
-	ssr         = RG_NEW_CLASS(RGetAllocator(), FX)(size, "reflection.ps");
-
-	aberration  = RG_NEW_CLASS(RGetAllocator(), FX)(size, "aberration.ps");
-	tonemapping = RG_NEW_CLASS(RGetAllocator(), FX)(size, "tonemapping.ps");
-	contrast    = RG_NEW_CLASS(RGetAllocator(), FX)(size, "contrast.ps");
-
-	ivec2 subSize = *size;
-	subSize.x /= 4;
-	subSize.y /= 4;
-	blurx1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
-	blury1 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
-
-	subSize.x /= 4;
-	subSize.y /= 4;
-	blurx2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
-	blury2 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
-
-	subSize.x /= 4;
-	subSize.y /= 4;
-	blurx3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blurx.ps");
-	blury3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
-
-	mix = RG_NEW_CLASS(RGetAllocator(), FX)(size, "mix.ps");
+	LoadFX();
 }
 
 void DestroyFX() {
@@ -252,23 +278,12 @@ void DestroyFX() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, blurBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
 
-	RG_DELETE_CLASS(RGetAllocator(), FX, lightpass);
+	FreeFX();
+}
 
-	RG_DELETE_CLASS(RGetAllocator(), FX, ssr);
-
-	RG_DELETE_CLASS(RGetAllocator(), FX, aberration);
-	RG_DELETE_CLASS(RGetAllocator(), FX, tonemapping);
-
-	RG_DELETE_CLASS(RGetAllocator(), FX, contrast);
-
-	RG_DELETE_CLASS(RGetAllocator(), FX, blurx1);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blury1);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blurx2);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blury2);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blurx3);
-	RG_DELETE_CLASS(RGetAllocator(), FX, blury3);
-
-	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
+void ReloadShadersFX() {
+	FreeFX();
+	LoadFX();
 }
 
 void ResizeFX(ivec2* size) {
@@ -421,8 +436,9 @@ void DoPostprocess() {
 	ssr->Draw();
 
 	// Bloom
-	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
-
+	//ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
+	ID3D11ShaderResourceView* bloomResult = DoBloom(ssr->GetOutput());
+	
 	// Mix
 	mix->SetInput(0, bloomResult);
 	mix->SetInput(1, lightpass_output);
@@ -527,7 +543,7 @@ void DoPostprocess() {
 
 ID3D11ShaderResourceView* FXGetOuputTexture() {
 	//return tonemapping->GetOutput();
-	return mix->GetOutput();
+	//return mix->GetOutput();
 	//return GetLightpassShaderResource();
-	//return ssr->GetOutput();
+	return ssr->GetOutput();
 }
