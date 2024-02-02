@@ -328,9 +328,12 @@ class Application : public BaseGame {
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
 			//objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
+
+			/*
 			pm2Importer.ImportModel("gamedata/models/skybox/geometry.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
+			*/
 
 			pm2Importer.ImportModel("gamedata/flatplane/scene.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
@@ -340,12 +343,14 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
+			/*
 			Entity* ent0 = world->NewEntity();
 			ent0->GetComponent(Component_TAG)->AsTagComponent()->SetString("Skybox");
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent0->GetTransform()->SetPosition({ 1, 0, 8 });
 			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
+			*/
 
 			Entity* ent1 = world->NewEntity();
 			ent1->GetComponent(Component_TAG)->AsTagComponent()->SetString("Ground");

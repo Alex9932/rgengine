@@ -36,10 +36,15 @@ struct MatrixBuffer {
 };
 
 struct ConstBuffer {
-	vec4 color;
+	vec4   color;
+	Uint32 __offset0;
+	Uint32 __offset1;
+	Uint32 __offset2;
+	Uint32 __offset3;
 };
 
 static Shader* shader;
+static Shader* skyshader;
 static Shader* shadowshader;
 static Buffer* mBuffer;
 static Buffer* cBuffer;
@@ -62,6 +67,54 @@ static Uint32 modelsLoaded   = 0;
 static Uint32 drawCalls      = 0;
 static Uint32 dispatchCalls  = 0;
 
+// Skybox
+
+static Float32 skybox_vertices[] = {
+	// Position          Noraml   Tangent  UV
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+
+	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static Buffer* skyboxv;
 
 static void LoadShaders() {
 
@@ -94,6 +147,10 @@ static void LoadShaders() {
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.ps");
 	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
 
+	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/skybox.vs");
+	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/skybox.ps");
+	skyshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
+
 	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.vs");
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.ps");
 	shadowshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
@@ -104,6 +161,7 @@ static void FreeShaders() {
 	RG_DELETE_CLASS(RGetAllocator(), ComputeShader, skeletonShader);
 
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
+	RG_DELETE_CLASS(RGetAllocator(), Shader, skyshader);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shadowshader);
 }
 
@@ -118,6 +176,15 @@ void InitializeR3D(ivec2* size) {
 	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
 
 	LoadShaders();
+
+	// Skybox buffers
+	BufferCreateInfo vbufferInfo = {};
+	vbufferInfo.type = BUFFER_VERTEX;
+	vbufferInfo.access = BUFFER_GPU_ONLY;
+	vbufferInfo.usage = BUFFER_DEFAULT;
+	vbufferInfo.length = sizeof(skybox_vertices);
+	skyboxv = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
+	skyboxv->SetData(0, vbufferInfo.length, skybox_vertices);
 
 	BufferCreateInfo bInfo = {};
 	bInfo.access = BUFFER_CPU_WRITE;
@@ -148,6 +215,8 @@ void DestroyR3D() {
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, mBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
+
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, skyboxv);
 
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_materials);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_staticmodels);
@@ -258,6 +327,7 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	R3D_StaticModel* staticModel = (R3D_StaticModel*)alloc_staticmodels->Allocate();
 	staticModel->type = R_MODEL_STATIC;
+	//info->modelType;
 
 	rgLogInfo(RG_LOG_RENDER, "Static model: %p", staticModel);
 	
@@ -522,6 +592,8 @@ static inline DXGI_FORMAT GetIndexType(IndexType type) {
 	}
 }
 
+#define SKYBOX_SCALE 250
+
 static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 	matrixBuffer.model = *matrix;
 	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
@@ -556,6 +628,33 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 		idx += minfo->indexCount;
 
 	}
+}
+
+static void DrawSkybox() {
+	mat4_model(&matrixBuffer.model, cam_pos, { 0, 0, 0 }, { SKYBOX_SCALE, SKYBOX_SCALE, SKYBOX_SCALE });
+	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
+
+	UINT stride = sizeof(R3D_Vertex);
+	UINT offset = 0;
+	ID3D11Buffer* vbuffer = skyboxv->GetHandle();
+	DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
+	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	constBuffer.color.r = 0.4f;
+	constBuffer.color.g = 0.8f;
+	constBuffer.color.b = 1.5;
+	constBuffer.color.a = 1;
+
+	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
+	ID3D11Buffer* conBuffer = cBuffer->GetHandle();
+	DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
+
+	GetDefaultTexture()->Bind(0);
+	GetDefaultTexture()->Bind(1);
+	GetDefaultTexture()->Bind(2);
+
+	DX11_GetContext()->Draw(36, 0);
+	drawCalls++;
 }
 
 static void DoSkeletonCalculation() {
@@ -670,6 +769,11 @@ static void DoGBufferPass() {
 
 	squeue->Reset();
 	rqueue->Reset();
+
+	skyshader->Bind();
+	ctx->VSSetConstantBuffers(0, 1, &matBuffer);
+
+	DrawSkybox();
 }
 
 void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {

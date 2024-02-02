@@ -93,7 +93,7 @@ float3 CalculateLight(float3 N, float3 V, float3 Pos, float3 albedo, float metal
     float NdotL = max(dot(N, L), 0.0); 
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
-	float3 E = albedo * emissive;
+	float3 E = albedo * max(0, emissive);
 
 	return Lo + E;
 
@@ -130,10 +130,13 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	
 	PSOUTPUT pout;
 
-	pout.color.xyz = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
+	pout.color.rgb = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
 	pout.color.w = 1;
 
+	// Skybox
+	if(emissive < 0) {
+		pout.color.rgb = 0;
+	}
+
 	return pout;
-
-
 }

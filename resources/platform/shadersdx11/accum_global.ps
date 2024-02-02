@@ -102,7 +102,7 @@ float3x3 CalculateLight(float3 N, float3 V, float3 Pos, float3 albedo, float met
 
 	ret[0] = (kD * albedo / PI + specular) * radiance * NdotL;
 	ret[1] = Lo;
-	ret[2] = albedo * emissive;
+	ret[2] = albedo * max(0, emissive);
 
 	return ret;
 
@@ -186,6 +186,11 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	//pout.color.xyz = calculated_light * calculated_shadow;
 	pout.color.xyz = cl;
 	pout.color.w = 1;
+	
+	// Skybox
+	if(emissive < 0) {
+		pout.color.rgb = aColor.rgb;
+	}
 
 	return pout;
 

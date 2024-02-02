@@ -1,0 +1,53 @@
+#define NORMALMAP 1
+
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 vpos     : VPOS;
+};
+
+struct PSOUTPUT {
+	float4 albedo : SV_Target0; // Albedo, metallic;
+	float4 normal : SV_Target1; // Normal, roughness;
+	float4 wpos   : SV_Target2; // WPos, emissive;
+};
+
+cbuffer ConstBuffer : register(b0) {
+	float4 color;
+	uint   __offset0;
+	uint   __offset2;
+	uint   __offset3;
+	uint   __offset4;
+};
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+SamplerState SampleType : register(s0);
+
+float3 mix(float3 a, float3 b, float c) {
+	return a * (1 - c) + b * c;
+}
+
+PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
+	
+	float3 N = 0;
+
+	//float3 skycolor = color.xyz;
+
+	float3 horizoncolor = float3(0.8, 0.9, 1);
+
+	float y = (psin.vpos.y + 15) / 70;
+	float m = 1 - clamp(y, 0, 1); // mix value
+	float3 skycolor = mix(color.rgb, horizoncolor, m);
+
+	PSOUTPUT pout;
+	pout.albedo.xyz = skycolor;  // Albedo ( TMP )
+	pout.albedo.w   = 0;
+	pout.normal.xyz = N;         // Normal
+	pout.normal.w   = 1;
+	pout.wpos.xyz   = psin.vpos; // Wpos
+	pout.wpos.w     = -1;
+	return pout;
+
+
+}

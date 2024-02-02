@@ -210,7 +210,7 @@ class Application : public BaseGame {
 			//camera = new Camera(world, 0.1f, 1000, rgToRadians(75), 1.777f);
 			world = GetWorld();
 
-			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 100, rgToRadians(75), 1.777f);
+			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
 			camera->GetTransform()->SetPosition({5.16, 1.49, 0.1});
 			//camera->GetTransform()->SetRotation({0, 3.1415 / 2, 0});
 			camera->GetTransform()->SetRotation({ 0.11, 1.28, 0 });
@@ -249,10 +249,11 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 
-
+			/*
 			pm2Importer.ImportModel("gamedata/models/skybox/geometry.pm2", &pm2info);
 			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
+			*/
 #endif
 #if 0
 			ObjImporter objImporter;
@@ -376,13 +377,13 @@ class Application : public BaseGame {
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif
-
+/*
 			Entity* ent4 = world->NewEntity();
 			ent4->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
 			ent4->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent4->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent4->GetTransform()->SetScale({ 1, 1, 1 });
-
+*/
 			// FJJrVPVfvnmZdAt
 
 			RegisterEventHandler(EHandler);

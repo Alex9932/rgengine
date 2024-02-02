@@ -15,9 +15,12 @@ struct PSOUTPUT {
 	float4 wpos   : SV_Target2; // WPos, emissive;
 };
 
-
 cbuffer ConstBuffer : register(b0) {
 	float4 color;
+	uint   __offset0;
+	uint   __offset2;
+	uint   __offset3;
+	uint   __offset4;
 };
 
 Texture2D t_unit0 : register(t0);
