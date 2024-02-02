@@ -204,6 +204,44 @@ namespace Engine {
 
         }
 
+        void DrawRendererStats() {
+            RenderInfo renderer_info = {};
+            GetInfo(&renderer_info);
+
+            ImGui::Begin("Renderer stats");
+
+            ImGui::Text("Name: %s", renderer_info.render_name);
+            ImGui::Text("Renderer: %s", renderer_info.renderer);
+
+            ImGui::Separator();
+
+            ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory >> 10);
+            ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
+
+            ImGui::Separator();
+
+            ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
+
+            ImGui::Separator();
+
+            ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
+            ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
+            ImGui::Text("Textures to load/queued: %d/%d", renderer_info.textures_inQueue, renderer_info.textures_left);
+
+            Float32 f = 1;
+            if (renderer_info.textures_inQueue != 0) {
+                f = 1.0f - ((Float32)renderer_info.textures_left / (Float32)renderer_info.textures_inQueue);
+            }
+
+            ImGui::ProgressBar(f);
+
+            ImGui::Separator();
+
+            ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
+
+            ImGui::End();
+        }
+
         static void RenderWorld(World* world) {
             R3D_PushModelInfo info = {};
 

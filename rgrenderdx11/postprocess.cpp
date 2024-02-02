@@ -141,19 +141,18 @@ struct SSRBufferData {
 	mat4 invProj;
 	mat4 invView;
 	vec4 camera_position;
-	int screen_size;
+	int  screen_size;
 };
 
 static FX* lightpass;
 
-static FX* ssr;
+static FX*           ssr;
 static Buffer*       ssrBuffer;
 static SSRBufferData ssrData;
 
-static FX* aberration;
-static Buffer* aberrationBuffer;
-static ABufferData  aberrationData;
-
+static FX*         aberration;
+static Buffer*     aberrationBuffer;
+static ABufferData aberrationData;
 
 // Bloom
 static FX* contrast;
@@ -164,10 +163,9 @@ static FX* blurx2;
 static FX* blury2;
 static FX* blurx3;
 static FX* blury3;
-static Buffer* blurBuffer;
-static BBufferData  blurData;
 
-
+static Buffer*     blurBuffer;
+static BBufferData blurData;
 
 static FX* mix;
 
@@ -214,7 +212,6 @@ static void FreeFX() {
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, aberration);
 	RG_DELETE_CLASS(RGetAllocator(), FX, tonemapping);
-
 	RG_DELETE_CLASS(RGetAllocator(), FX, contrast);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, blurx1);
@@ -436,8 +433,8 @@ void DoPostprocess() {
 	ssr->Draw();
 
 	// Bloom
-	//ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
-	ID3D11ShaderResourceView* bloomResult = DoBloom(ssr->GetOutput());
+	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
+	//ID3D11ShaderResourceView* bloomResult = DoBloom(ssr->GetOutput());
 	
 	// Mix
 	mix->SetInput(0, bloomResult);
@@ -447,20 +444,6 @@ void DoPostprocess() {
 	// Tonemapping
 	tonemapping->SetInput(0, mix->GetOutput());
 	tonemapping->Draw();
-
-
-#if 0
-	// Light
-	ctx->OMSetRenderTargets(1, &lightpass.rtView, NULL);
-	lightShader->Bind();
-	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	res0 = GetGBufferShaderResource(0);
-	res1 = GetLightpassShaderResource();
-	ctx->PSSetShaderResources(0, 1, &res0);
-	ctx->PSSetShaderResources(1, 1, &res1);
-	ctx->Draw(6, 0);
-#endif
 
 #if 0
 	aberrationData.offset.r = 0.009;
@@ -480,70 +463,11 @@ void DoPostprocess() {
 	ctx->PSSetShaderResources(0, 1, &res0);
 	ctx->Draw(6, 0);
 #endif
-
-#if 0
-	DX11_SetViewport(subViewport.x, subViewport.y);	
-
-	// Contrast
-	ctx->OMSetRenderTargets(1, &contrast.rtView, NULL);
-	contrastShader->Bind();
-	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	res0 = lightpass->GetOutput();
-	ctx->PSSetShaderResources(0, 1, &res0);
-	ctx->Draw(6, 0);
-
-
-	blurData.Directions = 16.0;
-	blurData.Quality = 3.0;
-	blurData.Size = 8.0;
-
-	Uint32 screenx = viewport.x & 0x0000FFFF;
-	Uint32 screeny = viewport.y & 0x0000FFFF;
-	Uint32 shiftx = screenx << 16;
-	blurData.ScreenSize = shiftx | screeny;
-
-	// Blur
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
-	ctx->OMSetRenderTargets(1, &blur.rtView, NULL);
-	blurShader->Bind();
-	buffer_handle = blurBuffer->GetHandle();
-	ctx->PSSetConstantBuffers(0, 1, &buffer_handle);
-	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//res0 = contrast.resView;
-	res0 = lightpass->GetOutput();
-	ctx->PSSetShaderResources(0, 1, &res0);
-	ctx->Draw(6, 0);
-
-	DX11_SetViewport(viewport.x, viewport.y);
-
-
-	ctx->OMSetRenderTargets(1, &mix.rtView, NULL);
-	mixShader->Bind();
-	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	res0 = blur.resView;
-	res1 = lightpass->GetOutput();
-	ctx->PSSetShaderResources(0, 1, &res0);
-	ctx->PSSetShaderResources(1, 1, &res1);
-	ctx->Draw(6, 0);
-
-
-	// Tonemapping
-	ctx->OMSetRenderTargets(1, &tonemapping.rtView, NULL);
-	tonemappingShader->Bind();
-	ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	res0 = mix.resView;
-	ctx->PSSetShaderResources(0, 1, &res0);
-	ctx->Draw(6, 0);
-#endif
 }
 
 ID3D11ShaderResourceView* FXGetOuputTexture() {
 	//return tonemapping->GetOutput();
-	//return mix->GetOutput();
+	return mix->GetOutput();
 	//return GetLightpassShaderResource();
-	return ssr->GetOutput();
+	//return ssr->GetOutput();
 }

@@ -73,7 +73,7 @@ namespace Engine {
 	void SoundSystem::DeleteSoundSource(SoundSource* comp) {
 		std::vector<SoundSource*>::iterator it = m_sourcecomponents.begin();
 		for (; it != m_sourcecomponents.end(); it++) {
-			if (*it = comp) {
+			if (*it == comp) {
 				*it = std::move(m_sourcecomponents.back());
 				m_sourcecomponents.pop_back();
 				//m_sourcecomponents.erase(it);

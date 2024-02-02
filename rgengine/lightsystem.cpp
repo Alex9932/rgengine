@@ -49,7 +49,7 @@ namespace Engine {
 	void LightSystem::DeletePointLight(PointLight* comp) {
 		std::vector<PointLight*>::iterator it = this->m_pointlights.begin();
 		for (; it != this->m_pointlights.end(); it++) {
-			if (*it = comp) {
+			if (*it == comp) {
 				*it = std::move(m_pointlights.back());
 				m_pointlights.pop_back();
 				//this->m_pointlights.erase(it);
@@ -68,7 +68,7 @@ namespace Engine {
 	void LightSystem::DeleteSpotLight(SpotLight* comp) {
 		std::vector<SpotLight*>::iterator it = this->m_spotlights.begin();
 		for (; it != this->m_spotlights.end(); it++) {
-			if (*it = comp) {
+			if (*it == comp) {
 				*it = std::move(m_spotlights.back());
 				m_spotlights.pop_back();
 				//this->m_spotlights.erase(it);

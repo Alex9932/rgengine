@@ -72,6 +72,9 @@ namespace Engine {
 		void InitSubSystem();
 		void DestroySubSystem();
 
+		// ImGui window
+		RG_DECLSPEC void DrawRendererStats();
+
 		RG_DECLSPEC void Update();
 
 		RG_DECLSPEC void SetGlobalLight(R3D_GlobalLightDescrition* desc);

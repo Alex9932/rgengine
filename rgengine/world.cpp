@@ -45,14 +45,21 @@ namespace Engine {
 	}
 
 	void World::FreeEntity(Entity* e) {
+
 		std::vector<Entity*>::iterator it = this->m_entities.begin();
+		Uint32 idx = 0;
 		for (; it != this->m_entities.end(); it++) {
-			if (*it = e) {
-				this->m_entities.erase(it);
+			if (*it == e) {
+
+				*it = std::move(m_entities.back());
+				m_entities.pop_back();
+				//this->m_entities.erase(it);
+				
 				FreeComponents(e);
 				RG_DELETE_CLASS(m_allocEntity, Entity, e);
 				break;
 			}
+			idx++;
 		}
 	}
 

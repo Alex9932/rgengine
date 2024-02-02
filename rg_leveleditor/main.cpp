@@ -23,6 +23,13 @@
 
 using namespace Engine;
 
+static R3D_GlobalLightDescrition globaLlightDesc = {
+	{1, 0.9f, 0.8f},
+	0.747f,
+	7,
+	0.3f
+};
+
 class Application : public BaseGame {
 	private:
 		Viewport* viewport = NULL;
@@ -156,6 +163,9 @@ class Application : public BaseGame {
 			ImGui::Text("Text 3");
 			ImGui::End();
 
+			Bool    addEntity = false;
+			Entity* toRemove  = NULL;
+
 			ImGui::Begin("World");
 			if(ImGui::TreeNode("Entities")) {
 				Uint32 len = world->GetEntityCount();
@@ -173,7 +183,7 @@ class Application : public BaseGame {
 					if(ImGui::TreeNode(ent_name)) {
 						ImGui::InputFloat3("Position", transform->GetPosition().array);
 						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
-
+						/*
 						if (viewport->IsManipulationResult()) {
 							ManipulateResult result = {};
 							viewport->GetManipulateResult(&result);
@@ -181,27 +191,53 @@ class Application : public BaseGame {
 							transform->SetScale(result.scale);
 							transform->Recalculate();
 						}
+						*/
+						if (ImGui::TreeNode("Components")) {
 
-						viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
+							if (ImGui::Button("Attach")) {
+
+							}
+							ImGui::TreePop();
+						}
+
+						if (ImGui::Button("Remove")) {
+							toRemove = ent;
+						}
+
+						//if (!toRemove) {
+						//	viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
+						//}
 
 						ImGui::TreePop();
 					}
 				}
+
+				if (ImGui::Button("New entity")) {
+					addEntity = true;
+				}
+
 				ImGui::TreePop();
 			}
+
+			if (toRemove) {
+				world->FreeEntity(toRemove);
+			}
+
+			if (addEntity) {
+				world->NewEntity();
+			}
+
 			ImGui::End();
 
 			ImGui::Begin("Global light");
 			//static vec4 color;
 
-			static R3D_GlobalLightDescrition desc;
+			ImGui::SliderFloat("Time", &globaLlightDesc.time, 0, 6.283);
+			ImGui::SliderFloat("Ambient", &globaLlightDesc.ambient, 0, 1);
+			ImGui::SliderFloat("Intensity", &globaLlightDesc.intensity, 0, 100);
+			ImGui::ColorPicker4("Color", globaLlightDesc.color.array);
 
-			ImGui::SliderFloat("Time", &desc.time, 0, 6.283);
-			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 1);
-			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 100);
-			ImGui::ColorPicker4("Color", desc.color.array);
-
-			Render::SetGlobalLight(&desc);
+			Render::SetGlobalLight(&globaLlightDesc);
 
 			ImGui::End();
 
@@ -221,7 +257,6 @@ class Application : public BaseGame {
 
 			if (testDisable) {
 
-				//ImGui::PushStyleVar(ImGuiStyleVar_WindowRe, );
 				ImGui::SetNextWindowPos({ 670, 410 });
 				ImGui::SetNextWindowSize({ 260, 80 });
 				ImGui::Begin("Process");
@@ -240,44 +275,9 @@ class Application : public BaseGame {
 
 			}
 
-
 			if (isStats) {
 				RenderInfo renderer_info = {};
-				Render::GetInfo(&renderer_info);
-
-				ImGui::Begin("Renderer stats");
-
-				ImGui::Text("Name: %s", renderer_info.render_name);
-				ImGui::Text("Renderer: %s", renderer_info.renderer);
-
-				ImGui::Separator();
-
-				ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory >> 10);
-				ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
-
-				ImGui::Separator();
-
-				ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
-
-				ImGui::Separator();
-
-				ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
-				ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
-				ImGui::Text("Textures to load/queued: %d/%d", renderer_info.textures_inQueue, renderer_info.textures_left);
-
-				Float32 f = 1;
-				if (renderer_info.textures_inQueue != 0) {
-					f = 1.0f - ((Float32)renderer_info.textures_left / (Float32)renderer_info.textures_inQueue);
-				}
-
-				ImGui::ProgressBar(f);
-
-				ImGui::Separator();
-
-				ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
-
-				ImGui::End();
-
+				Render::DrawRendererStats();
 			}
 
 		}
@@ -318,22 +318,34 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* ent0 = world->NewEntity();
+			ent0->AttachComponent(RG_NEW(TagComponent)("Skybox"));
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
-			ent0->GetTransform()->SetPosition({ 0, 0, 8 });
+			ent0->GetTransform()->SetPosition({ 1, 0, 8 });
 			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 
+			rgLogInfo(RG_LOG_SYSTEM, "Skybox: %s", ent0->GetComponent(Component_TAG)->AsTagComponent()->GetString());
+			rgLogInfo(RG_LOG_SYSTEM, "Skybox: %p", ent0->GetComponent(Component_MODELCOMPONENT));
+
 			Entity* ent1 = world->NewEntity();
+			ent1->AttachComponent(RG_NEW(TagComponent)("Ground"));
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
-			ent1->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent1->GetTransform()->SetPosition({ 0, 0, 1 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
+			rgLogInfo(RG_LOG_SYSTEM, "Ground: %s", ent1->GetComponent(Component_TAG)->AsTagComponent()->GetString());
+			rgLogInfo(RG_LOG_SYSTEM, "Ground: %p", ent1->GetComponent(Component_MODELCOMPONENT));
+
 			Entity* ent2 = world->NewEntity();
+			ent2->AttachComponent(RG_NEW(TagComponent)("Model"));
 			ent2->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle2));
-			ent2->GetTransform()->SetPosition({ 0, 0, 0 });
+			ent2->GetTransform()->SetPosition({ 0, 1, 0 });
 			ent2->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent2->GetTransform()->SetScale({ 1, 1, 1 });
+
+			rgLogInfo(RG_LOG_SYSTEM, "Model: %s", ent2->GetComponent(Component_TAG)->AsTagComponent()->GetString());
+			rgLogInfo(RG_LOG_SYSTEM, "Model: %p", ent2->GetComponent(Component_MODELCOMPONENT));
 
 			/*
 			PointLight* l = Render::GetLightSystem()->NewPointLight();

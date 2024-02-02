@@ -67,7 +67,7 @@ namespace Engine {
 	void ModelSystem::DeleteModelComponent(ModelComponent* comp) {
 		std::vector<ModelComponent*>::iterator it = this->m_modelComponents.begin();
 		for (; it != this->m_modelComponents.end(); it++) {
-			if(*it = comp) {
+			if(*it == comp) {
 				*it = std::move(m_modelComponents.back());
 				m_modelComponents.pop_back();
 				//this->m_modelComponents.erase(it);
@@ -86,7 +86,7 @@ namespace Engine {
 	void ModelSystem::DeleteRiggedModelComponent(RiggedModelComponent* comp) {
 		std::vector<RiggedModelComponent*>::iterator it = this->m_rmodelComponents.begin();
 		for (; it != this->m_rmodelComponents.end(); it++) {
-			if (*it = comp) {
+			if (*it == comp) {
 				*it = std::move(m_rmodelComponents.back());
 				m_rmodelComponents.pop_back();
 				//this->m_rmodelComponents.erase(it);
