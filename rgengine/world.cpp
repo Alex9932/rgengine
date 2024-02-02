@@ -41,6 +41,7 @@ namespace Engine {
 	Entity* World::NewEntity() {
 		Entity* ent = RG_NEW_CLASS(m_allocEntity, Entity)(this);
 		this->m_entities.push_back(ent);
+		ent->AttachComponent(RG_NEW(TagComponent)("new entity"));
 		return ent;
 	}
 

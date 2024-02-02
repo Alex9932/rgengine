@@ -30,6 +30,14 @@ static R3D_GlobalLightDescrition globaLlightDesc = {
 	0.3f
 };
 
+static Bool disableRequested = false;
+static Bool popupWindow      = false;
+
+static void ShowInputWnd() {
+	disableRequested = true;
+
+}
+
 class Application : public BaseGame {
 	private:
 		Viewport* viewport = NULL;
@@ -64,10 +72,6 @@ class Application : public BaseGame {
 
 			ImGuizmo::BeginFrame();
 			viewport->SetImGuizmoRect();
-
-
-			static Float32 progress = 0;
-			static Bool testDisable = false;
 
 			static Bool isStats = false;
 
@@ -125,10 +129,9 @@ class Application : public BaseGame {
 				if (ImGui::BeginMenu("Render")) {
 					if (ImGui::MenuItem("Nope")) {}
 					if (ImGui::MenuItem("Toggle renderer stats", "", isStats)) { isStats = !isStats; }
-					if (ImGui::MenuItem("Test disable")) {
-						progress    = 0;
-						testDisable = true;
-					}
+					//if (ImGui::MenuItem("Test disable")) {
+					//	popupWindow = true;
+					//}
 					ImGui::EndMenu();
 				}
 				if (ImGui::BeginMenu("Docker")) {
@@ -151,7 +154,12 @@ class Application : public BaseGame {
 
 			///////////////
 
-			if (testDisable) {
+			if (disableRequested) {
+				popupWindow = true;
+				disableRequested = false;
+			}
+
+			if (popupWindow) {
 				ImGui::BeginDisabled();
 			}
 
@@ -183,6 +191,11 @@ class Application : public BaseGame {
 					if(ImGui::TreeNode(ent_name)) {
 						ImGui::InputFloat3("Position", transform->GetPosition().array);
 						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
+
+						if (ImGui::Button("Rename")) {
+							ShowInputWnd();
+						}
+
 						/*
 						if (viewport->IsManipulationResult()) {
 							ManipulateResult result = {};
@@ -193,6 +206,8 @@ class Application : public BaseGame {
 						}
 						*/
 						if (ImGui::TreeNode("Components")) {
+							//TagComponent* tag = ent->GetComponent(Component_TAG)->AsTagComponent();
+							//ImGui::InputText("Name", tag->GetCharBuffer(), tag->GetBufferSize());
 
 							if (ImGui::Button("Attach")) {
 
@@ -246,7 +261,7 @@ class Application : public BaseGame {
 			viewport->DrawComponent();
 			ImGui::PopStyleVar();
 
-			if (testDisable) {
+			if (popupWindow) {
 				ImGui::EndDisabled();
 			}
 
@@ -255,23 +270,31 @@ class Application : public BaseGame {
 			ImGui::End();
 
 
-			if (testDisable) {
+			if (popupWindow) {
 
 				ImGui::SetNextWindowPos({ 670, 410 });
 				ImGui::SetNextWindowSize({ 260, 80 });
-				ImGui::Begin("Process");
+				ImGui::Begin("Editor");
 
-				ImGui::Text("Working");
-				ImGui::ProgressBar(progress);
+				//ImGui::Text("Working");
+				//ImGui::ProgressBar(progress);
+
+				if (ImGui::Button("Ok")) {
+					popupWindow = false;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel")) {
+					popupWindow = false;
+				}
 
 				ImGui::End();
 
-				progress += GetDeltaTime() * 0.333f;
+				//progress += GetDeltaTime() * 0.333f;
 
-				if (progress > 1) {
-					ExportLevel("testlevel");
-					testDisable = false;
-				}
+				//if (progress > 1) {
+				//	ExportLevel("testlevel");
+				//	popupWindow = false;
+				//}
 
 			}
 
@@ -318,34 +341,25 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* ent0 = world->NewEntity();
-			ent0->AttachComponent(RG_NEW(TagComponent)("Skybox"));
+			ent0->GetComponent(Component_TAG)->AsTagComponent()->SetString("Skybox");
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent0->GetTransform()->SetPosition({ 1, 0, 8 });
 			ent0->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 
-			rgLogInfo(RG_LOG_SYSTEM, "Skybox: %s", ent0->GetComponent(Component_TAG)->AsTagComponent()->GetString());
-			rgLogInfo(RG_LOG_SYSTEM, "Skybox: %p", ent0->GetComponent(Component_MODELCOMPONENT));
-
 			Entity* ent1 = world->NewEntity();
-			ent1->AttachComponent(RG_NEW(TagComponent)("Ground"));
+			ent1->GetComponent(Component_TAG)->AsTagComponent()->SetString("Ground");
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
 			ent1->GetTransform()->SetPosition({ 0, 0, 1 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
-			rgLogInfo(RG_LOG_SYSTEM, "Ground: %s", ent1->GetComponent(Component_TAG)->AsTagComponent()->GetString());
-			rgLogInfo(RG_LOG_SYSTEM, "Ground: %p", ent1->GetComponent(Component_MODELCOMPONENT));
-
 			Entity* ent2 = world->NewEntity();
-			ent2->AttachComponent(RG_NEW(TagComponent)("Model"));
+			ent2->GetComponent(Component_TAG)->AsTagComponent()->SetString("Model");
 			ent2->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle2));
 			ent2->GetTransform()->SetPosition({ 0, 1, 0 });
 			ent2->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent2->GetTransform()->SetScale({ 1, 1, 1 });
-
-			rgLogInfo(RG_LOG_SYSTEM, "Model: %s", ent2->GetComponent(Component_TAG)->AsTagComponent()->GetString());
-			rgLogInfo(RG_LOG_SYSTEM, "Model: %p", ent2->GetComponent(Component_MODELCOMPONENT));
 
 			/*
 			PointLight* l = Render::GetLightSystem()->NewPointLight();

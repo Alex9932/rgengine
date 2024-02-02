@@ -58,20 +58,25 @@ namespace Engine {
 
 	// Base components
 
+	#define TAG_BUFFERSIZE 256
 	class TagComponent : public Component {
 		private:
-			char string[256];
+			char m_string[TAG_BUFFERSIZE];
 
 		public:
 			TagComponent(String tag) : Component(Component_TAG) {
-				SDL_memset(this->string, 0, 256);
-				SDL_strlcpy(this->string, tag, 256);
+				SDL_memset(this->m_string, 0, TAG_BUFFERSIZE);
+				SDL_strlcpy(this->m_string, tag, TAG_BUFFERSIZE);
 			}
 			~TagComponent() {}
 
 			void Destroy() { RG_DELETE(TagComponent, this); }
-			RG_INLINE String GetString() { return this->string; }
-			RG_INLINE void SetString(String tag) { SDL_strlcpy(this->string, tag, 256); }
+
+			RG_INLINE void   SetString(String tag) { SDL_strlcpy(this->m_string, tag, TAG_BUFFERSIZE); }
+			RG_INLINE String GetString()           { return this->m_string; }
+
+			RG_INLINE char*  GetCharBuffer() { return this->m_string; }
+			RG_INLINE Uint32 GetBufferSize() { return TAG_BUFFERSIZE; }
 	};
 
 
