@@ -19,11 +19,6 @@ Shader::Shader(PipelineDescription* description, String vs, String ps, bool comp
     if (compiled) { vsBuffer = LoadCompiledShaders(vs, ps); }
     else { vsBuffer = LoadShaders(vs, ps); }
 
-    vec3 pos;
-    vec3 normal;
-    vec3 tangent;
-    vec2 uv;
-
     D3D11_INPUT_ELEMENT_DESC* layoutDescriptions =
         (D3D11_INPUT_ELEMENT_DESC*)RGetAllocator()->Allocate(sizeof(D3D11_INPUT_ELEMENT_DESC) * description->inputCount);
 

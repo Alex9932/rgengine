@@ -44,6 +44,7 @@ float3 noise3(float3 x) {
 }
 
 PSOUTPUT pmain(PSINPUT psin) {
+#if 0
 	// Hardcoded scale
 	float2 noiseScale = float2(1900/4, 600/4);
 
@@ -93,6 +94,9 @@ PSOUTPUT pmain(PSINPUT psin) {
 	}
 
 	occlusion = 1.0 - (occlusion / kernelSize);
+#else
+	float occlusion = 0;
+#endif
 
 	PSOUTPUT pout; 
 	pout.color.r = occlusion;

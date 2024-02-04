@@ -9,7 +9,7 @@ typedef struct LevelHeader {
 	Uint32 compver; // Compiler version
 	Uint32 models;
 	Uint32 entities;
-	char   compiler[];
+	char   compiler[64];
 } LevelHeader;
 
 typedef struct LevelEntity {

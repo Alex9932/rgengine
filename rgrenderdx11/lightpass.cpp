@@ -326,7 +326,7 @@ void CreateLightpass(ivec2* size) {
     mat4_view(&lview, { -15,20,-3 }, { 1.111f, 1.4, 0 });
 
     lightmatrix = lproj * lview;
-
+#if 0
     rgLogInfo(RG_LOG_RENDER, "Matrix:\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
         lproj.m00, lproj.m01, lproj.m02, lproj.m03,
         lproj.m10, lproj.m11, lproj.m12, lproj.m13,
@@ -347,7 +347,7 @@ void CreateLightpass(ivec2* size) {
         lightmatrix.m20, lightmatrix.m21, lightmatrix.m22, lightmatrix.m23,
         lightmatrix.m30, lightmatrix.m31, lightmatrix.m32, lightmatrix.m33
     );
-
+#endif
 }
 
 void DestroyLightpass() {

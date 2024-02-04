@@ -108,14 +108,14 @@ static bool EHandler(SDL_Event* event) {
 class Application : public BaseGame {
 	public:
 
-		KinematicsModel* kmodel;
+		KinematicsModel* kmodel = NULL;
 
-		Entity* ent_light0;
+		Entity* ent_light0 = NULL;
 
 		World*  world  = NULL;
 		FreeCameraController* camcontrol = NULL;
 
-		Animation* anim;
+		Animation* anim = NULL;
 
 		Application() {
 			this->isClient   = true;

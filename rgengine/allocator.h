@@ -92,7 +92,7 @@ namespace Engine {
 
             RG_INLINE   void Deallocate() { this->Deallocate(NULL); };
             RG_INLINE size_t GetAllocatedMemory() { return this->m_len; }
-            RG_INLINE size_t GetUsedMemory() { (size_t)this->m_cur - (size_t)this->m_base; }
+            RG_INLINE size_t GetUsedMemory() { return (size_t)this->m_cur - (size_t)this->m_base; }
 
     };
 

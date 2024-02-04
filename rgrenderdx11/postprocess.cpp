@@ -494,10 +494,10 @@ void DoPostprocess() {
 ID3D11ShaderResourceView* FXGetOuputTexture() {
 	//return tonemapping->GetOutput();
 	
-	////return mix->GetOutput();
+	return mix->GetOutput();
 	
 	//return GetLightpassShaderResource();
 	//return ssr->GetOutput();
 
-	return ssao->GetOutput();
+	//return ssao->GetOutput();
 }
