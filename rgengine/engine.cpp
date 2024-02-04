@@ -54,30 +54,30 @@ namespace Engine {
     static char          version_str[64];
     static char          platform_str[64];
 
-    static int           arg_count     = 0;
-    static String*       arg_strs      = NULL;
+    static int           arg_count = 0;
+    static String* arg_strs = NULL;
 
-    static Bool          is_debug      = false;
-    static String        fsjson        = NULL;
-    static int           num_threads   = 1;
-    static String        lib_renderer  = NULL;
+    static Bool          is_debug = false;
+    static String        fsjson = NULL;
+    static int           num_threads = 1;
+    static String        lib_renderer = NULL;
 
-    static BaseGame*     game_ptr      = NULL;
-    static Bool          running       = false;
+    static BaseGame* game_ptr = NULL;
+    static Bool          running = false;
 
     static STDAllocator* std_allocator = NULL;
-    static Profiler*     core_profiler = NULL;
+    static Profiler* core_profiler = NULL;
 
-    static Bool          shutdown_rq   = false;
+    static Bool          shutdown_rq = false;
 
-    static Float64       frame_time    = 0.0;
-    static Float64       uptime        = 0.0;
+    static Float64       frame_time = 0.0;
+    static Float64       uptime = 0.0;
 
     static Timer         timer;
 
-    static World*        world         = NULL;
+    static World* world = NULL;
 
-    static SoundSystem*  soundsystem   = NULL;
+    static SoundSystem* soundsystem = NULL;
 
 
     static SDL_AssertState AssertionHandler(const SDL_AssertData* data, void* userdata) {
@@ -109,9 +109,9 @@ namespace Engine {
 
         if (event->type == SDL_WINDOWEVENT) {
             switch (event->window.event) {
-                case SDL_WINDOWEVENT_LEAVE: { SetFpsLimit(-1); break; }
-                case SDL_WINDOWEVENT_ENTER: { SetFpsLimit(-1); break; }
-                default: { break; }
+            case SDL_WINDOWEVENT_LEAVE: { SetFpsLimit(-1); break; }
+            case SDL_WINDOWEVENT_ENTER: { SetFpsLimit(-1); break; }
+            default: { break; }
             }
         }
 
@@ -163,22 +163,25 @@ namespace Engine {
 
     Sint32 ProcessArguments(int argc, String* argv) {
         arg_count = argc;
-        arg_strs  = argv;
+        arg_strs = argv;
 
         for (int i = 0; i < arg_count; ++i) {
             if (rg_streql(arg_strs[i], "-debug")) {
                 is_debug = true;
-            } else if (rg_streql(arg_strs[i], "-render")) {
+            }
+            else if (rg_streql(arg_strs[i], "-render")) {
                 if (arg_count <= i + 1) {
                     return -1;
                 }
                 lib_renderer = arg_strs[i + 1];
-            } else if (rg_streql(arg_strs[i], "-fsjson")) {
+            }
+            else if (rg_streql(arg_strs[i], "-fsjson")) {
                 if (arg_count <= i + 1) {
                     return -1;
                 }
                 fsjson = arg_strs[i + 1];
-            } else if (rg_streql(arg_strs[i], "-t")) {
+            }
+            else if (rg_streql(arg_strs[i], "-t")) {
                 if (arg_count <= i + 1) {
                     return -1;
                 }
@@ -201,48 +204,48 @@ namespace Engine {
         printf("SIGNAL: Terminate\n");
 
         switch (sig) {
-            case SIGINT: {
-                break;
-            }
-            case SIGILL: {
-                break;
-            }
-            case SIGFPE: {
-                break;
-            }
-            case SIGSEGV: {
-                printf("SIGNAL: Segmentation violation\n");
-                break;
-            }
-            case SIGTERM: {
-                break;
-            }
-            case SIGBREAK: {
-                break;
-            }
-            case SIGABRT: {
-                break;
-            }
-            default: {
-                break;
-            }
+        case SIGINT: {
+            break;
+        }
+        case SIGILL: {
+            break;
+        }
+        case SIGFPE: {
+            break;
+        }
+        case SIGSEGV: {
+            printf("SIGNAL: Segmentation violation\n");
+            break;
+        }
+        case SIGTERM: {
+            break;
+        }
+        case SIGBREAK: {
+            break;
+        }
+        case SIGABRT: {
+            break;
+        }
+        default: {
+            break;
+        }
         }
     }
 
     void Initialize(BaseGame* game) {
         game_ptr = game;
-        running  = true;
+        running = true;
 
         SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
 
 #if defined(RG_PLATFORM_WINDOWS)
-        signal(SIGINT,   handle_signal);
-        signal(SIGILL,   handle_signal);
-        signal(SIGFPE,   handle_signal);
-        signal(SIGSEGV,  handle_signal);
-        signal(SIGTERM,  handle_signal);
+        signal(SIGINT, handle_signal);
+        signal(SIGILL, handle_signal);
+        signal(SIGFPE, handle_signal);
+        signal(SIGSEGV, handle_signal);
+        signal(SIGTERM, handle_signal);
         signal(SIGBREAK, handle_signal);
-        signal(SIGABRT,  handle_signal);
+        signal(SIGABRT, handle_signal);
 #elif defined(RG_PLATFORM_LINUX)
 
 #endif
@@ -270,9 +273,11 @@ namespace Engine {
             __cpuid(CPUInfo, i);
             if (i == 0x80000002) {
                 memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
-            } else if (i == 0x80000003) {
+            }
+            else if (i == 0x80000003) {
                 memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
-            } else if (i == 0x80000004) {
+            }
+            else if (i == 0x80000004) {
                 memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
             }
         }
@@ -331,6 +336,20 @@ namespace Engine {
         game_ptr->Initialize();
     }
 
+    static String profiles[] = {
+        "input",
+        "worldupdate",
+        "game",
+        "render",
+        "audio",
+        "other"
+    };
+
+    String GetProfile(Uint32 idx) {
+        if (idx < 6) { return profiles[idx]; }
+        return "null";
+    }
+
     void Start() {
         rgLogInfo(RG_LOG_SYSTEM, "Starting engine...");
         PushEvent(0, RG_EVENT_STANDBY, NULL, NULL);
@@ -341,37 +360,29 @@ namespace Engine {
         Uint32 frame = 0;
 
         while (running) {
-
-#if 0
-            Float64 input_t  = core_profiler->GetTime("input");
-            Float64 game_t   = core_profiler->GetTime("game");
-            Float64 render_t = core_profiler->GetTime("render");
-            rgLogInfo(RG_LOG_SYSTEM, "I: %lf, G: %lf, R: %lf", input_t, game_t, render_t);
-#endif
-
             core_profiler->Reset();
             frame_time = timer.GetElapsedTime();
             timer.Update();
             uptime += frame_time;
 
-            core_profiler->StartSection("input");
+            core_profiler->StartSection(profiles[0]);
             HandleEvents();
             UpdateInput();
 
-            core_profiler->StartSection("worldupdate");
+            core_profiler->StartSection(profiles[1]);
             world->Update();
 
-            core_profiler->StartSection("game");
+            core_profiler->StartSection(profiles[2]);
             game_ptr->MainUpdate();
 
             if (game_ptr->IsClient()) {
-                core_profiler->StartSection("render");
+                core_profiler->StartSection(profiles[3]);
                 Render::Update();
-                core_profiler->StartSection("audio");
+                core_profiler->StartSection(profiles[4]);
                 soundsystem->Update(GetDeltaTime());
             }
 
-            core_profiler->StartSection("other");
+            core_profiler->StartSection(profiles[5]);
             frame++;
             //			if(timer.GetTime() - last_time >= 5.0) {
             //				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
@@ -467,6 +478,10 @@ namespace Engine {
 
     SoundSystem* GetSoundSystem() {
         return soundsystem;
+    }
+
+    Profiler* GetProfiler() {
+        return core_profiler;
     }
 
 }

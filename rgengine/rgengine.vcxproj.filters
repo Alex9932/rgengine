@@ -198,6 +198,9 @@
     <ClCompile Include="levelloader.cpp">
       <Filter>Source Files\world</Filter>
     </ClCompile>
+    <ClCompile Include="imgui\imgui_widget_flamegraph.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -367,6 +370,9 @@
     </ClInclude>
     <ClInclude Include="levelloader.h">
       <Filter>Header Files\world</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_widget_flamegraph.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

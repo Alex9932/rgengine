@@ -10,8 +10,12 @@
 #include "modelsystem.h"
 #include "lightsystem.h"
 
+#include "profiler.h"
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
+
+#include "imgui/imgui_widget_flamegraph.h"
 
 namespace Engine {
     namespace Render {
@@ -238,6 +242,31 @@ namespace Engine {
             ImGui::Separator();
 
             ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
+
+            ImGui::End();
+        }
+
+        static void ProfilerValueGetter(float* startTimestamp, float* endTimestamp, ImU8* level, const char** caption, const void* data, int idx) {
+            Profiler* prof = (Profiler*)data;
+
+            String  section = GetProfile(idx);
+            Float64 time = prof->GetTime(section);
+
+            Float64 start = 0;
+            for (Uint32 i = 0; i < idx; i++) {
+                start += prof->GetTime(GetProfile(i));
+            }
+            if (startTimestamp) { *startTimestamp = (Float32)start; }
+            if (endTimestamp)   { *endTimestamp = (Float32)(start + time); }
+            if (level)          { *level = 0; }
+            if (caption)        { *caption = section; }
+        }
+
+        void DrawProfilerStats() {
+            ImGui::Begin("Main profiler");
+
+            Profiler* prof = GetProfiler();
+            ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, prof->GetSectionCount(), 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
 
             ImGui::End();
         }

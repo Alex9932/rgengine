@@ -150,8 +150,25 @@ class Application : public BaseGame {
 		}
 
 		void MainUpdate() {
+			static R3D_GlobalLightDescrition desc = {};
+			/*
+			desc.ambient   = 0.4;
+			desc.intensity = 6;
+			desc.time      = 1.7;
+			desc.color     = { 1, 0.8f, 0.7f };
+			*/
 
 			Render::DrawRendererStats();
+			Render::DrawProfilerStats();
+
+			ImGui::Begin("Scene light");
+			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
+			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
+			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
+			ImGui::ColorPicker3("Color", desc.color.array);
+			ImGui::End();
+
+			Render::SetGlobalLight(&desc);
 
 			ImGui::Begin("Camera");
 			vec3 pos = camera->GetTransform()->GetPosition();
@@ -200,14 +217,10 @@ class Application : public BaseGame {
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
-
-
 		}
 		
 		void Initialize() {
 
-			//world  = new World();
-			//camera = new Camera(world, 0.1f, 1000, rgToRadians(75), 1.777f);
 			world = GetWorld();
 
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);

@@ -51,6 +51,7 @@ namespace Engine {
 
     class World;
     class SoundSystem;
+    class Profiler;
 
     class RG_DECLSPEC BaseGame {
         protected:
@@ -70,12 +71,14 @@ namespace Engine {
 
     RG_DECLSPEC void SetAssertMessage(String str);
 
+    // DL Library
     RG_DECLSPEC LibraryHandle DL_LoadLibrary(String name);
     RG_DECLSPEC ProcHandle    DL_GetProcAddress(LibraryHandle handle, String proc_name);
     RG_DECLSPEC void          DL_UnloadLibrary(LibraryHandle handle);
 
+    // Arguments
     RG_DECLSPEC Sint32 ProcessArguments(int argc, String* argv);
-    RG_DECLSPEC Bool IsArgument(String arg);
+    RG_DECLSPEC Bool   IsArgument(String arg);
 
     RG_DECLSPEC void Initialize(BaseGame* game);
     RG_DECLSPEC void Start();
@@ -86,16 +89,19 @@ namespace Engine {
     RG_DECLSPEC Bool IsDebug();
     RG_DECLSPEC Bool IsRunning();
 
-    RG_DECLSPEC Float64 GetDeltaTime();
-    RG_DECLSPEC Float64 GetUptime();
-    RG_DECLSPEC Uint32 GetThreads();
+    RG_DECLSPEC Float64   GetDeltaTime();
+    RG_DECLSPEC Float64   GetUptime();
+    RG_DECLSPEC Uint32    GetThreads();
     RG_DECLSPEC BaseGame* GetGame();
-    RG_DECLSPEC String GetEngineVersion();
-    RG_DECLSPEC String GetEnginePlatform();
+    RG_DECLSPEC String    GetEngineVersion();
+    RG_DECLSPEC String    GetEnginePlatform();
 
     RG_DECLSPEC World* GetWorld();
 
     RG_DECLSPEC SoundSystem* GetSoundSystem();
+
+    RG_DECLSPEC String    GetProfile(Uint32 idx);
+    RG_DECLSPEC Profiler* GetProfiler();
 
 }
 

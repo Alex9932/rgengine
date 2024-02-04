@@ -74,6 +74,7 @@ namespace Engine {
 
 		// ImGui window
 		RG_DECLSPEC void DrawRendererStats();
+		RG_DECLSPEC void DrawProfilerStats();
 
 		RG_DECLSPEC void Update();
 

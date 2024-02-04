@@ -1,0 +1,107 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+cbuffer ConstBuffer : register(b0) {
+	float4x4 proj;
+};
+
+Texture2D t_unit0 : register(t0); // Normal
+Texture2D t_unit1 : register(t1); // Wpos
+SamplerState SampleType : register(s0);
+
+float3 mix(float3 a, float3 b, float c) {
+	return a * (1 - c) + b * c;
+}
+
+float mix(float a, float b, float c) {
+	return a * (1 - c) + b * c;
+}
+
+float hash(float x) {
+	return frac(sin(x) * 43758.5453123);
+}
+
+float noise(float3 x) {
+	float3 f = frac(x);
+	float  n = dot(floor(x), float3(1.0, 157.0, 113.0));
+	return mix(
+			mix(mix(hash(n +   0.0), hash(n +   1.0), f.x), mix(hash(n + 157.0), hash(n + 158.0), f.x), f.y),
+            mix(mix(hash(n + 113.0), hash(n + 114.0), f.x), mix(hash(n + 270.0), hash(n + 271.0), f.x), f.y),
+			f.z);
+}
+
+float3 noise3(float3 x) {
+	float n0 = noise(x - sin(x.z));
+	float n1 = noise(x);
+	float n2 = noise(x + sin(x.x));
+	return float3(n0, n1, n2);
+}
+
+PSOUTPUT pmain(PSINPUT psin) {
+	// Hardcoded scale
+	float2 noiseScale = float2(1900/4, 600/4);
+
+
+	float3 samples[64];
+	int kernelSize = 64;
+
+	int i = 0;
+
+
+	float3 normal = t_unit0.Sample(SampleType, psin.uv).xyz;
+	float3 fpos   = t_unit1.Sample(SampleType, psin.uv).xyz;
+
+	
+	// TODO
+	float3 randomVec = normalize(noise3(fpos));
+
+	samples[0] = noise3(normalize(randomVec));
+	for(i = 1; i < kernelSize; i++) {
+		samples[i] = noise3(normalize(randomVec + samples[i-1]));
+	}
+
+
+	float3   tangent = normalize(randomVec - normal * dot(randomVec, normal));
+	float3   bitang  = cross(normal, tangent);
+	float3x3 tbn     = {tangent, bitang, normal};
+
+	float occlusion = 0;
+	float radius = 0.5;
+
+	float bias = 0.025;
+
+	for(i = 0; i < kernelSize; i++) {
+		float3 samplePos = mul(samples[i], tbn);
+		samplePos = fpos + samplePos * radius;
+
+		float4 offset = float4(samplePos, 1.0);
+		offset      = mul(offset, proj);
+		offset.xyz /= offset.w;
+		offset.xyz  = offset.xyz * 0.5 + 0.5;
+
+		offset.y = 1 - offset;
+
+		float sampleDepth = t_unit1.Sample(SampleType, offset.xy).z;
+
+		occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0);  
+	}
+
+	occlusion = 1.0 - (occlusion / kernelSize);
+
+	PSOUTPUT pout; 
+	pout.color.r = occlusion;
+	pout.color.g = occlusion;
+	pout.color.b = occlusion;
+
+	//pout.color.rgb = bitang;
+
+	pout.color.a = 1;
+	return pout;
+
+}

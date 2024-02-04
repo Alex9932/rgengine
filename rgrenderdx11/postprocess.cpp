@@ -144,6 +144,10 @@ struct SSRBufferData {
 	int  screen_size;
 };
 
+struct SSAOBufferData {
+	mat4 proj;
+};
+
 static FX* lightpass;
 
 static FX*           ssr;
@@ -166,6 +170,11 @@ static FX* blury3;
 
 static Buffer*     blurBuffer;
 static BBufferData blurData;
+
+// SSAO
+static FX* ssao;
+static Buffer* ssaoBuffer;
+static SSAOBufferData ssaoData;
 
 static FX* mix;
 
@@ -203,6 +212,8 @@ static void LoadFX() {
 	blury3 = RG_NEW_CLASS(RGetAllocator(), FX)(&subSize, "blury.ps");
 
 	mix = RG_NEW_CLASS(RGetAllocator(), FX)(size, "mix.ps");
+
+	ssao = RG_NEW_CLASS(RGetAllocator(), FX)(size, "ssao.ps");
 }
 
 static void FreeFX() {
@@ -222,6 +233,7 @@ static void FreeFX() {
 	RG_DELETE_CLASS(RGetAllocator(), FX, blury3);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssao);
 }
 
 void CreateFX(ivec2* size) {
@@ -264,6 +276,9 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length      = sizeof(SSRBufferData);
 	ssrBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
+	abufferInfo.length = sizeof(SSAOBufferData);
+	ssaoBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
+
 	LoadFX();
 }
 
@@ -274,6 +289,7 @@ void DestroyFX() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, aberrationBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, blurBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssaoBuffer);
 
 	FreeFX();
 }
@@ -424,13 +440,23 @@ void DoPostprocess() {
 	ssrData.screen_size = shiftx | screeny;
 
 	ssrBuffer->SetData(0, sizeof(SSRBufferData), &ssrData);
-	ssr->SetInput(0, GetGBufferShaderResource(0));
-	ssr->SetInput(1, GetGBufferShaderResource(1));
-	ssr->SetInput(2, GetGBufferShaderResource(2));
+	ssr->SetInput(0, GetGBufferShaderResource(0)); // Albedo
+	ssr->SetInput(1, GetGBufferShaderResource(1)); // Normal
+	ssr->SetInput(2, GetGBufferShaderResource(2)); // Wpos
 	ssr->SetInput(3, lightpass_output);
 	ssr->SetInput(4, GetGBufferDepth());
 	ssr->SetConstants(ssrBuffer->GetHandle());
 	ssr->Draw();
+
+	// SSAO
+
+	ssaoData.proj = *GetCameraProjection();;
+
+	ssaoBuffer->SetData(0, sizeof(SSAOBufferData), &ssaoData);
+	ssao->SetInput(0, GetGBufferShaderResource(1)); // Normal
+	ssao->SetInput(1, GetGBufferShaderResource(2)); // Wpos
+	ssao->SetConstants(ssaoBuffer->GetHandle());
+	ssao->Draw();
 
 	// Bloom
 	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
@@ -467,7 +493,11 @@ void DoPostprocess() {
 
 ID3D11ShaderResourceView* FXGetOuputTexture() {
 	//return tonemapping->GetOutput();
-	return mix->GetOutput();
+	
+	////return mix->GetOutput();
+	
 	//return GetLightpassShaderResource();
 	//return ssr->GetOutput();
+
+	return ssao->GetOutput();
 }

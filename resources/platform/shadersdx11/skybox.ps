@@ -13,9 +13,7 @@ struct PSOUTPUT {
 
 cbuffer ConstBuffer : register(b0) {
 	float4 color;
-	uint   __offset0;
-	uint   __offset2;
-	uint   __offset3;
+	float3 camerapos;
 	uint   __offset4;
 };
 
@@ -28,17 +26,106 @@ float3 mix(float3 a, float3 b, float c) {
 	return a * (1 - c) + b * c;
 }
 
+float mix(float a, float b, float c) {
+	return a * (1 - c) + b * c;
+}
+
+#define wrapf3(x) float3(x, x, x)
+
+#if 0
+
+float hash(float x) {
+	return frac(sin(x) * 43758.5453123);
+}
+
+float noise(float3 x) {
+	float3 f = frac(x);
+	float  n = dot(floor(x), float3(1.0, 157.0, 113.0));
+	return mix(
+			mix(mix(hash(n +   0.0), hash(n +   1.0), f.x), mix(hash(n + 157.0), hash(n + 158.0), f.x), f.y),
+            mix(mix(hash(n + 113.0), hash(n + 114.0), f.x), mix(hash(n + 270.0), hash(n + 271.0), f.x), f.y),
+			f.z);
+}
+
+float fbm(float3 p) {
+	float3x3 m = {0.0, 1.60,  1.20, -1.6, 0.72, -0.96, -1.2, -0.96, 1.28};
+
+	float f = 0.0;
+	f += noise(p) / 2;  p = mul(p, m) * 1.1;
+	f += noise(p) / 4;  p = mul(p, m) * 1.2;
+	f += noise(p) / 6;  p = mul(p, m) * 1.3;
+	f += noise(p) / 12; p = mul(p, m) * 1.4;
+	f += noise(p) / 24;
+	return f;
+}
+
+#endif
+
+#define M_PI 3.1415926535
+
+float3 perez(float cos_theta, float gamma, float cos_gamma, float3 A, float3 B, float3 C, float3 D, float3 E) {
+    return (1 + A * exp(B / (cos_theta + 0.01))) * (1 + C * exp(D * gamma) + E * cos_gamma * cos_gamma);
+}
+
+float zenith_chromacity(float4 c0, float4 c1, float4 c2, float sunTheta, float turbidity) {
+	float4 thetav = float4(sunTheta * sunTheta * sunTheta, sunTheta * sunTheta, sunTheta, 1);
+	return dot(float3(turbidity * turbidity, turbidity, 1), float3(dot(thetav, c0), dot(thetav, c1), dot(thetav, c2)));
+}
+
+float zenith_luminance(float sunTheta, float turbidity) {
+    float chi = (4.f / 9.f - turbidity / 120) * (M_PI - 2 * sunTheta);
+    return (4.0453 * turbidity - 4.9710) * tan(chi) - 0.2155 * turbidity + 2.4192;
+}
+
 PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
-	
 	float3 N = 0;
-
+#if 0	
 	//float3 skycolor = color.xyz;
-
 	float3 horizoncolor = float3(0.8, 0.9, 1);
-
 	float y = (psin.vpos.y + 15) / 70;
 	float m = 1 - clamp(y, 0, 1); // mix value
 	float3 skycolor = mix(color.rgb, horizoncolor, m);
+#endif
+
+	float phase = 0.75;// 3.1415 / 2 + 3.1415 / 8;
+	float3 sun_pos = float3(cos(phase) * 20, sin(phase) * 20, 3.5f);
+
+	float3 sun_dir = normalize(sun_pos);
+	float3 v = normalize(camerapos - psin.vpos);
+
+	//float3 p_A, p_B, p_C, p_D, p_E, p_Z;
+
+	float m_turbidity = 2.5;
+	float sunTheta = acos(clamp(sun_dir.y, 0.f, 1.f));
+
+	float3 p_A = float3(-0.0193, -0.0167,  0.1787) * m_turbidity + float3(-0.2592, -0.2608, -1.4630);
+    float3 p_B = float3(-0.0665, -0.0950, -0.3554) * m_turbidity + float3( 0.0008,  0.0092,  0.4275);
+    float3 p_C = float3(-0.0004, -0.0079, -0.0227) * m_turbidity + float3( 0.2125,  0.2102,  5.3251);
+    float3 p_D = float3(-0.0641, -0.0441,  0.1206) * m_turbidity + float3(-0.8989, -1.6537, -2.5771);
+    float3 p_E = float3(-0.0033, -0.0109, -0.0670) * m_turbidity + float3( 0.0452,  0.0529,  0.3703);
+	float3 p_Z = 0;
+	p_Z.x = zenith_chromacity(float4(0.00166, -0.00375, 0.00209, 0), float4(-0.02903, 0.06377, -0.03202, 0.00394), float4(0.11693, -0.21196, 0.06052, 0.25886), sunTheta, m_turbidity);
+    p_Z.y = zenith_chromacity(float4(0.00275, -0.00610, 0.00317, 0), float4(-0.04214, 0.08970, -0.04153, 0.00516), float4(0.15346, -0.26756, 0.06670, 0.26688), sunTheta, m_turbidity);
+    p_Z.z = zenith_luminance(sunTheta, m_turbidity);
+    //p_Z.z *= 1000;
+
+	float cos_theta = clamp(v.y, 0, 1);
+    float cos_gamma = dot(v, sun_dir);
+    float gamma = acos(cos_gamma);
+    
+    float3 R_xyY = p_Z * perez(cos_theta, gamma, cos_gamma, p_A, p_B, p_C, p_D, p_E);
+    
+    float3 R_XYZ = float3(R_xyY.x, R_xyY.y, 1 - R_xyY.x - R_xyY.y) * R_xyY.z / R_xyY.y;
+    
+    // Radiance
+    float r = dot(float3( 3.240479, -1.537150, -0.498535), R_XYZ);
+    float g = dot(float3(-0.969256,  1.875992,  0.041556), R_XYZ);
+    float b = dot(float3( 0.055648, -0.204043,  1.057311), R_XYZ);
+
+//    return vec3(r, g, b);
+
+	float3 skycolor = float3(r, g, b) * 0.1;
+
 
 	PSOUTPUT pout;
 	pout.albedo.xyz = skycolor;  // Albedo ( TMP )

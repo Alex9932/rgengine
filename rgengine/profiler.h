@@ -6,11 +6,13 @@
 
 namespace Engine {
 
+#define _RG_PROFILER_MAP std::map<Uint32, Float64>
+
     class Profiler {
         private:
-            std::map<Uint32, Float64> m_sections;
-            Uint32                    m_current;
-            Uint64                    m_time;
+            _RG_PROFILER_MAP m_sections;
+            Uint32           m_current;
+            Uint64           m_time;
 
         public:
             Profiler();
@@ -20,6 +22,8 @@ namespace Engine {
             void StartSection(String name);
             Float64 GetTime(String section);
             Float64 GetTotalTime();
+
+            RG_INLINE Uint32 GetSectionCount() { return m_sections.size(); }
 
     };
 

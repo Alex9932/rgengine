@@ -37,9 +37,7 @@ struct MatrixBuffer {
 
 struct ConstBuffer {
 	vec4   color;
-	Uint32 __offset0;
-	Uint32 __offset1;
-	Uint32 __offset2;
+	vec3   camerapos;
 	Uint32 __offset3;
 };
 
@@ -644,6 +642,7 @@ static void DrawSkybox() {
 	constBuffer.color.g = 0.8f;
 	constBuffer.color.b = 1.5;
 	constBuffer.color.a = 1;
+	constBuffer.camerapos = cam_pos;
 
 	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
 	ID3D11Buffer* conBuffer = cBuffer->GetHandle();
