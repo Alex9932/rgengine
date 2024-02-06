@@ -8,7 +8,7 @@
 
  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
  SPDX-License-Identifier: MIT
- Copyright (c) 2018-2023 Alex9932
+ Copyright (c) 2018-2024 Alex9932
 
  THIRDPATY SOFTWERE
  Used libraries:
@@ -35,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         194
+#define RG_BUILD         200
 #define RG_VERSION_MAJ   0
 #define RG_VERSION_MIN   6
-#define RG_VERSION_PATCH 7
+#define RG_VERSION_PATCH 8
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);

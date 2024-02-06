@@ -23,7 +23,7 @@ namespace Engine {
             Float64 GetTime(String section);
             Float64 GetTotalTime();
 
-            RG_INLINE Uint32 GetSectionCount() { return m_sections.size(); }
+            RG_INLINE Uint32 GetSectionCount() { return (Uint32)m_sections.size(); }
 
     };
 

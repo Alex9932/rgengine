@@ -13,6 +13,7 @@
 
 #include <cstdio>
 
+#include <allocator.h>
 #include <filesystem.h>
 #include <engine.h>
 #include <utf8.h>
@@ -25,7 +26,7 @@ pmd_file* pmd_load(String file) {
 
 	rgLogInfo(RG_LOG_SYSTEM, "PMD: Loading model: %s\n", file);
 
-	pmd_file* pmd = (pmd_file*)malloc(sizeof(pmd_file));
+	pmd_file* pmd = (pmd_file*)rg_malloc(sizeof(pmd_file));
 	pmd->is_extended = false;
 
 	reader->Read(pmd->signature, 3);
@@ -61,7 +62,7 @@ pmd_file* pmd_load(String file) {
 
 	pmd->vertex_count = reader->ReadU32();
 
-	pmd->vertices = (pmd_vertex*)malloc(sizeof(pmd_vertex) * pmd->vertex_count);
+	pmd->vertices = (pmd_vertex*)rg_malloc(sizeof(pmd_vertex) * pmd->vertex_count);
 	for (Uint32 i = 0; i < pmd->vertex_count; ++i) {
 		reader->Read(&pmd->vertices[i].vertex, sizeof(pmd_position));
 		pmd->vertices[i].weight.b_id[0] = reader->ReadU16();
@@ -82,11 +83,11 @@ pmd_file* pmd_load(String file) {
 
 	pmd->index_count = reader->ReadU32();
 
-	pmd->indices = (Uint16*)malloc(sizeof(Uint16) * pmd->index_count);
+	pmd->indices = (Uint16*)rg_malloc(sizeof(Uint16) * pmd->index_count);
 	reader->Read(pmd->indices, sizeof(Uint16) * pmd->index_count);
 	pmd->material_count = reader->ReadU32();
 
-	pmd->materials = (pmd_material*)malloc(sizeof(pmd_material) * pmd->material_count);
+	pmd->materials = (pmd_material*)rg_malloc(sizeof(pmd_material) * pmd->material_count);
 	for (Uint32 i = 0; i < pmd->material_count; ++i) {
 //		rgLogInfo(RG_LOG_SYSTEM, "Mat %d at 0x%x", i, reader->GetOffset());
 		reader->Read(&pmd->materials[i].colors, sizeof(pmd_material_colors));
@@ -99,7 +100,7 @@ pmd_file* pmd_load(String file) {
 	char char_buffer[20];
 	pmd->bones_count = reader->ReadU16();
 
-	pmd->bones = (pmd_bone*)malloc(sizeof(pmd_bone) * pmd->bones_count);
+	pmd->bones = (pmd_bone*)rg_malloc(sizeof(pmd_bone) * pmd->bones_count);
 	Uint8 u8;
 	for (Uint32 i = 0; i < pmd->bones_count; ++i) {
 		reader->Read(char_buffer, 20);
@@ -115,7 +116,7 @@ pmd_file* pmd_load(String file) {
 
 	pmd->ik_count = reader->ReadU16();
 
-	pmd->ik = (pmd_ik_info*)malloc(sizeof(pmd_ik_info) * pmd->ik_count);
+	pmd->ik = (pmd_ik_info*)rg_malloc(sizeof(pmd_ik_info) * pmd->ik_count);
 
 	for (Uint32 i = 0; i < pmd->ik_count; ++i) {
 		pmd->ik[i].target = reader->ReadU16();
@@ -123,7 +124,7 @@ pmd_file* pmd_load(String file) {
 		pmd->ik[i].bones = reader->ReadU8();
 		pmd->ik[i].max_iterations = reader->ReadU16();
 		pmd->ik[i].angle_limit = reader->ReadF32();
-		pmd->ik[i].list = (Uint16*)malloc(sizeof(Uint16) * pmd->ik[i].bones);
+		pmd->ik[i].list = (Uint16*)rg_malloc(sizeof(Uint16) * pmd->ik[i].bones);
 		reader->Read(pmd->ik[i].list, sizeof(Uint16) * pmd->ik[i].bones);
 
 		if (Engine::IsDebug()) {
@@ -132,7 +133,7 @@ pmd_file* pmd_load(String file) {
 	}
 
 	pmd->morph_count = reader->ReadU16();
-	pmd->morphs = (pmd_morph*)malloc(sizeof(pmd_morph) * pmd->morph_count);
+	pmd->morphs = (pmd_morph*)rg_malloc(sizeof(pmd_morph) * pmd->morph_count);
 
 	for (Uint32 i = 0; i < pmd->morph_count; ++i) {
 		reader->Read(char_buffer, 20);
@@ -141,7 +142,7 @@ pmd_file* pmd_load(String file) {
 		SDL_memcpy(pmd->morphs[i].name, UTF8_GetBuffer(), SDL_strlen(UTF8_GetBuffer()));
 		pmd->morphs[i].vertices = reader->ReadU32();
 		pmd->morphs[i].face_type = reader->ReadU8();
-		pmd->morphs[i].list = (pmd_morph_vertex*)malloc(sizeof(pmd_morph_vertex) * pmd->morphs[i].vertices);
+		pmd->morphs[i].list = (pmd_morph_vertex*)rg_malloc(sizeof(pmd_morph_vertex) * pmd->morphs[i].vertices);
 		reader->Read(pmd->morphs[i].list, sizeof(pmd_morph_vertex) * pmd->morphs[i].vertices);
 	}
 
@@ -187,28 +188,28 @@ pmd_file* pmd_load(String file) {
 			rgLogInfo(RG_LOG_SYSTEM, "PMD: Comment: %s\n", pmd->e_comment);
 		}
 
-		pmd->e_bones = (char**)malloc(sizeof(char*) * pmd->bones_count);
-		pmd->e_faces = (char**)malloc(sizeof(char*) * pmd->morph_count);
-		pmd->e_bone_group = (char**)malloc(sizeof(char*) * pmd->bone_groups);
-		pmd->e_toon_textures = (char**)malloc(sizeof(char*) * 10);
+		pmd->e_bones = (char**)rg_malloc(sizeof(char*) * pmd->bones_count);
+		pmd->e_faces = (char**)rg_malloc(sizeof(char*) * pmd->morph_count);
+		pmd->e_bone_group = (char**)rg_malloc(sizeof(char*) * pmd->bone_groups);
+		pmd->e_toon_textures = (char**)rg_malloc(sizeof(char*) * 10);
 
 		for (Uint32 i = 0; i < pmd->bones_count; ++i) {
-			pmd->e_bones[i] = (char*)malloc(20);
+			pmd->e_bones[i] = (char*)rg_malloc(20);
 			reader->Read(pmd->e_bones[i], 20);
 		}
 
 		for (Uint32 i = 0; i < pmd->morph_count - 1; ++i) {
-			pmd->e_faces[i] = (char*)malloc(20);
+			pmd->e_faces[i] = (char*)rg_malloc(20);
 			reader->Read(pmd->e_faces[i], 20);
 		}
 
 		for (Uint32 i = 0; i < pmd->bone_groups; ++i) {
-			pmd->e_bone_group[i] = (char*)malloc(50);
+			pmd->e_bone_group[i] = (char*)rg_malloc(50);
 			reader->Read(pmd->e_bone_group[i], 50);
 		}
 
 		for (Uint32 i = 0; i < 10; ++i) {
-			pmd->e_toon_textures[i] = (char*)malloc(100);
+			pmd->e_toon_textures[i] = (char*)rg_malloc(100);
 			reader->Read(pmd->e_toon_textures[i], 100);
 		}
 
@@ -220,7 +221,7 @@ pmd_file* pmd_load(String file) {
 		}
 
 		if(pmd->rigidbody_count != 0) {
-			pmd->rigidbodies = (pmd_rigidbody*)malloc(sizeof(pmd_rigidbody) * pmd->rigidbody_count);
+			pmd->rigidbodies = (pmd_rigidbody*)rg_malloc(sizeof(pmd_rigidbody) * pmd->rigidbody_count);
 			for (Uint32 i = 0; i < pmd->rigidbody_count; ++i) {
 				reader->Read(pmd->rigidbodies[i].name, 20);
 				pmd->rigidbodies[i].bone_id = reader->ReadU16();
@@ -247,7 +248,7 @@ pmd_file* pmd_load(String file) {
 
 		pmd->constraint_count = reader->ReadU32();
 		if(pmd->constraint_count != 0) {
-			pmd->constraints = (pmd_constraint*)malloc(sizeof(pmd_constraint) * pmd->constraint_count);
+			pmd->constraints = (pmd_constraint*)rg_malloc(sizeof(pmd_constraint) * pmd->constraint_count);
 			reader->Read(pmd->constraints, sizeof(pmd_constraint) * pmd->constraint_count);
 		}
 
@@ -262,35 +263,35 @@ pmd_file* pmd_load(String file) {
 }
 
 void pmd_free(pmd_file* ptr) {
-	free(ptr->vertices);
-	free(ptr->indices);
-	free(ptr->materials);
-	free(ptr->bones);
+	rg_free(ptr->vertices);
+	rg_free(ptr->indices);
+	rg_free(ptr->materials);
+	rg_free(ptr->bones);
 	for (Uint32 i = 0; i < ptr->ik_count; ++i) {
-		free(ptr->ik[i].list);
+		rg_free(ptr->ik[i].list);
 	}
 	for (Uint32 i = 0; i < ptr->morph_count; ++i) {
-		free(ptr->morphs[i].list);
+		rg_free(ptr->morphs[i].list);
 	}
-	free(ptr->ik);
-	free(ptr->morphs);
+	rg_free(ptr->ik);
+	rg_free(ptr->morphs);
 	//if(ptr->is_extended) {
 	//	for (Uint32 i = 0; i < ptr->bones_count; ++i) {
-	//		free(ptr->e_bones[i]);
+	//		rg_free(ptr->e_bones[i]);
 	//	}
 	//	for (Uint32 i = 0; i < ptr->morph_count; ++i) {
-	//		free(ptr->e_faces[i]);
+	//		rg_free(ptr->e_faces[i]);
 	//	}
 	//	for (Uint32 i = 0; i < ptr->bone_groups; ++i) {
-	//		free(ptr->e_bone_group[i]);
+	//		rg_free(ptr->e_bone_group[i]);
 	//	}
 	//	for (Uint32 i = 0; i < 10; ++i) {
-	//		free(ptr->e_toon_textures[i]);
+	//		rg_free(ptr->e_toon_textures[i]);
 	//	}
-	//	free(ptr->rigidbodies);
-	//	free(ptr->constraints);
+	//	rg_free(ptr->rigidbodies);
+	//	rg_free(ptr->constraints);
 	//}
-	free(ptr);
+	rg_free(ptr);
 }
 
 #endif

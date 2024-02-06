@@ -11,19 +11,7 @@
 #include "soundbuffer.h"
 #include "soundsource.h"
 
-/*
-
-Objects:
- - Listener
- - SoundSource
- - Buffer
- - StreamBuffer
-
-Functions:
- - Playsound ( Buffer sound, vec3 position )
- - Source.Playstream ( StreamBuffer stream )
-
-*/
+#include "camera.h"
 
 namespace Engine {
 
@@ -50,8 +38,14 @@ namespace Engine {
 
 			void Update(Float64 dt);
 
-			Float32 GetVolume() { return m_volume; }
+			RG_INLINE Float32 GetVolume() { return m_volume; }
 			RG_DECLSPEC void SetVolume(Float32 v);
+
+			RG_INLINE void SetCamera(Camera* camera) { m_camera = camera; }
+
+			RG_DECLSPEC void SetListenerPosition(const vec3& pos);
+			RG_DECLSPEC void SetListenerVelocity(const vec3& vel);
+			RG_DECLSPEC void SetListenerOrientation(const vec3& at, const vec3& up);
 
 		private:
 			Engine::PoolAllocator*    m_alloc;
@@ -59,6 +53,8 @@ namespace Engine {
 			Source*        m_sourcepool = NULL;
 			ALCdevice*     m_device     = NULL;
 			ALCcontext*    m_ctx        = NULL;
+
+			Camera*        m_camera     = NULL;
 
 			Float32        m_volume     = 0.1f;
 

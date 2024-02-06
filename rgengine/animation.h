@@ -34,7 +34,7 @@ namespace Engine {
         public:
             RG_INLINE AnimationTrack(String name) {
                 SDL_strlcpy(this->name, name, 32);
-                this->nameCRCHash = rgCRC32(name, SDL_strlen(name));
+                this->nameCRCHash = rgCRC32(name, (Uint32)SDL_strlen(name));
             }
             RG_DECLSPEC ~AnimationTrack() {}
 
@@ -74,7 +74,7 @@ namespace Engine {
             RG_DECLSPEC AnimationTrack* GetBoneAnimationTrack(Uint32 crc_hash);
             RG_DECLSPEC void AddBoneAnimationTrack(AnimationTrack* track);
 
-            RG_INLINE Uint32 GetAnimationTrackCount() { return this->bone_tracks.size(); }
+            RG_INLINE Uint32 GetAnimationTrackCount() { return (Uint32)this->bone_tracks.size(); }
 
             RG_DECLSPEC void Finish(Uint32 frame);
 

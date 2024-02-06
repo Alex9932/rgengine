@@ -93,8 +93,8 @@ namespace Engine {
 			RG_INLINE PointLight* GetPointLight(Uint32 idx) { return m_pointlights[idx]; }
 			RG_INLINE SpotLight*  GetSpotLight(Uint32 idx)  { return m_spotlights[idx]; }
 
-			RG_INLINE Uint32 GetPointLightCount() { return m_pointlights.size(); }
-			RG_INLINE Uint32 GetSpotLightCount()  { return m_spotlights.size(); }
+			RG_INLINE Uint32 GetPointLightCount() { return (Uint32)m_pointlights.size(); }
+			RG_INLINE Uint32 GetSpotLightCount()  { return (Uint32)m_spotlights.size(); }
 
 		private:
 

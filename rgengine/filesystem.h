@@ -95,7 +95,7 @@ namespace Engine {
         }
     }
 
-    class RG_DECLSPEC FSInputStream {
+    class FSInputStream {
         public:
             FSInputStream() {}
             virtual ~FSInputStream() {}
@@ -115,7 +115,7 @@ namespace Engine {
             RG_FORCE_INLINE void Read4F32(vec4& v) { Read(&v, sizeof(vec4)); }
     };
 
-    class RG_DECLSPEC FSOutputStream {
+    class FSOutputStream {
         public:
             FSOutputStream() {}
             virtual ~FSOutputStream() {}
@@ -135,16 +135,16 @@ namespace Engine {
             RG_FORCE_INLINE void Write4F32(vec4* a) { Write(a, sizeof(vec4)); }
     };
 
-    class RG_DECLSPEC FSReader : public FSInputStream {
+    class FSReader : public FSInputStream {
         private:
             ResourceStream* m_stream        = NULL;
             size_t          m_readed_blocks = 0;
 
         public:
-            FSReader(String file);
-            FSReader(ResourceStream* stream);
-            virtual ~FSReader();
-            virtual size_t Read(void* ptr, size_t len);
+            RG_DECLSPEC FSReader(String file);
+            RG_DECLSPEC FSReader(ResourceStream* stream);
+            RG_DECLSPEC virtual ~FSReader();
+            RG_DECLSPEC virtual size_t Read(void* ptr, size_t len);
 
             RG_FORCE_INLINE size_t GetOffset() { return m_stream->offset; }
             RG_FORCE_INLINE ResourceStream* GetStream() { return m_stream; }
@@ -154,29 +154,29 @@ namespace Engine {
             RG_FORCE_INLINE void Seek(Uint32 a, Uint32 flag) { SeekStream(a, flag, m_stream); }
     };
 
-    class RG_DECLSPEC FSWriter : public FSOutputStream {
+    class FSWriter : public FSOutputStream {
         private:
             FILE*  m_handle = NULL;
             size_t m_offset = 0;
 
         public:
-            FSWriter(String file);
-            virtual ~FSWriter();
-            virtual void Write(const void* ptr, size_t len);
+            RG_DECLSPEC FSWriter(String file);
+            RG_DECLSPEC virtual ~FSWriter();
+            RG_DECLSPEC virtual void Write(const void* ptr, size_t len);
             RG_FORCE_INLINE size_t GetOffset() { return m_offset; }
             RG_FORCE_INLINE FILE* GetHandle() { return m_handle; }
     };
 
-    class RG_DECLSPEC FSMemoryInputStream : public FSInputStream {
+    class FSMemoryInputStream : public FSInputStream {
         private:
             void*  m_ptr    = NULL;
             size_t m_len    = 0;
             size_t m_offset = 0;
 
         public:
-            FSMemoryInputStream(void* ptr, size_t len);
-            virtual ~FSMemoryInputStream();
-            virtual size_t Read(void* ptr, size_t len);
+            RG_DECLSPEC FSMemoryInputStream(void* ptr, size_t len);
+            RG_DECLSPEC virtual ~FSMemoryInputStream();
+            RG_DECLSPEC virtual size_t Read(void* ptr, size_t len);
 
             RG_FORCE_INLINE void* GetDataPointer() { return m_ptr; }
             RG_FORCE_INLINE Bool EndOfStream() { return m_offset >= m_len; }

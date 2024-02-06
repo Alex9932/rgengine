@@ -106,7 +106,43 @@ namespace Engine {
 		
 	}
 
+	void SoundSystem::SetListenerPosition(const vec3& pos) {
+		alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+	}
+
+	void SoundSystem::SetListenerVelocity(const vec3& vel) {
+		alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
+	}
+
+	void SoundSystem::SetListenerOrientation(const vec3& fwd, const vec3& up) {
+		ALfloat orient[] = {
+			fwd.x, fwd.y, fwd.z,
+			up.x, up.y, up.z
+		};
+		alListenerfv(AL_ORIENTATION, orient);
+	}
+
 	void SoundSystem::Update(Float64 dt) {
+
+		// Update
+		if (m_camera != NULL) {
+			Transform* t_cam = m_camera->GetTransform();
+
+			vec3 vel = { 0, 0, 0 };
+			vec3 pos = t_cam->GetPosition();
+			vec3 rot = t_cam->GetRotation();
+			vec3 up  = { 0, 1, 0 };
+
+			// TODO: rewrite this
+			vec3 fwd;
+			fwd.x = SDL_sinf(rot.y);
+			fwd.y = -SDL_tanf(rot.x);
+			fwd.z = -SDL_cosf(rot.y);
+
+			this->SetListenerPosition(pos);
+			this->SetListenerVelocity(vel);
+			this->SetListenerOrientation(fwd, up);
+		}
 
 		ALint ival = 0;
 		for (Uint32 i = 0; i < RG_SOURCEPOOL_SIZE; i++) {

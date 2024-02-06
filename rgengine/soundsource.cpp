@@ -19,9 +19,16 @@ namespace Engine {
 	}
 
 	void SoundSource::Update(Float64 dt) {
+		if (m_ent != NULL) {
+			SetPosition(m_ent->GetTransform()->GetPosition());
+		}
 		if (m_buffer != NULL) {
 			m_buffer->Update();
 		}
+	}
+
+	void SoundSource::SetPosition(const vec3& pos) {
+		alSource3f(m_source, AL_POSITION, pos.x, pos.y, pos.z);
 	}
 
 	void SoundSource::SetBuffer(ISoundBuffer* buffer) {

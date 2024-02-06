@@ -47,51 +47,11 @@ using namespace Engine;
 
 //#define GAMEDATA_PATH "gamedata/sponza_old/"
 
-static void RecalculateTangetns(Uint32 vCount, R3D_Vertex* vertices, Uint32 startidx, Uint32 iCount, Uint32* indices) {
-
-	// Calculate tangents
-	for (Uint32 i = 0; i < iCount / 3; i += 3) {
-		Uint32 v0idx = indices[startidx + i + 0];
-		Uint32 v1idx = indices[startidx + i + 1];
-		Uint32 v2idx = indices[startidx + i + 2];
-		R3D_Vertex* v0 = &vertices[v0idx];
-		R3D_Vertex* v1 = &vertices[v1idx];
-		R3D_Vertex* v2 = &vertices[v2idx];
-		Float32 dx1 = v1->pos.x - v0->pos.x;
-		Float32 dy1 = v1->pos.y - v0->pos.y;
-		Float32 dz1 = v1->pos.z - v0->pos.z;
-		Float32 dx2 = v2->pos.x - v0->pos.x;
-		Float32 dy2 = v2->pos.y - v0->pos.y;
-		Float32 dz2 = v2->pos.z - v0->pos.z;
-		Float32 du1 = v1->uv.x - v0->uv.x;
-		Float32 dv1 = v1->uv.y - v0->uv.y;
-		Float32 du2 = v2->uv.x - v0->uv.x;
-		Float32 dv2 = v2->uv.y - v0->uv.y;
-		Float32 r = 1.0f / (du1 * dv2 - dv1 * du2);
-		dx1 *= dv2;
-		dy1 *= dv2;
-		dz1 *= dv2;
-		dx2 *= dv1;
-		dy2 *= dv1;
-		dz2 *= dv1;
-		Float32 tx = (dx1 - dx2) * r;
-		Float32 ty = (dy1 - dy2) * r;
-		Float32 tz = (dz1 - dz2) * r;
-		v0->tang.x = tx;
-		v0->tang.y = ty;
-		v0->tang.z = tz;
-		v1->tang = v0->tang;
-		v2->tang = v0->tang;
-	}
-
-}
-
-
 static Camera*      camera;
-static SoundBuffer* soundbuffer;
+//static SoundBuffer* soundbuffer;
 
 static bool EHandler(SDL_Event* event) {
-
+#if 0
 	if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_E) {
 		PlaySoundInfo info = {};
 		info.buffer   = soundbuffer;
@@ -100,7 +60,7 @@ static bool EHandler(SDL_Event* event) {
 		info.speed    = 1;
 		GetSoundSystem()->PlaySound(&info);
 	}
-
+#endif
 	return true;
 }
 
@@ -243,7 +203,10 @@ class Application : public BaseGame {
 			//ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+
 			pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
+
+
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
 			//objImporter.FreeModelData(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
@@ -285,17 +248,24 @@ class Application : public BaseGame {
 			
 #if 1
 			//String modelname = "mmd_models/Rin_Kagamine.pmd";
-			String modelname = "mmd_models/Miku_Hatsune.pmd";
+			//String modelname = "mmd_models/Miku_Hatsune.pmd";
+			//String modelname = "pmx/gumiv3/GUMI_V3.pmx";
+			String modelname = "pmx/apimiku/Appearance Miku.pmx";
 
-			PMDImporter pmdImporter;
+			PMXImporter pmxImporter;
+
+			//PMDImporter pmdImporter;
 			R3DRiggedModelInfo pmdinfo = {};
-			pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
+			//pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
+			pmxImporter.ImportRiggedModel(modelname, &pmdinfo);
 			R3D_RiggedModel* mdl_handle2 = Render::R3D_CreateRiggedModel(&pmdinfo);
-			pmdImporter.FreeRiggedModelData(&pmdinfo);
-			kmodel = pmdImporter.ImportKinematicsModel(modelname);
+			//pmdImporter.FreeRiggedModelData(&pmdinfo);
+			pmxImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel = pmxImporter.ImportKinematicsModel(modelname);
 
 			VMDImporter vmdImporter;
-			anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+			anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
 			anim->SetRepeat(true);
 
 			kmodel->GetAnimator()->PlayAnimation(anim);
@@ -342,6 +312,8 @@ class Application : public BaseGame {
 
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
+			//ent0->GetTransform()->SetRotation({ 0, 2.3415f, 0 });
+			//ent0->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
@@ -365,7 +337,34 @@ class Application : public BaseGame {
 
 			SoundSystem* ss = GetSoundSystem();
 
+			ss->SetVolume(0.5f);
 
+			ss->SetCamera(camera);
+
+			SoundSource* sourcel = ss->NewSoundSource();
+			SoundSource* sourcer = ss->NewSoundSource();
+
+			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_l.ogg");
+			StreamBuffer* sbufferr = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_r.ogg");
+
+			sourcel->SetBuffer(sbufferl);
+			sourcer->SetBuffer(sbufferr);
+			sourcel->SetRepeat(true);
+			sourcer->SetRepeat(true);
+
+			Entity* sndentl = world->NewEntity();
+			Entity* sndentr = world->NewEntity();
+			sndentl->AttachComponent(sourcel);
+			sndentr->AttachComponent(sourcer);
+			sndentl->GetTransform()->SetPosition({ 7.4f, 1, -0.65f });
+			sndentr->GetTransform()->SetPosition({ 7.4f, 1,  0.65f });
+
+			sourcel->Play();
+			sourcer->Play();
+
+
+
+#if 0
 			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);
 			RG_STB_VORBIS sound = RG_STB_vorbis_open_file("gamedata/sounds/ak47/ak47_shoot1.ogg", NULL, NULL);
 
@@ -382,6 +381,7 @@ class Application : public BaseGame {
 			soundbuffer = ss->CreateBuffer(&sbinfo);
 			RG_STB_vorbis_close(&sound);
 			rg_free(sbinfo.data);
+#endif
 
 #if 1
 			Entity* ent2 = world->NewEntity();

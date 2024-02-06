@@ -148,12 +148,14 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="mmdimporter.cpp" />
     <ClCompile Include="pmd.cpp" />
+    <ClCompile Include="pmx.cpp" />
     <ClCompile Include="vmd.cpp" />
     <ClCompile Include="vpd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mmdimporter.h" />
     <ClInclude Include="pmd.h" />
+    <ClInclude Include="pmx.h" />
     <ClInclude Include="vmd.h" />
     <ClInclude Include="vpd.h" />
   </ItemGroup>

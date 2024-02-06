@@ -201,6 +201,9 @@
     <ClCompile Include="imgui\imgui_widget_flamegraph.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="meshtool.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -373,6 +376,9 @@
     </ClInclude>
     <ClInclude Include="imgui\imgui_widget_flamegraph.h">
       <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="meshtool.h">
+      <Filter>Header Files\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

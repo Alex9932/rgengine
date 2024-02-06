@@ -30,6 +30,9 @@
     <ClCompile Include="vpd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pmx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mmdimporter.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vpd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pmx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

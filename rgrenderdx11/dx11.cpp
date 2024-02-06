@@ -170,8 +170,8 @@ void DX11_SetViewport(int w, int h) {
     D3D11_VIEWPORT pViewport = {};
     pViewport.TopLeftX = 0;
     pViewport.TopLeftY = 0;
-    pViewport.Width    = w;
-    pViewport.Height   = h;
+    pViewport.Width    = (Float32)w;
+    pViewport.Height   = (Float32)h;
     pViewport.MinDepth = 0.0f;
     pViewport.MaxDepth = 1.0f;
     dx_ctx->RSSetViewports(1, &pViewport);

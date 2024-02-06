@@ -24,6 +24,20 @@ class PMDImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
 
 };
 
+class PMXImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
+	public:
+		RG_INLINE PMXImporter() {}
+		RG_INLINE ~PMXImporter() {}
+
+		RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
+		RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
+
+		RG_DECLSPEC void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
+		RG_DECLSPEC void FreeRiggedModelData(R3DRiggedModelInfo* info);
+
+		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(String path);
+};
+
 class VMDImporter {
 	public:
 		RG_INLINE VMDImporter()  {}

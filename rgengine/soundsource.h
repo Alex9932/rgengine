@@ -17,6 +17,8 @@ namespace Engine {
 			virtual void Destroy();
 			void Update(Float64 dt);
 
+			void SetPosition(const vec3& pos);
+
 			RG_DECLSPEC void SetBuffer(ISoundBuffer* buffer);
 
 			RG_DECLSPEC void Play();

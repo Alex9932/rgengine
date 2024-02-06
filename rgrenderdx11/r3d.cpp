@@ -536,7 +536,7 @@ R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
 	vbufferInfo.miscflags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	buffer->bBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format                = DXGI_FORMAT_UNKNOWN;
 	srvDesc.ViewDimension         = D3D11_SRV_DIMENSION_BUFFEREX;
 	srvDesc.BufferEx.FirstElement = 0;
@@ -665,8 +665,8 @@ static void DoSkeletonCalculation() {
 
 	skeletonShader->Bind();
 
-	ID3D11ShaderResourceView* views[3];
-	ID3D11UnorderedAccessView* uav;
+	ID3D11ShaderResourceView* views[3] = {};
+	ID3D11UnorderedAccessView* uav = NULL;
 
 	for (Uint32 i = 0; i < rsize; i++) {
 

@@ -1,17 +1,26 @@
 ﻿#define DLL_EXPORT
 #include "mmdimporter.h"
 
+// Not Implemented yet
 #define RG_PMD_RECALCULATE_TANGENTS 0
+#define RG_PMX_RECALCULATE_TANGENTS 0
 
 #include <allocator.h>
 #include <kinematicsmodel.h>
 #include "pmd.h"
+#include "pmx.h"
 #include "vmd.h"
 
 #include <render.h>
 #include <filesystem.h>
+#include <meshtool.h>
+
+#include <utf8.h>
 
 using namespace Engine;
+
+///////////////////////////////////////////
+// PMD Model
 
 static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx) {
 
@@ -43,39 +52,8 @@ static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx
 
 #if RG_PMD_RECALCULATE_TANGENTS
 	// Calculate tangents
-	for (Uint32 i = 0; i < pmd->index_count / 3; i += 3) {
-		Uint32 v0idx = pmd->indices[i + 0];
-		Uint32 v1idx = pmd->indices[i + 1];
-		Uint32 v2idx = pmd->indices[i + 2];
-		R3D_Vertex* v0 = &vertices[v0idx];
-		R3D_Vertex* v1 = &vertices[v1idx];
-		R3D_Vertex* v2 = &vertices[v2idx];
-		Float32 dx1 = v1->pos.x - v0->pos.x;
-		Float32 dy1 = v1->pos.y - v0->pos.y;
-		Float32 dz1 = v1->pos.z - v0->pos.z;
-		Float32 dx2 = v2->pos.x - v0->pos.x;
-		Float32 dy2 = v2->pos.y - v0->pos.y;
-		Float32 dz2 = v2->pos.z - v0->pos.z;
-		Float32 du1 = v1->uv.x - v0->uv.x;
-		Float32 dv1 = v1->uv.y - v0->uv.y;
-		Float32 du2 = v2->uv.x - v0->uv.x;
-		Float32 dv2 = v2->uv.y - v0->uv.y;
-		Float32 r = 1.0f / (du1 * dv2 - dv1 * du2);
-		dx1 *= dv2;
-		dy1 *= dv2;
-		dz1 *= dv2;
-		dx2 *= dv1;
-		dy2 *= dv1;
-		dz2 *= dv1;
-		Float32 tx = (dx1 - dx2) * r;
-		Float32 ty = (dy1 - dy2) * r;
-		Float32 tz = (dz1 - dz2) * r;
-		v0->tang.x = tx;
-		v0->tang.y = ty;
-		v0->tang.z = tz;
-		v1->tang = v0->tang;
-		v2->tang = v0->tang;
-	}
+	Engine::TangentCalculateInfo vinfo = {};
+	Engine::RecalculateTangetns(&vinfo);
 #endif
 
 	*vtx = vertices;
@@ -290,6 +268,264 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 
 	return kmodel;
 }
+
+///////////////////////////////////////////
+// PMX Model
+static void LoadPMX(String p, pmx_file** pmx_ptr, R3D_Vertex** vtx, void** idx) {
+
+	char file[256];
+	SDL_memset(file, 0, 256);
+	Engine::FS_ReplaceSeparators(file, p);
+
+	pmx_file* pmx = pmx_load(file);
+	*pmx_ptr = pmx;
+
+	// Load vertices
+	void* indices = rg_malloc(pmx->index_count * pmx->header.g_vertex_index_size);
+	SDL_memcpy(indices, pmx->indices, pmx->index_count * pmx->header.g_vertex_index_size);
+
+	R3D_Vertex* vertices = (R3D_Vertex*)rg_malloc(sizeof(R3D_Vertex) * pmx->vertex_count);
+	for (Uint32 i = 0; i < pmx->vertex_count; i++) {
+		vertices[i].pos.x = pmx->vertices[i].position.x;
+		vertices[i].pos.y = pmx->vertices[i].position.y;
+		vertices[i].pos.z = pmx->vertices[i].position.z;
+		vertices[i].norm.x = pmx->vertices[i].normal.x;
+		vertices[i].norm.y = pmx->vertices[i].normal.y;
+		vertices[i].norm.z = pmx->vertices[i].normal.z;
+		vertices[i].tang.x = 0;
+		vertices[i].tang.y = 0;
+		vertices[i].tang.z = 1;
+		vertices[i].uv.x = pmx->vertices[i].uv.x;
+		vertices[i].uv.y = pmx->vertices[i].uv.y;
+	}
+
+#if RG_PMX_RECALCULATE_TANGENTS
+	
+#endif
+
+	*vtx = vertices;
+	*idx = indices;
+
+}
+
+static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
+
+	// Load materials (rewrite this)
+	R3D_MaterialInfo* matsInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * pmx->material_count);
+	R3D_MatMeshInfo* mmInfo = (R3D_MatMeshInfo*)rg_malloc(sizeof(R3D_MatMeshInfo) * pmx->material_count);
+
+	Float32 colorMul = 1;
+
+	for (Uint32 i = 0; i < pmx->material_count; i++) {
+		pmx_material* mat = &pmx->materials[i];
+		
+		if (mat->texture_id >= 0xFFFF) {
+			SDL_snprintf(matsInfo[i].albedo, 128, "platform/textures/def_diffuse.png");
+		} else {
+			pmx_text tex = pmx->textures[mat->texture_id].path;
+			UTF8_FromUTF16((WString)tex.data, tex.len);
+			SDL_snprintf(matsInfo[i].albedo, 128, "%s/%s", pmx->path, UTF8_GetBuffer());
+		}
+		
+		
+		//SDL_snprintf(matsInfo[i].albedo, 128, "platform/textures/def_diffuse.png");
+		SDL_snprintf(matsInfo[i].normal, 128, "platform/textures/def_normal.png");
+		SDL_snprintf(matsInfo[i].pbr, 128, "platform/textures/def_pbr.png");
+
+		matsInfo[i].color.r = mat->diffuse_color.r * colorMul;
+		matsInfo[i].color.g = mat->diffuse_color.g * colorMul;
+		matsInfo[i].color.b = mat->diffuse_color.b * colorMul;
+
+		mmInfo[i].indexCount = mat->surface_count;
+		mmInfo[i].materialIdx = i;
+	}
+
+	*info = matsInfo;
+	*meshinfo = mmInfo;
+}
+
+static void LoadPMXWeights(pmx_file* pmx, R3D_Weight** w) {
+	R3D_Weight* weights = (R3D_Weight*)rg_malloc(sizeof(R3D_Weight) * pmx->vertex_count);
+
+	for (Uint32 i = 0; i < pmx->vertex_count; i++) {
+		weights[i].weight.x = pmx->vertices[i].weight.weights[0];
+		weights[i].weight.y = pmx->vertices[i].weight.weights[1];
+		weights[i].weight.z = pmx->vertices[i].weight.weights[2];
+		weights[i].weight.w = pmx->vertices[i].weight.weights[3];
+		weights[i].idx.x = pmx->vertices[i].weight.bone_id[0];
+		weights[i].idx.y = pmx->vertices[i].weight.bone_id[1];
+		weights[i].idx.z = pmx->vertices[i].weight.bone_id[2];
+		weights[i].idx.w = pmx->vertices[i].weight.bone_id[3];
+	}
+
+	*w = weights;
+}
+
+void PMXImporter::ImportModel(String path, R3DStaticModelInfo* info) {
+	pmx_file* pmx;
+	R3D_Vertex* vertices;
+	void* indices;
+	R3D_MaterialInfo* materialInfo;
+	R3D_MatMeshInfo* meshInfo;
+
+	LoadPMX(path, &pmx, &vertices, &indices);
+	LoadPMXMaterials(pmx, &materialInfo, &meshInfo);
+
+	// Materials
+	info->matInfo = materialInfo;
+	info->matCount = pmx->material_count;
+
+	// Meshes
+	info->mInfo = meshInfo;
+	info->mCount = pmx->material_count;
+
+	// Data
+	info->vertices = vertices;
+	info->vCount = pmx->vertex_count;
+	info->indices = indices;
+	info->iCount = pmx->index_count;
+
+	info->iType = (IndexType)pmx->header.g_vertex_index_size;
+
+	pmx_free(pmx);
+}
+
+void PMXImporter::FreeModelData(R3DStaticModelInfo* info) {
+	rg_free(info->vertices);
+	rg_free(info->indices);
+	rg_free(info->matInfo);
+	rg_free(info->mInfo);
+}
+
+void PMXImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
+	pmx_file* pmx;
+	R3D_Vertex* vertices;
+	R3D_Weight* weights;
+	void* indices;
+	R3D_MaterialInfo* materialInfo;
+	R3D_MatMeshInfo* meshInfo;
+
+	LoadPMX(path, &pmx, &vertices, &indices);
+	LoadPMXMaterials(pmx, &materialInfo, &meshInfo);
+	LoadPMXWeights(pmx, &weights);
+
+	// Materials
+	info->matInfo = materialInfo;
+	info->matCount = pmx->material_count;
+
+	// Meshes
+	info->mInfo = meshInfo;
+	info->mCount = pmx->material_count;
+
+	// Data
+	info->vertices = vertices;
+	info->weights = weights;
+	info->vCount = pmx->vertex_count;
+	info->indices = indices;
+	info->iCount = pmx->index_count;
+
+	// TODO
+	info->iType = (IndexType)pmx->header.g_vertex_index_size;
+
+	pmx_free(pmx);
+}
+
+void PMXImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
+	rg_free(info->vertices);
+	rg_free(info->indices);
+	rg_free(info->weights);
+	rg_free(info->matInfo);
+	rg_free(info->mInfo);
+}
+
+Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(String path) {
+	pmx_file* pmx = pmx_load(path);
+
+	BoneInfo bones_info[1024];
+	mat4 bone_matrices[1024];
+
+	const char CONSTNAME[] = { 0xE3, 0x81, 0xB2, 0xE3, 0x81, 0x96, 0x00 };//"ひざ";
+
+	Uint32 ik = 0;
+	for (Uint32 i = 0; i < pmx->bone_count; i++) {
+		pmx_bone* bone = &pmx->bones[i];
+		if ((bone->flags & PMX_BONEFLAG_IK) == PMX_BONEFLAG_IK) { ik++; }
+		mat4 parent = MAT4_IDENTITY();
+		vec3 pos = bone->position;
+		if (bone->parent_id != -1) {
+			pmx_bone* pbone = &pmx->bones[bone->parent_id];
+			pos = bone->position - pbone->position;
+			parent = bone_matrices[bone->parent_id];
+		}
+
+		bones_info[i].offset_pos = pos;
+
+		quat rot = { 0, 0, 0, 1 };
+		mat4 translation;
+		mat4 rotation;
+		mat4_fromquat(&rotation, rot);
+		mat4_translate(&translation, pos);
+
+		mat4 local = translation * rotation;
+		bone_matrices[i] = parent * local;
+		mat4_inverse(&bones_info[i].offset, bone_matrices[i]);
+
+		bones_info[i].parent = bone->parent_id;
+		UTF8_FromUTF16((WString)bone->name.data, bone->name.len);
+		SDL_strlcpy(bones_info[i].name, UTF8_GetBuffer(), 32);
+
+		bones_info[i].has_limit = false;
+		if (strstr(bones_info[i].name, CONSTNAME) != NULL) {
+			bones_info[i].has_limit = true;
+			//bones_info[i].limitation = { -1, 0, 0 };
+			bones_info[i].limitation = { 1, 0, 0 };
+		}
+
+	}
+
+	IKList* ik_links = (IKList*)rg_malloc(sizeof(IKList) * ik);
+	Uint32 ik_index = 0;
+
+	for (Uint32 i = 0; i < pmx->bone_count; i++) {
+		pmx_bone* bone = &pmx->bones[i];
+		if (RG_CHECK_FLAG(bone->flags, PMX_BONEFLAG_IK)) {
+		//if ((bone->flags & PMX_BONEFLAG_IK) == PMX_BONEFLAG_IK) {
+			ik_links[ik_index].angle_limit = bone->ik_limit_radian;
+			ik_links[ik_index].bones = bone->ik_link_count;
+			ik_links[ik_index].effector = bone->ik_target_index;
+			ik_links[ik_index].target = i;
+			ik_links[ik_index].iterations = bone->ik_loop_count;
+			for (Uint32 j = 0; j < bone->ik_link_count; j++) {
+				ik_links[ik_index].list[j] = bone->ik_links[j].bone_index;
+			}
+			ik_index++;
+		}
+	}
+
+	// Bone buffer
+	R3DCreateBoneBufferInfo binfo = {};
+	binfo.len = sizeof(mat4) * pmx->bone_count;
+	binfo.initialData = NULL;
+	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
+
+	// Kinematics model
+	KinematicsModelCreateInfo info = {};
+	info.bone_count = pmx->bone_count;
+	info.bones_info = bones_info;
+	info.ik_count = ik;
+	info.ik_info = ik_links;
+	info.buffer_handle = bone_buffer;
+	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
+	//KinematicsModel* kmodel = new KinematicsModel(&info);
+
+	rg_free(ik_links);
+	pmx_free(pmx);
+
+	return kmodel;
+}
+
+///////////////////////////////////////////
+// VMD Animation
 
 Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 

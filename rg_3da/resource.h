@@ -2,7 +2,6 @@
 // Microsoft Visual C++ generated include file.
 // Used by rg_3da.rc
 //
-#define IDB_PNG1                        103
 
 // Next default values for new objects
 // 

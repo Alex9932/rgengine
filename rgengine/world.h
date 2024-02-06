@@ -25,7 +25,7 @@ namespace Engine {
 
 			RG_DECLSPEC Entity* GetEntity(Uint32 idx);
 			RG_DECLSPEC Entity* GetEntityByUUID(UUID uuid);
-			RG_INLINE   Uint32  GetEntityCount() { return m_entities.size(); }
+			RG_INLINE   Uint32  GetEntityCount() { return (Uint32)m_entities.size(); }
 
 			RG_DECLSPEC void ClearWorld();
 

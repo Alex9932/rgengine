@@ -256,8 +256,8 @@ namespace Engine {
             for (Uint32 i = 0; i < idx; i++) {
                 start += prof->GetTime(GetProfile(i));
             }
-            if (startTimestamp) { *startTimestamp = (Float32)start; }
-            if (endTimestamp)   { *endTimestamp = (Float32)(start + time); }
+            if (startTimestamp) { *startTimestamp = (Float32)start * 1000; }
+            if (endTimestamp)   { *endTimestamp = (Float32)(start + time) * 1000; }
             if (level)          { *level = 0; }
             if (caption)        { *caption = section; }
         }
