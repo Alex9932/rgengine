@@ -64,6 +64,7 @@ static bool EHandler(SDL_Event* event) {
 	return true;
 }
 
+static R3D_GlobalLightDescrition desc = {};
 
 class Application : public BaseGame {
 	public:
@@ -81,6 +82,12 @@ class Application : public BaseGame {
 			this->isClient   = true;
 			this->isGraphics = true;
 			Render::SetRenderFlags(RG_RENDER_FULLSCREEN | RG_RENDER_USE3D);
+
+			desc.color     = { 1, 1, 1 };
+			desc.ambient   = 0.45f;
+			desc.intensity = 3.3f;
+			desc.time      = 2.33f;
+
 		}
 	
 		~Application() {
@@ -110,7 +117,6 @@ class Application : public BaseGame {
 		}
 
 		void MainUpdate() {
-			static R3D_GlobalLightDescrition desc = {};
 			/*
 			desc.ambient   = 0.4;
 			desc.intensity = 6;
@@ -249,8 +255,8 @@ class Application : public BaseGame {
 #if 1
 			//String modelname = "mmd_models/Rin_Kagamine.pmd";
 			//String modelname = "mmd_models/Miku_Hatsune.pmd";
-			//String modelname = "pmx/gumiv3/GUMI_V3.pmx";
-			String modelname = "pmx/apimiku/Appearance Miku.pmx";
+			String modelname = "pmx/gumiv3/GUMI_V3.pmx";
+			//String modelname = "pmx/apimiku/Appearance Miku.pmx";
 
 			PMXImporter pmxImporter;
 
@@ -264,8 +270,8 @@ class Application : public BaseGame {
 			kmodel = pmxImporter.ImportKinematicsModel(modelname);
 
 			VMDImporter vmdImporter;
-			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
-			anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
+			anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+			//anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
 			anim->SetRepeat(true);
 
 			kmodel->GetAnimator()->PlayAnimation(anim);
@@ -359,8 +365,8 @@ class Application : public BaseGame {
 			sndentl->GetTransform()->SetPosition({ 7.4f, 1, -0.65f });
 			sndentr->GetTransform()->SetPosition({ 7.4f, 1,  0.65f });
 
-			sourcel->Play();
-			sourcer->Play();
+			//sourcel->Play();
+			//sourcer->Play();
 
 
 

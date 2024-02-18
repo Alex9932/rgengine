@@ -27,8 +27,10 @@ RWStructuredBuffer<R3D_Vertex> output : register(u0); // Vertices
 [numthreads(1, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID) {
 
-    R3D_Vertex in_vtx = vertices[DTid.x];
-    R3D_Weight in_wgt = weights[DTid.x];
+    int idx = DTid.x;
+
+    R3D_Vertex in_vtx = vertices[idx];
+    R3D_Weight in_wgt = weights[idx];
 
     float4 total_position = { 0, 0, 0, 0 };
     float3 total_normal   = { 0, 0, 0 };
@@ -60,9 +62,9 @@ void main(uint3 DTid : SV_DispatchThreadID) {
         total_tangent  += local_tangent  * w;
     }
 
-    output[DTid.x].pos  = total_position.xyz;
-    output[DTid.x].norm = total_normal;
-    output[DTid.x].tang = total_tangent;
-    output[DTid.x].uv   = vertices[DTid.x].uv;
+    output[idx].pos  = total_position.xyz;
+    output[idx].norm = total_normal;
+    output[idx].tang = total_tangent;
+    output[idx].uv   = vertices[idx].uv;
 
 }

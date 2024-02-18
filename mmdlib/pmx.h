@@ -85,12 +85,12 @@ typedef struct pmx_weight {
 
 typedef struct pmx_vertex {
 	vec3 position;
+	float edge_scale;
 	vec3 normal;
+	Uint8 type;
 	vec2 uv;
 	vec4* additional_vec4; // NULL (NOT IMPLEMENTED YET)
-	Uint8 type;
 	pmx_weight weight;
-	float edge_scale;
 } pmx_vertex;
 
 typedef struct pmx_texture {
@@ -104,12 +104,12 @@ typedef struct pmx_material {
 	vec4 diffuse_color;
 	vec3 specular_color;
 	float specular_strength; // shininess
-	vec3 ambient_color;
-	pmx_flag drawing_flags;
 	vec4 edge_color;
+	vec3 ambient_color;
 	float edge_scale;
 	Uint32 texture_id;
 	Uint32 texture_id_env;
+	pmx_flag drawing_flags;
 	Uint8 env_blend_mode;
 	Uint8 toon_reference;
 	Uint32 toon_value;
@@ -118,9 +118,9 @@ typedef struct pmx_material {
 
 typedef struct pmx_ik_link {
 	Sint32 bone_index;
-	Sint8 has_limits;
 	vec3 min;
 	vec3 max;
+	Sint8 has_limits;
 } pmx_ik_link;
 
 typedef struct pmx_bone {
@@ -155,24 +155,21 @@ typedef struct pmx_morph_offset {
 	// Group
 	Uint32 morph_index;
 	float morph_weight;
-	// Vertex
+
 	Uint32 vertex_index;
+	Uint32 uv_index;
 	vec3 vertex_pos;
-	// Bone
 	Uint32 bone_index;
 	vec3 bone_pos;
-	vec4 bone_rot;
-	// UV
-	Uint32 uv_index;
-	vec4 uv_floats;
-	// Material
 	Uint32 material_index;
+	vec4 bone_rot;
+	vec4 uv_floats;
 	vec4 material_diffuse;
 	vec3 material_specular;
 	float material_shininess;
 	vec3 material_ambient;
-	vec4 material_edgecolor;
 	float material_edgesize;
+	vec4 material_edgecolor;
 	vec4 material_texture_tint;
 	vec4 material_env_tint;
 	vec4 material_toon_tint;

@@ -67,6 +67,14 @@ static bool _EventHandler(SDL_Event* event) {
 				}
 				break;
 			}
+			case SDL_SCANCODE_1: { SetViewIDX(0); break; }
+			case SDL_SCANCODE_2: { SetViewIDX(1); break; }
+			case SDL_SCANCODE_3: { SetViewIDX(2); break; }
+			case SDL_SCANCODE_4: { SetViewIDX(3); break; }
+			case SDL_SCANCODE_5: { SetViewIDX(4); break; }
+			case SDL_SCANCODE_6: { SetViewIDX(5); break; }
+			case SDL_SCANCODE_7: { SetViewIDX(6); break; }
+			case SDL_SCANCODE_8: { SetViewIDX(7); break; }
 			default: { break; }
 		}
 	}

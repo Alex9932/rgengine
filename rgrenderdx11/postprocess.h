@@ -10,6 +10,7 @@ void ReloadShadersFX();
 
 void DoPostprocess();
 
+void SetViewIDX(Uint32 idx);
 ID3D11ShaderResourceView* FXGetOuputTexture();
 
 #endif

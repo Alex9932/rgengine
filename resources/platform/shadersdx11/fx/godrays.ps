@@ -1,0 +1,76 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+// Input images
+Texture2D t_unit0 : register(t0); // Color texture
+Texture2D t_unit1 : register(t1); // Alpha-channel mask
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+    row_major float4x4 viewProj;
+    float3 lightPos;
+    float  offset;
+};
+
+bool IsOutside(float2 ray) {
+	return (ray.x > 1 || ray.y > 1 || ray.x < 0 || ray.y < 0) ? true : false;
+}
+
+float4 Project(float3 p, float4x4 mat) {
+    float4 pos = float4(p, 1);
+	float4 v = mul(pos, mat);
+	return v / v.w;
+}
+
+float3 Sample(float2 _uv) {
+    float3 result = float3(0, 0, 0);
+    float mask = t_unit1.Sample(SampleType, _uv).a;
+    if(mask < -0.5) {
+        result = t_unit0.Sample(SampleType, _uv).rgb;
+    }
+    return result;
+}
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+
+    int   NUM_SAMPLES = 70;
+    float illumDecay  = 1.0;
+    float decay       = 0.97815;
+    float weight      = 0.58767;
+    float exposure    = 0.3;
+
+
+    float3 tColor = 0;
+    float4 ndc_lightpos = Project(lightPos, viewProj) * 0.5 + 0.5;
+    ndc_lightpos.y = 1 - ndc_lightpos.y;
+    float2 lpos_uv = ndc_lightpos.xy;
+
+    float2 deltauv = psin.uv - lpos_uv;
+    deltauv /= float(NUM_SAMPLES);
+
+    float3 sun_color = Sample(lpos_uv) * 0.4;
+
+    for(int i = 0; i < NUM_SAMPLES; i++) {
+        lpos_uv -= deltauv;
+        float2 smpuv = lpos_uv;
+        //smpuv.x = 1 - smpuv.x;
+        //smpuv.y = 1 - smpuv.y;
+        tColor += Sample(smpuv) * 0.4f * illumDecay * weight;
+        illumDecay *= decay;
+    }
+
+    tColor *= exposure;
+
+    tColor += t_unit0.Sample(SampleType, psin.uv).rgb;
+
+	PSOUTPUT pout;
+	pout.color.rgb = tColor;
+    pout.color.a = 1;
+	return pout;
+}

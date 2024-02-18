@@ -4,6 +4,7 @@
 #include "buffer.h"
 
 #include "gbuffer.h"
+#include "shadowbuffer.h"
 #include "lightpass.h"
 
 #include "r3d.h"
@@ -148,6 +149,12 @@ struct SSAOBufferData {
 	mat4 proj;
 };
 
+struct GodRaysBufferData {
+	mat4 viewproj;
+	vec3 lightpos;
+	Float32 offset;
+};
+
 static FX* lightpass;
 
 static FX*           ssr;
@@ -175,6 +182,11 @@ static BBufferData blurData;
 static FX* ssao;
 static Buffer* ssaoBuffer;
 static SSAOBufferData ssaoData;
+
+// Godrays
+static FX* godrays;
+static Buffer* godraysBuffer;
+static GodRaysBufferData godraysData;
 
 static FX* mix;
 
@@ -214,6 +226,8 @@ static void LoadFX() {
 	mix = RG_NEW_CLASS(RGetAllocator(), FX)(size, "mix.ps");
 
 	ssao = RG_NEW_CLASS(RGetAllocator(), FX)(size, "ssao.ps");
+
+	godrays = RG_NEW_CLASS(RGetAllocator(), FX)(size, "godrays.ps");
 }
 
 static void FreeFX() {
@@ -234,6 +248,7 @@ static void FreeFX() {
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
 	RG_DELETE_CLASS(RGetAllocator(), FX, ssao);
+	RG_DELETE_CLASS(RGetAllocator(), FX, godrays);
 }
 
 void CreateFX(ivec2* size) {
@@ -279,6 +294,9 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length = sizeof(SSAOBufferData);
 	ssaoBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
+	abufferInfo.length = sizeof(GodRaysBufferData);
+	godraysBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
+
 	LoadFX();
 }
 
@@ -290,6 +308,7 @@ void DestroyFX() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, blurBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssaoBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, godraysBuffer);
 
 	FreeFX();
 }
@@ -450,13 +469,29 @@ void DoPostprocess() {
 
 	// SSAO
 
-	ssaoData.proj = *GetCameraProjection();;
+	ssaoData.proj = *GetCameraProjection();
 
 	ssaoBuffer->SetData(0, sizeof(SSAOBufferData), &ssaoData);
 	ssao->SetInput(0, GetGBufferShaderResource(1)); // Normal
 	ssao->SetInput(1, GetGBufferShaderResource(2)); // Wpos
 	ssao->SetConstants(ssaoBuffer->GetHandle());
 	ssao->Draw();
+
+	// Godrays
+
+	godraysData.viewproj = *GetCameraProjection() * *GetCameraView();
+	godraysData.lightpos = *GetSunPosition() * 100;// { -7, 100, 2 };
+
+	godraysBuffer->SetData(0, sizeof(GodRaysBufferData), &godraysData);
+
+	//godrays->SetInput(0, GetShadowDepth());  // Light depth-map
+	//godrays->SetInput(1, GetGBufferDepth()); // G-Buffer depth-map
+
+	godrays->SetInput(0, GetGBufferShaderResource(0)); // Skybox color
+	godrays->SetInput(1, GetGBufferShaderResource(2)); // Alpha-channel used
+
+	godrays->SetConstants(godraysBuffer->GetHandle());
+	godrays->Draw();
 
 	// Bloom
 	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
@@ -491,13 +526,30 @@ void DoPostprocess() {
 #endif
 }
 
+static Uint32 viewidx = 0;
+
+void SetViewIDX(Uint32 idx) {
+	if (idx > 7) { return; }
+	viewidx = idx;
+}
+
 ID3D11ShaderResourceView* FXGetOuputTexture() {
+
+	ID3D11ShaderResourceView* views[8];
+	views[0] = mix->GetOutput();
+	views[1] = godrays->GetOutput();
+	views[2] = ssao->GetOutput();
+	views[3] = lightpass->GetOutput();
+	views[4] = GetGBufferShaderResource(0);
+	views[5] = GetGBufferShaderResource(1);
+	views[6] = GetGBufferShaderResource(2);
+	views[7] = GetGBufferDepth();
+
+	return views[viewidx];
+
 	//return tonemapping->GetOutput();
-	
-	return mix->GetOutput();
-	
+	// //return mix->GetOutput();
 	//return GetLightpassShaderResource();
 	//return ssr->GetOutput();
-
 	//return ssao->GetOutput();
 }

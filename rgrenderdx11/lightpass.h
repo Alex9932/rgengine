@@ -29,4 +29,6 @@ struct ID3D11ShaderResourceView* GetLightpassShaderResource();
 void  SetLightDescription(R3D_GlobalLightDescrition* desc);
 mat4* GetLightMatrix();
 
+vec3* GetSunPosition();
+
 #endif

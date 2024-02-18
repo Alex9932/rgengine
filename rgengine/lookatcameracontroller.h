@@ -15,8 +15,8 @@ namespace Engine {
 		private:
 			Camera* m_camptr = NULL;
 			vec3    m_center = {};
-			vec2    m_angles = {};
 			Float32 m_length = 0;
+			vec2    m_angles = {};
 
 	};
 }

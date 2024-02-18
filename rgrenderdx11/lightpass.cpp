@@ -568,6 +568,8 @@ ID3D11ShaderResourceView* GetLightpassShaderResource() {
 	return outputResView;
 }
 
+static vec3 sunpos = { 0, 0, 0 };
+
 void SetLightDescription(R3D_GlobalLightDescrition* desc) {
     mat4 lproj;
     mat4 lview;
@@ -575,20 +577,24 @@ void SetLightDescription(R3D_GlobalLightDescrition* desc) {
     mat4_ortho(&lproj, -20, 20, -20, 20, -50, 50);
 
     float phase = desc->time;// 3.1415 / 2 + 3.1415 / 8;
-    vec3 pos = { SDL_cosf(phase) * 20, SDL_sinf(phase) * 20, 3.5f };
+    sunpos = { SDL_cosf(phase) * 20, SDL_sinf(phase) * 20, 1.5f };
 
-    mat4_lookat(&lview, pos, { 0, 0, 0 }, { 0, 1, 0 });
+    mat4_lookat(&lview, sunpos, { 0, 0, 0 }, { 0, 1, 0 });
 
     lightmatrix = lproj * lview;
 
 
     globallight.color     = desc->color;
     globallight.intensity = desc->intensity;
-    globallight.direction = -pos.normalize();// { 1, -1, -0.5 };
+    globallight.direction = -sunpos.normalize();// { 1, -1, -0.5 };
     globallight.ambient   = desc->ambient;
 
 }
 
 mat4* GetLightMatrix() {
     return &lightmatrix;
+}
+
+vec3* GetSunPosition() {
+    return &sunpos;
 }

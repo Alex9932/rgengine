@@ -1,0 +1,32 @@
+/*
+rgengine 14 Feb, 2024
+Example pixel shader for screen-space effects
+*/
+
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+// Input images
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+    int ScreenSize; // packed screen size
+};
+
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+	// Unpack screen size if needed
+	int screenx = ScreenSize>> 16;
+	int screeny = ScreenSize& 0x0000FFFF;
+	float2 Resolution = float2(screenx, screeny);
+
+	PSOUTPUT pout;
+	pout.color = t_unit0.Sample(SampleType, psin.uv);
+	return pout;
+}

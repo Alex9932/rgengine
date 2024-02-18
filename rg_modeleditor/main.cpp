@@ -90,6 +90,8 @@ static Bool EHandler2(SDL_Event* event) {
 	return true;
 }
 
+static R3D_GlobalLightDescrition desc = {};
+
 class Application : public BaseGame {
 	private:
 
@@ -112,6 +114,11 @@ class Application : public BaseGame {
 			this->isClient = true;
 			this->isGraphics = true;
 			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_FULLSCREEN | RG_RENDER_NOLIGHT);
+
+			desc.ambient   = 0.4;
+			desc.intensity = 6;
+			desc.time      = 1.7;
+			desc.color     = { 1, 0.8f, 0.7f };
 		}
 
 		~Application() {
@@ -120,6 +127,18 @@ class Application : public BaseGame {
 		String GetName() { return "Model editor"; }
 
 		void MainUpdate() {
+
+			Render::DrawRendererStats();
+			Render::DrawProfilerStats();
+
+			ImGui::Begin("Scene light");
+			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
+			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
+			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
+			ImGui::ColorPicker3("Color", desc.color.array);
+			ImGui::End();
+
+			Render::SetGlobalLight(&desc);
 
 			// Update camera
 			camcontrol->Update();

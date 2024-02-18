@@ -7,8 +7,10 @@
 
 typedef struct ManipulateResult {
 	vec3 pos;
+	Float32 _offset;
 	quat rot;
 	vec3 scale;
+	Float32 _offset2;
 } ManipulateResult;
 
 class Viewport : public UIComponent {

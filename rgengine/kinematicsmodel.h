@@ -12,15 +12,16 @@
 
 typedef struct Bone {
     Uint32 hash;
-    Sint32 parent;
-    Sint32 id;
     mat4   transform;
     mat4   offset;
     vec3   offset_pos;
+    Sint32 parent;
     vec3   position;
+    Sint32 id;
     quat   rotation;
-    bool   has_limit;
     vec3   limitation;
+    bool   has_limit;
+    Uint8  _offset[3];
     char   name[32];
 } Bone;
 

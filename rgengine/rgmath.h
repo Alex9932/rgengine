@@ -26,22 +26,4 @@ RG_DECLSPEC quat quat_axisAngle(const vec4& v);
 
 #define rgLerp(x, y, dt) ((x * dt) + (y * (1.0 - dt)))
 
-#if 0
-RG_INLINE float rgToRadians(float angle) {
-    return angle * (RG_PI / 180.0f);
-}
-
-RG_INLINE float rgToDegrees(float angle) {
-    return angle * (180.0f / RG_PI);
-}
-
-RG_INLINE double rgToRadiansD(double angle) {
-    return angle * (RG_DPI / 180.0f);
-}
-
-RG_INLINE double rgToDegreesD(double angle) {
-    return angle * (180.0f / RG_DPI);
-}
-#endif
-
 #endif

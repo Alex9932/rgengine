@@ -105,9 +105,9 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 
 	float3 tColor = TraceRay(wpos, reflection) * reflectivity;
 
-	if(tColor.r < 0.001 && tColor.g < 0.001 && tColor.b < 0.001) {
-		tColor = lightres.rgb;
-	}
+	//if(tColor.r < 0.001 && tColor.g < 0.001 && tColor.b < 0.001) {
+	//	tColor = lightres.rgb;
+	//}
 
 #endif
 

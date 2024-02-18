@@ -8,14 +8,8 @@ namespace Engine {
 		this->time = 0;
 	}
 
-	Timer::~Timer() {}
-
 	double Timer::GetElapsedTime() {
 		return (double)(SDL_GetPerformanceCounter() - this->m_time) / (double)SDL_GetPerformanceFrequency();
-	}
-
-	double Timer::GetTime() {
-		return time;
 	}
 
 	void Timer::Update() {

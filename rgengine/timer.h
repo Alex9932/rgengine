@@ -11,18 +11,18 @@
 
 namespace Engine {
 
-    class RG_DECLSPEC Timer {
+    class Timer {
         private:
             Uint64  m_time;
             Float64 time;
 
         public:
-            Timer();
-            virtual ~Timer();
+            RG_DECLSPEC Timer();
+            RG_INLINE   virtual ~Timer() {}
 
-            Float64 GetElapsedTime(); // In seconds
-            Float64 GetTime(); // In seconds
-            void Update();
+            RG_DECLSPEC Float64 GetElapsedTime(); // In seconds
+            RG_INLINE   Float64 GetTime() { return time; } // In seconds
+            RG_DECLSPEC void Update();
     };
 
 }

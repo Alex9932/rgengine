@@ -688,7 +688,7 @@ static void DoSkeletonCalculation() {
 		ctx->CSSetShaderResources(0, 3, views);
 		ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 
-		skeletonShader->Dispatch({ 10000, 1, 1 }); // !!!WARNING!!! MAX 10000 Vertices
+		skeletonShader->Dispatch({ 100000, 1, 1 }); // !!!WARNING!!! MAX 10000 Vertices
 		dispatchCalls++;
 	}
 

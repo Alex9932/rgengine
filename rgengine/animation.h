@@ -12,9 +12,9 @@ enum KeyFrameType {
 
 typedef struct BoneKeyFrame {
     Uint32 timestamp;
+    vec3 scale;
     quat rotation;
     vec3 translation;
-    vec3 scale;
     vec4 interp_x;
     vec4 interp_y;
     vec4 interp_z;
@@ -28,8 +28,8 @@ namespace Engine {
             Uint32 frames = 0;
             Uint32 nameCRCHash;
             std::vector<BoneKeyFrame> keyframes;
-            Uint32 framecount = 0;
             char name[32];
+            Uint32 framecount = 0;
 
         public:
             RG_INLINE AnimationTrack(String name) {

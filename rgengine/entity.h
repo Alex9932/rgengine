@@ -99,9 +99,9 @@ namespace Engine {
 
 		private:
 			UUID       m_id;
-			Component* m_components[Component_MAXENUM];
 			Transform* m_transform;
 			World*     m_world;
+			Component* m_components[Component_MAXENUM];
 
 	};
 

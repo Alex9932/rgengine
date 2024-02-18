@@ -11,29 +11,29 @@
 
 #define RG_UTF8_BUFFER_LENGTH 4096
 
-class RG_DECLSPEC UTF8Decoder {
+class UTF8Decoder {
     private:
         Uint32 len = 0;
         Uint16 buffer[RG_UTF8_BUFFER_LENGTH];
 
     public:
-        UTF8Decoder() { SDL_memset(this->buffer, 0, RG_UTF8_BUFFER_LENGTH); }
-        virtual ~UTF8Decoder() {}
-        void DecodeString(String str);
-        Uint32 CharAt(String str, Uint32 char_pos);
+        RG_INLINE UTF8Decoder() { SDL_memset(this->buffer, 0, RG_UTF8_BUFFER_LENGTH); }
+        RG_INLINE virtual ~UTF8Decoder() {}
+        RG_DECLSPEC void DecodeString(String str);
+        RG_DECLSPEC Uint32 CharAt(String str, Uint32 char_pos);
         RG_INLINE Uint16* GetResult() { return buffer; }
         RG_INLINE Uint32 GetResultLength() { return len; }
 };
 
 
-class RG_DECLSPEC UTF8Encoder {
+class UTF8Encoder {
     private:
         char buffer[RG_UTF8_BUFFER_LENGTH];
 
     public:
         UTF8Encoder() { SDL_memset(this->buffer, 0, RG_UTF8_BUFFER_LENGTH); }
         virtual ~UTF8Encoder() {}
-        void EncodeString(const Uint16* str);
+        RG_DECLSPEC void EncodeString(const Uint16* str);
         RG_INLINE String GetResult() { return buffer; }
 };
 
