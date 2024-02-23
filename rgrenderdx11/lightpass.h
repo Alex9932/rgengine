@@ -12,6 +12,7 @@ typedef struct GlobalLight {
 	vec3    color;
 	Float32 ambient;
 	Float32 intensity;
+	Float32 turbidity;
 } GlobalLight;
 
 void CreateLightpass(ivec2* size);
@@ -30,5 +31,6 @@ void  SetLightDescription(R3D_GlobalLightDescrition* desc);
 mat4* GetLightMatrix();
 
 vec3* GetSunPosition();
+Float32 GetAtmosphereTurbidity();
 
 #endif

@@ -638,10 +638,11 @@ static void DrawSkybox() {
 	DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	constBuffer.color.r = 0.4f;
-	constBuffer.color.g = 0.8f;
-	constBuffer.color.b = 1.5;
-	constBuffer.color.a = 1;
+	//vec3    sun_dir;
+	//Float32 m_turbidity;  -> color
+
+	constBuffer.color.xyz = (*GetSunPosition()).normalize();
+	constBuffer.color.a   = GetAtmosphereTurbidity();
 	constBuffer.camerapos = cam_pos;
 
 	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);

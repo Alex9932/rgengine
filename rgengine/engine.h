@@ -52,6 +52,7 @@ namespace Engine {
     class World;
     class SoundSystem;
     class Profiler;
+    class RGPhysics;
 
     class RG_DECLSPEC BaseGame {
         protected:
@@ -102,6 +103,8 @@ namespace Engine {
 
     RG_DECLSPEC String    GetProfile(Uint32 idx);
     RG_DECLSPEC Profiler* GetProfiler();
+
+    RG_DECLSPEC RGPhysics* GetPhysics();
 
 }
 

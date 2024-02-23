@@ -86,6 +86,7 @@ class Application : public BaseGame {
 			desc.color     = { 1, 1, 1 };
 			desc.ambient   = 0.45f;
 			desc.intensity = 3.3f;
+			desc.turbidity = 1.86f;
 			desc.time      = 2.33f;
 
 		}
@@ -117,12 +118,6 @@ class Application : public BaseGame {
 		}
 
 		void MainUpdate() {
-			/*
-			desc.ambient   = 0.4;
-			desc.intensity = 6;
-			desc.time      = 1.7;
-			desc.color     = { 1, 0.8f, 0.7f };
-			*/
 
 			Render::DrawRendererStats();
 			Render::DrawProfilerStats();
@@ -131,6 +126,7 @@ class Application : public BaseGame {
 			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
 			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
 			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
+			ImGui::SliderFloat("Turbidity", &desc.turbidity, 0, 5);
 			ImGui::ColorPicker3("Color", desc.color.array);
 			ImGui::End();
 

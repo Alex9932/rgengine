@@ -41,6 +41,7 @@ typedef struct R3D_GlobalLightDescrition {
 	Float32 time;
 	Float32 intensity;
 	Float32 ambient;
+	Float32 turbidity; // skybox
 } R3D_GlobalLightDescrition;
 
 typedef struct R3D_RenderTaskInfo {

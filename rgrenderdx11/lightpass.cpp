@@ -589,6 +589,8 @@ void SetLightDescription(R3D_GlobalLightDescrition* desc) {
     globallight.direction = -sunpos.normalize();// { 1, -1, -0.5 };
     globallight.ambient   = desc->ambient;
 
+    globallight.turbidity = desc->turbidity;
+
 }
 
 mat4* GetLightMatrix() {
@@ -597,4 +599,8 @@ mat4* GetLightMatrix() {
 
 vec3* GetSunPosition() {
     return &sunpos;
+}
+
+Float32 GetAtmosphereTurbidity() {
+    return globallight.turbidity;
 }

@@ -112,7 +112,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,7 +131,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;mujs.lib;cjson.lib;iconv.lib;assimp-vc143-mt.lib;freetype.lib;zlib.lib;openal32.lib;Bullet3Common.lib;BulletCollision.lib;BulletDynamics.lib;BulletInverseDynamics.lib;BulletSoftBody.lib;LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -162,12 +162,14 @@
     <ClCompile Include="lookatcameracontroller.cpp" />
     <ClCompile Include="meshtool.cpp" />
     <ClCompile Include="objimporter.cpp" />
+    <ClCompile Include="phcomponent.cpp" />
     <ClCompile Include="pm2exporter.cpp" />
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="rgmath.cpp" />
     <ClCompile Include="rgmatrix.cpp" />
+    <ClCompile Include="rgphysics.cpp" />
     <ClCompile Include="rgstb.cpp" />
     <ClCompile Include="rgstring.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
@@ -215,11 +217,13 @@
     <ClInclude Include="meshtool.h" />
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="objimporter.h" />
+    <ClInclude Include="phcomponent.h" />
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
+    <ClInclude Include="rgphysics.h" />
     <ClInclude Include="soundbuffer.h" />
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />

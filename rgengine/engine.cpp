@@ -23,6 +23,7 @@
 #include "render.h"
 #include "timer.h"
 #include "world.h"
+#include "rgphysics.h"
 
 #include "soundsystem.h"
 
@@ -54,30 +55,32 @@ namespace Engine {
     static char          version_str[64];
     static char          platform_str[64];
 
-    static int           arg_count = 0;
-    static String* arg_strs = NULL;
+    static int           arg_count     = 0;
+    static String*       arg_strs      = NULL;
 
-    static Bool          is_debug = false;
-    static String        fsjson = NULL;
-    static int           num_threads = 1;
-    static String        lib_renderer = NULL;
+    static Bool          is_debug      = false;
+    static String        fsjson        = NULL;
+    static int           num_threads   = 1;
+    static String        lib_renderer  = NULL;
 
-    static BaseGame* game_ptr = NULL;
-    static Bool          running = false;
+    static BaseGame*     game_ptr      = NULL;
+    static Bool          running       = false;
 
     static STDAllocator* std_allocator = NULL;
-    static Profiler* core_profiler = NULL;
+    static Profiler*     core_profiler = NULL;
 
-    static Bool          shutdown_rq = false;
+    static Bool          shutdown_rq   = false;
 
-    static Float64       frame_time = 0.0;
-    static Float64       uptime = 0.0;
+    static Float64       frame_time    = 0.0;
+    static Float64       uptime        = 0.0;
 
     static Timer         timer;
 
-    static World* world = NULL;
+    static World*        world         = NULL;
 
-    static SoundSystem* soundsystem = NULL;
+    static RGPhysics*    rgphysics     = NULL;
+
+    static SoundSystem*  soundsystem   = NULL;
 
 
     static SDL_AssertState AssertionHandler(const SDL_AssertData* data, void* userdata) {
@@ -317,6 +320,7 @@ namespace Engine {
 
         RegisterEventHandler(_EventHandler);
 
+        rgphysics = RG_NEW_CLASS(std_allocator, RGPhysics)();
         world = RG_NEW_CLASS(GetDefaultAllocator(), World)();
 
         //Commands_Initialize();
@@ -331,8 +335,6 @@ namespace Engine {
             soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
         }
 
-        //physicssystem = RG_NEW_CLASS(std_allocator, PhysicsSystem)();
-
         game_ptr->Initialize();
     }
 
@@ -340,13 +342,14 @@ namespace Engine {
         "input",
         "worldupdate",
         "game",
+        "physics",
         "render",
         "audio",
         "other"
     };
 
     String GetProfile(Uint32 idx) {
-        if (idx < 6) { return profiles[idx]; }
+        if (idx < 7) { return profiles[idx]; }
         return "null";
     }
 
@@ -375,14 +378,17 @@ namespace Engine {
             core_profiler->StartSection(profiles[2]);
             game_ptr->MainUpdate();
 
+            core_profiler->StartSection(profiles[3]);
+            rgphysics->StepSimulation();
+
             if (game_ptr->IsClient()) {
-                core_profiler->StartSection(profiles[3]);
-                Render::Update();
                 core_profiler->StartSection(profiles[4]);
+                Render::Update();
+                core_profiler->StartSection(profiles[5]);
                 soundsystem->Update(GetDeltaTime());
             }
 
-            core_profiler->StartSection(profiles[5]);
+            core_profiler->StartSection(profiles[6]);
             frame++;
             //			if(timer.GetTime() - last_time >= 5.0) {
             //				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
@@ -399,16 +405,13 @@ namespace Engine {
 
         game_ptr->Quit();
 
-        //RG_DELETE_CLASS(std_allocator, World, world);
-
         if (game_ptr->IsClient()) {
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
             Window_Destroy();
         }
 
-        // TODO
-
         RG_DELETE_CLASS(GetDefaultAllocator(), World, world);
+        RG_DELETE_CLASS(GetDefaultAllocator(), RGPhysics, rgphysics);
 
         Input_Destroy();
         Event_Destroy();
@@ -482,6 +485,10 @@ namespace Engine {
 
     Profiler* GetProfiler() {
         return core_profiler;
+    }
+
+    RGPhysics* GetPhysics() {
+        return rgphysics;
     }
 
 }

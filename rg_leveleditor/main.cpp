@@ -23,11 +23,12 @@
 
 using namespace Engine;
 
-static R3D_GlobalLightDescrition globaLlightDesc = {
+static R3D_GlobalLightDescrition globaLightDesc = {
 	{1, 0.9f, 0.8f},
 	0.747f,
 	7,
-	0.3f
+	0.3f,
+	1.86f
 };
 
 static Bool disableRequested = false;
@@ -247,12 +248,13 @@ class Application : public BaseGame {
 			ImGui::Begin("Global light");
 			//static vec4 color;
 
-			ImGui::SliderFloat("Time", &globaLlightDesc.time, 0, 6.283);
-			ImGui::SliderFloat("Ambient", &globaLlightDesc.ambient, 0, 1);
-			ImGui::SliderFloat("Intensity", &globaLlightDesc.intensity, 0, 100);
-			ImGui::ColorPicker4("Color", globaLlightDesc.color.array);
+			ImGui::SliderFloat("Time", &globaLightDesc.time, 0, 6.283);
+			ImGui::SliderFloat("Ambient", &globaLightDesc.ambient, 0, 1);
+			ImGui::SliderFloat("Intensity", &globaLightDesc.intensity, 0, 20);
+			ImGui::SliderFloat("Turbidity", &globaLightDesc.turbidity, 0, 6);
+			ImGui::ColorPicker4("Color", globaLightDesc.color.array);
 
-			Render::SetGlobalLight(&globaLlightDesc);
+			Render::SetGlobalLight(&globaLightDesc);
 
 			ImGui::End();
 

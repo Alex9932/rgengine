@@ -12,7 +12,11 @@ struct PSOUTPUT {
 };
 
 cbuffer ConstBuffer : register(b0) {
-	float4 color;
+	//float4 color;
+	//float3 camerapos;
+	//uint   __offset4;
+	float3 sun_dir;
+	float  m_turbidity;
 	float3 camerapos;
 	uint   __offset4;
 };
@@ -87,15 +91,15 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 	float3 skycolor = mix(color.rgb, horizoncolor, m);
 #endif
 
-	float phase = 0.75;// 3.1415 / 2 + 3.1415 / 8;
-	float3 sun_pos = float3(cos(phase) * 20, sin(phase) * 20, 3.5f);
+	//float phase = 0.75;// 3.1415 / 2 + 3.1415 / 8;
+	//float3 sun_pos = float3(cos(phase) * 20, sin(phase) * 20, 3.5f);
 
-	float3 sun_dir = normalize(sun_pos);
+	//float3 sun_dir = normalize(sun_pos);
 	float3 v = normalize(camerapos - psin.vpos);
 
 	//float3 p_A, p_B, p_C, p_D, p_E, p_Z;
 
-	float m_turbidity = 2.5;
+	//float m_turbidity = 2.5;
 	float sunTheta = acos(clamp(sun_dir.y, 0.f, 1.f));
 
 	float3 p_A = float3(-0.0193, -0.0167,  0.1787) * m_turbidity + float3(-0.2592, -0.2608, -1.4630);

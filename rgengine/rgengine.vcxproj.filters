@@ -64,6 +64,12 @@
     <Filter Include="Source Files\sound">
       <UniqueIdentifier>{953eea33-e752-4f80-9f8e-e91b5cfb9c5d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\physics">
+      <UniqueIdentifier>{0b350bd3-5be4-4881-b723-c8388c478b81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\physics">
+      <UniqueIdentifier>{5a9f2247-e2f6-49d4-9b06-b79ab0451b60}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -203,6 +209,12 @@
     </ClCompile>
     <ClCompile Include="meshtool.cpp">
       <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="rgphysics.cpp">
+      <Filter>Source Files\physics</Filter>
+    </ClCompile>
+    <ClCompile Include="phcomponent.cpp">
+      <Filter>Source Files\physics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -379,6 +391,12 @@
     </ClInclude>
     <ClInclude Include="meshtool.h">
       <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="rgphysics.h">
+      <Filter>Header Files\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="phcomponent.h">
+      <Filter>Header Files\physics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

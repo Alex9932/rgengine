@@ -6,12 +6,13 @@
 #include "allocator.h"
 
 enum ComponentType {
-	Component_TAG = 0,              // Name tag        TagComponent
+	Component_TAG = 0,              // Name tag          (TagComponent)
 	Component_MODELCOMPONENT,       // Model components
 	Component_RIGGEDMODELCOMPONENT, //
 	Component_POINTLIGHT,           // Light sources
 	Component_SPOTLIGHT,            //
 	Component_SOUNDSOURCE,          //
+	Component_PH,                   // Physics component (PHComponent)
 	Component_MAXENUM = 32
 };
 
@@ -25,6 +26,7 @@ namespace Engine {
 	class PointLight;
 	class SpotLight;
 	class SoundSource;
+	class PHComponent;
 
 	class Component {
 		public:
@@ -48,6 +50,7 @@ namespace Engine {
 			RG_INLINE PointLight*           AsPointLightComponent()  { return (PointLight*)this; }
 			RG_INLINE SpotLight*            AsSpotLightComponent()   { return (SpotLight*)this; }
 			RG_INLINE SoundSource*          AsSoundSourceComponent() { return (SoundSource*)this; }
+			RG_INLINE PHComponent*          AsPHComponent()          { return (PHComponent*)this; }
 
         protected:
             //UUID          m_entID;
