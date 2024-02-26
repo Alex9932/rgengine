@@ -30,6 +30,8 @@
 #include <animator.h>
 #include <animation.h>
 
+#include <logger.h>
+
 #undef min
 #undef max
 #include <objimporter.h>
@@ -122,6 +124,25 @@ class Application : public BaseGame {
 			Render::DrawRendererStats();
 			Render::DrawProfilerStats();
 
+			ImGui::Begin("Console");
+
+			ImGui::BeginChild("#Console_txt");
+			Sint32 len = (Sint32)Engine::Logger_GetLines();
+			for (Sint32 i = len; i >= 0; i--) {
+				ImGui::Text("%s", Engine::Logger_GetLine(i));
+			}
+			ImGui::EndChild();
+
+			static char textbuffer[1024];
+			ImGui::InputText(" ", textbuffer, 1024);
+			ImGui::SameLine();
+			if (ImGui::Button("Send")) {
+				rgLogInfo(RG_LOG_GAME, "@ %s", textbuffer);
+				SDL_memset(textbuffer, 0, 1024);
+			}
+
+			ImGui::End();
+
 			ImGui::Begin("Scene light");
 			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
 			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
@@ -213,8 +234,13 @@ class Application : public BaseGame {
 			//objImporter.FreeModelData(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
-			pm2Importer.ImportModel("gamedata/models/lamp/lamp.pm2", &objinfo);
+			//pm2Importer.ImportModel("gamedata/models/lamp/lamp.pm2", &objinfo);
+			pm2Importer.ImportModel("gamedata/models/table/table.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle3 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
+			pm2Importer.ImportModel("gamedata/models/mikufigure/model.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
 #endif
@@ -327,7 +353,7 @@ class Application : public BaseGame {
 			Entity* ent3 = world->NewEntity();
 			ent3->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle3));
 			ent3->GetTransform()->SetPosition({ 6, 0, 1 });
-			ent3->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent3->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			ent3->GetTransform()->SetScale({ 1, 1, 1 });
 
 			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
@@ -342,7 +368,7 @@ class Application : public BaseGame {
 			ss->SetVolume(0.5f);
 
 			ss->SetCamera(camera);
-
+#if 0
 			SoundSource* sourcel = ss->NewSoundSource();
 			SoundSource* sourcer = ss->NewSoundSource();
 
@@ -363,8 +389,22 @@ class Application : public BaseGame {
 
 			//sourcel->Play();
 			//sourcer->Play();
+#endif
 
+			SoundSource* sourcel = ss->NewSoundSource();
+			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_l.ogg");
 
+			sourcel->SetBuffer(sbufferl);
+			sourcel->SetRepeat(true);
+
+			Entity* sndentl = world->NewEntity();
+			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
+			sndentl->AttachComponent(sourcel);
+			sndentl->GetTransform()->SetPosition({ 6, 0.82f, 1 });
+			sndentl->GetTransform()->SetRotation({ 0, -1.05f, 0 });
+			sndentl->GetTransform()->SetScale({ 1, 1, 1 });
+
+			sourcel->Play();
 
 #if 0
 			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);

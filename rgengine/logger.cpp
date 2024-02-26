@@ -53,6 +53,9 @@ RG_FORCE_INLINE static String getColor(SDL_LogPriority priority) {
 #endif
 
 #ifdef RG_PLATFORM_WINDOWS
+
+static HANDLE console_handle;
+
 RG_FORCE_INLINE static Uint8 getColor(SDL_LogPriority priority) {
     switch (priority) {
         case SDL_LOG_PRIORITY_VERBOSE:  return 1;
@@ -82,16 +85,13 @@ RG_FORCE_INLINE static void printLine(SDL_LogPriority priority, String cat, Stri
     SDL_snprintf(LINES_BUFFER[buffer_index], LOGGER_BUFFER_LENGTH, "%s [%s] %s", p, cat, line);
     PRIORITY_BUFFER[buffer_index] = priority;
 
-    //		printf("%s [%s] %s\n", p, cat, line);
 #if defined(RG_PLATFORM_WINDOWS)
-    HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(console_handle, getColor(priority));
     OutputDebugStringA(LINES_BUFFER[buffer_index]);
-    Uint64 length = strlen(LINES_BUFFER[buffer_index]);
+    Uint64 length = SDL_strlen(LINES_BUFFER[buffer_index]);
     LPDWORD number_written = 0;
-    //WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), message, (DWORD)length, number_written, 0);
     WriteConsoleA(console_handle, LINES_BUFFER[buffer_index], (DWORD)length, number_written, 0);
-    WriteConsoleA(console_handle, L"\n", 1, number_written, 0); // TODO: Check this on Windows
+    WriteConsoleA(console_handle, L"\n", 1, number_written, 0);
 #elif defined(RG_PLATFORM_LINUX)
     printf("\033[%sm%s[%s] %s\033[0m\n", getColor(priority), p, cat, line);
 #else
@@ -106,8 +106,8 @@ RG_FORCE_INLINE static void printLine(SDL_LogPriority priority, String cat, Stri
         // Force write logs
         if (priority == SDL_LOG_PRIORITY_WARN ||
             priority == SDL_LOG_PRIORITY_ERROR ||
-            priority == SDL_LOG_PRIORITY_CRITICAL ||
-            priority == SDL_LOG_PRIORITY_INFO) {
+            priority == SDL_LOG_PRIORITY_CRITICAL/* ||
+            priority == SDL_LOG_PRIORITY_INFO*/) {
             fflush(file_stream);
         }
     }
@@ -115,12 +115,13 @@ RG_FORCE_INLINE static void printLine(SDL_LogPriority priority, String cat, Stri
 }
 
 static Uint32 findEnd(Uint32 start, String str) {
-    for (Uint32 i = start; i < strlen(str); ++i) {
+    Uint32 len = (Uint32)SDL_strlen(str);
+    for (Uint32 i = start; i < len; ++i) {
         if (str[i] == '\n') {
             return i;
         }
     }
-    return (Uint32)SDL_strlen(str);
+    return len;
 }
 
 static void logger(void* userdata, int category, SDL_LogPriority priority, String message) {
@@ -135,8 +136,8 @@ static void logger(void* userdata, int category, SDL_LogPriority priority, Strin
     String cat = Engine::GetCategoryStr(category);
 
     Uint32 start = 0;
-    Uint32 end = 0;
-    Uint32 len = (Uint32)SDL_strlen(message);
+    Uint32 end   = 0;
+    Uint32 len   = (Uint32)SDL_strlen(message);
 
     ///////////////////////////////
     // Lock mutex
@@ -162,6 +163,7 @@ namespace Engine {
     void Logger_Initialize() {
 #if defined(RG_PLATFORM_WINDOWS)
         CreateDirectoryA(LOGS_DIR, NULL);
+        console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 #else
         mkdir(LOGS_DIR, 0777);
 #endif

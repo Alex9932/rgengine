@@ -4,14 +4,16 @@
 #include <engine.h>
 #include <rgvector.h>
 
-static ID3D11Device* dx_device;
+static ID3D11Device*        dx_device;
 static ID3D11DeviceContext* dx_ctx;
-static IDXGISwapChain* dx_swapchain;
+static IDXGISwapChain*      dx_swapchain;
 
 // Color buffer
 static ID3D11RenderTargetView* dx_backbuffer;
 
-static ID3D11RasterizerState* dx_rasterState;
+static ID3D11RasterizerState*  dx_rasterState;
+
+static ID3D11BlendState*       dx_blendState;
 
 static char gCardName[128] = { 0 };
 
@@ -88,11 +90,25 @@ void DX11_Initialize(SDL_Window* hwnd) {
     rasterDesc.MultisampleEnable = false;
     rasterDesc.ScissorEnable = false;
     rasterDesc.SlopeScaledDepthBias = 0.0f;
-
     dx_device->CreateRasterizerState(&rasterDesc, &dx_rasterState);
+
+    D3D11_BLEND_DESC blendDesc = {};
+    blendDesc.AlphaToCoverageEnable = false;
+    blendDesc.IndependentBlendEnable = false;
+    blendDesc.RenderTarget[0].BlendEnable = true;
+    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_DEST_ALPHA;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    DX11_GetDevice()->CreateBlendState(&blendDesc, &dx_blendState);
 }
 
 void DX11_Destroy() {
+    dx_blendState->Release();
+    dx_rasterState->Release();
     dx_swapchain->Release();
     dx_backbuffer->Release();
     dx_device->Release();
@@ -103,6 +119,9 @@ void DX11_BindDefaultFramebuffer() {
 
     dx_ctx->OMSetRenderTargets(1, &dx_backbuffer, NULL);
     dx_ctx->RSSetState(dx_rasterState);
+
+    Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    dx_ctx->OMSetBlendState(dx_blendState, blendFactor, 0xffffffff);
 
 }
 

@@ -780,6 +780,9 @@ void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
 	drawCalls     = 0;
 	dispatchCalls = 0;
 
+	Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	DX11_GetContext()->OMSetBlendState(NULL, blendFactor, 0xffffffff);
+
 	SetLightDescription(info->globallight);
 
 	DoSkeletonCalculation(); // Calculate skeletons

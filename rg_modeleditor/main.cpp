@@ -426,7 +426,7 @@ class Application : public BaseGame {
 
 			src->SetBuffer(stream);
 			src->SetRepeat(true);
-			src->Play();
+			//src->Play();
 
 			RegisterEventHandler(EHandler);
 			RegisterEventHandler(EHandler2);

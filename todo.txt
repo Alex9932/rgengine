@@ -1,0 +1,45 @@
+Levels:
+
+Gui:
+	R2D
+		API
+		R2D_CreateBuffer()   // Create vertexbuffer
+		R2D_DestroyBuffer()  // Delete vertexbuffer
+		R2D_BufferData()     // Modify data in vertexbuffer
+
+		R2D_CreateTexture()  // Create texture
+		R2D_DestroyTexture() // Delete texture
+		R2D_TextureData()    // Modify data in texture
+
+		R2D_PushMatrix()     // Push transformation matrix to stack
+		R2D_PopMatrix()      // Pop transformation matrix from stack
+		R2D_ResetStack()     // Reset matrix stack
+
+		R2D_Bind()           // Set draw state
+		R2D_Draw()           // Draw-call
+
+	Font
+		struct {
+			Uint32  offset // offset in unicode
+			Uint32  length // count of glyphs
+			Uint32  hash   // name hash
+			R2DTex  atlas  // Texture atlas
+			Glyph[] glyphs // glyphs
+			char[]  name   // 64-byte name
+
+			ex:
+			 +- offset
+			+V--------------+
+			|ABCDEFGHIJKLMNO|
+			|PQRSTUVWXYZabcd|
+			|efghijklmnopqrs|
+			|tuvwxyz12345678|
+			|90~!@#$%^&*()_+|
+			|-=[]{}:;"'<>.,/|
+			+--------------^+
+			               +-count (90)
+		}
+
+	Console
+	GuiScreens
+

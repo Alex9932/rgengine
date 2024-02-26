@@ -8,7 +8,7 @@ static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
 	switch (channels) {
 		case 1:  return DXGI_FORMAT_R8_UNORM;
 		case 2:  return DXGI_FORMAT_R8G8_UNORM;
-		//case 3:  return DXGI_FORMAT_B8G8R8X8_UNORM;
+		case 3:  return DXGI_FORMAT_B8G8R8X8_UNORM; // 32-bit NOT 24
 		case 4:  return DXGI_FORMAT_R8G8B8A8_UNORM;
 		default: return DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
@@ -17,7 +17,8 @@ static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
 Texture::Texture(TextureInfo* info) {
 
 	if (info->channels == 3) {
-		RG_ERROR_MSG("D3D11 Not support 3-channel textures!");
+		//RG_ERROR_MSG("D3D11 Not support 3-channel textures!");
+		rgLogError(RG_LOG_RENDER, "D3D11 Not support 3-channel textures!");
 	}
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};

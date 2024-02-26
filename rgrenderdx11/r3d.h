@@ -3,9 +3,10 @@
 
 #include <rendertypes.h>
 #include <allocator.h>
+#include <rgvector.h>
+
 #include "buffer.h"
 #include "texture.h"
-#include "rgvector.h"
 #include "queue.h"
 
 typedef struct R3DStats {

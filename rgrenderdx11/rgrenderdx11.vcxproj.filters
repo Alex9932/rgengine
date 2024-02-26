@@ -13,6 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\r3d">
+      <UniqueIdentifier>{12958c84-3063-4187-9f4a-e1dd48d6e689}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\r2d">
+      <UniqueIdentifier>{94e9dc78-4128-40d6-ba10-5d07a4ee4160}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\r3d">
+      <UniqueIdentifier>{9e5ca4f9-cf91-4f7b-8efb-b253f2ea5de7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\r2d">
+      <UniqueIdentifier>{ac6c4642-e905-4e39-9820-1a6bea0f9702}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{add3b8b4-bb5f-4c45-916d-23fc0e573ab7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils">
+      <UniqueIdentifier>{e507f4df-670c-4aab-8fc1-60276a8ab54a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -24,79 +42,85 @@
     <ClCompile Include="dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r3d.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="buffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="queue.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gbuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lightpass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="imgui_impl_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="postprocess.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="r3d.cpp">
+      <Filter>Source Files\r3d</Filter>
     </ClCompile>
     <ClCompile Include="shadowbuffer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="lightpass.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="gbuffer.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="buffer.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="loader.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="shader.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="texture.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="postprocess.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="queue.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="r2d.cpp">
+      <Filter>Source Files\r2d</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="r3d.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rgrenderdx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="queue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gbuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lightpass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui_impl_dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="loader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="buffer.h">
+      <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="postprocess.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="gbuffer.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="lightpass.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="queue.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="shader.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="texture.h">
+      <Filter>Header Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="shadowbuffer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="postprocess.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="loader.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r3d.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r2d.h">
+      <Filter>Header Files\r2d</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

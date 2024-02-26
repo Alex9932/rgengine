@@ -1,0 +1,13 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+	float4 color : COLOR;
+};
+
+Texture2D t_unit0 : register(t0);
+SamplerState SampleType : register(s0);
+
+float4 pmain(PSINPUT psin) : SV_Target0 {
+	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+	return tColor * psin.color;
+}

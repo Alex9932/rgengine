@@ -11,6 +11,7 @@
 #include <input.h>
 
 #include "dx11.h"
+#include "r2d.h"
 #include "r3d.h"
 #include "shader.h"
 
@@ -62,6 +63,7 @@ static bool _EventHandler(SDL_Event* event) {
 					// Reload shaders
 					rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
 
+					ReloadShadersR2D();
 					ReloadShadersR3D();
 
 				}
@@ -135,9 +137,9 @@ void R_Initialize(SDL_Window* wnd) {
 
 	LoaderInit();
 
+	InitializeR2D(&size);
 	InitializeR3D(&size);
 
-	// TEMP
 	InputDescription staticDescriptions[1] = {};
 	staticDescriptions[0].name      = "POSITION";
 	staticDescriptions[0].inputSlot = 0;
@@ -173,6 +175,7 @@ void R_Destroy() {
 
 	ImGui_ImplDX11_Shutdown();
 	DestroyR3D();
+	DestroyR2D();
 	// TEMP
 	RG_DELETE_CLASS(allocator, Buffer, vBuffer);
 	RG_DELETE_CLASS(allocator, Shader, shader);
@@ -186,6 +189,8 @@ void R_Destroy() {
 }
 
 void R_SwapBuffers() {
+	R2D_Begin();
+
 	DX11_SetViewport(wndSize.x, wndSize.y);
 
     vec4 clearColor = { 0, 0, 0, 1 };
@@ -196,19 +201,20 @@ void R_SwapBuffers() {
 	if (RG_CHECK_FLAG(flags, RG_RENDER_FULLSCREEN)) {
 		shader->Bind();
 
-		//ID3D11ShaderResourceView* res0 = GetGBufferShaderResource(0);
-		//ID3D11ShaderResourceView* res1 = GetLightpassShaderResource();
-		ID3D11ShaderResourceView* res0 = FXGetOuputTexture();
-
-		DX11_GetContext()->PSSetShaderResources(0, 1, &res0);
-		//DX11_GetContext()->PSSetShaderResources(1, 1, &res1);
-
 		UINT stride = sizeof(Float32) * 2;
 		UINT offset = 0;
 		ID3D11Buffer* vbuffer = vBuffer->GetHandle();
 		DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
-		//DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
 		DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// Draw 3D scene
+		ID3D11ShaderResourceView* res = FXGetOuputTexture();
+		DX11_GetContext()->PSSetShaderResources(0, 1, &res);
+		DX11_GetContext()->Draw(6, 0);
+
+		// Draw 2D Gui
+		res = R2DGetOuputTexture();
+		DX11_GetContext()->PSSetShaderResources(0, 1, &res);
 		DX11_GetContext()->Draw(6, 0);
 	}
 
@@ -222,6 +228,7 @@ void R_SwapBuffers() {
 	if (wndResized) {
 		wndResized = false;
 		DX11_Resize(&wndSize);
+		ResizeR2D(&wndSize);
 		ResizeR3D(&wndSize);
 		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
 	}
@@ -251,5 +258,6 @@ void R_GetInfo(RenderInfo* info) {
 	info->r3d_dispatch_calls = r3d_stats.dispatchCalls;
 
 	info->r3d_renderResult   = FXGetOuputTexture();
+	info->r2d_renderResult   = R2DGetOuputTexture();
 
 }

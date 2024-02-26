@@ -14,6 +14,24 @@ typedef void              (*PFN_R_DESTROY)();
 typedef void              (*PFN_R_SWAPBUFFERS)();
 typedef void              (*PFN_R_GETINFO)(RenderInfo*);
 
+// R2D
+typedef R2D_Buffer*  (*PFN_R2D_CREATEBUFFER)(R2DCreateBufferInfo*);
+typedef void         (*PFN_R2D_DESTROYBUFFER)(R2D_Buffer*);
+typedef void         (*PFN_R2D_BUFFERDATA)(R2DBufferDataInfo*);
+
+typedef R2D_Texture* (*PFN_R2D_CREATETEXTURE)(R2DCreateTextureInfo*);
+typedef void         (*PFN_R2D_DESTROYTEXTURE)(R2D_Texture*);
+typedef void         (*PFN_R2D_TEXTUREDATA)(R2DTextureDataInfo*);
+
+typedef void         (*PFN_R2D_PUSHMATRIX)(mat4*);
+typedef mat4*        (*PFN_R2D_POPMATRIX)();
+typedef void         (*PFN_R2D_RESETSTACK)();
+
+typedef void         (*PFN_R2D_BEGIN)();
+typedef void         (*PFN_R2D_BIND)(R2DBindInfo*);
+typedef void         (*PFN_R2D_DRAW)(R2DDrawInfo*);
+
+// R3D
 typedef R3D_Material*     (*PFN_R3D_CREATEMATERIAL)(R3DCreateMaterialInfo*);
 typedef void              (*PFN_R3D_DESTROYMATERIAL)(R3D_Material*);
 
@@ -46,6 +64,20 @@ namespace Engine {
 		extern RG_DECLSPEC PFN_R_DESTROY               Destroy;
 		extern RG_DECLSPEC PFN_R_SWAPBUFFERS           SwapBuffers;
 		extern RG_DECLSPEC PFN_R_GETINFO               GetInfo;
+
+		// R2D
+		extern RG_DECLSPEC PFN_R2D_CREATEBUFFER        R2D_CreateBuffer;
+		extern RG_DECLSPEC PFN_R2D_DESTROYBUFFER       R2D_DestroyBuffer;
+		extern RG_DECLSPEC PFN_R2D_BUFFERDATA          R2D_BufferData;
+		extern RG_DECLSPEC PFN_R2D_CREATETEXTURE       R2D_CreateTexture;
+		extern RG_DECLSPEC PFN_R2D_DESTROYTEXTURE      R2D_DestroyTexture;
+		extern RG_DECLSPEC PFN_R2D_TEXTUREDATA         R2D_TextureData;
+		extern RG_DECLSPEC PFN_R2D_PUSHMATRIX          R2D_PushMatrix;
+		extern RG_DECLSPEC PFN_R2D_POPMATRIX           R2D_PopMatrix;
+		extern RG_DECLSPEC PFN_R2D_RESETSTACK          R2D_ResetStack;
+		extern RG_DECLSPEC PFN_R2D_BEGIN               R2D_Begin;
+		extern RG_DECLSPEC PFN_R2D_BIND                R2D_Bind;
+		extern RG_DECLSPEC PFN_R2D_DRAW                R2D_Draw;
 
 		// R3D
 		extern RG_DECLSPEC PFN_R3D_CREATEMATERIAL      R3D_CreateMaterial;
