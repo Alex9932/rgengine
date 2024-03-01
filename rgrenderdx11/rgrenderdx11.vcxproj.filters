@@ -78,6 +78,9 @@
     <ClCompile Include="r2d.cpp">
       <Filter>Source Files\r2d</Filter>
     </ClCompile>
+    <ClCompile Include="stack.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dx11.h">
@@ -121,6 +124,9 @@
     </ClInclude>
     <ClInclude Include="r2d.h">
       <Filter>Header Files\r2d</Filter>
+    </ClInclude>
+    <ClInclude Include="stack.h">
+      <Filter>Header Files\utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

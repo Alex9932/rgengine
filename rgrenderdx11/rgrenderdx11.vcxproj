@@ -160,6 +160,7 @@
     <ClCompile Include="rgrenderdx11.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shadowbuffer.cpp" />
+    <ClCompile Include="stack.cpp" />
     <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -176,6 +177,7 @@
     <ClInclude Include="rgrenderdx11.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shadowbuffer.h" />
+    <ClInclude Include="stack.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

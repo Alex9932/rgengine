@@ -90,6 +90,7 @@ typedef struct R2DCreateBufferInfo {
 } R2DCreateBufferInfo;
 
 typedef struct R2DBufferDataInfo {
+	R2D_Buffer* buffer;
 	Uint32      offset; // offset IN VERTICES (NOT BYTES)
 	Uint32      length; // data length IN VERTICES (NOT BYTES)
 	R2D_Vertex* data;

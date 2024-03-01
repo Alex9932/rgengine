@@ -70,6 +70,7 @@ class FX {
 		void Resize(ivec2* size) {
 			DX11_FreeRenderTarget(&m_target);
 			DX11_MakeRenderTarget(&m_target, size, DXGI_FORMAT_R16G16B16A16_FLOAT);
+			m_viewport = *size;
 		}
 
 		void SetInput(Uint32 idx, ID3D11ShaderResourceView* res) {
@@ -345,6 +346,9 @@ void ResizeFX(ivec2* size) {
 	subSize.y /= 4;
 	blurx3->Resize(&subSize);
 	blury3->Resize(&subSize);
+
+	ssao->Resize(size);
+	godrays->Resize(size);
 
 	mix->Resize(size);
 }
