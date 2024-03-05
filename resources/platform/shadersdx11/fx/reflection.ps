@@ -103,7 +103,7 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 
 	float reflectivity = fresnel * (1 - roughness); // TMP
 
-	float3 tColor = TraceRay(wpos, reflection) * reflectivity;
+	float3 tColor = TraceRay(wpos, reflection);// * reflectivity;
 
 	//if(tColor.r < 0.001 && tColor.g < 0.001 && tColor.b < 0.001) {
 	//	tColor = lightres.rgb;

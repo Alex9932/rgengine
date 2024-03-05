@@ -335,6 +335,9 @@ namespace Engine {
             }
         }
 
+        static R2D_Buffer* r2d_buffer = NULL;
+
+
         void Update() {
 
             modelSystem->UpdateComponents();
@@ -343,6 +346,37 @@ namespace Engine {
             RenderWorld(Engine::GetWorld());
 
             R3D_StartRenderTask(&renderTaskInfo);
+
+
+            ///////////////////////////
+            // R2D
+
+            if (r2d_buffer == NULL) {
+                R2D_Vertex r2d_vertices[] = {
+                    { -0.5f, -0.5f, 0, 0, 1, 0, 0, 1 },
+                    {  0.0f,  0.5f, 0, 0, 0, 1, 0, 1 },
+                    {  0.5f, -0.5f, 0, 0, 0, 0, 1, 1 }
+                };
+
+                R2DCreateBufferInfo createbufferinfo = {};
+                createbufferinfo.length       = 3;
+                createbufferinfo.initial_data = r2d_vertices;
+                r2d_buffer = R2D_CreateBuffer(&createbufferinfo);
+            }
+
+            R2D_Begin();
+
+            R2DBindInfo bindinfo = {};
+
+            bindinfo.texture = NULL;
+            bindinfo.buffer  = r2d_buffer;
+
+            R2DDrawInfo drawinfo = {};
+            drawinfo.offset = 0;
+            drawinfo.count  = 3;
+
+            R2D_Bind(&bindinfo);
+            R2D_Draw(&drawinfo);
 
             Window_Update();
         }

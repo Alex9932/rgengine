@@ -92,6 +92,10 @@ namespace Engine {
 			this->m_speed = 5;
 		}
 
+		if (IsKeyDown(SDL_SCANCODE_LALT)) {
+			this->m_speed = 0.1f;
+		}
+
 		this->m_dir = this->m_dir.normalize_safe();
 
 		vec3 pos = m_camptr->GetTransform()->GetPosition();

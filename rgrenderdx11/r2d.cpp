@@ -7,7 +7,9 @@
 #include "shader.h"
 
 #include "stack.h"
-#include "rgmath.h"
+#include <rgmath.h>
+
+#include "loader.h"
 
 #include <allocator.h>
 
@@ -97,13 +99,14 @@ void InitializeR2D(ivec2* size) {
 	D3D11_BLEND_DESC blendDesc = {};
 	blendDesc.AlphaToCoverageEnable                 = false;
 	blendDesc.IndependentBlendEnable                = false;
-	blendDesc.RenderTarget[0].BlendEnable           = true;
+	blendDesc.RenderTarget[0].BlendEnable           = false;
+	//blendDesc.RenderTarget[0].BlendEnable = true;
 	blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
 	blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_DEST_ALPHA;
-	blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ONE;
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	DX11_GetDevice()->CreateBlendState(&blendDesc, &blendState);
 
@@ -245,7 +248,7 @@ void R2D_Begin() {
 	ctx->OMSetBlendState(blendState, blendFactor, 0xffffffff);
 
 	DX11_SetViewport(viewport.x, viewport.y);
-	Float32 clearcolor[] = { 1, 1, 1, 0.0f };
+	Float32 clearcolor[] = { 0, 0, 0, 0.0f };
 	ctx->ClearRenderTargetView(rendertarget.rtView, clearcolor);
 
 	shader->Bind();
@@ -253,8 +256,26 @@ void R2D_Begin() {
 
 void R2D_Bind(R2DBindInfo* info) {
 
+	ID3D11DeviceContext* ctx = DX11_GetContext();
+
+	if (info->texture) {
+		info->texture->texture->Bind(0);
+	} else {
+		GetDefaultTexture()->Bind(0);
+	}
+
+	if (info->buffer) {
+		
+		ID3D11Buffer* vbuffer = info->buffer->buffer->GetHandle();
+		UINT stride = sizeof(R2D_Vertex);
+		UINT offset = 0;
+
+		ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
+		ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
 }
 
 void R2D_Draw(R2DDrawInfo* info) {
-
+	ID3D11DeviceContext* ctx = DX11_GetContext();
+	ctx->Draw(info->count, info->offset);
 }

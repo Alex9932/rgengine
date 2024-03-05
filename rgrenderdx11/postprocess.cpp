@@ -542,7 +542,8 @@ ID3D11ShaderResourceView* FXGetOuputTexture() {
 	ID3D11ShaderResourceView* views[8];
 	views[0] = mix->GetOutput();
 	views[1] = godrays->GetOutput();
-	views[2] = ssao->GetOutput();
+	//views[2] = ssao->GetOutput();
+	views[2] = ssr->GetOutput();
 	views[3] = lightpass->GetOutput();
 	views[4] = GetGBufferShaderResource(0);
 	views[5] = GetGBufferShaderResource(1);
