@@ -13,7 +13,8 @@
 
 #include <allocator.h>
 
-#define R_BUFFERS_COUNT 1024
+#define R_BUFFERS_COUNT  1024
+#define R_TEXTURES_COUNT 1024
 
 using namespace Engine;
 
@@ -27,9 +28,14 @@ static ivec2 viewport;
 static Shader* shader;
 
 static Stack*  stack;
-static mat4    local_transform;
 
 static PoolAllocator* alloc_buffers;
+static PoolAllocator* alloc_textures;
+
+static Buffer* buffer_vs;
+struct VSBuffer {
+	mat4 model;
+} vsbuffer;
 
 static void LoadShaders() {
 	InputDescription staticDescriptions[3] = {};
@@ -53,13 +59,23 @@ static void LoadShaders() {
 	GetPath(ps, 128, RG_PATH_SYSTEM, "shadersdx11/r2d.ps");
 	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, vs, ps, false);
 
-	alloc_buffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BuffersPool", R_BUFFERS_COUNT, sizeof(R2D_Buffer));
+	alloc_buffers  = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BuffersPool", R_BUFFERS_COUNT, sizeof(R2D_Buffer));
+	alloc_textures = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_TexturesPool", R_TEXTURES_COUNT, sizeof(R2D_Texture));
 	stack = RG_NEW_CLASS(RGetAllocator(), Stack)(RGetAllocator(), sizeof(mat4), 256);
-	local_transform = MAT4_IDENTITY();
+	vsbuffer.model = MAT4_IDENTITY();
+
+	BufferCreateInfo bInfo = {};
+	bInfo.access = BUFFER_CPU_WRITE;
+	bInfo.usage  = BUFFER_DYNAMIC;
+	bInfo.type   = BUFFER_CONSTANT;
+	bInfo.length = sizeof(VSBuffer);
+	buffer_vs = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 }
 
 static void FreeShaders() {
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_vs);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_buffers);
+	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_textures);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
 	RG_DELETE_CLASS(RGetAllocator(), Stack, stack);
 }
@@ -202,21 +218,26 @@ void R2D_BufferData(R2DBufferDataInfo* info) {
 }
 
 R2D_Texture* R2D_CreateTexture(R2DCreateTextureInfo* info) {
-	return NULL;
+	R2D_Texture* txptr = (R2D_Texture*)alloc_textures->Allocate();
+	LoaderPushTexture(info->path, &txptr->texture);
+	return txptr;
 }
 
-void R2D_DestroyTexture(R2D_Texture* texture) {
-
+void R2D_DestroyTexture(R2D_Texture* txptr) {
+	if (txptr->texture != GetDefaultTexture()) {
+		RG_DELETE_CLASS(RGetAllocator(), Texture, txptr->texture);
+	}
+	alloc_textures->Deallocate(txptr);
 }
 
 void R2D_TextureData(R2DTextureDataInfo* info) {
-
+	// Not implemented yet
 }
 
 void R2D_PushMatrix(mat4* matrix) {
 	stack->Push(matrix);
-	mat4 transform = local_transform * *matrix;
-	local_transform = transform;
+	mat4 transform = vsbuffer.model * *matrix;
+	vsbuffer.model = transform;
 }
 
 mat4* R2D_PopMatrix() {
@@ -224,10 +245,10 @@ mat4* R2D_PopMatrix() {
 
 	// Recalculate transform
 	Uint32 size = stack->GetSize();
-	local_transform = MAT4_IDENTITY();
+	vsbuffer.model = MAT4_IDENTITY();
 	for (Uint32 i = 0; i < size; i++) {
 		mat4* mat = (mat4*)stack->Get(i);
-		local_transform = local_transform * *mat;
+		vsbuffer.model = vsbuffer.model * *mat;
 	}
 
 	return matrix;
@@ -235,7 +256,7 @@ mat4* R2D_PopMatrix() {
 
 void R2D_ResetStack() {
 	stack->Reset();
-	local_transform = MAT4_IDENTITY();
+	vsbuffer.model = MAT4_IDENTITY();
 }
 
 void R2D_Begin() {
@@ -277,5 +298,11 @@ void R2D_Bind(R2DBindInfo* info) {
 
 void R2D_Draw(R2DDrawInfo* info) {
 	ID3D11DeviceContext* ctx = DX11_GetContext();
+
+	buffer_vs->SetData(0, sizeof(VSBuffer), &vsbuffer);
+
+	ID3D11Buffer* cBuffer = buffer_vs->GetHandle();
+	DX11_GetContext()->VSSetConstantBuffers(0, 1, &cBuffer);
+
 	ctx->Draw(info->count, info->offset);
 }

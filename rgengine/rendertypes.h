@@ -13,13 +13,14 @@ enum IndexType {
 	RG_INDEX_U8  = 1  // !!! DO NOT RECOMENDED TO USE !!!
 };
 
-
+/*
 enum TextureType {
 	RG_TEXTURE_U8_R_ONLY  = 1,
 	RG_TEXTURE_U8_RGBA    = 2,
 	RG_TEXTURE_F32_R_ONLY = 3,
 	RG_TEXTURE_F32_RGBA   = 4
 };
+*/
 
 typedef Uint32 RenderFlags;
 
@@ -97,14 +98,18 @@ typedef struct R2DBufferDataInfo {
 } R2DBufferDataInfo;
 
 typedef struct R2DCreateTextureInfo {
+	String path;
+	/*
 	TextureType type;
 	Uint32      width;
 	Uint32      height;
 	void*       data;
+	*/
 } R2DCreateTextureInfo;
 
 typedef struct R2DTextureDataInfo {
 	// Not implemented yet
+	R2D_Texture* handle;
 	void* data;
 } R2DTextureDataInfo;
 

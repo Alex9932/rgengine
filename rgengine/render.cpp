@@ -335,7 +335,8 @@ namespace Engine {
             }
         }
 
-        static R2D_Buffer* r2d_buffer = NULL;
+        static R2D_Buffer*  r2d_buffer  = NULL;
+        static R2D_Texture* r2d_texture = NULL;
 
 
         void Update() {
@@ -353,30 +354,75 @@ namespace Engine {
 
             if (r2d_buffer == NULL) {
                 R2D_Vertex r2d_vertices[] = {
-                    { -0.5f, -0.5f, 0, 0, 1, 0, 0, 1 },
-                    {  0.0f,  0.5f, 0, 0, 0, 1, 0, 1 },
-                    {  0.5f, -0.5f, 0, 0, 0, 0, 1, 1 }
+                    /*
+                    { -0.5f, -0.5f, 0.0f, 1.0f, 1, 0, 0, 1 },
+                    {  0.0f,  0.5f, 0.5f, 0.0f, 0, 1, 0, 1 },
+                    {  0.5f, -0.5f, 1.0f, 1.0f, 0, 0, 1, 1 }
+                    */
+                    { -0.5f, -0.5f, 0.0f, 1.0f, 1, 1, 1, 1 },
+                    { -0.5f,  0.5f, 0.0f, 0.0f, 1, 1, 1, 1 },
+                    {  0.5f,  0.5f, 1.0f, 0.0f, 1, 1, 1, 1 },
+                    {  0.5f,  0.5f, 1.0f, 0.0f, 1, 1, 1, 1 },
+                    {  0.5f, -0.5f, 1.0f, 1.0f, 1, 1, 1, 1 },
+                    { -0.5f, -0.5f, 0.0f, 1.0f, 1, 1, 1, 1 }
                 };
 
                 R2DCreateBufferInfo createbufferinfo = {};
-                createbufferinfo.length       = 3;
+                createbufferinfo.length       = 6;
                 createbufferinfo.initial_data = r2d_vertices;
                 r2d_buffer = R2D_CreateBuffer(&createbufferinfo);
+
+                R2DCreateTextureInfo createtextureinfo = {};
+                createtextureinfo.path = "platform/textures/loading.png";
+                r2d_texture = R2D_CreateTexture(&createtextureinfo);
             }
 
             R2D_Begin();
 
             R2DBindInfo bindinfo = {};
 
-            bindinfo.texture = NULL;
+            bindinfo.texture = r2d_texture;
             bindinfo.buffer  = r2d_buffer;
 
             R2DDrawInfo drawinfo = {};
             drawinfo.offset = 0;
-            drawinfo.count  = 3;
+            drawinfo.count  = 6;
+
+            R2D_ResetStack();
+            
+            Float32 aspect = 16.0f / 9.0f;
+            mat4 m0;
+            mat4_ortho(&m0, -aspect, aspect, -1, 1, -1, 1);
+
+            mat4 m1;
+            mat4_rotatez(&m1, Engine::GetUptime() * 10);
+
+            mat4 m2;
+            mat4_translate(&m2, {1.6f, -0.8f, 0.0f});
+
+            Float32 s = 0.18f;
+            mat4 m3 = {
+                s, 0, 0, 0,
+                0, s, 0, 0,
+                0, 0, s, 0,
+                0, 0, 0, 1
+            };
+            
+
+            R2D_PushMatrix(&m0);
+            R2D_PushMatrix(&m2);
+            R2D_PushMatrix(&m3);
+            R2D_PushMatrix(&m1);
 
             R2D_Bind(&bindinfo);
             R2D_Draw(&drawinfo);
+
+            /*
+            R2D_PopMatrix();
+            R2D_PopMatrix();
+            R2D_PopMatrix();
+            R2D_Draw(&drawinfo);
+            */
 
             Window_Update();
         }
