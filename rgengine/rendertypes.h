@@ -116,6 +116,7 @@ typedef struct R2DTextureDataInfo {
 typedef struct R2DBindInfo {
 	R2D_Texture* texture;
 	R2D_Buffer*  buffer;
+	vec4         color;
 } R2DBindInfo;
 
 typedef struct R2DDrawInfo {
@@ -127,6 +128,7 @@ typedef struct R2DDrawInfo {
 // R3D
 /////////////////////
 
+// R3D_GlobalLightDescription
 typedef struct R3D_GlobalLightDescrition {
 	vec3    color;
 	Float32 time;

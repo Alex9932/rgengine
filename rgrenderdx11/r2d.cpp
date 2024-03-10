@@ -37,6 +37,11 @@ struct VSBuffer {
 	mat4 model;
 } vsbuffer;
 
+static Buffer* buffer_ps;
+struct PSBuffer {
+	vec4 color;
+} psbuffer;
+
 static void LoadShaders() {
 	InputDescription staticDescriptions[3] = {};
 	staticDescriptions[0].name      = "POSITION";
@@ -70,10 +75,13 @@ static void LoadShaders() {
 	bInfo.type   = BUFFER_CONSTANT;
 	bInfo.length = sizeof(VSBuffer);
 	buffer_vs = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
+	bInfo.length = sizeof(PSBuffer);
+	buffer_ps = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 }
 
 static void FreeShaders() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_vs);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_ps);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_buffers);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_textures);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
@@ -115,15 +123,26 @@ void InitializeR2D(ivec2* size) {
 	D3D11_BLEND_DESC blendDesc = {};
 	blendDesc.AlphaToCoverageEnable                 = false;
 	blendDesc.IndependentBlendEnable                = false;
-	blendDesc.RenderTarget[0].BlendEnable           = false;
+	blendDesc.RenderTarget[0].BlendEnable           = true;
 	//blendDesc.RenderTarget[0].BlendEnable = true;
+	/*
 	blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
 	blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
 	blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_DEST_ALPHA;
 	blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ONE;
+	*/
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	blendDesc.RenderTarget[0].BlendOp        = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlend       = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_SRC_ALPHA;
+
+	blendDesc.RenderTarget[0].BlendOpAlpha   = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+
 	DX11_GetDevice()->CreateBlendState(&blendDesc, &blendState);
 
 	LoadShaders();
@@ -294,15 +313,20 @@ void R2D_Bind(R2DBindInfo* info) {
 		ctx->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
 		ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
+
+	psbuffer.color = info->color;
 }
 
 void R2D_Draw(R2DDrawInfo* info) {
 	ID3D11DeviceContext* ctx = DX11_GetContext();
 
 	buffer_vs->SetData(0, sizeof(VSBuffer), &vsbuffer);
+	buffer_ps->SetData(0, sizeof(PSBuffer), &psbuffer);
 
-	ID3D11Buffer* cBuffer = buffer_vs->GetHandle();
-	DX11_GetContext()->VSSetConstantBuffers(0, 1, &cBuffer);
+	ID3D11Buffer* vBuffer = buffer_vs->GetHandle();
+	ID3D11Buffer* pBuffer = buffer_ps->GetHandle();
+	DX11_GetContext()->VSSetConstantBuffers(0, 1, &vBuffer);
+	DX11_GetContext()->PSSetConstantBuffers(0, 1, &pBuffer);
 
 	ctx->Draw(info->count, info->offset);
 }

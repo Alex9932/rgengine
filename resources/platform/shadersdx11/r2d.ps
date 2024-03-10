@@ -7,7 +7,11 @@ struct PSINPUT {
 Texture2D t_unit0 : register(t0);
 SamplerState SampleType : register(s0);
 
+cbuffer ColorBuffer : register(b0) {
+	float4 const_color;
+};
+
 float4 pmain(PSINPUT psin) : SV_Target0 {
 	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
-	return tColor * psin.color;
+	return tColor * psin.color * const_color;
 }
