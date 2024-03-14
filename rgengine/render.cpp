@@ -222,10 +222,39 @@ namespace Engine {
             return handle;
         }
 
+        static R2D_Buffer* r2d_buffer = NULL;
+        static R2D_Texture* r2d_texture = NULL;
+        static R2D_Texture* r2d_texture_bg = NULL;
+
         void InitSubSystem() {
             GetWindowSize(&wndSize);
 
 
+            R2D_Vertex r2d_vertices[] = {
+                /*
+                { -0.5f, -0.5f, 0.0f, 1.0f, 1, 0, 0, 1 },
+                {  0.0f,  0.5f, 0.5f, 0.0f, 0, 1, 0, 1 },
+                {  0.5f, -0.5f, 1.0f, 1.0f, 0, 0, 1, 1 }
+                */
+                { -0.5f, -0.5f, 0.0f, 1.0f, 1, 1, 1, 1 },
+                { -0.5f,  0.5f, 0.0f, 0.0f, 1, 1, 1, 1 },
+                {  0.5f,  0.5f, 1.0f, 0.0f, 1, 1, 1, 1 },
+                {  0.5f,  0.5f, 1.0f, 0.0f, 1, 1, 1, 1 },
+                {  0.5f, -0.5f, 1.0f, 1.0f, 1, 1, 1, 1 },
+                { -0.5f, -0.5f, 0.0f, 1.0f, 1, 1, 1, 1 }
+             };
+
+            R2DCreateBufferInfo createbufferinfo = {};
+            createbufferinfo.length = 6;
+            createbufferinfo.initial_data = r2d_vertices;
+            r2d_buffer = R2D_CreateBuffer(&createbufferinfo);
+
+            R2DCreateTextureInfo createtextureinfo = {};
+            createtextureinfo.path = "platform/textures/loading.png";
+            r2d_texture = R2D_CreateTexture(&createtextureinfo);
+
+            createtextureinfo.path = "platform/textures/loading_bg.png";
+            r2d_texture_bg = R2D_CreateTexture(&createtextureinfo);
 
 
 #if 0
@@ -246,6 +275,10 @@ namespace Engine {
         }
 
         void DestroySubSystem() {
+
+            R2D_DestroyBuffer(r2d_buffer);
+            R2D_DestroyTexture(r2d_texture);
+            R2D_DestroyTexture(r2d_texture_bg);
 
         }
 
@@ -335,6 +368,7 @@ namespace Engine {
             }
         }
 
+
         void Update() {
 
             modelSystem->UpdateComponents();
@@ -343,6 +377,96 @@ namespace Engine {
             RenderWorld(Engine::GetWorld());
 
             R3D_StartRenderTask(&renderTaskInfo);
+
+
+            ///////////////////////////
+            // R2D
+
+
+            RenderInfo renderer_info = {};
+            GetInfo(&renderer_info);
+            Float32 f = 1;
+            static Float32 alpha = 1;
+            if (renderer_info.textures_inQueue != 0) {
+                f = 1.0f - ((Float32)renderer_info.textures_left / (Float32)renderer_info.textures_inQueue);
+            }
+
+            if (f >= 1) {
+                alpha -= 0.7f * GetDeltaTime();
+                if (alpha < 0) { alpha = 0; }
+            } else {
+                alpha = 1;
+            }
+            
+
+            R2D_Begin();
+
+            R2DBindInfo bindinfo = {};
+
+            bindinfo.texture = r2d_texture_bg;
+            bindinfo.buffer  = r2d_buffer;
+            bindinfo.color   = {1, 1, 1, alpha };
+
+            R2DDrawInfo drawinfo = {};
+            drawinfo.offset = 0;
+            drawinfo.count  = 6;
+
+            R2D_ResetStack();
+
+
+            Float32 s1 = 2.0f;
+            mat4 m13 = {
+                s1,  0,  0, 0,
+                 0, s1,  0, 0,
+                 0,  0, s1, 0,
+                 0,  0,  0, 1
+            };
+
+            R2D_PushMatrix(&m13);
+
+            R2D_Bind(&bindinfo);
+            R2D_Draw(&drawinfo);
+
+            R2D_PopMatrix();
+
+            
+            Float32 aspect = 16.0f / 9.0f;
+            mat4 m0;
+            mat4_ortho(&m0, -aspect, aspect, -1, 1, -1, 1);
+
+            mat4 m1;
+            mat4_rotatez(&m1, Engine::GetUptime() * 10);
+
+            mat4 m2;
+            mat4_translate(&m2, {1.6f, -0.8f, 0.0f});
+
+            Float32 s = 0.18f;
+            mat4 m3 = {
+                s, 0, 0, 0,
+                0, s, 0, 0,
+                0, 0, s, 0,
+                0, 0, 0, 1
+            };
+            
+
+            R2D_PushMatrix(&m0);
+            R2D_PushMatrix(&m2);
+            R2D_PushMatrix(&m3);
+            R2D_PushMatrix(&m1);
+
+
+            bindinfo.texture = r2d_texture;
+            bindinfo.buffer  = r2d_buffer;
+
+            R2D_Bind(&bindinfo);
+            R2D_Draw(&drawinfo);
+
+            /*
+            R2D_PopMatrix();
+            R2D_PopMatrix();
+            R2D_PopMatrix();
+            R2D_Draw(&drawinfo);
+            */
 
             Window_Update();
         }

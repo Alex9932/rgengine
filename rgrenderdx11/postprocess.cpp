@@ -70,6 +70,7 @@ class FX {
 		void Resize(ivec2* size) {
 			DX11_FreeRenderTarget(&m_target);
 			DX11_MakeRenderTarget(&m_target, size, DXGI_FORMAT_R16G16B16A16_FLOAT);
+			m_viewport = *size;
 		}
 
 		void SetInput(Uint32 idx, ID3D11ShaderResourceView* res) {
@@ -346,6 +347,9 @@ void ResizeFX(ivec2* size) {
 	blurx3->Resize(&subSize);
 	blury3->Resize(&subSize);
 
+	ssao->Resize(size);
+	godrays->Resize(size);
+
 	mix->Resize(size);
 }
 
@@ -538,7 +542,8 @@ ID3D11ShaderResourceView* FXGetOuputTexture() {
 	ID3D11ShaderResourceView* views[8];
 	views[0] = mix->GetOutput();
 	views[1] = godrays->GetOutput();
-	views[2] = ssao->GetOutput();
+	//views[2] = ssao->GetOutput();
+	views[2] = ssr->GetOutput();
 	views[3] = lightpass->GetOutput();
 	views[4] = GetGBufferShaderResource(0);
 	views[5] = GetGBufferShaderResource(1);

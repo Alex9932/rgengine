@@ -404,7 +404,7 @@ class Application : public BaseGame {
 			sndentl->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			sndentl->GetTransform()->SetScale({ 1, 1, 1 });
 
-			sourcel->Play();
+			//sourcel->Play();
 
 #if 0
 			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);

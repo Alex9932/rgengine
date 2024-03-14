@@ -189,7 +189,6 @@ void R_Destroy() {
 }
 
 void R_SwapBuffers() {
-	R2D_Begin();
 
 	DX11_SetViewport(wndSize.x, wndSize.y);
 

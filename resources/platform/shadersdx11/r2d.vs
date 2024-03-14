@@ -18,7 +18,7 @@ PSINPUT vmain(VSINPUT vin) {
 	float4 pos4   = float4(vin.position, 0, 1);
 
 	PSINPUT vout;
-	vout.position = mul(float4(pos4), model);
+	vout.position = mul(pos4, model);
     vout.color    = vin.color;
 	vout.uv       = vin.uv;
 	return vout;

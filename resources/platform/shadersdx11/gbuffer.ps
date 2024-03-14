@@ -56,10 +56,15 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 	// PBR Texture
 
 	float4 pbrColor = t_unit2.Sample(SampleType, psin.uv);
-
+#if 0
 	float metallic  = pbrColor.r * pbrColor.r;
     float roughness = pbrColor.g * pbrColor.g;
     float emissive  = pbrColor.b * pbrColor.b;
+#else
+	float metallic  = pbrColor.r;
+    float roughness = pbrColor.g;
+    float emissive  = pbrColor.b;
+#endif
 	
 	PSOUTPUT pout;
 	pout.albedo.xyz = tColor.xyz * color.xyz; // Albedo

@@ -13,13 +13,14 @@ enum IndexType {
 	RG_INDEX_U8  = 1  // !!! DO NOT RECOMENDED TO USE !!!
 };
 
-
+/*
 enum TextureType {
 	RG_TEXTURE_U8_R_ONLY  = 1,
 	RG_TEXTURE_U8_RGBA    = 2,
 	RG_TEXTURE_F32_R_ONLY = 3,
 	RG_TEXTURE_F32_RGBA   = 4
 };
+*/
 
 typedef Uint32 RenderFlags;
 
@@ -90,26 +91,32 @@ typedef struct R2DCreateBufferInfo {
 } R2DCreateBufferInfo;
 
 typedef struct R2DBufferDataInfo {
+	R2D_Buffer* buffer;
 	Uint32      offset; // offset IN VERTICES (NOT BYTES)
 	Uint32      length; // data length IN VERTICES (NOT BYTES)
 	R2D_Vertex* data;
 } R2DBufferDataInfo;
 
 typedef struct R2DCreateTextureInfo {
+	String path;
+	/*
 	TextureType type;
 	Uint32      width;
 	Uint32      height;
 	void*       data;
+	*/
 } R2DCreateTextureInfo;
 
 typedef struct R2DTextureDataInfo {
 	// Not implemented yet
+	R2D_Texture* handle;
 	void* data;
 } R2DTextureDataInfo;
 
 typedef struct R2DBindInfo {
 	R2D_Texture* texture;
 	R2D_Buffer*  buffer;
+	vec4         color;
 } R2DBindInfo;
 
 typedef struct R2DDrawInfo {
@@ -121,6 +128,7 @@ typedef struct R2DDrawInfo {
 // R3D
 /////////////////////
 
+// R3D_GlobalLightDescription
 typedef struct R3D_GlobalLightDescrition {
 	vec3    color;
 	Float32 time;
