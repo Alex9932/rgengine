@@ -28,6 +28,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_impl_dx11.h"
 
+#include "profiler.h"
+
 //shadersdx11
 
 static SDL_Window*        hwnd           = NULL;
@@ -192,7 +194,7 @@ void R_SwapBuffers() {
 
 	DX11_SetViewport(wndSize.x, wndSize.y);
 
-    vec4 clearColor = { 0, 0, 0, 1 };
+	vec4 clearColor = { 0, 0, 0, 1 };
 
 	DX11_BindDefaultFramebuffer();
 	DX11_Clear((Float32*)&clearColor);
@@ -232,6 +234,7 @@ void R_SwapBuffers() {
 		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
 	}
 }
+
 
 void R_GetInfo(RenderInfo* info) {
 

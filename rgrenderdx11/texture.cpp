@@ -2,6 +2,8 @@
 #include "dx11.h"
 #include <engine.h>
 
+#include <allocator.h>
+
 static Uint64 texturesMemory = 0;
 
 static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
@@ -16,17 +18,38 @@ static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
 
 Texture::Texture(TextureInfo* info) {
 
+	Uint32 channels = info->channels;
+	void*  data_ptr = info->data;
+
+#if 0
 	if (info->channels == 3) {
 		//RG_ERROR_MSG("D3D11 Not support 3-channel textures!");
 		rgLogError(RG_LOG_RENDER, "D3D11 Not support 3-channel textures!");
+
+		rgLogError(RG_LOG_RENDER, "Rebuilding...");
+		data_ptr = rg_malloc(info->width * info->height * 4);
+		channels = 4;
+
+		Uint8* src_ptr = (Uint8*)info->data;
+		Uint8* dst_ptr = (Uint8*)data_ptr;
+		Uint32 length = info->width * info->height;
+		for (Uint32 i = 0; i < length; i++) {
+
+			dst_ptr[i * 4 + 0] = src_ptr[i * 4 + 0];
+			dst_ptr[i * 4 + 1] = src_ptr[i * 4 + 1];
+			dst_ptr[i * 4 + 2] = src_ptr[i * 4 + 2];
+			dst_ptr[i * 4 + 3] = 255;
+
+		}
 	}
+#endif
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width = info->width;
 	textureDesc.Height = info->height;
 	textureDesc.MipLevels = 0;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = GetTextureFormat(info->channels);
+	textureDesc.Format = GetTextureFormat(channels);
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -37,8 +60,8 @@ Texture::Texture(TextureInfo* info) {
 
 	RG_ASSERT_MSG(this->texture, "Unable to load texture: CreateTexture2D");
 
-	int rowPitch = (info->width * info->channels);
-	DX11_GetContext()->UpdateSubresource(this->texture, 0, NULL, info->data, rowPitch, 0);
+	int rowPitch = (info->width * channels);
+	DX11_GetContext()->UpdateSubresource(this->texture, 0, NULL, data_ptr, rowPitch, 0);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = textureDesc.Format;
@@ -48,7 +71,12 @@ Texture::Texture(TextureInfo* info) {
 	DX11_GetDevice()->CreateShaderResourceView(this->texture, &srvDesc, &this->shaderResource);
 	DX11_GetContext()->GenerateMips(this->shaderResource);
 
-	this->memLength = info->width * info->height * info->channels;
+	this->memLength = info->width * info->height * channels;
+
+
+	if (info->channels == 3) {
+		rg_free(data_ptr);
+	}
 
 	texturesMemory += this->memLength;
 }

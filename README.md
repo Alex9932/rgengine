@@ -5,7 +5,7 @@
 - ImGUI
 - Audio
 - Skeletal animation
-- ~~Screen-space reflections~~ (broken)
+- Screen-space reflections
 
 ### Todo:
 - Physics

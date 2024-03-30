@@ -162,6 +162,10 @@ static FX*           ssr;
 static Buffer*       ssrBuffer;
 static SSRBufferData ssrData;
 
+
+static FX* ssr_blurx1;
+static FX* ssr_blury1;
+
 static FX*         aberration;
 static Buffer*     aberrationBuffer;
 static ABufferData aberrationData;
@@ -190,6 +194,11 @@ static Buffer* godraysBuffer;
 static GodRaysBufferData godraysData;
 
 static FX* mix;
+static Buffer* mixBuffer;
+static struct MixBufferData {
+	vec4 camera_position;
+	int  screen_size;
+} mix_data;
 
 static FX* tonemapping;
 
@@ -202,7 +211,14 @@ static void LoadFX() {
 
 	lightpass = RG_NEW_CLASS(RGetAllocator(), FX)(size, "light.ps");
 
-	ssr = RG_NEW_CLASS(RGetAllocator(), FX)(size, "reflection.ps");
+	ivec2 ssr_size;
+	ssr_size.x = size->x / 4;
+	ssr_size.y = size->y / 4;
+
+	ssr = RG_NEW_CLASS(RGetAllocator(), FX)(&ssr_size, "reflection.ps");
+
+	ssr_blurx1 = RG_NEW_CLASS(RGetAllocator(), FX)(size, "blurx.ps");
+	ssr_blury1 = RG_NEW_CLASS(RGetAllocator(), FX)(size, "blury.ps");
 
 	aberration = RG_NEW_CLASS(RGetAllocator(), FX)(size, "aberration.ps");
 	tonemapping = RG_NEW_CLASS(RGetAllocator(), FX)(size, "tonemapping.ps");
@@ -235,6 +251,8 @@ static void FreeFX() {
 	RG_DELETE_CLASS(RGetAllocator(), FX, lightpass);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, ssr);
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssr_blurx1);
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssr_blury1);
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, aberration);
 	RG_DELETE_CLASS(RGetAllocator(), FX, tonemapping);
@@ -298,6 +316,9 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length = sizeof(GodRaysBufferData);
 	godraysBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
+	abufferInfo.length = sizeof(MixBufferData);
+	mixBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
+
 	LoadFX();
 }
 
@@ -310,6 +331,7 @@ void DestroyFX() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssaoBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, godraysBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, mixBuffer);
 
 	FreeFX();
 }
@@ -325,7 +347,17 @@ void ResizeFX(ivec2* size) {
 
 	lightpass->Resize(size);
 
-	ssr->Resize(size);
+
+	ivec2 ssr_size;
+	ssr_size.x = size->x / 4;
+	ssr_size.y = size->y / 4;
+
+	ssr->Resize(&ssr_size);
+
+	ssr_blurx1->Resize(size);
+	ssr_blury1->Resize(size);
+
+	//ssr->Resize(size);
 
 	aberration->Resize(size);
 	tonemapping->Resize(size);
@@ -379,8 +411,8 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	blurx1->SetConstants(blurBuffer->GetHandle());
 	blurx1->Draw();
 
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	//blurData.ScreenSize = PackVector(blurx1->GetSize());
+	//blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blury1->SetInput(0, blurx1->GetOutput());
 	blury1->SetConstants(blurBuffer->GetHandle());
 	blury1->Draw();
@@ -391,8 +423,8 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	blurx2->SetConstants(blurBuffer->GetHandle());
 	blurx2->Draw();
 
-	blurData.ScreenSize = PackVector(blurx2->GetSize());
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	//blurData.ScreenSize = PackVector(blurx2->GetSize());
+	//blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blury2->SetInput(0, blurx2->GetOutput());
 	blury2->SetConstants(blurBuffer->GetHandle());
 	blury2->Draw();
@@ -403,14 +435,16 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	blurx3->SetConstants(blurBuffer->GetHandle());
 	blurx3->Draw();
 
-	blurData.ScreenSize = PackVector(blurx3->GetSize());
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	//blurData.ScreenSize = PackVector(blurx3->GetSize());
+	//blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blury3->SetInput(0, blurx3->GetOutput());
 	blury3->SetConstants(blurBuffer->GetHandle());
 	blury3->Draw();
 
 	// Upscale blur
 
+	blurData.ScreenSize = PackVector(blurx2->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blurx2->SetInput(0, blury3->GetOutput());
 	blurx2->SetConstants(blurBuffer->GetHandle());
 	blurx2->Draw();
@@ -419,6 +453,8 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	blury2->SetConstants(blurBuffer->GetHandle());
 	blury2->Draw();
 
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
 	blurx1->SetInput(0, blury2->GetOutput());
 	blurx1->SetConstants(blurBuffer->GetHandle());
 	blurx1->Draw();
@@ -457,8 +493,8 @@ void DoPostprocess() {
 	ssrData.camera_position.xyz = *GetCameraPosition();
 	ssrData.camera_position.w = 1;
 
-	Uint32 screenx = viewport.x & 0x0000FFFF;
-	Uint32 screeny = viewport.y & 0x0000FFFF;
+	Uint32 screenx = (viewport.x / 4) & 0x0000FFFF;
+	Uint32 screeny = (viewport.y / 4) & 0x0000FFFF;
 	Uint32 shiftx = screenx << 16;
 	ssrData.screen_size = shiftx | screeny;
 
@@ -470,6 +506,22 @@ void DoPostprocess() {
 	ssr->SetInput(4, GetGBufferDepth());
 	ssr->SetConstants(ssrBuffer->GetHandle());
 	ssr->Draw();
+
+	// Blur ssr
+
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	ssr_blurx1->SetInput(0, ssr->GetOutput());
+	ssr_blurx1->SetConstants(blurBuffer->GetHandle());
+	ssr_blurx1->Draw();
+
+	ssr_blury1->SetInput(0, ssr_blurx1->GetOutput());
+	ssr_blury1->SetConstants(blurBuffer->GetHandle());
+	ssr_blury1->Draw();
+
+	//ssr_blury1->GetOutput();
+
 
 	// SSAO
 
@@ -500,10 +552,26 @@ void DoPostprocess() {
 	// Bloom
 	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
 	//ID3D11ShaderResourceView* bloomResult = DoBloom(ssr->GetOutput());
-	
+
+	mix_data.camera_position.xyz = *GetCameraPosition();
+	mix_data.camera_position.w = 1;
+
+	screenx = (viewport.x) & 0x0000FFFF;
+	screeny = (viewport.y) & 0x0000FFFF;
+	shiftx = screenx << 16;
+	mix_data.screen_size = shiftx | screeny;
+	mixBuffer->SetData(0, sizeof(MixBufferData), &mix_data);
+
 	// Mix
+	mix->SetConstants(mixBuffer->GetHandle());
+
 	mix->SetInput(0, bloomResult);
 	mix->SetInput(1, lightpass_output);
+
+	mix->SetInput(2, ssr_blury1->GetOutput());     // Reflections
+	mix->SetInput(3, GetGBufferShaderResource(1)); // Normal
+	mix->SetInput(4, GetGBufferShaderResource(2)); // Wpos
+
 	mix->Draw();
 
 	// Tonemapping
@@ -543,7 +611,7 @@ ID3D11ShaderResourceView* FXGetOuputTexture() {
 	views[0] = mix->GetOutput();
 	views[1] = godrays->GetOutput();
 	//views[2] = ssao->GetOutput();
-	views[2] = ssr->GetOutput();
+	views[2] = ssr_blury1->GetOutput();
 	views[3] = lightpass->GetOutput();
 	views[4] = GetGBufferShaderResource(0);
 	views[5] = GetGBufferShaderResource(1);

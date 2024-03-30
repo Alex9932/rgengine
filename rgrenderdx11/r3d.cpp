@@ -15,6 +15,8 @@
 
 #include "loader.h"
 
+#include <profiler.h>
+
 #define R_MATERIALS_COUNT 4096
 #define R_MODELS_COUNT    4096
 #define R_MAX_MODELS      4096
@@ -315,9 +317,14 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 
 	// TODO
 	Texture* defaultTexture = GetDefaultTexture();
-	if (hmat->albedo != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->albedo); texturesLoaded--; }
-	if (hmat->normal != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->normal); texturesLoaded--; }
-	if (hmat->pbr != defaultTexture)    { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->pbr);    texturesLoaded--; }
+
+	if (hmat->albedo != defaultTexture) { TexturesDelete(hmat->albedo); texturesLoaded--; }
+	if (hmat->normal != defaultTexture) { TexturesDelete(hmat->normal); texturesLoaded--; }
+	if (hmat->pbr != defaultTexture)    { TexturesDelete(hmat->pbr);    texturesLoaded--; }
+
+	//if (hmat->albedo != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->albedo); texturesLoaded--; }
+	//if (hmat->normal != defaultTexture) { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->normal); texturesLoaded--; }
+	//if (hmat->pbr != defaultTexture)    { RG_DELETE_CLASS(RGetAllocator(), Texture, hmat->pbr);    texturesLoaded--; }
 
 	alloc_materials->Deallocate(hmat);
 }
@@ -363,8 +370,9 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	}
 
 	for (Uint32 i = 0; i < info->mCount; i++) {
-		staticModel->info[i].indexCount = info->mInfo[i].indexCount;
-		staticModel->info[i].material   = materials[info->mInfo[i].materialIdx];
+		staticModel->info[i].indexCount  = info->mInfo[i].indexCount;
+		staticModel->info[i].indexOffset = info->mInfo[i].indexOffset;
+		staticModel->info[i].material    = materials[info->mInfo[i].materialIdx];
 	}
 
 	RGetAllocator()->Deallocate(materials);
@@ -454,7 +462,8 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 	}
 
 	for (Uint32 i = 0; i < info->mCount; i++) {
-		riggedModel->s_model.info[i].indexCount = info->mInfo[i].indexCount;
+		riggedModel->s_model.info[i].indexCount  = info->mInfo[i].indexCount;
+		riggedModel->s_model.info[i].indexOffset = info->mInfo[i].indexOffset;
 		riggedModel->s_model.info[i].material = materials[info->mInfo[i].materialIdx];
 	}
 
@@ -592,7 +601,7 @@ static inline DXGI_FORMAT GetIndexType(IndexType type) {
 
 #define SKYBOX_SCALE 250
 
-static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
+static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial) {
 	matrixBuffer.model = *matrix;
 	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
 
@@ -603,27 +612,49 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix) {
 	DX11_GetContext()->IASetIndexBuffer(mdl->iBuffer->GetHandle(), GetIndexType(mdl->iType), 0);
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	Uint32 idx = 0;
+	R3D_Material* current_mat = NULL;
+
+
+	constBuffer.color.r = 1;
+	constBuffer.color.g = 1;
+	constBuffer.color.b = 1;
+	constBuffer.color.a = 1;
+
+	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
+	ID3D11Buffer* conBuffer = cBuffer->GetHandle();
+	DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
+
+	//Uint32 idx = 0;
 	for (Uint32 i = 0; i < mdl->mCount; i++) {
+	//Uint32 count = SDL_min(mdl->mCount, 100);
+	//for (Uint32 i = 0; i < count; i++) {
 
 		R3D_MeshInfo* minfo = &mdl->info[i];
 		R3D_Material* mat = minfo->material;
 
-		constBuffer.color.r = mat->color.r;
-		constBuffer.color.g = mat->color.g;
-		constBuffer.color.b = mat->color.b;
-		constBuffer.color.a = 1;
+		if (useMaterial && current_mat != mat) {
 
-		cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
-		ID3D11Buffer* conBuffer = cBuffer->GetHandle();
-		DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
+			// Bind material
+			constBuffer.color.r = mat->color.r;
+			constBuffer.color.g = mat->color.g;
+			constBuffer.color.b = mat->color.b;
+			constBuffer.color.a = 1;
 
-		mat->albedo->Bind(0);
-		mat->normal->Bind(1);
-		mat->pbr->Bind(2);
-		DX11_GetContext()->DrawIndexed(minfo->indexCount, idx, 0);
+			cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
+			ID3D11Buffer* conBuffer = cBuffer->GetHandle();
+			DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
+
+			mat->albedo->Bind(0);
+			mat->normal->Bind(1);
+			mat->pbr->Bind(2);
+
+			current_mat = mat;
+		}
+
+
+		DX11_GetContext()->DrawIndexed(minfo->indexCount, minfo->indexOffset, 0);
 		drawCalls++;
-		idx += minfo->indexCount;
+		//idx += minfo->indexCount;
 
 	}
 }
@@ -720,7 +751,7 @@ static void DoShadowmapPass() {
 		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
 		mat4* matrix = (mat4*)squeue->Next();
 		if (matrix->m33 < 1) { matrix->m33 = 1; }
-		DrawStaticModel(mdl, matrix);
+		DrawStaticModel(mdl, matrix, false);
 	}
 
 	for (Uint32 i = 0; i < rsize; i++) {
@@ -728,7 +759,7 @@ static void DoShadowmapPass() {
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
 		mat4* matrix = (mat4*)rqueue->Next();
 		if (matrix->m33 < 1) { matrix->m33 = 1; }
-		DrawStaticModel(&mdl->s_model, matrix);
+		DrawStaticModel(&mdl->s_model, matrix, false);
 	}
 
 	squeue->Reset();
@@ -756,7 +787,7 @@ static void DoGBufferPass() {
 		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
 		mat4* matrix = (mat4*)squeue->Next();
 		if (matrix->m33 < 1) { continue; } // Culled, skip this one
-		DrawStaticModel(mdl, matrix);
+		DrawStaticModel(mdl, matrix, true);
 	}
 
 	for (Uint32 i = 0; i < rsize; i++) {
@@ -764,7 +795,7 @@ static void DoGBufferPass() {
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
 		mat4* matrix = (mat4*)rqueue->Next();
 		if (matrix->m33 < 1) { continue; } // Culled, skip this one
-		DrawStaticModel(&mdl->s_model, matrix);
+		DrawStaticModel(&mdl->s_model, matrix, true);
 	}
 
 	squeue->Reset();

@@ -9,14 +9,40 @@ struct PSOUTPUT {
 
 Texture2D t_unit0 : register(t0);
 Texture2D t_unit1 : register(t1);
+
+Texture2D t_unit2 : register(t2); // Reflection
+Texture2D t_unit3 : register(t3); // Normals
+Texture2D t_unit4 : register(t4); // Wpos
+
 SamplerState SampleType : register(s0);
+
+cbuffer ConstBuffer : register(b0) {
+	float4 camera_position;
+	int screen_size;
+};
 
 PSOUTPUT pmain(PSINPUT psin) {
 
 	float4 t0Color = t_unit0.Sample(SampleType, psin.uv);
 	float4 t1Color = t_unit1.Sample(SampleType, psin.uv);
 
+	float4 t2Color = t_unit2.Sample(SampleType, psin.uv);
+	float4 t3Color = t_unit3.Sample(SampleType, psin.uv);
+	float4 t4Color = t_unit4.Sample(SampleType, psin.uv);
+
+
+	//float3 albedo    = alb_met.rgb;
+	float3 normal    = normalize(t3Color.xyz);
+	float3 wpos      = t4Color.xyz;
+	float  roughness = t3Color.a;
+
+	float3 viewVector = normalize(wpos - camera_position.xyz);
+	float3 reflection = normalize(reflect(viewVector, normal));
+	float  fresnel    = 1 - max(0, dot(-viewVector, normal));
+
+	float reflectivity = fresnel * (1 - roughness); // TMP
+
 	PSOUTPUT pout;
-	pout.color = t0Color + t1Color;
+	pout.color = t0Color + t1Color + (t2Color * reflectivity);
 	return pout;
 }

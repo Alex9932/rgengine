@@ -89,6 +89,8 @@ namespace Engine {
 
 		mat4 rotation_matrix = MAT4_IDENTITY();
 
+		Uint32 idx_offset = 0;
+
 		for (Uint32 i = 0; i < scene->mNumMeshes; i++) {
 			aiMesh* mesh = scene->mMeshes[i];
 			Uint32 offset = vtx;
@@ -97,7 +99,10 @@ namespace Engine {
 			for (Uint32 j = 0; j < mesh->mNumVertices; j++) {
 				vec4 p_vec = { mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z, 1 };
 				vec4 n_vec = { mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z, 0 };
-				vec4 t_vec = { mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z, 0 };
+				vec4 t_vec = {};
+				if (mesh->mTangents) {
+					t_vec = { mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z, 0 };
+				}
 				vec4 np_vec = rotation_matrix * p_vec;
 				vec4 nn_vec = rotation_matrix * n_vec;
 				vec4 nt_vec = rotation_matrix * t_vec;
@@ -138,7 +143,10 @@ namespace Engine {
 			//RecalculateTangetns(mesh->mNumVertices, vertices, idxoffset, mesh->mNumFaces*3, indices);
 
 			minfo[i].indexCount  = mesh->mNumFaces * 3;
+			minfo[i].indexOffset = idx_offset;
 			minfo[i].materialIdx = mesh->mMaterialIndex;
+
+			idx_offset += minfo[i].indexCount;
 		}
 
 		// Materials

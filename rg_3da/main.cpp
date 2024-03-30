@@ -223,7 +223,7 @@ class Application : public BaseGame {
 			pmdImporter.FreeModelData(&pmdinfo);
 #else
 			PM2Importer pm2Importer;
-			//ObjImporter objImporter;
+			ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
 
@@ -250,6 +250,8 @@ class Application : public BaseGame {
 #if 1
 			R3DStaticModelInfo pm2info = {};
 			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
+			//objImporter.ImportModel("F:/c/models/San_Miguel/san-miguel-low-poly.obj", &pm2info);
+			//jImporter.ImportModel("D:/models/livingroom/lala.obj", &pm2info);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 
@@ -276,20 +278,21 @@ class Application : public BaseGame {
 			
 #if 1
 			//String modelname = "mmd_models/Rin_Kagamine.pmd";
-			//String modelname = "mmd_models/Miku_Hatsune.pmd";
-			String modelname = "pmx/gumiv3/GUMI_V3.pmx";
+			String modelname = "mmd_models/Miku_Hatsune.pmd";
+			//String modelname = "pmx/gumiv3/GUMI_V3.pmx";
 			//String modelname = "pmx/apimiku/Appearance Miku.pmx";
 
-			PMXImporter pmxImporter;
+			//PMXImporter pmxImporter;
+			PMDImporter pmdImporter;
 
-			//PMDImporter pmdImporter;
 			R3DRiggedModelInfo pmdinfo = {};
-			//pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
-			pmxImporter.ImportRiggedModel(modelname, &pmdinfo);
+			pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
+			//pmxImporter.ImportRiggedModel(modelname, &pmdinfo);
 			R3D_RiggedModel* mdl_handle2 = Render::R3D_CreateRiggedModel(&pmdinfo);
-			//pmdImporter.FreeRiggedModelData(&pmdinfo);
-			pmxImporter.FreeRiggedModelData(&pmdinfo);
-			kmodel = pmxImporter.ImportKinematicsModel(modelname);
+			pmdImporter.FreeRiggedModelData(&pmdinfo);
+			//pmxImporter.FreeRiggedModelData(&pmdinfo);
+			//kmodel = pmxImporter.ImportKinematicsModel(modelname);
+			kmodel = pmdImporter.ImportKinematicsModel(modelname);
 
 			VMDImporter vmdImporter;
 			anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
@@ -337,6 +340,7 @@ class Application : public BaseGame {
 			ent0->AttachComponent(l);
 
 			ent0->GetTransform()->SetPosition({ 7.4f, 0, -1.65f });
+			//ent0->GetTransform()->SetPosition({ 7.4f, -10, -1.65f });
 
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
@@ -429,6 +433,7 @@ class Application : public BaseGame {
 			Entity* ent2 = world->NewEntity();
 			ent2->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle2, kmodel));
 			ent2->GetTransform()->SetPosition({ 9, 0, -0.4f });
+			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif

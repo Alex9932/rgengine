@@ -18,6 +18,9 @@ class Texture {
 
 		void Bind(Uint32 bindPoint);
 
+	public:
+		Uint32 references = 0;
+
 	private:
 		ID3D11ShaderResourceView* shaderResource = NULL;
 		ID3D11Texture2D*          texture        = NULL;

@@ -11,6 +11,8 @@ Texture* GetDefaultTexture();
 
 void LoaderPushTexture(String path, Texture** tptr);
 
+void TexturesDelete(Texture* tx);
+
 void DoLoadTextures();
 Uint32 TexturesInQueue();
 Uint32 TexturesLeft();

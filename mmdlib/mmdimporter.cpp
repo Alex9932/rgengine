@@ -69,6 +69,8 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 
 	Float32 colorMul = 2;
 
+	Uint32 idx_offset = 0;
+
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		pmd_material* mat = &pmd->materials[i];
 		if (mat->file_name[0] == '\0') {
@@ -85,7 +87,10 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 		matsInfo[i].color.b = mat->colors.b * colorMul;
 
 		mmInfo[i].indexCount  = mat->surface_count;
+		mmInfo[i].indexOffset = idx_offset;
 		mmInfo[i].materialIdx = i;
+
+		idx_offset += mmInfo[i].indexCount;
 	}
 
 	*info     = matsInfo;
@@ -316,6 +321,8 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 
 	Float32 colorMul = 1;
 
+	Uint32 idx_offset = 0;
+
 	for (Uint32 i = 0; i < pmx->material_count; i++) {
 		pmx_material* mat = &pmx->materials[i];
 		
@@ -336,8 +343,11 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 		matsInfo[i].color.g = mat->diffuse_color.g * colorMul;
 		matsInfo[i].color.b = mat->diffuse_color.b * colorMul;
 
-		mmInfo[i].indexCount = mat->surface_count;
+		mmInfo[i].indexCount  = mat->surface_count;
+		mmInfo[i].indexOffset = idx_offset;
 		mmInfo[i].materialIdx = i;
+
+		idx_offset += mmInfo[i].indexCount;
 	}
 
 	*info = matsInfo;

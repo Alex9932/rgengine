@@ -155,6 +155,7 @@ typedef struct R3D_Weight {
 
 typedef struct R3D_MeshInfo {
 	R3D_Material* material;
+	Uint32        indexOffset;
 	Uint32        indexCount;
 } R3D_MeshInfo;
 
@@ -175,6 +176,7 @@ typedef struct R3D_MaterialInfo {
 
 typedef struct R3D_MatMeshInfo {
 	Uint32 materialIdx;
+	Uint32 indexOffset;
 	Uint32 indexCount;
 } R3D_MatMeshInfo;
 

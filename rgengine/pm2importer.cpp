@@ -77,6 +77,35 @@ namespace Engine {
 
     }
 
+    ////////////////////////////////////////
+    // Static sort functions
+
+    static void SortMeshInfo(R3D_MatMeshInfo* meshinfo, Uint32 size) {
+        Bool swapped;
+        Sint32 i, j;
+
+        R3D_MatMeshInfo buffer;
+
+        for (i = 0; i < size - 1; i++) {
+            swapped = false;
+            for (j = 0; j < size - i - 1; j++) {
+                if (meshinfo[j].materialIdx > meshinfo[j + 1].materialIdx) {
+                    // Swap
+                    buffer = meshinfo[j];
+                    meshinfo[j] = meshinfo[j + 1];
+                    meshinfo[j + 1] = buffer;
+
+                    swapped = true;
+                }
+            }
+
+            if (!swapped) { break; }
+        }
+    }
+
+
+    ////////////////////////////////////////
+
     void PM2Importer::ImportModel(String p, R3DStaticModelInfo* info) {
 
         char path[256];
@@ -131,10 +160,19 @@ namespace Engine {
         reader->Read(indices, index_type * header.indices);
 
         // To R3D_Model
+        Uint32 idx_offset = 0;
         for (Uint32 i = 0; i < header.offset; i++) {
             r3d_meshinfo[i].indexCount  = mesh_info[i].indices;
+            r3d_meshinfo[i].indexOffset = idx_offset;
             r3d_meshinfo[i].materialIdx = mesh_info[i].material;
+
+            idx_offset += r3d_meshinfo[i].indexCount;
+
         }
+
+        // Sort meshes
+        SortMeshInfo(r3d_meshinfo, header.offset);
+
 
         for (Uint32 i = 0; i < header.vertices; i++) {
             r3d_vertices[i].pos.x  = vertices[i].position.x;
