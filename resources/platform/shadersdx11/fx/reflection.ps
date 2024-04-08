@@ -67,7 +67,9 @@ float4 TraceRay(float3 wpos, float3 refl) {
 		float diff = proj_depth - sample_depth;
 		if(diff >= 0 && diff < 0.01) {
 			// Hit
-			return t_unit3.Sample(SampleType, _uv);
+			float4 result = t_unit3.Sample(SampleType, _uv);
+			result.a = 1; // ignore alpha channel
+			return result;
 		}
 	}
 

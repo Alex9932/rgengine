@@ -295,7 +295,9 @@ class Application : public BaseGame {
 			kmodel = pmdImporter.ImportKinematicsModel(modelname);
 
 			VMDImporter vmdImporter;
-			anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+			anim = vmdImporter.ImportAnimation("vmd/zero_allstar_ph_baked.vmd", kmodel);
+			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+			
 			//anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
 			anim->SetRepeat(true);
 
@@ -322,22 +324,22 @@ class Application : public BaseGame {
 
 #endif
 
-			ent_light0 = world->NewEntity();
-			Engine::PointLight* lsrc = Render::GetLightSystem()->NewPointLight();
-			lsrc->SetColor({ 1, 0.7f, 0.4f });
-			lsrc->SetIntensity(5);
-			lsrc->SetOffset({ 6, 2.6f, 1 });
-			ent_light0->AttachComponent(lsrc);
+			//ent_light0 = world->NewEntity();
+			//Engine::PointLight* lsrc = Render::GetLightSystem()->NewPointLight();
+			//lsrc->SetColor({ 1, 0.7f, 0.4f });
+			//lsrc->SetIntensity(5);
+			//lsrc->SetOffset({ 6, 2.6f, 1 });
+			//ent_light0->AttachComponent(lsrc);
 
 
 			Entity* ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 
-			Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
-			l->SetColor({ 1, 0.5, 0.0 });
-			l->SetIntensity(0.3f);
-			l->SetOffset({ -0.84, 1.56, -0.18 });
-			ent0->AttachComponent(l);
+			//Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
+			//l->SetColor({ 1, 0.5, 0.0 });
+			//l->SetIntensity(0.3f);
+			//l->SetOffset({ -0.84, 1.56, -0.18 });
+			//ent0->AttachComponent(l);
 
 			ent0->GetTransform()->SetPosition({ 7.4f, 0, -1.65f });
 			//ent0->GetTransform()->SetPosition({ 7.4f, -10, -1.65f });
@@ -360,11 +362,11 @@ class Application : public BaseGame {
 			ent3->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			ent3->GetTransform()->SetScale({ 1, 1, 1 });
 
-			Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
-			l2->SetColor({ 1, 0.7f, 0.4f });
-			l2->SetIntensity(5);
-			l2->SetOffset({ 0, 1.6f, 0 });
-			ent3->AttachComponent(l2);
+			//Engine::PointLight* l2 = Render::GetLightSystem()->NewPointLight();
+			//l2->SetColor({ 1, 0.7f, 0.4f });
+			//l2->SetIntensity(5);
+			//l2->SetOffset({ 0, 1.6f, 0 });
+			//ent3->AttachComponent(l2);
 
 
 			SoundSystem* ss = GetSoundSystem();
@@ -396,7 +398,8 @@ class Application : public BaseGame {
 #endif
 
 			SoundSource* sourcel = ss->NewSoundSource();
-			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_l.ogg");
+			//StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_l.ogg");
+			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/special/radio_1.ogg");
 
 			sourcel->SetBuffer(sbufferl);
 			sourcel->SetRepeat(true);
@@ -408,7 +411,7 @@ class Application : public BaseGame {
 			sndentl->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			sndentl->GetTransform()->SetScale({ 1, 1, 1 });
 
-			//sourcel->Play();
+			sourcel->Play();
 
 #if 0
 			//RG_STB_VORBIS sound = RG_STB_vorbis_open_file("C:/Users/alex9932/Desktop/chipi chipi chapa chapa dubi dubi daba daba (looped).ogg", NULL, NULL);

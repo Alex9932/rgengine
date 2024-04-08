@@ -544,7 +544,8 @@ void DoPostprocess() {
 	//godrays->SetInput(1, GetGBufferDepth()); // G-Buffer depth-map
 
 	godrays->SetInput(0, GetGBufferShaderResource(0)); // Skybox color
-	godrays->SetInput(1, GetGBufferShaderResource(2)); // Alpha-channel used
+	//godrays->SetInput(1, GetGBufferShaderResource(2)); // Alpha-channel used
+	godrays->SetInput(1, GetGBufferDepth()); // Depth buffer
 
 	godrays->SetConstants(godraysBuffer->GetHandle());
 	godrays->Draw();

@@ -15,4 +15,8 @@ namespace Engine {
 		Engine::GetPhysics();
 	}
 
+	void PHComponent::Update(Float64 dt) {
+
+	}
+
 }

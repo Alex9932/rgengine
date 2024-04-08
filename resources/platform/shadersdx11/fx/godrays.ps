@@ -28,6 +28,8 @@ float4 Project(float3 p, float4x4 mat) {
 	return v / v.w;
 }
 
+#if 0
+
 float3 Sample(float2 _uv) {
     float3 result = float3(0, 0, 0);
     float mask = t_unit1.Sample(SampleType, _uv).a;
@@ -37,19 +39,55 @@ float3 Sample(float2 _uv) {
     return result;
 }
 
+#endif
+
+float3 SampleColor(float2 _uv) {
+    return t_unit0.Sample(SampleType, _uv).rgb;
+}
+
+float SampleDepth(float2 _uv) {
+    return t_unit1.Sample(SampleType, _uv).r;
+}
+
 PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 
     int   NUM_SAMPLES = 70;
-    float illumDecay  = 1.0;
-    float decay       = 0.97815;
-    float weight      = 0.58767;
-    float exposure    = 0.3;
+    float FAR         = 0.9;
+    //float illumDecay  = 1.0;
+    //float decay       = 0.97815;
+    //float weight      = 0.58767;
+    //float exposure    = 0.3;
 
 
     float3 tColor = 0;
     float4 ndc_lightpos = Project(lightPos, viewProj) * 0.5 + 0.5;
     ndc_lightpos.y = 1 - ndc_lightpos.y;
-    float2 lpos_uv = ndc_lightpos.xy;
+    float2 lpos_uv = ndc_lightpos.xy; // on screen coordinate
+
+    if(ndc_lightpos.z > 0.0) {
+
+        float s = 0;
+        float d0 = SampleDepth(psin.uv);
+        
+        for(int i = 0; i < NUM_SAMPLES; i++) {
+            float2 c = lerp(psin.uv, lpos_uv, float(i) / float(NUM_SAMPLES - 1));
+            if(SampleDepth(c) >= FAR) {
+            //if(SampleDepth(c) >= ndc_lightpos.z) {
+                s += 1.0 / float(NUM_SAMPLES);
+            }
+        }
+
+        tColor = float3(s, s, s);
+
+    }
+
+#if 0
+    if(psin.uv.x > lpos_uv.x && psin.uv.y > lpos_uv.y) {
+        tColor = 1;
+    }
+#endif
+
+#if 0
 
     float2 deltauv = psin.uv - lpos_uv;
     deltauv /= float(NUM_SAMPLES);
@@ -68,6 +106,8 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
     tColor *= exposure;
 
     tColor += t_unit0.Sample(SampleType, psin.uv).rgb;
+
+#endif
 
 	PSOUTPUT pout;
 	pout.color.rgb = tColor;
