@@ -345,6 +345,7 @@ class Application : public BaseGame {
 			//ent0->GetTransform()->SetPosition({ 7.4f, -10, -1.65f });
 
 			ent0->GetTransform()->SetRotation({ 0, -0.8f, 0 });
+			//ent0->GetTransform()->SetRotation({ 0, 1.2f, 0 });
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 			//ent0->GetTransform()->SetRotation({ 0, 2.3415f, 0 });
 			//ent0->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
@@ -399,7 +400,7 @@ class Application : public BaseGame {
 
 			SoundSource* sourcel = ss->NewSoundSource();
 			//StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/GUMI_ChaChaCha_l.ogg");
-			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/special/radio_1.ogg");
+			StreamBuffer* sbufferl = RG_NEW(StreamBuffer)("gamedata/sounds/music/special/freedom_base_radio_1.ogg");
 
 			sourcel->SetBuffer(sbufferl);
 			sourcel->SetRepeat(true);

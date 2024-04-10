@@ -573,6 +573,8 @@ void DoPostprocess() {
 	mix->SetInput(3, GetGBufferShaderResource(1)); // Normal
 	mix->SetInput(4, GetGBufferShaderResource(2)); // Wpos
 
+	mix->SetInput(5, godrays->GetOutput());
+
 	mix->Draw();
 
 	// Tonemapping

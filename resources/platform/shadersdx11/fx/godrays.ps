@@ -52,7 +52,7 @@ float SampleDepth(float2 _uv) {
 PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 
     int   NUM_SAMPLES = 70;
-    float FAR         = 0.9;
+    float FAR         = 0.999;
     //float illumDecay  = 1.0;
     //float decay       = 0.97815;
     //float weight      = 0.58767;
@@ -60,9 +60,15 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 
 
     float3 tColor = 0;
-    float4 ndc_lightpos = Project(lightPos, viewProj) * 0.5 + 0.5;
+    float4 ndc_lightpos = Project(lightPos, viewProj);
+
+    ndc_lightpos.xy = ndc_lightpos.xy * 0.5 + 0.5;
     ndc_lightpos.y = 1 - ndc_lightpos.y;
-    float2 lpos_uv = ndc_lightpos.xy; // on screen coordinate
+
+    float2 lpos_uv = ndc_lightpos.xy;
+    // clamp on screen coordinate
+    lpos_uv.x = clamp(0, 1, ndc_lightpos.x);
+    lpos_uv.y = clamp(0, 1, ndc_lightpos.y);
 
     if(ndc_lightpos.z > 0.0) {
 
@@ -80,6 +86,8 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
         tColor = float3(s, s, s);
 
     }
+
+    tColor *= 0.7;
 
 #if 0
     if(psin.uv.x > lpos_uv.x && psin.uv.y > lpos_uv.y) {
