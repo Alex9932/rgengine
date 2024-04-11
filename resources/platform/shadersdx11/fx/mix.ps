@@ -47,9 +47,10 @@ PSOUTPUT pmain(PSINPUT psin) {
 	float reflectivity = fresnel * (1 - roughness); // TMP
 
 	PSOUTPUT pout;
-#if 0
+#if 1
 	pout.color = t0Color + t1Color + (t2Color * reflectivity) + t5Color;
-#endif
+#else
 	pout.color = t0Color + t1Color + (t2Color * reflectivity);
+#endif
 	return pout;
 }
