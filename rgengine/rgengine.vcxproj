@@ -172,6 +172,7 @@
     <ClCompile Include="rgphysics.cpp" />
     <ClCompile Include="rgstb.cpp" />
     <ClCompile Include="rgstring.cpp" />
+    <ClCompile Include="rgthread.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
@@ -224,6 +225,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
     <ClInclude Include="rgphysics.h" />
+    <ClInclude Include="rgthread.h" />
     <ClInclude Include="soundbuffer.h" />
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />

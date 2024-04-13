@@ -340,7 +340,18 @@ namespace Engine {
             ImGui::Begin("Main profiler");
 
             Profiler* prof = GetProfiler();
-            ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, prof->GetSectionCount(), 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
+
+            ImGui::Text("Task: time ms");
+
+            Uint32 sections = prof->GetSectionCount();
+            for (Uint32 i = 0; i < sections; i++) {
+                String  secsrc = GetProfile(i);
+                Float64 time   = prof->GetTime(secsrc) * 1000;
+
+                ImGui::Text("%s: %.3lfms", secsrc, time);
+            }
+
+            ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, sections, 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
 
             ImGui::End();
         }

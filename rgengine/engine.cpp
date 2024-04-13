@@ -25,6 +25,8 @@
 #include "world.h"
 #include "rgphysics.h"
 
+#include "rgthread.h"
+
 #include "soundsystem.h"
 
 void* rg_malloc(size_t size) {
@@ -60,7 +62,8 @@ namespace Engine {
 
     static Bool          is_debug      = false;
     static String        fsjson        = NULL;
-    static int           num_threads   = 1;
+    static Uint32        num_threads   = 1;
+    static Bool          num_tcustom   = false;
     static String        lib_renderer  = NULL;
 
     static BaseGame*     game_ptr      = NULL;
@@ -189,6 +192,7 @@ namespace Engine {
                     return -1;
                 }
                 num_threads = SDL_atoi(arg_strs[i + 1]);
+                num_tcustom = true;
             }
         }
         return 0;
@@ -326,7 +330,10 @@ namespace Engine {
         //Commands_Initialize();
         //Cvars_Initialize();
 
-        //Thread_Initialize();
+        if (!num_tcustom) {
+            num_threads = SDL_GetCPUCount();
+        }
+        Thread_Initialize(num_threads);
 
         //Network_Initialize();
 
@@ -343,13 +350,14 @@ namespace Engine {
         "worldupdate",
         "game",
         "physics",
-        "render",
         "audio",
+        "threads",
+        "render",
         "other"
     };
 
     String GetProfile(Uint32 idx) {
-        if (idx < 7) { return profiles[idx]; }
+        if (idx < 8) { return profiles[idx]; }
         return "null";
     }
 
@@ -383,12 +391,20 @@ namespace Engine {
 
             if (game_ptr->IsClient()) {
                 core_profiler->StartSection(profiles[4]);
-                Render::Update();
-                core_profiler->StartSection(profiles[5]);
                 soundsystem->Update(GetDeltaTime());
             }
 
-            core_profiler->StartSection(profiles[6]);
+            core_profiler->StartSection(profiles[5]);
+
+            Thread_Execute();
+            Thread_WaitForAll();
+
+            if (game_ptr->IsClient()) {
+                core_profiler->StartSection(profiles[6]);
+                Render::Update();
+            }
+
+            core_profiler->StartSection(profiles[7]);
             frame++;
             //			if(timer.GetTime() - last_time >= 5.0) {
             //				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
@@ -409,6 +425,8 @@ namespace Engine {
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
             Window_Destroy();
         }
+
+        Thread_Destroy();
 
         RG_DELETE_CLASS(GetDefaultAllocator(), World, world);
         RG_DELETE_CLASS(GetDefaultAllocator(), RGPhysics, rgphysics);

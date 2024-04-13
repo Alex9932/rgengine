@@ -41,6 +41,8 @@
 
 #include <event.h>
 
+#include <rgthread.h>
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
 
@@ -68,17 +70,35 @@ static bool EHandler(SDL_Event* event) {
 
 static R3D_GlobalLightDescrition desc = {};
 
+static Task task0;
+static Task task1;
+static Task task2;
+
+static void TaskWorker(void* userdata) {
+	KinematicsModel* kmodel = (KinematicsModel*)userdata;
+
+	kmodel->GetAnimator()->Update(GetDeltaTime());
+	kmodel->RebuildSkeleton();
+	kmodel->SolveCCDIK();
+	kmodel->RecalculateTransform();
+
+}
+
 class Application : public BaseGame {
 	public:
 
-		KinematicsModel* kmodel = NULL;
+		KinematicsModel* kmodel  = NULL;
+		KinematicsModel* kmodel2 = NULL;
+		KinematicsModel* kmodel3 = NULL;
 
 		Entity* ent_light0 = NULL;
 
 		World*  world  = NULL;
 		FreeCameraController* camcontrol = NULL;
 
-		Animation* anim = NULL;
+		Animation* anim0 = NULL;
+		Animation* anim1 = NULL;
+		Animation* anim2 = NULL;
 
 		Application() {
 			this->isClient   = true;
@@ -185,20 +205,55 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::R3D_SetCamera(&cam);
 
-		
-
-			kmodel->GetAnimator()->Update(GetDeltaTime());
-			kmodel->RebuildSkeleton();
-			kmodel->SolveCCDIK();
-			kmodel->RecalculateTransform();
 
 
 			R3DBoneBufferUpdateInfo binfo = {};
 			binfo.offset = 0;
-			binfo.data   = kmodel->GetTransforms();
+			binfo.data = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
 			Render::R3D_UpdateBoneBuffer(&binfo);
+
+			binfo.data = kmodel2->GetTransforms();
+			binfo.handle = kmodel2->GetBufferHandle();
+			binfo.length = sizeof(mat4) * kmodel2->GetBoneCount();
+			Render::R3D_UpdateBoneBuffer(&binfo);
+
+			binfo.data = kmodel3->GetTransforms();
+			binfo.handle = kmodel3->GetBufferHandle();
+			binfo.length = sizeof(mat4) * kmodel3->GetBoneCount();
+			Render::R3D_UpdateBoneBuffer(&binfo);
+
+#if 1
+			task0.proc = TaskWorker;
+			task1.proc = TaskWorker;
+			task2.proc = TaskWorker;
+			task0.userdata = kmodel;
+			task1.userdata = kmodel2;
+			task2.userdata = kmodel3;
+
+			ThreadDispatch(&task0);
+			ThreadDispatch(&task1);
+			ThreadDispatch(&task2);
+#else
+
+			TaskWorker(kmodel);
+			TaskWorker(kmodel2);
+			TaskWorker(kmodel3);
+
+#endif
+
+			//kmodel->GetAnimator()->Update(GetDeltaTime());
+			//kmodel->RebuildSkeleton();
+			//kmodel->SolveCCDIK();
+			//kmodel->RecalculateTransform();
+
+			//R3DBoneBufferUpdateInfo binfo = {};
+			//binfo.offset = 0;
+			//binfo.data   = kmodel->GetTransforms();
+			//binfo.handle = kmodel->GetBufferHandle();
+			//binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
+			//Render::R3D_UpdateBoneBuffer(&binfo);
 
 		}
 		
@@ -277,31 +332,45 @@ class Application : public BaseGame {
 #endif
 			
 #if 1
-			//String modelname = "mmd_models/Rin_Kagamine.pmd";
-			String modelname = "mmd_models/Miku_Hatsune.pmd";
-			//String modelname = "pmx/gumiv3/GUMI_V3.pmx";
+			String modelname0 = "mmd_models/Rin_Kagamine.pmd";
+			String modelname1 = "mmd_models/Miku_Hatsune.pmd";
+			String modelname2 = "pmx/gumiv3/GUMI_V3.pmx";
 			//String modelname = "pmx/apimiku/Appearance Miku.pmx";
 
-			//PMXImporter pmxImporter;
+			PMXImporter pmxImporter;
 			PMDImporter pmdImporter;
 
 			R3DRiggedModelInfo pmdinfo = {};
-			pmdImporter.ImportRiggedModel(modelname, &pmdinfo);
-			//pmxImporter.ImportRiggedModel(modelname, &pmdinfo);
-			R3D_RiggedModel* mdl_handle2 = Render::R3D_CreateRiggedModel(&pmdinfo);
+
+			pmdImporter.ImportRiggedModel(modelname0, &pmdinfo);
+			R3D_RiggedModel* mdl_handle5 = Render::R3D_CreateRiggedModel(&pmdinfo);
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
-			//pmxImporter.FreeRiggedModelData(&pmdinfo);
-			//kmodel = pmxImporter.ImportKinematicsModel(modelname);
-			kmodel = pmdImporter.ImportKinematicsModel(modelname);
+			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
+
+			pmdImporter.ImportRiggedModel(modelname1, &pmdinfo);
+			R3D_RiggedModel* mdl_handle6 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			pmdImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
+
+			pmxImporter.ImportRiggedModel(modelname2, &pmdinfo);
+			R3D_RiggedModel* mdl_handle7 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			pmxImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
 
 			VMDImporter vmdImporter;
-			anim = vmdImporter.ImportAnimation("vmd/zero_allstar_ph_baked.vmd", kmodel);
+			anim0 = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
+			anim1 = vmdImporter.ImportAnimation("vmd/zero_allstar_ph_baked.vmd", kmodel2);
+			anim2 = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel3);
 			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
 			
 			//anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
-			anim->SetRepeat(true);
+			anim0->SetRepeat(true);
+			anim1->SetRepeat(true);
+			anim2->SetRepeat(true);
 
-			kmodel->GetAnimator()->PlayAnimation(anim);
+			kmodel->GetAnimator()->PlayAnimation(anim0);
+			kmodel2->GetAnimator()->PlayAnimation(anim1);
+			kmodel3->GetAnimator()->PlayAnimation(anim2);
 
 #endif
 
@@ -434,12 +503,26 @@ class Application : public BaseGame {
 #endif
 
 #if 1
-			Entity* ent2 = world->NewEntity();
-			ent2->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle2, kmodel));
-			ent2->GetTransform()->SetPosition({ 9, 0, -0.4f });
+			Entity* ent5 = world->NewEntity();
+			ent5->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle5, kmodel));
+			ent5->GetTransform()->SetPosition({ 10.5f, 0, -2.2f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
-			ent2->GetTransform()->SetRotation({ 0, 1.6f, 0 });
-			ent2->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+			ent5->GetTransform()->SetRotation({ 0, 1.6f, 0 });
+			ent5->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+
+			Entity* ent6 = world->NewEntity();
+			ent6->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle6, kmodel2));
+			ent6->GetTransform()->SetPosition({ 10.5f, 0, -0.4f });
+			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
+			ent6->GetTransform()->SetRotation({ 0, 1.6f, 0 });
+			ent6->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+
+			Entity* ent7 = world->NewEntity();
+			ent7->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle7, kmodel3));
+			ent7->GetTransform()->SetPosition({ 10.5f, 0, 1.4f });
+			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
+			ent7->GetTransform()->SetRotation({ 0, 1.6f, 0 });
+			ent7->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 #endif
 /*
 			Entity* ent4 = world->NewEntity();
@@ -455,7 +538,9 @@ class Application : public BaseGame {
 		
 		void Quit() {
 
-			delete anim;
+			delete anim0;
+			delete anim1;
+			delete anim2;
 
 			world->ClearWorld();
 

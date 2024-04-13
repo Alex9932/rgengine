@@ -70,6 +70,12 @@
     <Filter Include="Header Files\physics">
       <UniqueIdentifier>{5a9f2247-e2f6-49d4-9b06-b79ab0451b60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\thread">
+      <UniqueIdentifier>{af98b625-7e20-4fd1-b00d-a3ea1bf0da85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\thread">
+      <UniqueIdentifier>{29981964-27ef-481a-b255-a358e5afbbfd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -215,6 +221,9 @@
     </ClCompile>
     <ClCompile Include="phcomponent.cpp">
       <Filter>Source Files\physics</Filter>
+    </ClCompile>
+    <ClCompile Include="rgthread.cpp">
+      <Filter>Source Files\thread</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -397,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="phcomponent.h">
       <Filter>Header Files\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="rgthread.h">
+      <Filter>Header Files\thread</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
