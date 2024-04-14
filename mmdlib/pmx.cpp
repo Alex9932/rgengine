@@ -5,6 +5,8 @@
  *      Author: alex9932
  */
 
+#define DLL_EXPORT
+
 #include "pmx.h"
 #include <allocator.h>
 #include <filesystem.h>
@@ -111,7 +113,7 @@ static void _pmx_readVertex(Sint32 id, pmx_file* pmx, Engine::FSReader* reader, 
 		vertex.weight.weights[0] = reader->ReadF32();
 		vertex.weight.weights[1] = reader->ReadF32();
 		vertex.weight.weights[2] = reader->ReadF32();
-		vertex.weight.weights[4] = reader->ReadF32();
+		vertex.weight.weights[3] = reader->ReadF32();
 		break;
 	case 3: // SDEF
 		vertex.weight.bone_id[0] = _pmx_readSINT(pmx->header.g_bone_index_size, reader);
@@ -139,7 +141,7 @@ static void _pmx_readVertex(Sint32 id, pmx_file* pmx, Engine::FSReader* reader, 
 		vertex.weight.weights[0] = reader->ReadF32();
 		vertex.weight.weights[1] = reader->ReadF32();
 		vertex.weight.weights[2] = reader->ReadF32();
-		vertex.weight.weights[4] = reader->ReadF32();
+		vertex.weight.weights[3] = reader->ReadF32();
 		break;
 	default:
 		break;
@@ -492,7 +494,7 @@ void pmx_free(pmx_file* ptr) {
 	rg_free(ptr->header.model_name_en.data);
 	rg_free(ptr->header.model_comment.data);
 	rg_free(ptr->header.model_comment_en.data);
-	for (Sint32 i = 0; i < ptr->vertex_count; ++i) {
+	for (Uint32 i = 0; i < ptr->vertex_count; ++i) {
 		if (ptr->vertices[i].additional_vec4) {
 			rg_free(ptr->vertices[i].additional_vec4);
 		}
@@ -501,19 +503,19 @@ void pmx_free(pmx_file* ptr) {
 
 	rg_free(ptr->indices);
 
-	for (Sint32 i = 0; i < ptr->texture_count; ++i) {
+	for (Uint32 i = 0; i < ptr->texture_count; ++i) {
 		rg_free(ptr->textures[i].path.data);
 	}
 	rg_free(ptr->textures);
 
-	for (Sint32 i = 0; i < ptr->material_count; ++i) {
+	for (Uint32 i = 0; i < ptr->material_count; ++i) {
 		rg_free(ptr->materials[i].name.data);
 		rg_free(ptr->materials[i].name_en.data);
 		rg_free(ptr->materials[i].comment.data);
 	}
 	rg_free(ptr->materials);
 
-	for (Sint32 i = 0; i < ptr->bone_count; ++i) {
+	for (Uint32 i = 0; i < ptr->bone_count; ++i) {
 		rg_free(ptr->bones[i].name.data);
 		rg_free(ptr->bones[i].name_en.data);
 		//		if(ptr->bones[i].ik_link_count) {
