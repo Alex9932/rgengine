@@ -214,6 +214,7 @@ class Application : public BaseGame {
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
+
 			binfo.data = kmodel2->GetTransforms();
 			binfo.handle = kmodel2->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel2->GetBoneCount();

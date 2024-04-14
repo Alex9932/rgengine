@@ -505,7 +505,7 @@ void DoPostprocess() {
 	ssr->SetInput(3, lightpass_output);
 	ssr->SetInput(4, GetGBufferDepth());
 	ssr->SetConstants(ssrBuffer->GetHandle());
-	ssr->Draw();
+	//ssr->Draw();
 
 	// Blur ssr
 
@@ -531,7 +531,7 @@ void DoPostprocess() {
 	ssao->SetInput(0, GetGBufferShaderResource(1)); // Normal
 	ssao->SetInput(1, GetGBufferShaderResource(2)); // Wpos
 	ssao->SetConstants(ssaoBuffer->GetHandle());
-	ssao->Draw();
+	//ssao->Draw();
 
 	// Godrays
 
