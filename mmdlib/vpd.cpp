@@ -3,6 +3,11 @@
  *
  *  Created on: Apr 1, 2022
  *      Author: alex9932
+ * 
+ *  TODO: Rewrite this
+ *     * Make it thread-safe
+ *     * Use another parse method
+ * 
  */
 
 #define DLL_EXPORT
@@ -16,25 +21,9 @@
 
 #include <utf8.h>
 #include <rgstring.h>
+#include <allocator.h>
 #define streql Engine::rg_streql
 #define strstw Engine::rg_strstw
-
-//static bool streql(const char* left, const char* right) {
-//	size_t lenpre = strlen(left);
-//	size_t lenstr = strlen(right);
-//	return ( (lenstr == lenpre) && (SDL_memcmp(left, right, lenpre) == 0) ) ? true : false;
-//}
-//
-//// Starts with
-//static bool strstw(const char* left, const char* right) {
-//	size_t lenstr = strlen(right);
-//	for (Uint32 i = 0; i < lenstr; ++i) {
-//		if(left[i] != right[i]) {
-//			return false;
-//		}
-//	}
-//	return true;
-//}
 
 static char LINE_BUFFER[LINE_LENGTH];
 static bool readLine(FILE* f) {
@@ -64,10 +53,10 @@ static Sint32 getBoneID(char* name) {
 
 	// index
 
-	int size = ptr - &LINE_BUFFER[4];
-	char buffer[8];
-	memset(buffer, 0, 8);
-	memcpy(buffer, &LINE_BUFFER[4], size);
+	size_t size = ptr - &LINE_BUFFER[4];
+	char buffer[8] = {0};
+	//SDL_memset(buffer, 0, 32);
+	SDL_memcpy(buffer, &LINE_BUFFER[4], size);
 	Sint32 index = atoi(buffer);
 
 	// name
@@ -103,7 +92,7 @@ static Sint32 getEnd() {
 		return -1;
 	}
 
-	return ptr - LINE_BUFFER;
+	return (Sint32)(ptr - LINE_BUFFER);
 }
 
 static void getVector(char* dest) {
@@ -133,9 +122,9 @@ static vec3 parsePosition() {
 //	printf("VPD: Pos: %s {%s %s %s}\n", buffer, pos_buff[0], pos_buff[1], pos_buff[2]);
 
 	vec3 pos;
-	pos.x = atof(pos_buff[0]);
-	pos.y = atof(pos_buff[1]);
-	pos.z = atof(pos_buff[2]);
+	pos.x = (Float32)atof(pos_buff[0]);
+	pos.y = (Float32)atof(pos_buff[1]);
+	pos.z = (Float32)atof(pos_buff[2]);
 	return pos;
 }
 
@@ -159,10 +148,10 @@ static vec4 parseRotation() {
 //	printf("VPD: Rot: %s\n", buffer);
 	vec4 quat;
 
-	quat.x = atof(pos_buff[0]);
-	quat.y = atof(pos_buff[1]);
-	quat.z = atof(pos_buff[2]);
-	quat.w = atof(pos_buff[3]);
+	quat.x = (Float32)atof(pos_buff[0]);
+	quat.y = (Float32)atof(pos_buff[1]);
+	quat.z = (Float32)atof(pos_buff[2]);
+	quat.w = (Float32)atof(pos_buff[3]);
 
 	return quat;
 }
@@ -230,9 +219,9 @@ vpd_pose* vpd_fromFile(const char* file) {
 		}
 	}
 
-	vpd_pose* pose = (vpd_pose*)malloc(sizeof(vpd_pose));
-	pose->bone_count = bones.size();
-	pose->bones = (vpd_bone*)malloc(sizeof(vpd_bone) * pose->bone_count);
+	vpd_pose* pose = (vpd_pose*)rg_malloc(sizeof(vpd_pose));
+	pose->bone_count = (Uint32)bones.size();
+	pose->bones = (vpd_bone*)rg_malloc(sizeof(vpd_bone) * pose->bone_count);
 	for (Uint32 i = 0; i < pose->bone_count; ++i) {
 		pose->bones[i] = bones[i];
 	}
@@ -241,6 +230,6 @@ vpd_pose* vpd_fromFile(const char* file) {
 }
 
 void vpd_free(vpd_pose* ptr) {
-	free(ptr->bones);
-	free(ptr);
+	rg_free(ptr->bones);
+	rg_free(ptr);
 }

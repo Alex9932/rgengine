@@ -195,10 +195,12 @@ void PMDImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
 KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	pmd_file* pmd = pmd_load(file);
 
-	BoneInfo bones_info[1024];
-	mat4 bone_matrices[1024];
+//	BoneInfo bones_info[1024];
+//	mat4 bone_matrices[1024];
+	BoneInfo* bones_info    = (BoneInfo*)rg_malloc(sizeof(BoneInfo) * 1024);
+	mat4*     bone_matrices = (mat4*)rg_malloc(sizeof(mat4) * 1024);
 
-	const char CONSTNAME[] = { 0xE3, 0x81, 0xB2, 0xE3, 0x81, 0x96, 0x00 };//"ひざ";
+	const char CONSTNAME[] = { (char)0xE3, (char)0x81, (char)0xB2, (char)0xE3, (char)0x81, (char)0x96, (char)0x00 };//"ひざ";
 
 	for (Uint32 i = 0; i < pmd->bones_count; i++) {
 		pmd_bone* bone = &pmd->bones[i];
@@ -267,6 +269,9 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	info.buffer_handle = bone_buffer;
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);
+
+	rg_free(bones_info);
+	rg_free(bone_matrices);
 
 	rg_free(ik_links);
 	pmd_free(pmd);
@@ -451,10 +456,13 @@ void PMXImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
 Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(String path) {
 	pmx_file* pmx = pmx_load(path);
 
-	BoneInfo bones_info[1024];
-	mat4 bone_matrices[1024];
+//	BoneInfo bones_info[1024];
+//	mat4 bone_matrices[1024];
 
-	const char CONSTNAME[] = { 0xE3, 0x81, 0xB2, 0xE3, 0x81, 0x96, 0x00 };//"ひざ";
+	BoneInfo* bones_info    = (BoneInfo*)rg_malloc(sizeof(BoneInfo) * 1024);
+	mat4*     bone_matrices = (mat4*)rg_malloc(sizeof(mat4) * 1024);
+
+	const char CONSTNAME[] = { (char)0xE3, (char)0x81, (char)0xB2, (char)0xE3, (char)0x81, (char)0x96, (char)0x00 };//"ひざ";
 
 	Uint32 ik = 0;
 	for (Uint32 i = 0; i < pmx->bone_count; i++) {
@@ -528,6 +536,9 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(String path) {
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);
 
+	rg_free(bones_info);
+	rg_free(bone_matrices);
+
 	rg_free(ik_links);
 	pmx_free(pmx);
 
@@ -543,9 +554,9 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 	Animation* animation = new Animation();
 	Uint32 last = 0;
-	for (Uint32 i = 0; i < vmd->motion_count; i++) {
+	for (Sint32 i = 0; i < vmd->motion_count; i++) {
 		vmd_motion* motion = &vmd->motions[i];
-		Uint32 hash = rgCRC32(motion->bone_name, SDL_strlen(motion->bone_name));
+		Uint32 hash = rgCRC32(motion->bone_name, (Uint32)SDL_strlen(motion->bone_name));
 
 		// Do not add animation track if in model "motion->bone_name" bone not exist.
 		if (model != NULL && model->GetBoneByCRCHash(hash) == NULL) {
