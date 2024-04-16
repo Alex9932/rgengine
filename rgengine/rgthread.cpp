@@ -76,6 +76,7 @@ namespace Engine {
 		t_queue.push(task);
 		t_lock.unlock();
 		condvar.notify_one();
+		return true;
 	}
 
 	void Thread_Initialize(Uint32 tcount) {
@@ -110,6 +111,7 @@ namespace Engine {
 				return true;
 			}
 		}
+		return false;
 	}
 
 	void Thread_WaitForAll() {

@@ -148,7 +148,7 @@ class Application : public BaseGame {
 
 			ImGui::BeginChild("#Console_txt");
 			Sint32 len = (Sint32)Engine::Logger_GetLines();
-			for (Sint32 i = len; i >= 0; i--) {
+			for (Sint32 i = len - 1; i >= 0; i--) {
 				ImGui::Text("%s", Engine::Logger_GetLine(i));
 			}
 			ImGui::EndChild();

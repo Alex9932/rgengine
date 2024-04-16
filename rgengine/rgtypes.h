@@ -12,6 +12,8 @@
 
 #define RG_INLINE inline
 
+#define _DISABLE_STRING_ANNOTATION
+
 #if _WIN32 || _WIN64
 	#define RG_FORCE_INLINE inline
 	#define RG_PLATFORM_NAME "WIN32"
