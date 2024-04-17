@@ -5,6 +5,8 @@ namespace Engine {
 
 	void Transform::Recalculate() {
 
+		if (m_disabled) { return; }
+
 		mat4 local_transform;
 		mat4_model(&local_transform, this->m_lPosition, this->m_lRotation, this->m_scale);
 

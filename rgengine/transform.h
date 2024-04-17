@@ -16,6 +16,8 @@ namespace Engine {
 			RG_INLINE Transform* GetParent() { return this->m_parent; }
 			RG_INLINE mat4* GetMatrix() { return &this->m_matrix; }
 
+			RG_INLINE void SetMatrix(mat4* m) { SDL_memcpy(&m_matrix, m, sizeof(mat4)); }
+
 			RG_INLINE vec3& GetPosition() { return this->m_lPosition; }
 			RG_INLINE vec3& GetRotation() { return this->m_lRotation; }
 			RG_INLINE vec3& GetScale() { return this->m_scale; }
@@ -25,6 +27,10 @@ namespace Engine {
 
 			RG_INLINE vec3& GetWorldPosition() { return this->m_wPosition; }
 			RG_INLINE quat& GetWorldRotation() { return this->m_wRotation; }
+
+			RG_INLINE Bool IsDisabled() { return m_disabled; }
+
+			RG_INLINE void Disable() { m_disabled = true; }
 
 
 		private:
@@ -40,6 +46,7 @@ namespace Engine {
 			quat       m_wRotation = { 0, 0, 0, 1 };
 
 			Transform* m_parent    = NULL;
+			Bool       m_disabled  = false;
 
 	};
 

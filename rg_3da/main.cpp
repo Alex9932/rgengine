@@ -43,6 +43,9 @@
 
 #include <rgthread.h>
 
+#include <rgphysics.h>
+#include <phcomponent.h>
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
 
@@ -419,6 +422,12 @@ class Application : public BaseGame {
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 			//ent0->GetTransform()->SetRotation({ 0, 2.3415f, 0 });
 			//ent0->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+
+
+			ent0->AttachComponent(Engine::GetPhysics()->NewComponent());
+
+
+
 
 			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
