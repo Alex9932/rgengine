@@ -20,6 +20,8 @@ namespace Engine {
 
 			void Update(Float64 dt);
 
+			RG_DECLSPEC void SetWorldTransform(Transform* t);
+
 	};
 
 }

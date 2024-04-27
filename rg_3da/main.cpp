@@ -57,6 +57,9 @@ using namespace Engine;
 static Camera*      camera;
 //static SoundBuffer* soundbuffer;
 
+static Entity* ent0;
+
+static Bool ph_enabled = false;
 static bool EHandler(SDL_Event* event) {
 #if 0
 	if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_E) {
@@ -68,6 +71,25 @@ static bool EHandler(SDL_Event* event) {
 		GetSoundSystem()->PlaySound(&info);
 	}
 #endif
+
+	if (event->type == SDL_KEYDOWN) {
+		switch (event->key.keysym.scancode) {
+			case SDL_SCANCODE_P: {
+				ph_enabled = !ph_enabled;
+				if (ph_enabled) { Engine::GetPhysics()->Enable(); }
+				else { Engine::GetPhysics()->Disable(); }
+			}
+			case SDL_SCANCODE_R: {
+				PHComponent* pcomp = ent0->GetComponent(Component_PH)->AsPHComponent();
+				Transform t;
+				t.SetPosition({ 0, 5, 0 });
+				t.SetRotation({ 0, -0.5f, 1.0f });
+				pcomp->SetWorldTransform(&t);
+			}
+			default: { break; }
+		}
+	}
+
 	return true;
 }
 
@@ -405,7 +427,7 @@ class Application : public BaseGame {
 			//ent_light0->AttachComponent(lsrc);
 
 
-			Entity* ent0 = world->NewEntity();
+			ent0 = world->NewEntity();
 			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
 
 			//Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
@@ -424,7 +446,10 @@ class Application : public BaseGame {
 			//ent0->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 
-			ent0->AttachComponent(Engine::GetPhysics()->NewComponent());
+			Engine::RGPhysics* ph = Engine::GetPhysics();
+			ph->Disable();
+			ent0->AttachComponent(ph->NewComponent());
+			
 
 
 

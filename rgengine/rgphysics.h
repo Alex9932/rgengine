@@ -32,6 +32,9 @@ namespace Engine {
 
 			btDiscreteDynamicsWorld* GetWorld();
 
+			RG_INLINE void Disable() { m_isDisabled = true; }
+			RG_INLINE void Enable()  { m_isDisabled = false; }
+
 		private:
 
 			//Engine::PoolAllocator*    m_alloc;
@@ -40,6 +43,8 @@ namespace Engine {
 			STDAllocator*  m_alloc;   // Objects allocator
 			PoolAllocator* m_mstates; // Motion state pool
 			PhysicsWorld*  m_world;
+
+			Bool           m_isDisabled;
 	};
 
 }

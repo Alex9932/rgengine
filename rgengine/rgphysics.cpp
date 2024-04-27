@@ -1,6 +1,8 @@
 #include "rgphysics.h"
 #include "engine.h"
 
+#include "rgmath.h"
+
 #include "phcomponent.h"
 
 #include "bullet/btBulletDynamicsCommon.h"
@@ -46,8 +48,9 @@ namespace Engine {
 	}
 
 	RGPhysics::RGPhysics() {
-		m_alloc = RG_NEW(STDAllocator)("Physics alloc");
-		m_mstates = RG_NEW_CLASS(m_alloc, PoolAllocator)("PH Motion shape pool", RG_PH_MOTIONSTATES, sizeof(btMotionState));
+		m_isDisabled = false;
+		m_alloc      = RG_NEW(STDAllocator)("Physics alloc");
+		m_mstates    = RG_NEW_CLASS(m_alloc, PoolAllocator)("PH Motion shape pool", RG_PH_MOTIONSTATES, sizeof(btMotionState));
 
 		m_world = (PhysicsWorld*)m_alloc->Allocate(sizeof(PhysicsWorld));
 
@@ -58,7 +61,7 @@ namespace Engine {
 
 		m_world->world = new btDiscreteDynamicsWorld(m_world->collision_disp, m_world->broadphase_interface, m_world->solver, m_world->collision_config);
 
-		m_world->world->setGravity(btVector3(0, -0.981, 0));
+		m_world->world->setGravity(btVector3(0, -9.81, 0));
 
 		m_world->ground = CreateGoundPlane(m_alloc);
 		m_world->world->addRigidBody(m_world->ground);
@@ -79,9 +82,30 @@ namespace Engine {
 		RG_DELETE(STDAllocator, m_alloc);
 	}
 
+	static Float32 windForce = 20;
+	static Float32 windRndF  = 5;
+	static vec3    windVec   = {0.8f, 0, -0.2f};
+
 	void RGPhysics::StepSimulation() {
 		Float64 dt = GetDeltaTime();
-		m_world->world->stepSimulation(dt, 5);
+
+		if (!m_isDisabled) {
+
+			// Apply 'wind'
+			Float32 wx = (windVec.x * windForce) + (rgRandFloat() * windRndF);
+			Float32 wy = (windVec.y * windForce) + (rgRandFloat() * 0.3f * windRndF);
+			Float32 wz = (windVec.z * windForce) + (rgRandFloat() * windRndF);
+
+			btVector3 wForce(wx, wy, wz);
+
+			btAlignedObjectArray<btRigidBody*> array = m_world->world->getNonStaticRigidBodies();
+			for (Uint32 i = 0; i < array.size(); i++) {
+				array[i]->applyCentralForce(wForce);
+			}
+			
+
+			m_world->world->stepSimulation(dt, 5);
+		}
 
 		std::vector<PHComponent*>::iterator pit = this->m_components.begin();
 		for (; pit != this->m_components.end(); pit++) {

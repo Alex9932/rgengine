@@ -37,14 +37,12 @@ namespace Engine {
 		quater.setW(q.w);
 		transform.setRotation(quater);
 
-		//btDefaultMotionState* motionState = new btDefaultMotionState(transform);
 		btDefaultMotionState* motionState = ph->AllocateMotionState();
 		motionState->setWorldTransform(transform);
 
 		btRigidBody::btRigidBodyConstructionInfo info(mass, motionState, shape, localInertia);
 		m_body->body = RG_NEW(btRigidBody)(info);
-
-		//m_body->body->applyTorqueImpulse(btVector3(0, 0, 10));
+		m_body->body->setUserPointer(shape); // Save shape's pointer
 
 		ph->GetWorld()->addRigidBody(m_body->body);
 	}
@@ -53,6 +51,8 @@ namespace Engine {
 		
 		m_ph->GetWorld()->removeRigidBody(m_body->body);
 		m_ph->DeleteMotionState((btDefaultMotionState*)m_body->body->getMotionState());
+
+		delete m_body->body->getUserPointer(); // Delete shape
 
 		RG_DELETE(btRigidBody, m_body->body);
 		RG_DELETE(PHBody, m_body);
@@ -107,6 +107,26 @@ namespace Engine {
 		transform->SetRotation(rot);
 #endif
 
+	}
+
+	void PHComponent::SetWorldTransform(Transform* t) {
+		vec3 pos = t->GetPosition();
+		vec3 rot = t->GetRotation();
+
+		btTransform btt;
+		btt.setIdentity();
+		btt.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+		btt.setRotation(btQuaternion(rot.x, rot.y, rot.z));
+
+		m_body->body->setWorldTransform(btt);
+
+		// Clear forces
+		m_body->body->clearForces();
+		m_body->body->clearGravity();
+		m_body->body->setLinearVelocity(btVector3(0, 0, 0));
+		m_body->body->setTurnVelocity(btVector3(0, 0, 0));
+		m_body->body->setAngularVelocity(btVector3(0, 0, 0));
 	}
 
 }

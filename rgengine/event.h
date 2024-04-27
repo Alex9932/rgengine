@@ -32,6 +32,9 @@
 
 #define RG_EVENT_SHUTDOWN_RQ   0x00000009
 
+#define RG_EVENT_ONLOADINGSTARTED  0x0000000A
+#define RG_EVENT_ONLOADINGFINISHED 0x0000000B
+
 typedef bool (*EventHandler)(SDL_Event*);
 
 namespace Engine {

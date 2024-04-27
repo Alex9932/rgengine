@@ -17,6 +17,8 @@ RG_DECLSPEC Uint32 rgCRC32(const char* data, Uint32 len);
 RG_DECLSPEC vec3 vec3_mulquat(const vec3& v, const quat& q);
 RG_DECLSPEC quat quat_axisAngle(const vec4& v);
 
+RG_DECLSPEC Float32 rgRandFloat();
+
 #define rgToRadians(x) (x * (RG_PI / 180.0f))
 #define rgToDegrees(x) (x * (180.0f / RG_PI))
 

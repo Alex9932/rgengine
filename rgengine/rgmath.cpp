@@ -1,5 +1,6 @@
 #define DLL_EXPORT
 #include "rgmath.h"
+#include <random>
 
 static const Uint32 crc32_table[] = {
   0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9,
@@ -127,4 +128,10 @@ quat quat_axisAngle(const vec4& axis_angle) {
     dest.z = axis_angle.z * s;
     dest.w = SDL_cosf(half);
     return dest;
+}
+
+Float32 rgRandFloat() {
+    Sint32 rnd = rand();                                // Random int
+    Float32 frnd = (Float32)(rnd % 100000) / 100000.0f; // 0 - 1
+    return frnd * 2 - 1;                                // -1 -- 1
 }
