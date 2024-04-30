@@ -1,4 +1,5 @@
 #include "rgthread.h"
+#include "allocator.h"
 
 #include <vector>
 #include <queue>
@@ -6,6 +7,7 @@
 #include <mutex>
 
 #define RG_MAX_WORKERS 32
+#define RG_MAX_TASKS   4096
 
 namespace Engine {
 
@@ -31,6 +33,8 @@ namespace Engine {
 	static std::queue<Task*>           t_queue;
 	static std::mutex                  t_lock;
 
+	static PoolAllocator*              t_alloc = NULL;
+
 	static Bool RetrieveTask(Task** task) {
 		*task = NULL;
 		Bool result = false;
@@ -46,7 +50,7 @@ namespace Engine {
 
 	static void WorkerProc(WorkerContext* ctx) {
 		//WorkerContext* ctx = (WorkerContext*)_ctx;
-		Task* task;
+		Task* task = NULL;
 
 		for (;;) {
 			ctx->isWorking = false;
@@ -60,7 +64,8 @@ namespace Engine {
 				if (!hasTask) { break; }
 				if (task) {
 					task->proc(task->userdata);
-					task->isDone = true;
+					//task->isDone = true;
+					t_alloc->Deallocate(task);
 				}
 			}
 
@@ -72,8 +77,10 @@ namespace Engine {
 	}
 
 	Bool ThreadDispatch(Task* task) {
+		Task* t = (Task*)t_alloc->Allocate();
+		SDL_memcpy(t, task, sizeof(Task));
 		t_lock.lock();
-		t_queue.push(task);
+		t_queue.push(t);
 		t_lock.unlock();
 		condvar.notify_one();
 		return true;
@@ -81,6 +88,8 @@ namespace Engine {
 
 	void Thread_Initialize(Uint32 tcount) {
 		cores = SDL_GetCPUCount();
+
+		t_alloc = RG_NEW(PoolAllocator)("Task allocator", RG_MAX_TASKS, sizeof(Task));
 
 		if (tcount > RG_MAX_WORKERS) { threads = RG_MAX_WORKERS; }
 		else { threads = tcount; }
@@ -99,6 +108,8 @@ namespace Engine {
 		for (size_t i = 0; i < threads; i++) {
 			workers[i].thr.join();
 		}
+		t_alloc->DeallocateAll();
+		RG_DELETE(PoolAllocator, t_alloc);
 	}
 
 	void Thread_Execute() {

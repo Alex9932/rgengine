@@ -13,6 +13,7 @@ enum ComponentType {
 	Component_SPOTLIGHT,            //
 	Component_SOUNDSOURCE,          //
 	Component_PH,                   // Physics component (PHComponent)
+	Component_PARTICLEEMITTER,      // Particle system   (ParticleEmitter)
 	Component_MAXENUM = 32
 };
 

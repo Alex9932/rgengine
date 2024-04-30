@@ -254,6 +254,12 @@ union vec3 {
         z -= v.z;
     }
 
+    RG_INLINE void operator*=(float a) {
+        x *= a;
+        y *= a;
+        z *= a;
+    }
+
     RG_INLINE vec3 normalize() {
         float len = length();
         vec3 r;

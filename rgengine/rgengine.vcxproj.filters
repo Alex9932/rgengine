@@ -225,6 +225,9 @@
     <ClCompile Include="rgthread.cpp">
       <Filter>Source Files\thread</Filter>
     </ClCompile>
+    <ClCompile Include="patriclesystem.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -409,6 +412,9 @@
     </ClInclude>
     <ClInclude Include="rgthread.h">
       <Filter>Header Files\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="patriclesystem.h">
+      <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
