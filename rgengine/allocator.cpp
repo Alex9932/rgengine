@@ -47,13 +47,11 @@ namespace Engine {
 #if RG_ALLOCATOR_DEBUG
         rgLogWarn(RG_LOG_SYSTEM, "Created allocator: %s", name);
 #endif
-        this->mutex = SDL_CreateMutex();
         SDL_strlcpy(this->name, name, 32);
         RegisterAllocator(this);
     }
 
     Allocator::~Allocator() {
-        SDL_DestroyMutex(this->mutex);
         FreeAllocator(this);
 #if RG_ALLOCATOR_DEBUG
         rgLogWarn(RG_LOG_SYSTEM, "FreeAllocator %s [%p]", GetName(), this);
@@ -92,11 +90,10 @@ namespace Engine {
         STDBlock b;
         b.len = len;
 
-        if (SDL_LockMutex(mutex) == 0) {
-            b.ptr = rg_malloc(len);
-            blocks.push_back(b);
-        }
-        SDL_UnlockMutex(mutex);
+        mutex.lock();
+        b.ptr = rg_malloc(len);
+        blocks.push_back(b);
+        mutex.unlock();
 
         total += len;
 #if RG_ALLOCATOR_DEBUG
@@ -107,20 +104,21 @@ namespace Engine {
 
     void STDAllocator::Deallocate(void* ptr) {
 
-        if (SDL_LockMutex(mutex) == 0) {
-            for (std::vector<STDBlock>::iterator it = blocks.begin(); it != blocks.end(); ++it) {
-                if (it->ptr == ptr) {
-                    total -= it->len;
-                    rg_free(it->ptr);
+        mutex.lock();
+        
+        for (std::vector<STDBlock>::iterator it = blocks.begin(); it != blocks.end(); ++it) {
+            if (it->ptr == ptr) {
+                total -= it->len;
+                rg_free(it->ptr);
 #if RG_ALLOCATOR_DEBUG
-                    rgLogWarn(RG_LOG_SYSTEM, "FREE  [%s] -> Block at: %p, len: %ld", this->name, it->ptr, it->len);
+                rgLogWarn(RG_LOG_SYSTEM, "FREE  [%s] -> Block at: %p, len: %ld", this->name, it->ptr, it->len);
 #endif
-                    blocks.erase(it);
-                    return;
-                }
+                blocks.erase(it);
+                mutex.unlock();
+                return;
             }
         }
-        SDL_UnlockMutex(mutex);
+        mutex.unlock();
 
         rgLogError(RG_LOG_SYSTEM, "Error in: %s allocator!", name);
         RG_ERROR_MSG("STD_ALLOCATOR: Invalid pointer!");
@@ -141,10 +139,14 @@ namespace Engine {
     }
 
     void* LinearAllocator::Allocate(size_t len) {
+
+        mutex.lock();
         if ((size_t)this->m_cur + len > (size_t)this->m_base + this->m_len) { return NULL; }
         void* ptr = this->m_cur;
         size_t s = (size_t)this->m_cur + len;
         this->m_cur = (void*)s;
+        mutex.unlock();
+
         return ptr;
     }
 
@@ -178,22 +180,26 @@ namespace Engine {
     }
 
     void* PoolAllocator::Allocate(size_t len) {
-        if (SDL_LockMutex(mutex) != 0) { return NULL; }
 
+        mutex.lock();
         if (this->ul_bc > 0) {
             this->ul_bc--;
             void* b = this->ul_b;
             this->ul_b = (void*)(((unsigned char*)this->ul_b) + this->bs);
             this->pool_allocatedBlocks++;
+
+            mutex.unlock();
             return b;
         } else if (this->b) {
             void* b = this->b;
             this->b = ((struct PoolBlock*)this->b)->next;
             this->pool_allocatedBlocks++;
+
+            mutex.unlock();
             return b;
         }
 
-        SDL_UnlockMutex(mutex);
+        mutex.unlock();
 
         RG_ERROR_MSG("POOL_ALLOCATOR: Out of memory!");
 
@@ -201,13 +207,11 @@ namespace Engine {
     }
 
     void PoolAllocator::Deallocate(void* ptr) {
-        if (SDL_LockMutex(mutex) != 0) { return; }
-
+        mutex.lock();
         ((struct PoolBlock*)ptr)->next = this->b;
         this->b = ptr;
         this->pool_allocatedBlocks--;
-
-        SDL_UnlockMutex(mutex);
+        mutex.unlock();
     }
 
     void SetDefaultAllocator(STDAllocator* alloc) {

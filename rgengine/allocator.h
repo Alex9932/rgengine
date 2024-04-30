@@ -10,6 +10,7 @@
 #include "rgtypes.h"
 #include <new>
 #include <vector>
+#include <mutex>
 
 #define RG_ALLOC_DO_NOT_FREE_ON_DESTROY
 
@@ -36,7 +37,7 @@ namespace Engine {
 
     class Allocator {
         protected:
-            SDL_mutex* mutex;
+            std::mutex mutex;
             char name[32];
 
         public:

@@ -95,10 +95,6 @@ static bool EHandler(SDL_Event* event) {
 
 static R3D_GlobalLightDescrition desc = {};
 
-static Task task0;
-static Task task1;
-static Task task2;
-
 static void TaskWorker(void* userdata) {
 	KinematicsModel* kmodel = (KinematicsModel*)userdata;
 
@@ -251,16 +247,18 @@ class Application : public BaseGame {
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
 #if 1
-			task0.proc = TaskWorker;
-			task1.proc = TaskWorker;
-			task2.proc = TaskWorker;
-			task0.userdata = kmodel;
-			task1.userdata = kmodel2;
-			task2.userdata = kmodel3;
 
-			ThreadDispatch(&task0);
-			ThreadDispatch(&task1);
-			ThreadDispatch(&task2);
+			Task task = {};
+			task.proc = TaskWorker;
+
+			task.userdata = kmodel;
+			ThreadDispatch(&task);
+
+			task.userdata = kmodel2;
+			ThreadDispatch(&task);
+
+			task.userdata = kmodel3;
+			ThreadDispatch(&task);
 #else
 
 			TaskWorker(kmodel);

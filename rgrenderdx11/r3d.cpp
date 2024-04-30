@@ -51,7 +51,6 @@ static Buffer* cBuffer;
 
 static MatrixBuffer matrixBuffer;
 static ConstBuffer  constBuffer;
-static Float32      time = 0;
 
 static ComputeShader* skeletonShader;
 
