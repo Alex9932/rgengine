@@ -6,10 +6,10 @@
 #include "rendertypes.h";
 
 typedef struct PSBuffer {
-    Uint32 atlas_w;
-    Uint32 atlas_h;
-    Uint32 _offset0;
-    Uint32 _offset1;
+    Uint32  atlas_w;
+    Uint32  atlas_h;
+    Float32 maxtime;
+    Uint32  _offset1;
 } PSBuffer;
 
 Uint32 GetEmitterCount();

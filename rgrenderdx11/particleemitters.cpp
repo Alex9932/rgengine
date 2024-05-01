@@ -28,4 +28,5 @@ void GetEmitterInfo(Uint32 id, PSBuffer* buffer) {
 
     buffer->atlas_w = emitter->GetAtlasWidth();
     buffer->atlas_h = emitter->GetAtlasHeight();
+    buffer->maxtime = emitter->GetMaxTime();
 }

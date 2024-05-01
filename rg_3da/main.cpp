@@ -117,10 +117,18 @@ static void TaskWorker(void* userdata) {
 }
 
 static void PSpawnCB(Particle* particle, ParticleEmitter* emitter) {
-	particle->lifetime = 1.5f;
-	particle->mul = 0.97f;
-	particle->vel = {0, 10, 0};
-	particle->pos = emitter->GetEntity()->GetTransform()->GetPosition();
+	vec3 offset = {0, 1.2f, 0};
+
+
+	particle->lifetime = 3;
+	particle->mul = 1.0f;
+	particle->vel = { 0, 0, 0 };
+
+	//particle->lifetime = 3;
+	//particle->mul = 1.0001f;
+	//particle->vel = { 0, 0.3f, 0 };
+
+	particle->pos = emitter->GetEntity()->GetTransform()->GetPosition() + offset;
 }
 
 class Application : public BaseGame {
@@ -528,11 +536,20 @@ class Application : public BaseGame {
 			ParticleEmitterInfo emInfo = {};
 			emInfo.spawn_cb  = PSpawnCB;
 			emInfo.delete_cb = NULL;
-			emInfo.lifetime  = 1.5f;
+			emInfo.lifetime  = 3;
 			emInfo.max_particles = 256;
-			emInfo.sprite_atlas  = "platform/textures/fire0.png";
-			emInfo.width     = 5;
-			emInfo.height    = 4;
+
+			emInfo.sprite_atlas  = "platform/textures/pfx_test.png";
+			emInfo.width  = 4;
+			emInfo.height = 4;
+			// 
+			//emInfo.sprite_atlas  = "platform/textures/xray-nonfree/pfx_expl_benzin.png";
+			//emInfo.width     = 10;
+			//emInfo.height    = 10;
+			//
+			//emInfo.sprite_atlas = "platform/textures/xray-nonfree/pfx_ani-fire01.png";
+			//emInfo.width  = 11;
+			//emInfo.height = 7;
 
 			Entity* sndentl = world->NewEntity();
 			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));

@@ -64,28 +64,12 @@ static void LoadShaders() {
 	GetPath(ps, 128, RG_PATH_SYSTEM, "shadersdx11/r2d.ps");
 	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, vs, ps, false);
 
-	alloc_buffers  = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BuffersPool", R_BUFFERS_COUNT, sizeof(R2D_Buffer));
-	alloc_textures = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_TexturesPool", R_TEXTURES_COUNT, sizeof(R2D_Texture));
-	stack = RG_NEW_CLASS(RGetAllocator(), Stack)(RGetAllocator(), sizeof(mat4), 256);
 	vsbuffer.model = MAT4_IDENTITY();
 
-	BufferCreateInfo bInfo = {};
-	bInfo.access = BUFFER_CPU_WRITE;
-	bInfo.usage  = BUFFER_DYNAMIC;
-	bInfo.type   = BUFFER_CONSTANT;
-	bInfo.length = sizeof(VSBuffer);
-	buffer_vs = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
-	bInfo.length = sizeof(PSBuffer);
-	buffer_ps = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 }
 
 static void FreeShaders() {
-	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_vs);
-	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_ps);
-	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_buffers);
-	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_textures);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
-	RG_DELETE_CLASS(RGetAllocator(), Stack, stack);
 }
 
 #if 0
@@ -145,6 +129,19 @@ void InitializeR2D(ivec2* size) {
 
 	DX11_GetDevice()->CreateBlendState(&blendDesc, &blendState);
 
+	BufferCreateInfo bInfo = {};
+	bInfo.access = BUFFER_CPU_WRITE;
+	bInfo.usage = BUFFER_DYNAMIC;
+	bInfo.type = BUFFER_CONSTANT;
+	bInfo.length = sizeof(VSBuffer);
+	buffer_vs = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
+	bInfo.length = sizeof(PSBuffer);
+	buffer_ps = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
+
+	alloc_buffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BuffersPool", R_BUFFERS_COUNT, sizeof(R2D_Buffer));
+	alloc_textures = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_TexturesPool", R_TEXTURES_COUNT, sizeof(R2D_Texture));
+	stack = RG_NEW_CLASS(RGetAllocator(), Stack)(RGetAllocator(), sizeof(mat4), 256);
+
 	LoadShaders();
 #if 0
 	rgLogInfo(RG_LOG_RENDER, "Stack test");
@@ -193,6 +190,12 @@ void DestroyR2D() {
 	DX11_FreeRenderTarget(&rendertarget);
 	rasterState->Release();
 	blendState->Release();
+
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_vs);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, buffer_ps);
+	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_buffers);
+	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_textures);
+	RG_DELETE_CLASS(RGetAllocator(), Stack, stack);
 
 	FreeShaders();
 }

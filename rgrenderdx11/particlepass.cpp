@@ -44,10 +44,9 @@ static void _DestroyFramebuffer() {
     DX11_FreeRenderTarget(&rendertarget);
 }
 
-void CreateParticlePass(ivec2* size) {
-
+static void _LoadShader() {
     PipelineDescription desc = {};
-    desc.inputCount   = 0;
+    desc.inputCount = 0;
     desc.descriptions = NULL;
 
     char vs[128];
@@ -58,6 +57,15 @@ void CreateParticlePass(ivec2* size) {
     Engine::GetPath(gs, 128, RG_PATH_SYSTEM, "shadersdx11/particle.gs");
 
     shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&desc, vs, ps, gs, false);
+}
+
+static void _FreeShader() {
+    RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
+}
+
+void CreateParticlePass(ivec2* size) {
+
+    _LoadShader();
 
     BufferCreateInfo bInfo = {};
     bInfo.access = BUFFER_CPU_WRITE;
@@ -120,7 +128,7 @@ void DestroyParticlePass() {
     blendState->Release();
     rasterState->Release();
     depthStencilState->Release();
-    RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
+    _FreeShader();
 
     RG_DELETE_CLASS(RGetAllocator(), Buffer, gBuffer);
     RG_DELETE_CLASS(RGetAllocator(), Buffer, pBuffer);
@@ -129,6 +137,11 @@ void DestroyParticlePass() {
 void ResizeParticlePass(ivec2* size) {
     _DestroyFramebuffer();
     _CreateFramebuffer(size);
+}
+
+void ReloadParticleShaders() {
+    _FreeShader();
+    _LoadShader();
 }
 
 void RenderParticles() {
@@ -175,7 +188,7 @@ void RenderParticles() {
         
         // PS
         atlas->texture->Bind(0);        // Texture
-        //ctx->PSSetConstantBuffers(0, 1, &pixelBuffer); // Emitter settings
+        ctx->PSSetConstantBuffers(0, 1, &pixelBuffer); // Emitter settings
 
         ctx->DrawInstanced(1, GetEmitterMaxParticle(i), 0, 0);
     }

@@ -253,6 +253,7 @@ void ReloadShadersR3D() {
 	LoadShaders();
 	ReloadShadersLightpass();
 	ReloadShadersFX();
+	ReloadParticleShaders();
 }
 
 RQueue* GetStaticQueue() { return staticQueue; }

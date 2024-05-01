@@ -16,8 +16,10 @@ cbuffer MatrixBuffer : register(b0) {
 void gmain(point INPUT vinput[1], inout TriangleStream<OUTPUT> output) {
 
     float2 halfSize    = float2(0.5f, 0.5f);
-    float2 vertices[4] = { float2(-halfSize.x, -halfSize.y), float2(-halfSize.x,  halfSize.y),
-                           float2( halfSize.x,  halfSize.y), float2(halfSize.x, -halfSize.y) };
+    float2 vertices[4] = { float2( halfSize.x, -halfSize.y),
+                           float2(-halfSize.x, -halfSize.y),
+                           float2( halfSize.x,  halfSize.y),
+                           float2(-halfSize.x,  halfSize.y) };
 
     INPUT vin = vinput[0];
 
@@ -31,23 +33,9 @@ void gmain(point INPUT vinput[1], inout TriangleStream<OUTPUT> output) {
 
     gout.texcoord.z = vin.texcoord.z;
 
-    gout.texcoord.xy = vertices[0];
-    gout.position = mul(float4(vin.position.xy + vertices[0], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
-    gout.texcoord.xy = vertices[1];
-    gout.position = mul(float4(vin.position.xy + vertices[1], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
-    gout.texcoord.xy = vertices[2];
-    gout.position = mul(float4(vin.position.xy + vertices[2], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
-
-    gout.texcoord.xy = vertices[3];
-    gout.position = mul(float4(vin.position.xy + vertices[3], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
-    gout.texcoord.xy = vertices[2];
-    gout.position = mul(float4(vin.position.xy + vertices[2], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
-    gout.texcoord.xy = vertices[0];
-    gout.position = mul(float4(vin.position.xy + vertices[0], vin.position.z, 1.0f), viewproj);
-    output.Append(gout);
+    for(int i = 0; i < 4; i++) {
+        gout.texcoord.xy = vertices[i];
+        gout.position = mul(float4(vin.position.xy + (vertices[i] * 1.3), vin.position.z, 1.0f), viewproj);
+        output.Append(gout);
+    }
 }

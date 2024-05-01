@@ -48,8 +48,9 @@ namespace Engine {
 
 			RG_INLINE void* GetRawParticleBuffer() { return m_allocator->GetBasePointer(); }
 
-			RG_INLINE Uint32 GetAtlasWidth()  { return m_atlas_width;  }
-			RG_INLINE Uint32 GetAtlasHeight() { return m_atlas_height; }
+			RG_INLINE Uint32  GetAtlasWidth()  { return m_atlas_width;  }
+			RG_INLINE Uint32  GetAtlasHeight() { return m_atlas_height; }
+			RG_INLINE Float32 GetMaxTime()     { return m_lifetime;     }
 
 		private:
 			Uint32              m_particles;

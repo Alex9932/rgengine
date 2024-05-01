@@ -9,6 +9,7 @@ ID3D11ShaderResourceView* GetParticleShaderResource();
 void CreateParticlePass(ivec2* size);
 void DestroyParticlePass();
 void ResizeParticlePass(ivec2* size);
+void ReloadParticleShaders();
 
 void RenderParticles();
 
