@@ -24,6 +24,7 @@
 #include <filesystem.h>
 #include <modelsystem.h>
 #include <lightsystem.h>
+#include <particlesystem.h>
 #include <kinematicsmodel.h>
 #include <pm2importer.h>
 
@@ -59,6 +60,8 @@ static Camera*      camera;
 
 static Entity* ent0;
 
+static ParticleEmitter* emitter;
+
 static Bool ph_enabled = false;
 static bool EHandler(SDL_Event* event) {
 #if 0
@@ -78,6 +81,7 @@ static bool EHandler(SDL_Event* event) {
 				ph_enabled = !ph_enabled;
 				if (ph_enabled) { Engine::GetPhysics()->Enable(); }
 				else { Engine::GetPhysics()->Disable(); }
+				break;
 			}
 			case SDL_SCANCODE_R: {
 				PHComponent* pcomp = ent0->GetComponent(Component_PH)->AsPHComponent();
@@ -85,7 +89,14 @@ static bool EHandler(SDL_Event* event) {
 				t.SetPosition({ 0, 5, 0 });
 				t.SetRotation({ 0, -0.5f, 1.0f });
 				pcomp->SetWorldTransform(&t);
+				break;
 			}
+
+			case SDL_SCANCODE_E: {
+				emitter->EmitParticle();
+				break;
+			}
+
 			default: { break; }
 		}
 	}
@@ -103,6 +114,13 @@ static void TaskWorker(void* userdata) {
 	kmodel->SolveCCDIK();
 	kmodel->RecalculateTransform();
 
+}
+
+static void PSpawnCB(Particle* particle, ParticleEmitter* emitter) {
+	particle->lifetime = 1.5f;
+	particle->mul = 0.97f;
+	particle->vel = {0, 10, 0};
+	particle->pos = emitter->GetEntity()->GetTransform()->GetPosition();
 }
 
 class Application : public BaseGame {
@@ -228,7 +246,7 @@ class Application : public BaseGame {
 
 
 
-			R3DBoneBufferUpdateInfo binfo = {};
+			R3DUpdateBufferInfo binfo = {};
 			binfo.offset = 0;
 			binfo.data = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
@@ -507,9 +525,20 @@ class Application : public BaseGame {
 			sourcel->SetBuffer(sbufferl);
 			sourcel->SetRepeat(true);
 
+			ParticleEmitterInfo emInfo = {};
+			emInfo.spawn_cb  = PSpawnCB;
+			emInfo.delete_cb = NULL;
+			emInfo.lifetime  = 1.5f;
+			emInfo.max_particles = 256;
+			emInfo.sprite_atlas  = "platform/textures/fire0.png";
+			emInfo.width     = 5;
+			emInfo.height    = 4;
+
 			Entity* sndentl = world->NewEntity();
 			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
 			sndentl->AttachComponent(sourcel);
+			emitter = Render::GetParticleSystem()->NewEmitter(&emInfo);
+			sndentl->AttachComponent(emitter);
 			sndentl->GetTransform()->SetPosition({ 6, 0.82f, 1 });
 			sndentl->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			sndentl->GetTransform()->SetScale({ 1, 1, 1 });

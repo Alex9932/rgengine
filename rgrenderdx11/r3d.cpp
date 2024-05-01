@@ -13,6 +13,8 @@
 #include "lightpass.h"
 #include "postprocess.h"
 
+#include "particlepass.h"
+
 #include "loader.h"
 
 #include <profiler.h>
@@ -20,6 +22,7 @@
 #define R_MATERIALS_COUNT 4096
 #define R_MODELS_COUNT    4096
 #define R_MAX_MODELS      4096
+#define R_ATLASES_COUNT   4096
 
 using namespace Engine;
 
@@ -28,6 +31,8 @@ static PoolAllocator*   alloc_staticmodels;
 static PoolAllocator*   alloc_riggedmodels;
 static LinearAllocator* alloc_matrices;
 static PoolAllocator*   alloc_bonebuffers;
+static PoolAllocator*   alloc_atlases;
+static PoolAllocator*   alloc_particlebuffers;
 
 static RQueue* staticQueue;
 static RQueue* riggedQueue;
@@ -165,11 +170,13 @@ static void FreeShaders() {
 }
 
 void InitializeR3D(ivec2* size) {
-	alloc_materials    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MaterialPool", R_MATERIALS_COUNT, sizeof(R3D_Material));
-	alloc_staticmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_StaticModelPool", R_MODELS_COUNT, sizeof(R3D_StaticModel));
-	alloc_riggedmodels = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_RiggedModelPool", R_MODELS_COUNT, sizeof(R3D_RiggedModel));
-	alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
-	alloc_bonebuffers  = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
+	alloc_materials       = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MaterialPool", R_MATERIALS_COUNT, sizeof(R3D_Material));
+	alloc_staticmodels    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_StaticModelPool", R_MODELS_COUNT, sizeof(R3D_StaticModel));
+	alloc_riggedmodels    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_RiggedModelPool", R_MODELS_COUNT, sizeof(R3D_RiggedModel));
+	alloc_matrices        = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
+	alloc_bonebuffers     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
+	alloc_atlases         = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_AtlasHandlesPool", R_ATLASES_COUNT, sizeof(R3D_AtlasHandle));
+	alloc_particlebuffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_ParticleBuffersPool", R_ATLASES_COUNT, sizeof(R3D_AtlasHandle));
 	//alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MatrixPool", R_MODELS_COUNT * 2, sizeof(mat4));
 	staticQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 2);
 	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
@@ -199,6 +206,7 @@ void InitializeR3D(ivec2* size) {
 
 	CreateShadowBuffer(&ssize);
 	CreateGBuffer(size);
+	CreateParticlePass(size);
 	CreateLightpass(size);
 	CreateFX(size);
 }
@@ -208,6 +216,7 @@ void DestroyR3D() {
 	DestroyShadowBuffer();
 	DestroyLightpass();
 	DestroyGBuffer();
+	DestroyParticlePass();
 	DestroyFX();
 
 	FreeShaders();
@@ -222,6 +231,8 @@ void DestroyR3D() {
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_riggedmodels);
 	RG_DELETE_CLASS(RGetAllocator(), LinearAllocator, alloc_matrices);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_bonebuffers);
+	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_atlases);
+	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_particlebuffers);
 	//RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_matrices);
 	RG_DELETE_CLASS(RGetAllocator(), RQueue, staticQueue);
 	RG_DELETE_CLASS(RGetAllocator(), RQueue, riggedQueue);
@@ -231,6 +242,7 @@ void ResizeR3D(ivec2* wndSize) {
 
 	//ResizeShadowBuffer(wndSize);
 	ResizeGBuffer(wndSize);
+	ResizeParticlePass(wndSize);
 	ResizeLightpass(wndSize);
 	ResizeFX(wndSize);
 
@@ -261,6 +273,8 @@ void GetR3DStats(R3DStats* stats) {
 }
 
 ////// PUBLIC API //////
+
+// Material
 
 R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	R3D_Material* material = (R3D_Material*)alloc_materials->Allocate();
@@ -327,6 +341,8 @@ void R3D_DestroyMaterial(R3D_Material* hmat) {
 
 	alloc_materials->Deallocate(hmat);
 }
+
+// Static model
 
 R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	R3D_StaticModel* staticModel = (R3D_StaticModel*)alloc_staticmodels->Allocate();
@@ -415,6 +431,8 @@ void R3D_DestroyStaticModel(R3D_StaticModel* hsmdl) {
 
 	alloc_staticmodels->Deallocate(hsmdl);
 }
+
+// Rigged model
 
 R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 	R3D_RiggedModel* riggedModel = (R3D_RiggedModel*)alloc_riggedmodels->Allocate();
@@ -532,7 +550,9 @@ void R3D_DestroyRiggedModel(R3D_RiggedModel* hrmdl) {
 	alloc_riggedmodels->Deallocate(hrmdl);
 }
 
-R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
+// Bone buffer
+
+R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBufferInfo* info) {
 	R3D_BoneBuffer* buffer = (R3D_BoneBuffer*)alloc_bonebuffers->Allocate();
 	BufferCreateInfo vbufferInfo = {};
 	//vbufferInfo.type   = (BufferType)(BUFFER_UNORDERED | BUFFER_RESOURCE);
@@ -557,12 +577,77 @@ R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
 }
 
 void R3D_DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
+	hbuff->resourceView->Release();
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, hbuff->bBuffer);
 	alloc_bonebuffers->Deallocate(hbuff);
 }
 
-void R3D_UpdateBoneBuffer(R3DBoneBufferUpdateInfo* info) {
-	info->handle->bBuffer->SetData(info->offset, info->length, info->data);
+void R3D_UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
+	info->handle_bone->bBuffer->SetData(info->offset, info->length, info->data);
+}
+
+// Particles
+
+R3D_AtlasHandle* R3D_CreateAtlas(String texture) {
+	R3D_AtlasHandle* handle = (R3D_AtlasHandle*)alloc_atlases->Allocate();
+	LoaderPushTexture(texture, &handle->texture);
+	texturesLoaded++;
+	return handle;
+}
+
+void R3D_DestroyAtlas(R3D_AtlasHandle* atlas) {
+	if (atlas->texture != GetDefaultTexture()) {
+		TexturesDelete(atlas->texture);
+		texturesLoaded--;
+	}
+	alloc_atlases->Deallocate(atlas);
+}
+
+R3D_ParticleBuffer* R3D_CreateParticleBuffer(R3DCreateBufferInfo* info) {
+	R3D_ParticleBuffer* buffer = (R3D_ParticleBuffer*)alloc_particlebuffers->Allocate();
+	BufferCreateInfo vbufferInfo = {};
+	vbufferInfo.type   = BUFFER_RESOURCE;
+	vbufferInfo.access = BUFFER_CPU_WRITE;
+	vbufferInfo.usage  = BUFFER_DYNAMIC;
+	vbufferInfo.length = info->len;
+	vbufferInfo.stride = sizeof(Particle);
+	vbufferInfo.miscflags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	buffer->bBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
+
+	HRESULT result;
+
+#if 1
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+	srvDesc.BufferEx.FirstElement = 0;
+	srvDesc.BufferEx.Flags = 0;
+	srvDesc.BufferEx.NumElements = info->len / sizeof(Particle);
+
+	result = DX11_GetDevice()->CreateShaderResourceView(buffer->bBuffer->GetHandle(), &srvDesc, &buffer->resourceView);
+#endif
+#if 0
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+	uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	uavDesc.Buffer.FirstElement = 0;
+	//uavDesc.Buffer.NumElements  = sizeof(R3D_Vertex) * info->vCount / 4;
+	uavDesc.Buffer.NumElements = info->len / sizeof(Particle);
+	uavDesc.Buffer.Flags = 0;
+	result = DX11_GetDevice()->CreateUnorderedAccessView(buffer->bBuffer->GetHandle(), &uavDesc, &buffer->uav);
+#endif
+	return buffer;
+}
+
+void R3D_DestroyParticleBuffer(R3D_ParticleBuffer* hbuff) {
+	hbuff->resourceView->Release();
+	//hbuff->uav->Release();
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, hbuff->bBuffer);
+	alloc_particlebuffers->Deallocate(hbuff);
+}
+
+void R3D_UpdateParticleBuffer(R3DUpdateBufferInfo* info) {
+	info->handle_particle->bBuffer->SetData(info->offset, info->length, info->data);
 }
 
 void R3D_PushModel(R3D_PushModelInfo* info) {
@@ -823,7 +908,9 @@ void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
 	GetRiggedQueue()->Clear();
 	GetMatrixAllocator()->Deallocate();
 
-	DoLightpass();   // Light pass
-	DoPostprocess(); // Postprocess
+	RenderParticles(); // Particle pass
+
+	DoLightpass();     // Light pass
+	DoPostprocess();   // Postprocess
 
 }

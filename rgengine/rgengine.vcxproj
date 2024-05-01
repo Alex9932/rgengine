@@ -162,7 +162,7 @@
     <ClCompile Include="lookatcameracontroller.cpp" />
     <ClCompile Include="meshtool.cpp" />
     <ClCompile Include="objimporter.cpp" />
-    <ClCompile Include="patriclesystem.cpp" />
+    <ClCompile Include="particlesystem.cpp" />
     <ClCompile Include="phcomponent.cpp" />
     <ClCompile Include="pm2exporter.cpp" />
     <ClCompile Include="pm2importer.cpp" />
@@ -219,7 +219,7 @@
     <ClInclude Include="meshtool.h" />
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="objimporter.h" />
-    <ClInclude Include="patriclesystem.h" />
+    <ClInclude Include="particlesystem.h" />
     <ClInclude Include="phcomponent.h" />
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2exporter.h" />

@@ -16,6 +16,8 @@
 
 #include <engine.h>
 
+#include "particlepass.h"
+
 /*
 float redOffset = 0.009;
 float greenOffset = 0.006;
@@ -575,6 +577,8 @@ void DoPostprocess() {
 
 	mix->SetInput(5, godrays->GetOutput());
 
+	mix->SetInput(6, GetParticleShaderResource()); // Particles
+
 	mix->Draw();
 
 	// Tonemapping
@@ -614,7 +618,8 @@ ID3D11ShaderResourceView* FXGetOuputTexture() {
 	views[0] = mix->GetOutput();
 	views[1] = godrays->GetOutput();
 	//views[2] = ssao->GetOutput();
-	views[2] = ssr_blury1->GetOutput();
+	//views[2] = ssr_blury1->GetOutput();
+	views[2] = GetParticleShaderResource();
 	views[3] = lightpass->GetOutput();
 	views[4] = GetGBufferShaderResource(0);
 	views[5] = GetGBufferShaderResource(1);

@@ -9,6 +9,7 @@
 
 #include "modelsystem.h"
 #include "lightsystem.h"
+#include "particlesystem.h"
 
 #include "profiler.h"
 
@@ -45,23 +46,30 @@ namespace Engine {
         PFN_R2D_DRAW                R2D_Draw               = NULL;
 
         // R3D
-        PFN_R3D_CREATEMATERIAL      R3D_CreateMaterial     = NULL;
-        PFN_R3D_DESTROYMATERIAL     R3D_DestroyMaterial    = NULL;
+        PFN_R3D_CREATEMATERIAL        R3D_CreateMaterial        = NULL;
+        PFN_R3D_DESTROYMATERIAL       R3D_DestroyMaterial       = NULL;
 
-        PFN_R3D_CREATESTATICMODEL   R3D_CreateStaticModel  = NULL;
-        PFN_R3D_DESTROYSTATICMODEL  R3D_DestroyStaticModel = NULL;
+        PFN_R3D_CREATESTATICMODEL     R3D_CreateStaticModel     = NULL;
+        PFN_R3D_DESTROYSTATICMODEL    R3D_DestroyStaticModel    = NULL;
 
-        PFN_R3D_CREATERIGGEDMODEL   R3D_CreateRiggedModel  = NULL;
-        PFN_R3D_DESTROYRIGGEDMODEL  R3D_DestroyRiggedModel = NULL;
+        PFN_R3D_CREATERIGGEDMODEL     R3D_CreateRiggedModel     = NULL;
+        PFN_R3D_DESTROYRIGGEDMODEL    R3D_DestroyRiggedModel    = NULL;
 
-        PFN_R3D_CREATEBONEBUFFER    R3D_CreateBoneBuffer   = NULL;
-        PFN_R3D_DESTROYBONEBUFFER   R3D_DestroyBoneBuffer  = NULL;
-        PFN_R3D_UPDATEBONEBUFFER    R3D_UpdateBoneBuffer   = NULL;
+        PFN_R3D_CREATEBONEBUFFER      R3D_CreateBoneBuffer      = NULL;
+        PFN_R3D_DESTROYBONEBUFFER     R3D_DestroyBoneBuffer     = NULL;
+        PFN_R3D_UPDATEBONEBUFFER      R3D_UpdateBoneBuffer      = NULL;
 
-        PFN_R3D_PUSHMODEL           R3D_PushModel          = NULL;
-        PFN_R3D_SETCAMERA           R3D_SetCamera          = NULL;
+        PFN_R3D_CREATEATLAS           R3D_CreateAtlas           = NULL;
+        PFN_R3D_DESTROYATLAS          R3D_DestroyAtlas          = NULL;
 
-        PFN_R3D_STARTRENDERTASK     R3D_StartRenderTask    = NULL;
+        PFN_R3D_CREATEPARTICLEBUFFER  R3D_CreateParticleBuffer  = NULL;
+        PFN_R3D_DESTROYPARTICLEBUFFER R3D_DestroyParticleBuffer = NULL;
+        PFN_R3D_UPDATEPARTICLEBUFFER  R3D_UpdateParticleBuffer  = NULL;
+
+        PFN_R3D_PUSHMODEL             R3D_PushModel             = NULL;
+        PFN_R3D_SETCAMERA             R3D_SetCamera             = NULL;
+
+        PFN_R3D_STARTRENDERTASK       R3D_StartRenderTask       = NULL;
 
         /////////////////////////////////////////////////////////
 
@@ -72,6 +80,7 @@ namespace Engine {
 
         static ModelSystem*         modelSystem            = NULL;
         static LightSystem*         lightSystem            = NULL;
+        static ParticleSystem*      particlesystem         = NULL;
 
         static RenderSetupInfo      setupParams            = {};
 
@@ -145,26 +154,34 @@ namespace Engine {
             R2D_Draw           = (PFN_R2D_DRAW)Engine::DL_GetProcAddress(handle, "R2D_Draw");
 
             // R3D
-            R3D_CreateMaterial     = (PFN_R3D_CREATEMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_CreateMaterial");
-            R3D_DestroyMaterial    = (PFN_R3D_DESTROYMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_DestroyMaterial");
+            R3D_CreateMaterial        = (PFN_R3D_CREATEMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_CreateMaterial");
+            R3D_DestroyMaterial       = (PFN_R3D_DESTROYMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_DestroyMaterial");
 
-            R3D_CreateStaticModel  = (PFN_R3D_CREATESTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_CreateStaticModel");
-            R3D_DestroyStaticModel = (PFN_R3D_DESTROYSTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_DestroyStaticModel");
+            R3D_CreateStaticModel     = (PFN_R3D_CREATESTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_CreateStaticModel");
+            R3D_DestroyStaticModel    = (PFN_R3D_DESTROYSTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_DestroyStaticModel");
 
-            R3D_CreateRiggedModel  = (PFN_R3D_CREATERIGGEDMODEL)Engine::DL_GetProcAddress(handle, "R3D_CreateRiggedModel");
-            R3D_DestroyRiggedModel = (PFN_R3D_DESTROYRIGGEDMODEL)Engine::DL_GetProcAddress(handle, "R3D_DestroyRiggedModel");
+            R3D_CreateRiggedModel     = (PFN_R3D_CREATERIGGEDMODEL)Engine::DL_GetProcAddress(handle, "R3D_CreateRiggedModel");
+            R3D_DestroyRiggedModel    = (PFN_R3D_DESTROYRIGGEDMODEL)Engine::DL_GetProcAddress(handle, "R3D_DestroyRiggedModel");
 
-            R3D_CreateBoneBuffer   = (PFN_R3D_CREATEBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_CreateBoneBuffer");
-            R3D_DestroyBoneBuffer  = (PFN_R3D_DESTROYBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_DestroyBoneBuffer");
-            R3D_UpdateBoneBuffer   = (PFN_R3D_UPDATEBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_UpdateBoneBuffer");
+            R3D_CreateBoneBuffer      = (PFN_R3D_CREATEBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_CreateBoneBuffer");
+            R3D_DestroyBoneBuffer     = (PFN_R3D_DESTROYBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_DestroyBoneBuffer");
+            R3D_UpdateBoneBuffer      = (PFN_R3D_UPDATEBONEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_UpdateBoneBuffer");
 
-            R3D_PushModel          = (PFN_R3D_PUSHMODEL)Engine::DL_GetProcAddress(handle, "R3D_PushModel");
-            R3D_SetCamera          = (PFN_R3D_SETCAMERA)Engine::DL_GetProcAddress(handle, "R3D_SetCamera");
+            R3D_CreateAtlas           = (PFN_R3D_CREATEATLAS)Engine::DL_GetProcAddress(handle, "R3D_CreateAtlas");
+            R3D_DestroyAtlas          = (PFN_R3D_DESTROYATLAS)Engine::DL_GetProcAddress(handle, "R3D_DestroyAtlas");
 
-            R3D_StartRenderTask    = (PFN_R3D_STARTRENDERTASK)Engine::DL_GetProcAddress(handle, "R3D_StartRenderTask");
+            R3D_CreateParticleBuffer  = (PFN_R3D_CREATEPARTICLEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_CreateParticleBuffer");
+            R3D_DestroyParticleBuffer = (PFN_R3D_DESTROYPARTICLEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_DestroyParticleBuffer");
+            R3D_UpdateParticleBuffer  = (PFN_R3D_UPDATEPARTICLEBUFFER)Engine::DL_GetProcAddress(handle, "R3D_UpdateParticleBuffer");
+
+            R3D_PushModel             = (PFN_R3D_PUSHMODEL)Engine::DL_GetProcAddress(handle, "R3D_PushModel");
+            R3D_SetCamera             = (PFN_R3D_SETCAMERA)Engine::DL_GetProcAddress(handle, "R3D_SetCamera");
+
+            R3D_StartRenderTask       = (PFN_R3D_STARTRENDERTASK)Engine::DL_GetProcAddress(handle, "R3D_StartRenderTask");
 
             modelSystem = RG_NEW_CLASS(GetDefaultAllocator(), ModelSystem)();
             lightSystem = RG_NEW_CLASS(GetDefaultAllocator(), LightSystem)();
+            particlesystem = RG_NEW_CLASS(GetDefaultAllocator(), ParticleSystem)();
 
             isRendererLoaded = true;
 
@@ -174,6 +191,7 @@ namespace Engine {
 
             RG_DELETE_CLASS(GetDefaultAllocator(), ModelSystem, modelSystem);
             RG_DELETE_CLASS(GetDefaultAllocator(), LightSystem, lightSystem);
+            RG_DELETE_CLASS(GetDefaultAllocator(), ParticleSystem, particlesystem);
             
             FreeEventHandler(_EventHandler);
             DL_UnloadLibrary(handle);
@@ -379,11 +397,14 @@ namespace Engine {
             }
         }
 
-
-        void Update() {
-
+        void UpdateSystems() {
             modelSystem->UpdateComponents();
             lightSystem->UpdateComponents();
+            // TODO
+            particlesystem->UpdateComponents(NULL);
+        }
+
+        void Update() {
 
             RenderWorld(Engine::GetWorld());
 
@@ -498,18 +519,48 @@ namespace Engine {
             return lightSystem;
         }
 
-        R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
-            if (isRendererLoaded) {
-                return R3D_CreateBoneBuffer(info);
-            } else {
-               return NULL;
-            }
+        ParticleSystem* GetParticleSystem() {
+            return particlesystem;
+        }
+
+        R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBufferInfo* info) {
+            if (!isRendererLoaded) { return NULL; }
+            return R3D_CreateBoneBuffer(info);
         }
 
         void DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
-            if (isRendererLoaded) {
-                R3D_DestroyBoneBuffer(hbuff);
-            }
+            if (!isRendererLoaded) { return; }
+            R3D_DestroyBoneBuffer(hbuff);
+        }
+
+        void UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
+            if (!isRendererLoaded) { return; }
+            R3D_UpdateBoneBuffer(info);
+        }
+
+        R3D_AtlasHandle* CreateAtlas(String texture) {
+            if (!isRendererLoaded) { return NULL; }
+            return R3D_CreateAtlas(texture);
+        }
+
+        void DestroyAtlas(R3D_AtlasHandle* atlas) {
+            if (!isRendererLoaded) { return; }
+            R3D_DestroyAtlas(atlas);
+        }
+
+        R3D_ParticleBuffer* CreateParticleBuffer(R3DCreateBufferInfo* info) {
+            if (!isRendererLoaded) { return NULL; }
+            return R3D_CreateParticleBuffer(info);
+        }
+
+        void DestroyParticleBuffer(R3D_ParticleBuffer* hbuff) {
+            if (!isRendererLoaded) { return; }
+            R3D_DestroyParticleBuffer(hbuff);
+        }
+
+        void UpdateParticleBuffer(R3DUpdateBufferInfo* info) {
+            if (!isRendererLoaded) { return; }
+            R3D_UpdateParticleBuffer(info);
         }
 
         RenderSetupInfo* GetSetupParams() {

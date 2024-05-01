@@ -38,6 +38,8 @@ typedef struct R3D_Material R3D_Material;
 typedef struct R3D_StaticModel R3D_StaticModel;
 typedef struct R3D_RiggedModel R3D_RiggedModel;
 typedef struct R3D_BoneBuffer R3D_BoneBuffer;
+typedef struct R3D_AtlasHandle R3D_AtlasHandle;
+typedef struct R3D_ParticleBuffer R3D_ParticleBuffer;
 
 typedef struct RenderSetupInfo {
 
@@ -153,6 +155,13 @@ typedef struct R3D_Weight {
 	ivec4 idx;
 } R3D_Weight;
 
+typedef struct Particle {
+	vec3    pos;
+	Float32 lifetime;
+	vec3    vel;
+	Float32 mul; // (>1 - Increase velocity, <1 - decrease velocity)
+} Particle;
+
 typedef struct R3D_MeshInfo {
 	R3D_Material* material;
 	Uint32        indexOffset;
@@ -209,17 +218,21 @@ typedef struct R3DRiggedModelInfo {
 	IndexType     iType;
 } R3DRiggedModelInfo;
 
-typedef struct R3DCreateBoneBufferInfo {
+typedef struct R3DCreateBufferInfo {
 	Uint32 len;
 	void*  initialData;
-} R3DCreateBoneBufferInfo;
+} R3DCreateBufferInfo;
 
-typedef struct R3DBoneBufferUpdateInfo {
-	R3D_BoneBuffer* handle;
-	Uint32          offset;
-	Uint32          length;
-	void*           data;
-} R3DBoneBufferUpdateInfo;
+typedef struct R3DUpdateBufferInfo {
+	union {
+		void* handle;
+		R3D_BoneBuffer*     handle_bone;
+		R3D_ParticleBuffer* handle_particle;
+	};
+	Uint32 offset;
+	Uint32 length;
+	void*  data;
+} R3DUpdateBufferInfo;
 
 typedef struct R3D_PushModelInfo {
 	union {

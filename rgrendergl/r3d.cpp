@@ -25,7 +25,7 @@ void R3D_DestroyRiggedModel(R3D_RiggedModel* hsmdl) {
 
 }
 
-R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info) {
+R3D_BoneBuffer* R3D_CreateBoneBuffer(R3DCreateBufferInfo* info) {
 	return NULL;
 }
 
@@ -33,7 +33,7 @@ void R3D_DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
 
 }
 
-void R3D_UpdateBoneBuffer(R3DBoneBufferUpdateInfo* info) {
+void R3D_UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
 
 }
 

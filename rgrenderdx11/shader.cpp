@@ -14,10 +14,10 @@
 // fxc /T vs_5_0 /E vmain /Fo vmain.cso main.vs
 // fxc /T ps_5_0 /E pmain /Fo pmain.cso main.ps
 
-Shader::Shader(PipelineDescription* description, String vs, String ps, bool compiled) {
+void Shader::ClassConstructor(PipelineDescription* description, String vs, String ps, String gs, bool compiled) {
     ShaderCode vsBuffer;
-    if (compiled) { vsBuffer = LoadCompiledShaders(vs, ps); }
-    else { vsBuffer = LoadShaders(vs, ps); }
+    if (compiled) { vsBuffer = LoadCompiledShaders(vs, ps, gs); }
+    else { vsBuffer = LoadShaders(vs, ps, gs); }
 
     D3D11_INPUT_ELEMENT_DESC* layoutDescriptions =
         (D3D11_INPUT_ELEMENT_DESC*)RGetAllocator()->Allocate(sizeof(D3D11_INPUT_ELEMENT_DESC) * description->inputCount);
@@ -65,6 +65,9 @@ Shader::~Shader() {
     layout->Release();
     vshader->Release();
     pshader->Release();
+    if (gshader) {
+        gshader->Release();
+    }
     sampleState->Release();
 }
 
@@ -72,6 +75,11 @@ void Shader::Bind() {
     DX11_GetContext()->IASetInputLayout(layout);
     DX11_GetContext()->VSSetShader(vshader, NULL, 0);
     DX11_GetContext()->PSSetShader(pshader, NULL, 0);
+    if (gshader) {
+        DX11_GetContext()->GSSetShader(gshader, NULL, 0);
+    } else {
+        DX11_GetContext()->GSSetShader(NULL, NULL, 0);
+    }
     DX11_GetContext()->PSSetSamplers(0, 1, &sampleState);
 }
 
@@ -83,12 +91,13 @@ static void PrintErrorMessage(ID3D10Blob* b) {
     RGetAllocator()->Deallocate(buff);
 }
 
-ShaderCode Shader::LoadShaders(String vs, String ps) {
+ShaderCode Shader::LoadShaders(String vs, String ps, String gs) {
     ShaderCode code = {};
 
     ID3D10Blob* errmsg = 0;
     ID3D10Blob* vsBuffer = 0;
     ID3D10Blob* psBuffer = 0;
+    ID3D10Blob* gsBuffer = 0;
     HRESULT     result;
 
     Resource* v_res = Engine::GetResource(vs);
@@ -112,7 +121,6 @@ ShaderCode Shader::LoadShaders(String vs, String ps) {
     }
     Engine::FreeResource(p_res);
 
-
     DX11_GetDevice()->CreateVertexShader(vsBuffer->GetBufferPointer(), vsBuffer->GetBufferSize(), NULL, &vshader);
     DX11_GetDevice()->CreatePixelShader(psBuffer->GetBufferPointer(), psBuffer->GetBufferSize(), NULL, &pshader);
 
@@ -123,39 +131,55 @@ ShaderCode Shader::LoadShaders(String vs, String ps) {
     vsBuffer->Release();
     psBuffer->Release();
 
+    // Create geometry shader if needed
+    if (gs) {
+        Resource* g_res = Engine::GetResource(gs);
+        result = D3DCompile(g_res->data, g_res->length, "geometry", NULL, NULL, "gmain", "gs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &gsBuffer, &errmsg);
+        if (FAILED(result)) {
+            rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
+            if (errmsg) {
+                PrintErrorMessage(errmsg);
+            }
+        }
+        Engine::FreeResource(g_res);
+
+        DX11_GetDevice()->CreateGeometryShader(gsBuffer->GetBufferPointer(), gsBuffer->GetBufferSize(), NULL, &gshader);
+
+        gsBuffer->Release();
+    }
+
     return code;
 }
 
-ShaderCode Shader::LoadCompiledShaders(String vs, String ps) {
+ShaderCode Shader::LoadCompiledShaders(String vs, String ps, String gs) {
     rgLogInfo(RG_LOG_RENDER, "Loading shaders: %s %s\n", vs, ps);
 
-    HRESULT     result;
+    HRESULT result;
 
     void* vbuffer = NULL;
-    void* pbuffer = NULL;
     long  vlen = 0;
-    long  plen = 0;
 
     Resource* v_res = Engine::GetResource(vs);
     vlen = v_res->length;
     vbuffer = RGetAllocator()->Allocate(v_res->length);
     SDL_memcpy(vbuffer, v_res->data, v_res->length);
     Engine::FreeResource(v_res);
+    result = DX11_GetDevice()->CreateVertexShader(vbuffer, vlen, NULL, &vshader);
 
     Resource* p_res = Engine::GetResource(ps);
-    plen = p_res->length;
-    pbuffer = RGetAllocator()->Allocate(p_res->length);
-    SDL_memcpy(pbuffer, p_res->data, p_res->length);
+    result = DX11_GetDevice()->CreatePixelShader(p_res->data, p_res->length, NULL, &pshader);
     Engine::FreeResource(p_res);
 
-    result = DX11_GetDevice()->CreateVertexShader(vbuffer, vlen, NULL, &vshader);
-    result = DX11_GetDevice()->CreatePixelShader(pbuffer, plen, NULL, &pshader);
+    if (gs) {
+        Resource* g_res = Engine::GetResource(gs);
+        result = DX11_GetDevice()->CreateGeometryShader(g_res->data, g_res->length, NULL, &gshader);
+        Engine::FreeResource(g_res);
+
+    }
 
     ShaderCode code;
     code.len = vlen;
     code.data = vbuffer;
-
-    RGetAllocator()->Deallocate(pbuffer);
 
     return code;
 }

@@ -23,6 +23,10 @@ ID3D11ShaderResourceView* GetGBufferDepth() {
     return depthResView;
 }
 
+ID3D11DepthStencilView* GetGBufferDepthView() {
+    return depthStencilView;
+}
+
 static void _CreateFramebuffer(ivec2* size) {
 
     viewport = *size;

@@ -153,6 +153,8 @@
     <ClCompile Include="imgui_impl_dx11.cpp" />
     <ClCompile Include="lightpass.cpp" />
     <ClCompile Include="loader.cpp" />
+    <ClCompile Include="particleemitters.cpp" />
+    <ClCompile Include="particlepass.cpp" />
     <ClCompile Include="postprocess.cpp" />
     <ClCompile Include="queue.cpp" />
     <ClCompile Include="r2d.cpp" />
@@ -170,6 +172,8 @@
     <ClInclude Include="imgui_impl_dx11.h" />
     <ClInclude Include="lightpass.h" />
     <ClInclude Include="loader.h" />
+    <ClInclude Include="particleemitters.h" />
+    <ClInclude Include="particlepass.h" />
     <ClInclude Include="postprocess.h" />
     <ClInclude Include="queue.h" />
     <ClInclude Include="r2d.h" />

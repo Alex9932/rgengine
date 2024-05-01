@@ -1,17 +1,45 @@
-#include "patriclesystem.h"
+#include "particlesystem.h"
 #include "rgthread.h"
+#include "render.h"
 
 #define RG_EMITTERPOOL_SIZE 1024
 
 namespace Engine {
 
-	void ParticleEmitter::Destroy() {
+	ParticleEmitter::ParticleEmitter(ParticleEmitterInfo* info) : Component(Component_PARTICLEEMITTER) {
 
+		if (info->spawn_cb == NULL) {
+			RG_ERROR_MSG("ParticleEmitter: Invalid arguments!");
+		}
+
+		m_particles    = 0;
+		m_maxparticles = info->max_particles;
+		m_lifetime     = info->lifetime;
+		m_cb_spawn     = info->spawn_cb;
+		m_cb_delete    = info->delete_cb;
+
+		R3DCreateBufferInfo bufferInfo = {};
+		bufferInfo.len         = sizeof(Particle) * info->max_particles;
+		bufferInfo.initialData = NULL;
+
+		m_atlas_width  = info->width;
+		m_atlas_height = info->height;
+		m_handle       = Render::CreateAtlas(info->sprite_atlas);
+		m_buffer       = Render::CreateParticleBuffer(&bufferInfo);
+
+		m_allocator = RG_NEW(PoolAllocator)("ParticleEmitter", info->max_particles, sizeof(Particle));
+	}
+
+	void ParticleEmitter::Destroy() {
+		Render::DestroyAtlas(m_handle);
+		Render::DestroyParticleBuffer(m_buffer);
 	}
 
 	void ParticleEmitter::Update(Float64 dt) {
 		Particle* array_ptr   = (Particle*)m_allocator->GetBasePointer();
 		Particle* current_ptr = NULL;
+
+		//rgLogInfo(RG_LOG_GAME, "Update particles");
 
 		for (Uint32 i = 0; i < m_maxparticles; i++) {
 			current_ptr = &array_ptr[i];
@@ -21,15 +49,24 @@ namespace Engine {
 
 			// "Kill" old particle
 			if (current_ptr->lifetime == 0) {
-				if (m_cb_delete) { m_cb_delete(current_ptr); }
+				if (m_cb_delete) { m_cb_delete(current_ptr, this); }
 				current_ptr->lifetime = -1; // "Dead" particle
 				m_allocator->Deallocate(current_ptr);
 				continue;
 			}
 
+
 			current_ptr->pos += current_ptr->vel * (Float32)dt;
 			current_ptr->vel *= current_ptr->mul;
 			current_ptr->lifetime -= (Float32)dt;
+
+			rgLogWarn(RG_LOG_SYSTEM, "Pos: %f %f %f, Vel: %f %f %f",
+				current_ptr->pos.x,
+				current_ptr->pos.y,
+				current_ptr->pos.z,
+				current_ptr->vel.x,
+				current_ptr->vel.y,
+				current_ptr->vel.z);
 
 		}
 	}
@@ -40,9 +77,8 @@ namespace Engine {
 		Particle* part_ptr = (Particle*)m_allocator->Allocate();
 		if (part_ptr == NULL) { return; }
 
-		if (m_cb_spawn) {
-			m_cb_spawn(part_ptr);
-		}
+		rgLogInfo(RG_LOG_GAME, "Emit particle");
+		m_cb_spawn(part_ptr, this);
 	}
 
 
@@ -60,6 +96,18 @@ namespace Engine {
 	}
 
 	void ParticleSystem::UpdateComponents(vec3* viewPos) {
+
+		R3DUpdateBufferInfo info = {};
+		
+		for (size_t i = 0; i < m_emitters.size(); i++) {
+			ParticleEmitter* emitter = m_emitters[i];
+			info.handle_particle = emitter->GetBufferHandle();
+			info.offset = 0;
+			info.length = sizeof(Particle) * emitter->GetMaxParticles();
+			info.data    = emitter->GetRawParticleBuffer();
+			Render::UpdateParticleBuffer(&info);
+		}
+
 		// TODO
 		if (viewPos != NULL) {
 			// Sort emitters
@@ -92,6 +140,14 @@ namespace Engine {
 				break;
 			}
 		}
+	}
+
+	Uint32 ParticleSystem::GetEmitterCount() {
+		return m_emitters.size();
+	}
+
+	ParticleEmitter* ParticleSystem::GetEmitter(Uint32 id) {
+		return m_emitters[id];
 	}
 
 }
