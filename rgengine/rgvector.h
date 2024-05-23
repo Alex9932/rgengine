@@ -143,6 +143,10 @@ union vec2 {
         return r;
     }
 
+    RG_INLINE Bool operator!=(const vec2& v) {
+        return x != v.x || y != v.y;
+    }
+
 };
 
 union vec3 {
@@ -307,6 +311,14 @@ union vec3 {
         r.y = y * mt + v.y * t;
         r.z = z * mt + v.z * t;
         return r;
+    }
+
+    RG_INLINE Bool operator!=(const vec3& v) {
+        return x != v.x || y != v.y || z != v.z;
+    }
+
+    RG_INLINE Bool operator==(const vec3& v) {
+        return x == v.x && y == v.y && z == v.z;
     }
 
 };

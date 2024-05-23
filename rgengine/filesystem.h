@@ -50,7 +50,7 @@ namespace Engine {
 
     // Utility
     RG_DECLSPEC void GetPath(char* dst, size_t maxlen, PathType type, String path);
-    RG_DECLSPEC void FS_PathFrom(char* dst, String src, Uint32 len);
+    RG_DECLSPEC void FS_PathFrom(char* dst, String src, Uint32 len, Bool lastseparator = false);
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src);
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 

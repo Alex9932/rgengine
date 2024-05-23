@@ -1,3 +1,4 @@
+#define DLL_EXPORT
 #include "objimporter.h"
 
 #include "filesystem.h"
@@ -6,15 +7,363 @@
 #include "rgmath.h"
 
 #include "render.h"
+#include "engine.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+#include <vector>
+#include <map>
+#include <functional>
+
+#if 0
 // assimp
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
+#endif
 
 namespace Engine {
+#if 0
+	static size_t rgHash(void* data, size_t len) {
+		size_t result = 0;
+		result = rgCRC32((const char*)data, len);
+		return result;
+	}
 
+#else
+	static size_t rgHash(void* data, size_t len) {
+		std::hash<Uint8> hasher;
+		size_t hash = 0;
+
+		Uint8* array = (Uint8*)data;
+		for (size_t i = 0; i < len; i++) {
+			hash ^= hasher(array[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);;
+		}
+
+		return hash;
+	}
+#endif
+
+	static void RecalculateNormals(R3D_Vertex* vertices, Uint32* indices, size_t idx_count) {
+		for (Uint32 i = 0; i < idx_count / 3; i++) {
+			Uint32 v0idx = indices[i * 3 + 0];
+			Uint32 v1idx = indices[i * 3 + 1];
+			Uint32 v2idx = indices[i * 3 + 2];
+			R3D_Vertex* v0 = &vertices[v0idx];
+			R3D_Vertex* v1 = &vertices[v1idx];
+			R3D_Vertex* v2 = &vertices[v2idx];
+
+			vec3 v_0 = v1->pos - v0->pos;
+			vec3 v_1 = v2->pos - v0->pos;
+
+			vec3 N = v_0.cross(v_1).normalize();
+
+			v0->norm = N;
+			v1->norm = N;
+			v2->norm = N;
+
+		}
+	}
+
+	static void RecalculateTangents(R3D_Vertex* vertices, Uint32* indices, size_t idx_count) {
+		for (Uint32 i = 0; i < idx_count / 3; i++) {
+			Uint32 v0idx = indices[i * 3 + 0];
+			Uint32 v1idx = indices[i * 3 + 1];
+			Uint32 v2idx = indices[i * 3 + 2];
+			R3D_Vertex* v0 = &vertices[v0idx];
+			R3D_Vertex* v1 = &vertices[v1idx];
+			R3D_Vertex* v2 = &vertices[v2idx];
+			Float32 dx1 = v1->pos.x - v0->pos.x;
+			Float32 dy1 = v1->pos.y - v0->pos.y;
+			Float32 dz1 = v1->pos.z - v0->pos.z;
+			Float32 dx2 = v2->pos.x - v0->pos.x;
+			Float32 dy2 = v2->pos.y - v0->pos.y;
+			Float32 dz2 = v2->pos.z - v0->pos.z;
+			Float32 du1 = v1->uv.x - v0->uv.x;
+			Float32 dv1 = v1->uv.y - v0->uv.y;
+			Float32 du2 = v2->uv.x - v0->uv.x;
+			Float32 dv2 = v2->uv.y - v0->uv.y;
+			Float32 r = 1.0f / (du1 * dv2 - dv1 * du2);
+			dx1 *= dv2;
+			dy1 *= dv2;
+			dz1 *= dv2;
+			dx2 *= dv1;
+			dy2 *= dv1;
+			dz2 *= dv1;
+			Float32 tx = (dx1 - dx2) * r;
+			Float32 ty = (dy1 - dy2) * r;
+			Float32 tz = (dz1 - dz2) * r;
+
+			if (isnan(tx) || isnan(ty) || isnan(tz)) {
+#if 1
+				rgLogCritical(RG_LOG_SYSTEM, "Invalid face!");
+				rgLogCritical(RG_LOG_SYSTEM, "v0 {%f %f %f}, {%f %f %f}, {%f %f}", v0->pos.x, v0->pos.y, v0->pos.z, v0->norm.x, v0->norm.y, v0->norm.z, v0->uv.x, v0->uv.y);
+				rgLogCritical(RG_LOG_SYSTEM, "v1 {%f %f %f}, {%f %f %f}, {%f %f}", v1->pos.x, v1->pos.y, v1->pos.z, v1->norm.x, v1->norm.y, v1->norm.z, v1->uv.x, v1->uv.y);
+				rgLogCritical(RG_LOG_SYSTEM, "v2 {%f %f %f}, {%f %f %f}, {%f %f}", v2->pos.x, v2->pos.y, v2->pos.z, v2->norm.x, v2->norm.y, v2->norm.z, v2->uv.x, v2->uv.y);
+				rgLogCritical(RG_LOG_SYSTEM, "dUV1 %f %f, dUV2 %f %f, r %f", du1, dv1, du2, dv2, r);
+				rgLogCritical(RG_LOG_SYSTEM, "vidx %d %d %d", v0idx, v1idx, v2idx);
+#endif
+#if 0
+				tx = 1;
+				ty = 0;
+				tz = 0;
+#endif
+			}
+
+			v0->tang.x = tx;
+			v0->tang.y = ty;
+			v0->tang.z = tz;
+			v1->tang = v0->tang;
+			v2->tang = v0->tang;
+		}
+	}
+
+#if 1
+	void ObjImporter::ImportModel(String p, R3DStaticModelInfo* info) {
+		char file[256];
+		SDL_memset(file, 0, 256);
+		Engine::FS_ReplaceSeparators(file, p);
+
+		char file_path[256];
+		Engine::FS_PathFrom(file_path, file, 256, true);
+
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string err;
+
+		rgLogInfo(RG_LOG_SYSTEM, "OBJ: Loading: %s", file);
+
+		Bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, p, file_path);
+
+		if (!err.empty()) {
+			rgLogError(RG_LOG_SYSTEM, "%s", err.c_str());
+		}
+
+#if 1
+
+		// (Hash - vertex index) table
+		std::map<size_t, Uint32> vtx_hashtable;
+
+		std::vector<R3D_Vertex> vertices;
+		std::vector<Uint32> indices;
+
+		std::vector<R3D_MatMeshInfo> matmeshes;
+
+		Uint32 prew_material = shapes[0].mesh.material_ids[0];
+		Uint32 start_idx = 0;
+		Uint32 end_idx = 0;
+
+		R3D_MatMeshInfo mat_info = {};
+
+		for (Uint32 i = 0; i < shapes.size(); i++) {
+			tinyobj::shape_t* shape = &shapes[i];
+
+			//for (Uint32 j = 0; j < shape->mesh.indices.size(); j++) {
+			Uint32 idx_counter = 0;
+			for (Uint32 j = 0; j < shape->mesh.num_face_vertices.size(); j++) {
+				Uint32 vtx_per_face = shape->mesh.num_face_vertices[j];
+
+				if (vtx_per_face < 3 || vtx_per_face > 4) {
+					RG_ERROR_MSG("OBJ: Invalid polygon!");
+				}
+
+				Uint32 verticesidx[4] = {}; // Up to 4 vertices per face
+				for (Uint32 k = 0; k < vtx_per_face; k++) {
+
+					Sint32 vidx = shape->mesh.indices[idx_counter].vertex_index;
+					Sint32 nidx = shape->mesh.indices[idx_counter].normal_index;
+					Sint32 tidx = shape->mesh.indices[idx_counter].texcoord_index;
+
+					R3D_Vertex vtx = {};
+
+					vtx.pos.x = attrib.vertices[vidx * 3 + 0];
+					vtx.pos.y = attrib.vertices[vidx * 3 + 1];
+					vtx.pos.z = attrib.vertices[vidx * 3 + 2];
+
+					if (nidx != -1) {
+						vtx.norm.x = attrib.normals[nidx * 3 + 0];
+						vtx.norm.y = attrib.normals[nidx * 3 + 1];
+						vtx.norm.z = attrib.normals[nidx * 3 + 2];
+					}
+
+					if (tidx != -1) {
+						vtx.uv.x = attrib.texcoords[tidx * 2 + 0];
+						vtx.uv.y = 1 - attrib.texcoords[tidx * 2 + 1];
+					}
+				
+					size_t vtx_hash = rgHash(&vtx, sizeof(R3D_Vertex));
+
+					if (!vtx_hashtable.count(vtx_hash)) {
+						// Add unique vertex
+						vtx_hashtable[vtx_hash] = vertices.size();
+						vertices.push_back(vtx);
+					}
+					else {
+						Uint32 idx = vtx_hashtable[vtx_hash];
+						R3D_Vertex v0 = vertices[idx];
+						if (vtx.pos != v0.pos || vtx.norm != v0.norm|| vtx.uv != v0.uv) {
+							rgLogError(RG_LOG_SYSTEM, "Vertex conflict! H: %ld", vtx_hash);
+							rgLogError(RG_LOG_SYSTEM, "v0 (%f %f %f) (%f %f)\nv1 (%f %f %f) (%f %f)",
+								vtx.pos.x, vtx.pos.y, vtx.pos.z, vtx.uv.x, vtx.uv.y,
+								v0.pos.x, v0.pos.y, v0.pos.z, v0.uv.x, v0.uv.y);
+						}
+					}
+
+					idx_counter++;
+
+					verticesidx[k] = vtx_hashtable[vtx_hash];
+
+				}
+
+				Uint32 face_material = shape->mesh.material_ids[j];
+				if (face_material != prew_material) {
+
+					mat_info.indexOffset = start_idx;
+					mat_info.indexCount  = end_idx - start_idx;
+					mat_info.materialIdx = prew_material;
+
+					matmeshes.push_back(mat_info);
+
+					start_idx = end_idx;
+					//end_idx = 0;
+					prew_material = face_material;
+
+				}
+
+				R3D_Vertex v_0 = vertices[verticesidx[0]];
+				R3D_Vertex v_1 = vertices[verticesidx[1]];
+				R3D_Vertex v_2 = vertices[verticesidx[2]];
+				if (v_0.pos == v_1.pos || v_0.pos == v_2.pos || v_1.pos == v_2.pos) {
+					rgLogError(RG_LOG_SYSTEM, "OBJ: Invalid face: (%d %d %d) at: %s s:%d f:%d",
+						verticesidx[0],
+						verticesidx[1],
+						verticesidx[2],
+						shape->name.c_str(), i, j);
+				}
+
+				if (vtx_per_face == 3) {
+					// Triangle
+					indices.push_back(verticesidx[0]);
+					indices.push_back(verticesidx[1]);
+					indices.push_back(verticesidx[2]);
+					end_idx += 3;
+				} else {
+					// Quad (2 triangles)
+					indices.push_back(verticesidx[0]);
+					indices.push_back(verticesidx[1]);
+					indices.push_back(verticesidx[2]);
+
+					indices.push_back(verticesidx[2]);
+					indices.push_back(verticesidx[3]);
+					indices.push_back(verticesidx[0]);
+
+					end_idx += 6;
+				}
+
+			}
+		}
+
+		mat_info.indexOffset = start_idx;
+		mat_info.indexCount  = end_idx - start_idx;
+		mat_info.materialIdx = prew_material;
+		matmeshes.push_back(mat_info);
+
+
+		IndexType indexType = RG_INDEX_U32;
+
+		size_t index_count    = indices.size();
+		size_t vertex_count   = vertices.size();
+		size_t mesh_count     = matmeshes.size();
+		size_t material_count = materials.size();
+
+		R3D_MaterialInfo* r3d_materials = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * material_count);
+		R3D_Vertex*       r3d_vertices  = (R3D_Vertex*)rg_malloc(sizeof(R3D_Vertex) * vertex_count);
+		Uint32*           r3d_indices   = (Uint32*)rg_malloc(sizeof(Uint32) * index_count);
+		R3D_MatMeshInfo*  r3d_meshinfo  = (R3D_MatMeshInfo*)rg_malloc(sizeof(R3D_MatMeshInfo) * mesh_count);
+
+		// Copy data
+
+		for (size_t i = 0; i < vertex_count; i++) {
+			r3d_vertices[i] = vertices[i];
+		}
+
+		for (size_t i = 0; i < index_count; i++) {
+			r3d_indices[i] = indices[i];
+		}
+
+		for (size_t i = 0; i < mesh_count; i++) {
+			r3d_meshinfo[i] = matmeshes[i];
+		}
+
+		for (size_t i = 0; i < material_count; i++) {
+#if 0
+			r3d_materials[i].color.r = materials[i].ambient[0];
+			r3d_materials[i].color.g = materials[i].ambient[1];
+			r3d_materials[i].color.b = materials[i].ambient[2];
+#else
+			r3d_materials[i].color = { 1,1,1 };
+#endif
+			if (!materials[i].diffuse_texname.empty()) {
+				SDL_snprintf(r3d_materials[i].albedo, 128, "%s%s", file_path, materials[i].diffuse_texname.c_str());
+			} else {
+				SDL_snprintf(r3d_materials[i].albedo, 128, "%s", "platform/textures/def_diffuse.png");
+			}
+			
+			SDL_snprintf(r3d_materials[i].normal, 128, "%s", "platform/textures/def_normal.png");
+			SDL_snprintf(r3d_materials[i].pbr, 128, "%s", "platform/textures/def_pbr.png");
+
+		}
+
+		// TODO: Re/Calculate normals/tangents
+		//RecalculateNormals(r3d_vertices, r3d_indices, index_count);
+		RecalculateTangents(r3d_vertices, r3d_indices, index_count);
+
+#if 0
+		//SDL_snprintf(r3d_materials[0].albedo, 128, "platform/textures/def_diffuse.png");
+		SDL_snprintf(r3d_materials[0].albedo, 128, "platform/textures/grid.png");
+		SDL_snprintf(r3d_materials[0].normal, 128, "platform/textures/def_normal.png");
+		SDL_snprintf(r3d_materials[0].pbr,    128, "platform/textures/def_pbr.png");
+		r3d_materials[0].color = {1, 1, 1};
+
+		r3d_meshinfo[0].indexOffset = 0;
+		r3d_meshinfo[0].indexCount  = index_count;
+		r3d_meshinfo[0].materialIdx = 0;
+#endif
+
+
+		// Final
+
+		// Materials
+		info->matInfo  = r3d_materials;
+		info->matCount = (Uint32)material_count;
+
+		// Meshes
+		info->mInfo  = r3d_meshinfo;
+		info->mCount = (Uint32)mesh_count;
+
+		// Data
+		info->vertices = r3d_vertices;
+		info->vCount   = (Uint32)vertex_count;
+		info->indices  = r3d_indices;
+		info->iCount   = (Uint32)index_count;
+		info->iType    = indexType;
+
+#endif
+
+	}
+
+	void ObjImporter::FreeModelData(R3DStaticModelInfo* info) {
+#if 1
+		rg_free(info->vertices);
+		rg_free(info->indices);
+		rg_free(info->mInfo);
+		rg_free(info->matInfo);
+#endif
+	}
+#endif
+#if 0
 
 	void ObjImporter::ImportModel(String p, R3DStaticModelInfo* info) {
 
@@ -176,4 +525,6 @@ namespace Engine {
 		rg_free(info->matInfo);
 #endif
 	}
+
+#endif
 }

@@ -1,4 +1,5 @@
 #if 0
+#if 0
 //#ifdef _WIN32
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") 
 #endif
@@ -129,6 +130,10 @@ static void PSpawnCB(Particle* particle, ParticleEmitter* emitter) {
 	//particle->vel = { 0, 0.3f, 0 };
 
 	particle->pos = emitter->GetEntity()->GetTransform()->GetPosition() + offset;
+}
+
+static void PDeleteCB(Particle* particle, ParticleEmitter* emitter) {
+	emitter->EmitParticle();
 }
 
 class Application : public BaseGame {
@@ -330,9 +335,9 @@ class Application : public BaseGame {
 			PM2Importer pm2Importer;
 			ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
-			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			objImporter.ImportModel("gamedata/models/skybox/untitled.obj", &objinfo);
 
-			pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
+			//pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
 
 
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
@@ -535,22 +540,23 @@ class Application : public BaseGame {
 
 			ParticleEmitterInfo emInfo = {};
 			emInfo.spawn_cb  = PSpawnCB;
-			emInfo.delete_cb = NULL;
+			emInfo.delete_cb = PDeleteCB;
 			emInfo.lifetime  = 3;
 			emInfo.max_particles = 256;
-
+#if 0
 			emInfo.sprite_atlas  = "platform/textures/pfx_test.png";
 			emInfo.width  = 4;
 			emInfo.height = 4;
-			// 
+#endif
+			
 			//emInfo.sprite_atlas  = "platform/textures/xray-nonfree/pfx_expl_benzin.png";
 			//emInfo.width     = 10;
 			//emInfo.height    = 10;
-			//
-			//emInfo.sprite_atlas = "platform/textures/xray-nonfree/pfx_ani-fire01.png";
-			//emInfo.width  = 11;
-			//emInfo.height = 7;
-
+#if 1
+			emInfo.sprite_atlas = "platform/textures/xray-nonfree/pfx_ani-fire01.png";
+			emInfo.width  = 11;
+			emInfo.height = 7;
+#endif
 			Entity* sndentl = world->NewEntity();
 			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
 			sndentl->AttachComponent(sourcel);
@@ -642,3 +648,5 @@ int EntryPoint(int argc, String* argv) {
 }
 
 rgmain(EntryPoint)
+
+#endif

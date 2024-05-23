@@ -3,6 +3,7 @@
 #include "render.h"
 
 #define RG_EMITTERPOOL_SIZE 1024
+#define RG_PARTICLE_DEAD_LIFETIME -10000
 
 namespace Engine {
 
@@ -39,27 +40,24 @@ namespace Engine {
 		Particle* array_ptr   = (Particle*)m_allocator->GetBasePointer();
 		Particle* current_ptr = NULL;
 
-		//rgLogInfo(RG_LOG_GAME, "Update particles");
-
 		for (Uint32 i = 0; i < m_maxparticles; i++) {
 			current_ptr = &array_ptr[i];
 
-			// Skip "dead" particle
-			if (current_ptr->lifetime < 0) { continue; }
-
 			// "Kill" old particle
-			if (current_ptr->lifetime == 0) {
+			if (current_ptr->lifetime < 0 && current_ptr->lifetime > RG_PARTICLE_DEAD_LIFETIME) {
 				if (m_cb_delete) { m_cb_delete(current_ptr, this); }
-				current_ptr->lifetime = -1; // "Dead" particle
+				current_ptr->lifetime = RG_PARTICLE_DEAD_LIFETIME; // "Dead" particle
 				m_allocator->Deallocate(current_ptr);
 				continue;
 			}
 
+			// Skip "dead" particle
+			if (current_ptr->lifetime < 0) { continue; }
 
 			current_ptr->pos += current_ptr->vel * (Float32)dt;
 			current_ptr->vel *= current_ptr->mul;
 			current_ptr->lifetime -= (Float32)dt;
-
+#if 0
 			rgLogWarn(RG_LOG_SYSTEM, "Pos: %f %f %f, Vel: %f %f %f",
 				current_ptr->pos.x,
 				current_ptr->pos.y,
@@ -67,7 +65,7 @@ namespace Engine {
 				current_ptr->vel.x,
 				current_ptr->vel.y,
 				current_ptr->vel.z);
-
+#endif
 		}
 	}
 

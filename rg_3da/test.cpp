@@ -1,63 +1,126 @@
-#if 0
-#include <stdio.h>
-#include <stdlib.h>
+#if 1
 
-#include <SDL2/SDL.h>
+#include <engine.h>
+#include <rgentrypoint.h>
 
-class Base {
-	public:
-		Base() {
-			//printf("Base constructor\n");
-		}
+#include <world.h>
+#include <camera.h>
+#include <freecameracontroller.h>
 
-		virtual ~Base() {
-			//printf("Base destructor\n");
-		}
+#include <render.h>
+#include <window.h>
+
+#include <modelsystem.h>
+
+#include <objimporter.h>
+#include <pm2importer.h>
+
+using namespace Engine;
+
+
+class Application : public BaseGame {
+
+    Camera* camera = NULL;
+    FreeCameraController* camcontrol = NULL;
+
+    R3D_GlobalLightDescrition desc = {};
+
+    public:
+        Application() {
+            isClient   = true;
+            isGraphics = true;
+
+            Render::SetRenderFlags(RG_RENDER_FULLSCREEN | RG_RENDER_USE3D);
+
+            // Setup light
+            desc.color = { 1, 1, 1 };
+            desc.ambient = 0.45f;
+            desc.intensity = 3.3f;
+            desc.turbidity = 1.86f;
+            desc.time = 2.33f;
+        }
+        ~Application() {}
+
+        void MainUpdate() {
+
+            Render::DrawRendererStats();
+            Render::DrawProfilerStats();
+
+            // Set light data
+            Render::SetGlobalLight(&desc);
+
+            // Update camera
+            ivec2 size = {};
+            Engine::GetWindowSize(&size);
+            camera->SetAspect((Float32)size.x / (Float32)size.y);
+            camera->ReaclculateProjection();
+
+            camcontrol->Update();
+            camera->Update(GetDeltaTime());
+
+            R3D_CameraInfo cam = {};
+            cam.projection = *camera->GetProjection();
+            cam.position = camera->GetTransform()->GetPosition();
+            cam.rotation = camera->GetTransform()->GetRotation();
+            Render::R3D_SetCamera(&cam);
+
+        }
+        
+        void Initialize() {
+
+            World* world = GetWorld();
+
+            // Create camera
+
+            camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
+            camera->GetTransform()->SetPosition({ 0, 1.3f, 2 });
+            camera->GetTransform()->SetRotation({ 0, 0, 0 });
+            camcontrol = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
+
+            //// Create object
+
+            // Load geometry
+            R3DStaticModelInfo objinfo = {};
+
+            ObjImporter importer;
+            importer.ImportModel("gamedata/models/megumin_obj/doublesided_cape.obj", &objinfo);
+            //importer.ImportModel("gamedata/models/cude/untitled.obj", &objinfo);
+            //importer.ImportModel("gamedata/sponzaobj/sponza.obj", &objinfo);
+
+            //PM2Importer importer;
+            //importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
+
+
+            // Create handle
+            R3D_StaticModel* mdl_handle = Render::R3D_CreateStaticModel(&objinfo);
+            importer.FreeModelData(&objinfo);
+
+            // Create entity
+            Entity* ent = world->NewEntity();
+            ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
+            //ent->GetTransform()->SetScale({ 0.01f, 0.01f, 0.01f });
+
+        }
+        
+        void Quit() {
+            GetWorld()->ClearWorld();
+
+            RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
+            RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
+        }
+
+        String GetName() {
+            return "rg_3da";
+        }
 };
 
-class Child : public Base {
-	public:
-		Child() : Base() {
-			//printf("Child constructor\n");
-		}
-
-		~Child() {
-			//printf("Child destructor\n");
-		}
-
-};
-
-#undef main
-int main(int argc, char** argv) {
-
-	SDL_Init(SDL_INIT_EVERYTHING);
-	size_t len = 1024 * 2048;
-	Base** pool = (Base**)malloc(sizeof(Base*) * len);
-
-	Uint64 start = SDL_GetPerformanceCounter();
-
-	for (size_t i = 0; i < len; i++) {
-		pool[i] = new Child();
-	}
-
-	Uint64 end_new = SDL_GetPerformanceCounter();
-
-	for (size_t i = 0; i < len; i++) {
-		delete pool[i];
-	}
-
-	Uint64 end_delete = SDL_GetPerformanceCounter();
-
-	double alloc_time = (double)(end_new - start) / (double)SDL_GetPerformanceFrequency();
-	double free_time = (double)(end_delete - end_new) / (double)SDL_GetPerformanceFrequency();
-
-	printf("Alloc: %lf\n", alloc_time);
-	printf(" Free: %lf\n", free_time);
-
-
-	free(pool);
-	SDL_Quit();
-
+int EntryPoint(int argc, String* argv) {
+	Application app;
+	Initialize(&app);
+	Start();
 	return 0;
 }
+
+rgmain(EntryPoint)
+
 #endif
