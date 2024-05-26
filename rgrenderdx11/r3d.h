@@ -63,7 +63,7 @@ typedef struct R3D_AtlasHandle {
 typedef struct R3D_ParticleBuffer {
 	Buffer* bBuffer;
 	ID3D11ShaderResourceView* resourceView;
-	ID3D11UnorderedAccessView* uav;
+	//ID3D11UnorderedAccessView* uav;
 } R3D_ParticleBuffer;
 
 void InitializeR3D(ivec2* size);

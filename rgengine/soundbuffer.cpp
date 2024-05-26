@@ -1,7 +1,12 @@
 #include "soundbuffer.h"
 #include "soundsource.h"
 
+#define RG_SND_BUFFER_SIZE 8192
+
 namespace Engine {
+
+	// TODO: Rewrite this !!!
+	static Uint16 __data[RG_SND_BUFFER_SIZE];
 
 	static ALenum GetFormat(Uint32 c) {
 		switch (c) {
@@ -12,17 +17,16 @@ namespace Engine {
 	}
 
 	static Bool RefillBufferData(ALuint buffer, stb_vorbis* stream) {
-		Uint16 data[65536];
 		stb_vorbis_info info;
 		RG_STB_vorbis_get_info_ptr(stream, &info);
 		Uint32 channels = info.channels;
-		Sint32 amount = RG_STB_vorbis_get_samples_short_interleaved(stream, channels, (short*)data, 65536);
+		Sint32 amount = RG_STB_vorbis_get_samples_short_interleaved(stream, channels, (short*)__data, RG_SND_BUFFER_SIZE);
 
 		if (amount <= 0) {
 			return false; // Stream ended
 		}
 
-		alBufferData(buffer, GetFormat(channels), data, amount * channels * sizeof(short), info.sample_rate);
+		alBufferData(buffer, GetFormat(channels), __data, amount * channels * sizeof(short), info.sample_rate);
 		return true;
 	}
 

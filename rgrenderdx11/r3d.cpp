@@ -176,7 +176,7 @@ void InitializeR3D(ivec2* size) {
 	alloc_matrices        = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
 	alloc_bonebuffers     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
 	alloc_atlases         = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_AtlasHandlesPool", R_ATLASES_COUNT, sizeof(R3D_AtlasHandle));
-	alloc_particlebuffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_ParticleBuffersPool", R_ATLASES_COUNT, sizeof(R3D_AtlasHandle));
+	alloc_particlebuffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_ParticleBuffersPool", R_ATLASES_COUNT, sizeof(R3D_ParticleBuffer));
 	//alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MatrixPool", R_MODELS_COUNT * 2, sizeof(mat4));
 	staticQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 2);
 	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);

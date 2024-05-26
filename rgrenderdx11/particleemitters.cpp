@@ -23,7 +23,7 @@ R3D_ParticleBuffer* GetEmitterBufferHandle(Uint32 id) {
     return emitter->GetBufferHandle();
 }
 
-void GetEmitterInfo(Uint32 id, PSBuffer* buffer) {
+void GetEmitterInfo(Uint32 id, PARTICLE_PSBuffer* buffer) {
     Engine::ParticleEmitter* emitter = Engine::Render::GetParticleSystem()->GetEmitter(id);
 
     buffer->atlas_w = emitter->GetAtlasWidth();

@@ -69,8 +69,16 @@ namespace Engine {
 		Float64 dt = GetDeltaTime();
 
 		std::vector<Entity*>::iterator it = this->m_entities.begin();
+
+		Entity* ent = NULL;
+		EntityBehavior* ent_behavior = NULL;
 		for (; it != this->m_entities.end(); it++) {
-			(*it)->Update(dt);
+			ent = (*it);
+			ent_behavior = ent->GetBehavior();
+			if (ent_behavior) {
+				ent_behavior->Update(dt);
+			}
+			ent->Update(dt);
 		}
 
 	}

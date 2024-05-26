@@ -75,7 +75,7 @@ namespace Engine {
 		Particle* part_ptr = (Particle*)m_allocator->Allocate();
 		if (part_ptr == NULL) { return; }
 
-		rgLogInfo(RG_LOG_GAME, "Emit particle");
+		//rgLogInfo(RG_LOG_GAME, "Emit particle");
 		m_cb_spawn(part_ptr, this);
 	}
 

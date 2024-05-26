@@ -29,7 +29,7 @@ static struct GSBuffer {
     mat4 viewproj;
 } gsBuffer;
 
-static PSBuffer psBuffer;
+static PARTICLE_PSBuffer psBuffer;
 
 ID3D11ShaderResourceView* GetParticleShaderResource() {
     return rendertarget.resView;
@@ -73,7 +73,7 @@ void CreateParticlePass(ivec2* size) {
     bInfo.type   = BUFFER_CONSTANT;
     bInfo.length = sizeof(GSBuffer);
     gBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
-    bInfo.length = sizeof(PSBuffer);
+    bInfo.length = sizeof(PARTICLE_PSBuffer);
     pBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&bInfo);
 
     _CreateFramebuffer(size);
@@ -169,11 +169,13 @@ void RenderParticles() {
     gsBuffer.viewproj = *GetCameraProjection() * *GetCameraView();
     gBuffer->SetData(0, sizeof(GSBuffer), &gsBuffer);
 
-    for (Uint32 i = 0; i < GetEmitterCount(); i++) {
+    Uint32 count = GetEmitterCount();
+
+    for (Uint32 i = 0; i < count; i++) {
 
         GetEmitterInfo(i, &psBuffer);
 
-        pBuffer->SetData(0, sizeof(PSBuffer), &psBuffer);
+        pBuffer->SetData(0, sizeof(PARTICLE_PSBuffer), &psBuffer);
 
         ID3D11Buffer* geomBuffer = gBuffer->GetHandle();
         ID3D11Buffer* pixelBuffer = pBuffer->GetHandle();
