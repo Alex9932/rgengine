@@ -11,7 +11,7 @@ namespace Engine {
 
 	class ParticleEmitter;
 
-	typedef void (*PFN_PARTICLESPAWN)(Particle*, ParticleEmitter*);
+	typedef void (*PFN_PARTICLESPAWN)(Particle*, ParticleEmitter*, const vec3&);
 	typedef void (*PFN_PARTICLEDELETE)(Particle*, ParticleEmitter*);
 
 	typedef struct ParticleEmitterInfo {
@@ -39,7 +39,10 @@ namespace Engine {
 
 			void Update(Float64 dt);
 
-			RG_DECLSPEC void EmitParticle();
+
+			RG_INLINE void EmitParticle() { vec3 pos = {0, 0, 0}; EmitParticle(pos); }
+
+			RG_DECLSPEC void EmitParticle(const vec3& pos);
 
 			RG_INLINE Uint32 GetMaxParticles() { return m_maxparticles; }
 

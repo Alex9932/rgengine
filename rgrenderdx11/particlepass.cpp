@@ -26,7 +26,8 @@ static Buffer* gBuffer;
 static Buffer* pBuffer;
 
 static struct GSBuffer {
-    mat4 viewproj;
+    mat4 proj;
+    mat4 view;
 } gsBuffer;
 
 static PARTICLE_PSBuffer psBuffer;
@@ -166,7 +167,8 @@ void RenderParticles() {
     // Render particles
     //ctx->DrawInstanced(1, (max_particles), 0, 0);
 
-    gsBuffer.viewproj = *GetCameraProjection() * *GetCameraView();
+    gsBuffer.proj = *GetCameraProjection();
+    gsBuffer.view = *GetCameraView();
     gBuffer->SetData(0, sizeof(GSBuffer), &gsBuffer);
 
     Uint32 count = GetEmitterCount();

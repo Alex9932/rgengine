@@ -35,6 +35,7 @@ namespace Engine {
 
 			// TODO: Optimize this
 			std::vector<Entity*> m_entities;
+			std::vector<Entity*> m_delqueue;
 
 	};
 

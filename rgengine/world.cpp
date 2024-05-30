@@ -46,18 +46,21 @@ namespace Engine {
 	}
 
 	void World::FreeEntity(Entity* e) {
+		// Add to deletion queue
+		m_delqueue.push_back(e);
+	}
 
-		std::vector<Entity*>::iterator it = this->m_entities.begin();
+	static void RemoveEntity(Allocator* alloc, std::vector<Entity*>& entities, Entity* ent_ptr) {
+		std::vector<Entity*>::iterator it = entities.begin();
 		Uint32 idx = 0;
-		for (; it != this->m_entities.end(); it++) {
-			if (*it == e) {
+		for (; it != entities.end(); it++) {
+			if (*it == ent_ptr) {
 
-				*it = std::move(m_entities.back());
-				m_entities.pop_back();
-				//this->m_entities.erase(it);
-				
-				FreeComponents(e);
-				RG_DELETE_CLASS(m_allocEntity, Entity, e);
+				*it = std::move(entities.back());
+				entities.pop_back();
+
+				FreeComponents(ent_ptr);
+				RG_DELETE_CLASS(alloc, Entity, ent_ptr);
 				break;
 			}
 			idx++;
@@ -67,6 +70,14 @@ namespace Engine {
 	void World::Update() {
 
 		Float64 dt = GetDeltaTime();
+
+		// Remove entities
+		for (size_t i = 0; i < m_delqueue.size(); i++) {
+			RemoveEntity(m_allocEntity, m_entities, m_delqueue[i]);
+		}
+		m_delqueue.clear();
+
+		// Update
 
 		std::vector<Entity*>::iterator it = this->m_entities.begin();
 

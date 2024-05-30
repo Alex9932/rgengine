@@ -37,7 +37,7 @@ namespace Engine {
 	}
 
 	void ParticleEmitter::Update(Float64 dt) {
-		Particle* array_ptr   = (Particle*)m_allocator->GetBasePointer();
+		Particle* array_ptr = (Particle*)m_allocator->GetBasePointer();
 		Particle* current_ptr = NULL;
 
 		for (Uint32 i = 0; i < m_maxparticles; i++) {
@@ -69,14 +69,14 @@ namespace Engine {
 		}
 	}
 
-	void ParticleEmitter::EmitParticle() {
+	void ParticleEmitter::EmitParticle(const vec3& pos) {
 		if(m_particles >= m_maxparticles) { return; }
 
 		Particle* part_ptr = (Particle*)m_allocator->Allocate();
 		if (part_ptr == NULL) { return; }
 
 		//rgLogInfo(RG_LOG_GAME, "Emit particle");
-		m_cb_spawn(part_ptr, this);
+		m_cb_spawn(part_ptr, this, pos);
 	}
 
 

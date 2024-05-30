@@ -25,15 +25,18 @@
 
 using namespace Engine;
 
-static void PSpawnCB_rocket(Particle* particle, ParticleEmitter* emitter) {
+static void PSpawnCB_rocket(Particle* particle, ParticleEmitter* emitter, const vec3& pos) {
     particle->lifetime = 0.5f;
     particle->mul = 1.0f;
     particle->vel = { 0, -1.6f, 0 };
-    particle->pos = emitter->GetEntity()->GetTransform()->GetPosition();
+    particle->pos = pos; // emitter->GetEntity()->GetTransform()->GetPosition();
+
+    // emitter->GetEntity() is NULL !!!
+
 }
 
-static void PSpawnCB_explode(Particle* particle, ParticleEmitter* emitter) {
-    particle->lifetime = 1;
+static void PSpawnCB_explode(Particle* particle, ParticleEmitter* emitter, const vec3& pos) {
+    particle->lifetime = 1.5f;
     particle->mul = 0.99f;
 
     srand((Uint32)SDL_GetPerformanceCounter());
@@ -45,7 +48,7 @@ static void PSpawnCB_explode(Particle* particle, ParticleEmitter* emitter) {
     v.z = (Float32)((rand() % 2000) - 1000) / 1000.0f;
 
     particle->vel = v.normalize() * 18;
-    particle->pos = emitter->GetEntity()->GetTransform()->GetPosition();
+    particle->pos = pos; // emitter->GetEntity()->GetTransform()->GetPosition();
 }
 
 static SoundBuffer* CreateSoundBuffer(String file) {
@@ -100,7 +103,7 @@ static SoundBuffer* CreateSoundBuffer(String file) {
 
 class FireworkEntityBehavior : public EntityBehavior {
     public:
-        FireworkEntityBehavior(ParticleEmitter* r, ParticleEmitter* expl, StreamBuffer* launch_snd, StreamBuffer* expl_snd) {
+        FireworkEntityBehavior(ParticleEmitter* r, ParticleEmitter* expl, SoundBuffer* launch_snd, SoundBuffer* expl_snd) {
             m_rocketparticle  = r;
             m_explodeparticle = expl;
 
@@ -124,9 +127,10 @@ class FireworkEntityBehavior : public EntityBehavior {
 
             //rgLogInfo(RG_LOG_GAME, "Position: %f %f %f", pos.x, pos.y, pos.z);
 
+            vec3 w_pos = GetEntity()->GetTransform()->GetWorldPosition();
+
             if (GetUptime() - m_time > 0.025) {
-                ParticleEmitter* emitter = ent->GetComponent(Component_PARTICLEEMITTER)->AsParticleEmitter();
-                emitter->EmitParticle();
+                m_rocketparticle->EmitParticle(w_pos);
                 m_time = GetUptime();
             }
             
@@ -134,21 +138,27 @@ class FireworkEntityBehavior : public EntityBehavior {
 
                 rgLogInfo(RG_LOG_GAME, "EXPLODE");
 
-                SoundSource* ss = ent->GetComponent(Component_SOUNDSOURCE)->AsSoundSourceComponent();
-                ss->SetBuffer(NULL);
-                ss->SetBuffer(m_expl_snd);
-                ss->Play();
+                PlaySoundInfo snd_info = {};
+                snd_info.position = w_pos;
+                snd_info.volume   = 10;
+                snd_info.speed    = 1;
+                snd_info.buffer   = m_expl_snd;
+                GetSoundSystem()->PlaySound(&snd_info);
 
                 m_velocity = {};
                 m_acceleration = {};
                 
-                ent->AttachComponent(m_explodeparticle);
-                ParticleEmitter* emitter = ent->GetComponent(Component_PARTICLEEMITTER)->AsParticleEmitter();
                 for (Uint32 i = 0; i < 128; i++) { // Explode particle count
-                    emitter->EmitParticle();
+                    m_explodeparticle->EmitParticle(w_pos);
                 }
                 
                 m_time = -1;
+
+                // Delete "rocket"
+                GetWorld()->FreeEntity(GetEntity());
+
+                // TODO: Rewrite this
+                delete this;
             }
 
 
@@ -158,13 +168,22 @@ class FireworkEntityBehavior : public EntityBehavior {
             rgLogInfo(RG_LOG_GAME, "Launching...");
             Entity* ent = GetEntity();
             ent->GetTransform()->SetPosition(pos);
-            m_acceleration = {0, 4, 0};
-            ent->AttachComponent(m_rocketparticle);
+
+
+            vec3 v;
+            v.x = ((Float32)(rand() % 1000) / 1000.0f) * 3;
+            v.y = 12;
+            v.z = ((Float32)(rand() % 1000) / 1000.0f) * 3;
+
+            m_acceleration = v;
             m_time = GetUptime();
-            SoundSource* ss = ent->GetComponent(Component_SOUNDSOURCE)->AsSoundSourceComponent();
-            ss->SetBuffer(NULL);
-            ss->SetBuffer(m_launch_snd);
-            ss->Play();
+
+            PlaySoundInfo snd_info = {};
+            snd_info.position = ent->GetTransform()->GetWorldPosition();
+            snd_info.volume   = 3;
+            snd_info.speed    = 1;
+            snd_info.buffer   = m_launch_snd;
+            GetSoundSystem()->PlaySound(&snd_info);
         }
 
     private:
@@ -173,19 +192,32 @@ class FireworkEntityBehavior : public EntityBehavior {
 
         ParticleEmitter* m_rocketparticle;
         ParticleEmitter* m_explodeparticle;
-        StreamBuffer*    m_launch_snd;
-        StreamBuffer*    m_expl_snd;
+        SoundBuffer*     m_launch_snd;
+        SoundBuffer*     m_expl_snd;
 
         vec3 m_velocity     = {};
         vec3 m_acceleration = {};
 
 };
 
-static FireworkEntityBehavior* ent_behavior;
+static ParticleEmitter* pExplodeEmitter;
+static ParticleEmitter* pRocketEmitter;
+static SoundBuffer* lsnd;
+static SoundBuffer* esnd;
+
+static void LaunchFWRocket(const vec3& pos) {
+    // TODO: Rewrite this
+    FireworkEntityBehavior* ent_behavior = new FireworkEntityBehavior(pRocketEmitter, pExplodeEmitter, lsnd, esnd);
+
+    World* world = GetWorld();
+    Entity* fw_ent = world->NewEntity();
+    fw_ent->SetBehavior(ent_behavior);
+    ent_behavior->Launch({ 0, 0, 0 });
+}
 
 static bool EHandler(SDL_Event* event) {
     if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_E) {
-        ent_behavior->Launch({0, 0, 0});
+        LaunchFWRocket({ 0, 0, 0 });
     }
 
     return true;
@@ -278,8 +310,8 @@ class Application : public BaseGame {
             ParticleEmitterInfo fwExplode = {};
             fwExplode.spawn_cb      = PSpawnCB_explode;
             fwExplode.delete_cb     = NULL;
-            fwExplode.lifetime      = 1;
-            fwExplode.max_particles = 512;
+            fwExplode.lifetime      = 1.5f;
+            fwExplode.max_particles = 4096;
 
             fwExplode.sprite_atlas = "platform/textures/xray-nonfree/pfx_sparks.png";
             fwExplode.width  = 4;
@@ -288,44 +320,29 @@ class Application : public BaseGame {
             //fwExplode.width  = 4;
             //fwExplode.height = 4;
 
-            ParticleEmitter* pExplodeEmitter = Render::GetParticleSystem()->NewEmitter(&fwExplode);
+            pExplodeEmitter = Render::GetParticleSystem()->NewEmitter(&fwExplode);
 
             ParticleEmitterInfo fwRocket = {};
             fwRocket.spawn_cb      = PSpawnCB_rocket;
             fwRocket.delete_cb     = NULL;
             fwRocket.lifetime      = 0.5f;
-            fwRocket.max_particles = 512;
+            fwRocket.max_particles = 4096;
 
             fwRocket.sprite_atlas = "platform/textures/xray-nonfree/pfx_expl_benzin.png";
             fwRocket.width  = 10;
             fwRocket.height = 10;
 
-            ParticleEmitter* pRocketEmitter = Render::GetParticleSystem()->NewEmitter(&fwRocket);
+            pRocketEmitter = Render::GetParticleSystem()->NewEmitter(&fwRocket);
 
-            //SoundBuffer* lsnd = CreateSoundBuffer("gamedata/sounds/fw_launch.ogg");
-            //SoundBuffer* esnd = CreateSoundBuffer("gamedata/sounds/fw_explode.ogg");
-
-            StreamBuffer* lsnd = RG_NEW(StreamBuffer)("gamedata/sounds/fw_launch.ogg");
-            StreamBuffer* esnd = RG_NEW(StreamBuffer)("gamedata/sounds/fw_explode.ogg");
-
-            ent_behavior = new FireworkEntityBehavior(pRocketEmitter, pExplodeEmitter, lsnd, esnd);
-
+            lsnd = CreateSoundBuffer("gamedata/sounds/fw_launch.ogg");
+            esnd = CreateSoundBuffer("gamedata/sounds/fw_explode.ogg");
 
             SoundSystem* ss = GetSoundSystem();
 
             ss->SetVolume(1.0f);
             ss->SetCamera(camera);
 
-            SoundSource* source = ss->NewSoundSource();
-            source->SetRepeat(false);
-
-            Entity* fw_ent = world->NewEntity();
-            fw_ent->SetBehavior(ent_behavior);
-            fw_ent->AttachComponent(source);
-
             RegisterEventHandler(EHandler);
-
-            //sndentl->AttachComponent(emitter);
 
         }
         
