@@ -56,6 +56,16 @@ typedef struct R3D_BoneBuffer {
 	ID3D11ShaderResourceView* resourceView;
 } R3D_BoneBuffer;
 
+typedef struct R3D_AtlasHandle {
+	Texture* texture;
+} R3D_AtlasHandle;
+
+typedef struct R3D_ParticleBuffer {
+	Buffer* bBuffer;
+	ID3D11ShaderResourceView* resourceView;
+	//ID3D11UnorderedAccessView* uav;
+} R3D_ParticleBuffer;
+
 void InitializeR3D(ivec2* size);
 void DestroyR3D();
 void ResizeR3D(ivec2* wndSize);

@@ -8,7 +8,7 @@ typedef void (*PFN_TASKPROC)(void* userdata);
 typedef struct Task {
 	PFN_TASKPROC proc;
 	void*        userdata;
-	Bool         isDone;
+	//Bool         isDone;
 } Task;
 
 namespace Engine {

@@ -1,0 +1,56 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+    float4 texcoord : TEXCOORD0;
+};
+
+cbuffer ConstBuffer : register(b0) {
+    uint  atlas_w;
+    uint  atlas_h;
+    float maxtime;
+    uint  _offset;
+};
+
+Texture2D shaderTexture : register(t0);
+SamplerState SampleType : register(s0);
+
+float2 CalcOffset(int idx) {
+    float c = idx % atlas_w;
+    float r = idx / atlas_w;
+    return float2(c / atlas_w, r / atlas_h);
+}
+
+float4 mix(float4 a, float4 b, float d) {
+    return a * (1 - d) + b * d;
+}
+
+float4 pmain(PSINPUT psin) : SV_Target0 {
+
+    float lifetime = psin.texcoord.z;
+    float delta = 1.0 - (lifetime / maxtime);
+
+    float2 uv = psin.texcoord.xy;
+
+    int stages = atlas_w * atlas_h; // Sprite count
+
+    float prog = delta * stages;
+
+    int idx0 = int(prog); // First sprite index
+    int idx1 = idx0 < stages-1 ? idx0+1 : idx0; // Second sprite index
+
+    int i_blend = int(prog);
+    float blend = prog - i_blend; // Blend factor
+
+    float2 offset0 = CalcOffset(idx0);
+    float2 offset1 = CalcOffset(idx1);
+
+    float2 size = float2(1.0 / atlas_w, 1.0 / atlas_h); // Sprite size
+
+    float2 coord0 = uv*size + offset0;
+    float2 coord1 = uv*size + offset1;
+
+    float4 t_color0 = shaderTexture.Sample(SampleType, coord0);
+    float4 t_color1 = shaderTexture.Sample(SampleType, coord1);
+
+    return mix(t_color0, t_color1, blend);
+
+}

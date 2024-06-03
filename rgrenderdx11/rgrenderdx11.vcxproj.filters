@@ -31,6 +31,12 @@
     <Filter Include="Source Files\utils">
       <UniqueIdentifier>{e507f4df-670c-4aab-8fc1-60276a8ab54a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{b6cc04ed-ef6b-4691-b296-3775db7a625f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\fx">
+      <UniqueIdentifier>{5d0ea943-b88d-46fa-92d9-104890e1b711}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -81,6 +87,12 @@
     <ClCompile Include="stack.cpp">
       <Filter>Source Files\utils</Filter>
     </ClCompile>
+    <ClCompile Include="particlepass.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="particleemitters.cpp">
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dx11.h">
@@ -128,5 +140,118 @@
     <ClInclude Include="stack.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
+    <ClInclude Include="particlepass.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="particleemitters.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\resources\platform\shadersdx11\accum_common.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\accum_global.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\accum_point.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\bypass2d.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\bypass2d.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\main.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\main.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.gs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\r2d.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\r2d.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\shadow.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\shadow.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skeleton.cs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skybox.ps">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skybox.vs">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\aberration.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\base.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\base.vs">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\blur.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\blurx.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\blury.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\contrast.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\contrast_old.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\empty.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\godrays.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\light.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\mix.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\reflection.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\reflection.ps_">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\ssao.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\fx\tonemapping.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
   </ItemGroup>
 </Project>

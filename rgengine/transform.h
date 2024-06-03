@@ -35,7 +35,7 @@ namespace Engine {
 
 		private:
 			mat4       m_matrix    = {};
-			vec3	   m_scale     = { 0, 0, 0 };
+			vec3	   m_scale     = { 1, 1, 1 };
 
 			// Local position & rotation
 			vec3	   m_lPosition = { 0, 0, 0 };

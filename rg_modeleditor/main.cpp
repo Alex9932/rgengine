@@ -367,7 +367,7 @@ class Application : public BaseGame {
 			RiggedModelComponent* rcomponent = ent_model->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
 			if (rcomponent) {
 
-				R3DBoneBufferUpdateInfo binfo = {};
+				R3DUpdateBufferInfo binfo = {};
 				binfo.offset = 0;
 				binfo.data   = kinematicsModel->GetTransforms();
 				binfo.handle = kinematicsModel->GetBufferHandle();

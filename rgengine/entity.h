@@ -13,6 +13,7 @@ enum ComponentType {
 	Component_SPOTLIGHT,            //
 	Component_SOUNDSOURCE,          //
 	Component_PH,                   // Physics component (PHComponent)
+	Component_PARTICLEEMITTER,      // Particle system   (ParticleEmitter)
 	Component_MAXENUM = 32
 };
 
@@ -27,6 +28,7 @@ namespace Engine {
 	class SpotLight;
 	class SoundSource;
 	class PHComponent;
+	class ParticleEmitter;
 
 	class Component {
 		public:
@@ -51,6 +53,7 @@ namespace Engine {
 			RG_INLINE SpotLight*            AsSpotLightComponent()   { return (SpotLight*)this; }
 			RG_INLINE SoundSource*          AsSoundSourceComponent() { return (SoundSource*)this; }
 			RG_INLINE PHComponent*          AsPHComponent()          { return (PHComponent*)this; }
+			RG_INLINE ParticleEmitter*      AsParticleEmitter()      { return (ParticleEmitter*)this; }
 
         protected:
             //UUID          m_entID;
@@ -82,6 +85,22 @@ namespace Engine {
 			RG_INLINE Uint32 GetBufferSize() { return TAG_BUFFERSIZE; }
 	};
 
+	// Behavior interface
+	class Entity;
+	class EntityBehavior {
+		public:
+			EntityBehavior() {}
+			~EntityBehavior() {}
+
+			virtual void Update(Float64 dt) {}
+			RG_INLINE Entity* GetEntity() { return m_entity; }
+
+			RG_INLINE void SetEntity(Entity* ent) { m_entity = ent; } // !!! DO NOT SET ENTITY MANUALY !!!
+
+		private:
+			Entity* m_entity = NULL;
+
+	};
 
 	class Entity {
 		public:
@@ -100,11 +119,20 @@ namespace Engine {
 
 			RG_INLINE Transform* GetTransform() { return this->m_transform; }
 
+			RG_INLINE void SetBehavior(EntityBehavior* behavior) {
+				m_behavior = behavior;
+				if (behavior) {
+					behavior->SetEntity(this);
+				}
+			}
+			RG_INLINE EntityBehavior* GetBehavior() { return m_behavior; }
+
 		private:
-			UUID       m_id;
-			Transform* m_transform;
-			World*     m_world;
-			Component* m_components[Component_MAXENUM];
+			UUID            m_id;
+			Transform*      m_transform;
+			World*          m_world;
+			EntityBehavior* m_behavior;
+			Component*      m_components[Component_MAXENUM];
 
 	};
 

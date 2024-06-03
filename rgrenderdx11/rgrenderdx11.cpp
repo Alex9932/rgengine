@@ -40,6 +40,8 @@ static Bool               wndResized     = false;
 
 static RenderFlags        flags;
 
+static Bool               isShadersReloadRequired = false;
+
 static bool _EventHandler(SDL_Event* event) {
 
 	if (event->type == Engine::GetUserEventID()) {
@@ -62,12 +64,7 @@ static bool _EventHandler(SDL_Event* event) {
 		switch (event->key.keysym.scancode) {
 			case SDL_SCANCODE_R: {
 				if (Engine::IsKeyDown(SDL_SCANCODE_LSHIFT) && Engine::IsKeyDown(SDL_SCANCODE_LALT)) {
-					// Reload shaders
-					rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
-
-					ReloadShadersR2D();
-					ReloadShadersR3D();
-
+					isShadersReloadRequired = true;
 				}
 				break;
 			}
@@ -232,6 +229,15 @@ void R_SwapBuffers() {
 		ResizeR2D(&wndSize);
 		ResizeR3D(&wndSize);
 		rgLogInfo(RG_LOG_RENDER, "Swapchain resized!");
+	}
+
+	if (isShadersReloadRequired) {
+		isShadersReloadRequired = false;
+
+		// Reload shaders
+		rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
+		ReloadShadersR2D();
+		ReloadShadersR3D();
 	}
 }
 

@@ -351,13 +351,14 @@ namespace Engine {
         "game",
         "physics",
         "audio",
+        "systemupdate",
         "threads",
         "render",
         "other"
     };
 
     String GetProfile(Uint32 idx) {
-        if (idx < 8) { return profiles[idx]; }
+        if (idx < 9) { return profiles[idx]; }
         return "null";
     }
 
@@ -392,19 +393,21 @@ namespace Engine {
             if (game_ptr->IsClient()) {
                 core_profiler->StartSection(profiles[4]);
                 soundsystem->Update(GetDeltaTime());
+                core_profiler->StartSection(profiles[5]);
+                Render::UpdateSystems();
             }
+            core_profiler->StartSection(profiles[6]);
 
-            core_profiler->StartSection(profiles[5]);
 
             Thread_Execute();
             Thread_WaitForAll();
 
             if (game_ptr->IsClient()) {
-                core_profiler->StartSection(profiles[6]);
+                core_profiler->StartSection(profiles[7]);
                 Render::Update();
             }
 
-            core_profiler->StartSection(profiles[7]);
+            core_profiler->StartSection(profiles[8]);
             frame++;
             //			if(timer.GetTime() - last_time >= 5.0) {
             //				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);

@@ -255,7 +255,7 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	}
 
 	// Bone buffer
-	R3DCreateBoneBufferInfo binfo = {};
+	R3DCreateBufferInfo binfo = {};
 	binfo.len         = sizeof(mat4) * pmd->bones_count;
 	binfo.initialData = NULL;
 	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
@@ -521,7 +521,7 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(String path) {
 	}
 
 	// Bone buffer
-	R3DCreateBoneBufferInfo binfo = {};
+	R3DCreateBufferInfo binfo = {};
 	binfo.len = sizeof(mat4) * pmx->bone_count;
 	binfo.initialData = NULL;
 	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);

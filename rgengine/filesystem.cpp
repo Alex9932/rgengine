@@ -94,10 +94,14 @@ namespace Engine {
         return res;
     }
 
-    void FS_PathFrom(char* dst, String src, Uint32 len) {
+    void FS_PathFrom(char* dst, String src, Uint32 len, Bool lastseparator) {
         Uint32 n = rg_strcharate(src, '/');
         Uint32 i = 0;
-        for (; i < n; i++) {
+
+        Uint32 offset = 0;
+        if (lastseparator) { offset = 1; }
+
+        for (; i < n + offset; i++) {
             dst[i] = src[i];
         }
         dst[i] = 0;

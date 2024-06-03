@@ -9,6 +9,7 @@ namespace Engine {
 		this->m_id = GenerateUUID();
 		SDL_memset(this->m_components, 0, sizeof(Component*) * Component_MAXENUM);
 		this->m_transform = world->NewTransform();
+		this->m_behavior  = 0;
 		//SDL_memset(this->m_transform, 0, sizeof(Transform));
 	}
 

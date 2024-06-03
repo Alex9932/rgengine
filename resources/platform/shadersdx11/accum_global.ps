@@ -127,19 +127,34 @@ float CalculateShadow(float3 N, float3 pos) {
 	float closestDepth = t_unit3.Sample(SampleType, luv).r;
 	return currentDepth - bias > closestDepth ? 0.0 : 1.0;
 #else
+
+	
+	float closestDepth = t_unit3.Sample(SampleType, luv).r;
+	float shadow_depth = clamp(currentDepth - bias - closestDepth, 0, 1) * 5.0155;
+
+	float scale_a = 2;
+	float scale_b = 8;
+	float mul_a = 0.1;
+	float mul_b = 0.6;
+
+	float l_scale = lerp(scale_a, scale_b, shadow_depth);
+	float l_mul   = lerp(mul_a, mul_b, shadow_depth);
+
 	float shadow = 0;
 	float SIZE = 2048;
-	float2 size = 1.0f / float2(SIZE, SIZE) * 0.5;
+	float2 size = 1.0f / float2(SIZE, SIZE) * l_scale;
 
-	for(int y = -2; y <= 2; ++y) {
-		for(int x = -2; x <= 2; ++x) {
-			float pcfDepth = t_unit3.Sample(SampleType, luv + float2(x, y) * size).r;
+	int scale = int(l_mul);
+
+	for(int y = -scale; y <= scale; ++y) {
+		for(int x = -scale; x <= scale; ++x) {
+			float pcfDepth = t_unit3.SampleLevel(SampleType, luv + float2(x, y) * size, 0).r;
 			//float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
 			shadow += currentDepth - bias > pcfDepth ? 0.0 : 1.0;
 		}    
 	}
 
-	return shadow / 25;
+	return shadow / pow(scale*2 + 1, 2);
 #endif
 
 }

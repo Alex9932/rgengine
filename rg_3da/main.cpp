@@ -1,4 +1,5 @@
 #if 0
+#if 0
 //#ifdef _WIN32
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") 
 #endif
@@ -24,6 +25,7 @@
 #include <filesystem.h>
 #include <modelsystem.h>
 #include <lightsystem.h>
+#include <particlesystem.h>
 #include <kinematicsmodel.h>
 #include <pm2importer.h>
 
@@ -59,6 +61,8 @@ static Camera*      camera;
 
 static Entity* ent0;
 
+static ParticleEmitter* emitter;
+
 static Bool ph_enabled = false;
 static bool EHandler(SDL_Event* event) {
 #if 0
@@ -78,6 +82,7 @@ static bool EHandler(SDL_Event* event) {
 				ph_enabled = !ph_enabled;
 				if (ph_enabled) { Engine::GetPhysics()->Enable(); }
 				else { Engine::GetPhysics()->Disable(); }
+				break;
 			}
 			case SDL_SCANCODE_R: {
 				PHComponent* pcomp = ent0->GetComponent(Component_PH)->AsPHComponent();
@@ -85,7 +90,14 @@ static bool EHandler(SDL_Event* event) {
 				t.SetPosition({ 0, 5, 0 });
 				t.SetRotation({ 0, -0.5f, 1.0f });
 				pcomp->SetWorldTransform(&t);
+				break;
 			}
+
+			case SDL_SCANCODE_E: {
+				emitter->EmitParticle();
+				break;
+			}
+
 			default: { break; }
 		}
 	}
@@ -95,10 +107,6 @@ static bool EHandler(SDL_Event* event) {
 
 static R3D_GlobalLightDescrition desc = {};
 
-static Task task0;
-static Task task1;
-static Task task2;
-
 static void TaskWorker(void* userdata) {
 	KinematicsModel* kmodel = (KinematicsModel*)userdata;
 
@@ -107,6 +115,25 @@ static void TaskWorker(void* userdata) {
 	kmodel->SolveCCDIK();
 	kmodel->RecalculateTransform();
 
+}
+
+static void PSpawnCB(Particle* particle, ParticleEmitter* emitter) {
+	vec3 offset = {0, 1.2f, 0};
+
+
+	particle->lifetime = 3;
+	particle->mul = 1.0f;
+	particle->vel = { 0, 0, 0 };
+
+	//particle->lifetime = 3;
+	//particle->mul = 1.0001f;
+	//particle->vel = { 0, 0.3f, 0 };
+
+	particle->pos = emitter->GetEntity()->GetTransform()->GetPosition() + offset;
+}
+
+static void PDeleteCB(Particle* particle, ParticleEmitter* emitter) {
+	emitter->EmitParticle();
 }
 
 class Application : public BaseGame {
@@ -232,7 +259,7 @@ class Application : public BaseGame {
 
 
 
-			R3DBoneBufferUpdateInfo binfo = {};
+			R3DUpdateBufferInfo binfo = {};
 			binfo.offset = 0;
 			binfo.data = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
@@ -251,16 +278,18 @@ class Application : public BaseGame {
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
 #if 1
-			task0.proc = TaskWorker;
-			task1.proc = TaskWorker;
-			task2.proc = TaskWorker;
-			task0.userdata = kmodel;
-			task1.userdata = kmodel2;
-			task2.userdata = kmodel3;
 
-			ThreadDispatch(&task0);
-			ThreadDispatch(&task1);
-			ThreadDispatch(&task2);
+			Task task = {};
+			task.proc = TaskWorker;
+
+			task.userdata = kmodel;
+			ThreadDispatch(&task);
+
+			task.userdata = kmodel2;
+			ThreadDispatch(&task);
+
+			task.userdata = kmodel3;
+			ThreadDispatch(&task);
 #else
 
 			TaskWorker(kmodel);
@@ -306,9 +335,9 @@ class Application : public BaseGame {
 			PM2Importer pm2Importer;
 			ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
-			//objImporter.ImportModel("gamedata/models/megumin/megumin_v4.obj", &objinfo);
+			objImporter.ImportModel("gamedata/models/skybox/untitled.obj", &objinfo);
 
-			pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
+			//pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
 
 
 			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
@@ -509,9 +538,30 @@ class Application : public BaseGame {
 			sourcel->SetBuffer(sbufferl);
 			sourcel->SetRepeat(true);
 
+			ParticleEmitterInfo emInfo = {};
+			emInfo.spawn_cb  = PSpawnCB;
+			emInfo.delete_cb = PDeleteCB;
+			emInfo.lifetime  = 3;
+			emInfo.max_particles = 256;
+#if 0
+			emInfo.sprite_atlas  = "platform/textures/pfx_test.png";
+			emInfo.width  = 4;
+			emInfo.height = 4;
+#endif
+			
+			//emInfo.sprite_atlas  = "platform/textures/xray-nonfree/pfx_expl_benzin.png";
+			//emInfo.width     = 10;
+			//emInfo.height    = 10;
+#if 1
+			emInfo.sprite_atlas = "platform/textures/xray-nonfree/pfx_ani-fire01.png";
+			emInfo.width  = 11;
+			emInfo.height = 7;
+#endif
 			Entity* sndentl = world->NewEntity();
 			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
 			sndentl->AttachComponent(sourcel);
+			emitter = Render::GetParticleSystem()->NewEmitter(&emInfo);
+			sndentl->AttachComponent(emitter);
 			sndentl->GetTransform()->SetPosition({ 6, 0.82f, 1 });
 			sndentl->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			sndentl->GetTransform()->SetScale({ 1, 1, 1 });
@@ -598,3 +648,5 @@ int EntryPoint(int argc, String* argv) {
 }
 
 rgmain(EntryPoint)
+
+#endif

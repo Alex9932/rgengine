@@ -1,5 +1,5 @@
 #ifndef _RGMATH_H
-#define  RGMATH_H
+#define _RGMATH_H
 
 #include "rgtypes.h"
 #include "rgvector.h"
@@ -11,6 +11,12 @@
 
 RG_DECLSPEC mat3 MAT3_IDENTITY();
 RG_DECLSPEC mat4 MAT4_IDENTITY();
+
+#if 0
+RG_INLINE Uint32 rgCRC32(const void* buf, size_t len) { return rgCRC32((const char*)buf, (Uint32)len); }
+RG_INLINE Uint32 rgCRC32(const void* buf, Uint32 len) { return rgCRC32((const char*)buf, len); }
+RG_INLINE Uint32 rgCRC32(const char* buf, size_t len) { return rgCRC32(buf, (Uint32)len); }
+#endif
 
 RG_DECLSPEC Uint32 rgCRC32(const char* data, Uint32 len);
 

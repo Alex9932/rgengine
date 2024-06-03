@@ -16,6 +16,8 @@ Texture2D t_unit4 : register(t4); // Wpos
 
 Texture2D t_unit5 : register(t5); // Godrays
 
+Texture2D t_unit6 : register(t6); // Particles
+
 SamplerState SampleType : register(s0);
 
 cbuffer ConstBuffer : register(b0) {
@@ -33,6 +35,8 @@ PSOUTPUT pmain(PSINPUT psin) {
 	float4 t4Color = t_unit4.Sample(SampleType, psin.uv);
 
 	float4 t5Color = t_unit5.Sample(SampleType, psin.uv);
+	
+	float4 t6Color = t_unit6.Sample(SampleType, psin.uv);
 
 
 	//float3 albedo    = alb_met.rgb;
@@ -47,10 +51,10 @@ PSOUTPUT pmain(PSINPUT psin) {
 	float reflectivity = fresnel * (1 - roughness); // TMP
 
 	PSOUTPUT pout;
-#if 1
-	pout.color = t0Color + t1Color + (t2Color * reflectivity) + t5Color;
+#if 0
+	pout.color = t0Color + t1Color + (t2Color * reflectivity) + t5Color + t6Color;
 #else
-	pout.color = t0Color + t1Color + (t2Color * reflectivity);
+	pout.color = t0Color + t1Color + (t2Color * reflectivity) + t6Color;
 #endif
 	return pout;
 }

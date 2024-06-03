@@ -37,23 +37,30 @@ extern "C" {
 
 	//extern RG_DECLSPEC void        R_SetInfo(RenderInfo* info);
 
-	extern RG_DECLSPEC R3D_Material*    R3D_CreateMaterial(R3DCreateMaterialInfo* info);
-	extern RG_DECLSPEC void             R3D_DestroyMaterial(R3D_Material* hmat);
+	extern RG_DECLSPEC R3D_Material*       R3D_CreateMaterial(R3DCreateMaterialInfo* info);
+	extern RG_DECLSPEC void                R3D_DestroyMaterial(R3D_Material* hmat);
 
-	extern RG_DECLSPEC R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info);
-	extern RG_DECLSPEC void				R3D_DestroyStaticModel(R3D_StaticModel* hsmdl);
+	extern RG_DECLSPEC R3D_StaticModel*    R3D_CreateStaticModel(R3DStaticModelInfo* info);
+	extern RG_DECLSPEC void				   R3D_DestroyStaticModel(R3D_StaticModel* hsmdl);
 
-	extern RG_DECLSPEC R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info);
-	extern RG_DECLSPEC void				R3D_DestroyRiggedModel(R3D_RiggedModel* hsmdl);
+	extern RG_DECLSPEC R3D_RiggedModel*    R3D_CreateRiggedModel(R3DRiggedModelInfo* info);
+	extern RG_DECLSPEC void				   R3D_DestroyRiggedModel(R3D_RiggedModel* hsmdl);
 
-	extern RG_DECLSPEC R3D_BoneBuffer*  R3D_CreateBoneBuffer(R3DCreateBoneBufferInfo* info);
-	extern RG_DECLSPEC void				R3D_DestroyBoneBuffer(R3D_BoneBuffer* hbuff);
-	extern RG_DECLSPEC void             R3D_UpdateBoneBuffer(R3DBoneBufferUpdateInfo* info);
+	extern RG_DECLSPEC R3D_BoneBuffer*     R3D_CreateBoneBuffer(R3DCreateBufferInfo* info);
+	extern RG_DECLSPEC void				   R3D_DestroyBoneBuffer(R3D_BoneBuffer* hbuff);
+	extern RG_DECLSPEC void                R3D_UpdateBoneBuffer(R3DUpdateBufferInfo* info);
 
-	extern RG_DECLSPEC void				R3D_PushModel(R3D_PushModelInfo* info);
-	extern RG_DECLSPEC void				R3D_SetCamera(R3D_CameraInfo* info);
+	extern RG_DECLSPEC R3D_AtlasHandle*    R3D_CreateAtlas(String texture);
+	extern RG_DECLSPEC void                R3D_DestroyAtlas(R3D_AtlasHandle* atlas);
 
-	extern RG_DECLSPEC void				R3D_StartRenderTask(R3D_RenderTaskInfo* info);
+	extern RG_DECLSPEC R3D_ParticleBuffer* R3D_CreateParticleBuffer(R3DCreateBufferInfo* info);
+	extern RG_DECLSPEC void                R3D_DestroyParticleBuffer(R3D_ParticleBuffer* hbuff);
+	extern RG_DECLSPEC void                R3D_UpdateParticleBuffer(R3DUpdateBufferInfo* info);
+
+	extern RG_DECLSPEC void                R3D_PushModel(R3D_PushModelInfo* info);
+	extern RG_DECLSPEC void				   R3D_SetCamera(R3D_CameraInfo* info);
+
+	extern RG_DECLSPEC void				   R3D_StartRenderTask(R3D_RenderTaskInfo* info);
 
 #ifdef __cplusplus
 }

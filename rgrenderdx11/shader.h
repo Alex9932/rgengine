@@ -42,18 +42,26 @@ struct PipelineDescription {
 
 class Shader {
     public:
-        Shader(PipelineDescription* description, String vs, String ps, bool compiled);
+        Shader(PipelineDescription* description, String vs, String ps, bool compiled) {
+            ClassConstructor(description, vs, ps, NULL, compiled);
+        }
+        Shader(PipelineDescription* description, String vs, String ps, String gs, bool compiled) {
+            ClassConstructor(description, vs, ps, gs, compiled);
+        }
         ~Shader();
         void Bind();
 
     private:
-        ShaderCode LoadShaders(String vs, String ps);
-        ShaderCode LoadCompiledShaders(String vs, String ps);
+        void ClassConstructor(PipelineDescription* description, String vs, String ps, String gs, bool compiled);
 
-        ID3D11VertexShader* vshader     = NULL;
-        ID3D11PixelShader*  pshader     = NULL;
-        ID3D11InputLayout*  layout      = NULL;
-        ID3D11SamplerState* sampleState = NULL;
+        ShaderCode LoadShaders(String vs, String ps, String gs);
+        ShaderCode LoadCompiledShaders(String vs, String ps, String gs);
+
+        ID3D11VertexShader*   vshader     = NULL;
+        ID3D11PixelShader*    pshader     = NULL;
+        ID3D11GeometryShader* gshader     = NULL;
+        ID3D11InputLayout*    layout      = NULL;
+        ID3D11SamplerState*   sampleState = NULL;
 
 };
 
