@@ -18,6 +18,7 @@ namespace Engine {
 		PFN_PARTICLESPAWN  spawn_cb;
 		PFN_PARTICLEDELETE delete_cb;    // Not required (may be NULL)
 		Float32            lifetime;
+		Float32            gravity;
 		Uint32             max_particles;
 		// Render
 		String             sprite_atlas;
@@ -61,6 +62,7 @@ namespace Engine {
 			Uint32              m_atlas_width;
 			Uint32              m_atlas_height;
 			Float32             m_lifetime;
+			Float32             m_gravity;
 			PFN_PARTICLESPAWN   m_cb_spawn;
 			PFN_PARTICLEDELETE  m_cb_delete;
 			PoolAllocator*      m_allocator;

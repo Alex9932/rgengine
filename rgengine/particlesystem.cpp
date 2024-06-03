@@ -16,6 +16,7 @@ namespace Engine {
 		m_particles    = 0;
 		m_maxparticles = info->max_particles;
 		m_lifetime     = info->lifetime;
+		m_gravity      = info->gravity;
 		m_cb_spawn     = info->spawn_cb;
 		m_cb_delete    = info->delete_cb;
 
@@ -53,6 +54,10 @@ namespace Engine {
 
 			// Skip "dead" particle
 			if (current_ptr->lifetime < 0) { continue; }
+
+
+			vec3 g_vel = {0, m_gravity, 0};
+			current_ptr->vel += g_vel * (Float32)dt;
 
 			current_ptr->pos += current_ptr->vel * (Float32)dt;
 			current_ptr->vel *= current_ptr->mul;

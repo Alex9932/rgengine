@@ -134,7 +134,7 @@ class FireworkEntityBehavior : public EntityBehavior {
                 m_time = GetUptime();
             }
             
-            if (pos.y >= 10) { // Explode height
+            if (pos.y >= m_explodeHeight) { // Explode height
 
                 rgLogInfo(RG_LOG_GAME, "EXPLODE");
 
@@ -169,11 +169,12 @@ class FireworkEntityBehavior : public EntityBehavior {
             Entity* ent = GetEntity();
             ent->GetTransform()->SetPosition(pos);
 
+            m_explodeHeight = 20 + ((Float32)(rand() % 1000) / 1000.0f) * 6;
 
             vec3 v;
-            v.x = ((Float32)(rand() % 1000) / 1000.0f) * 3;
+            v.x = (((Float32)(rand() % 1000) / 1000.0f) * 6) - 3;
             v.y = 12;
-            v.z = ((Float32)(rand() % 1000) / 1000.0f) * 3;
+            v.z = (((Float32)(rand() % 1000) / 1000.0f) * 6) - 3;
 
             m_acceleration = v;
             m_time = GetUptime();
@@ -189,6 +190,8 @@ class FireworkEntityBehavior : public EntityBehavior {
     private:
 
         Float64 m_time = -1;
+
+        Float32 m_explodeHeight = 0;
 
         ParticleEmitter* m_rocketparticle;
         ParticleEmitter* m_explodeparticle;
@@ -312,6 +315,7 @@ class Application : public BaseGame {
             fwExplode.delete_cb     = NULL;
             fwExplode.lifetime      = 1.5f;
             fwExplode.max_particles = 4096;
+            fwExplode.gravity       = -9.81f;
 
             fwExplode.sprite_atlas = "platform/textures/xray-nonfree/pfx_sparks.png";
             fwExplode.width  = 4;
@@ -327,10 +331,15 @@ class Application : public BaseGame {
             fwRocket.delete_cb     = NULL;
             fwRocket.lifetime      = 0.5f;
             fwRocket.max_particles = 4096;
+            fwRocket.gravity       = 0;
 
-            fwRocket.sprite_atlas = "platform/textures/xray-nonfree/pfx_expl_benzin.png";
-            fwRocket.width  = 10;
-            fwRocket.height = 10;
+            //fwRocket.sprite_atlas = "platform/textures/xray-nonfree/pfx_spark_01.png";
+            //fwRocket.width  = 1;
+            //fwRocket.height = 1;
+
+            fwRocket.sprite_atlas = "platform/textures/xray-nonfree/pfx_sparks.png";
+            fwRocket.width = 4;
+            fwRocket.height = 2;
 
             pRocketEmitter = Render::GetParticleSystem()->NewEmitter(&fwRocket);
 
