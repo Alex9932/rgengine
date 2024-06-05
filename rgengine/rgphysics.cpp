@@ -78,7 +78,7 @@ namespace Engine {
 		delete m_world->collision_config;
 		m_alloc->Deallocate(m_world);
 
-		//RG_DELETE_CLASS(m_alloc, PoolAllocator, m_mstates);
+		RG_DELETE_CLASS(m_alloc, PoolAllocator, m_mstates);
 		RG_DELETE(STDAllocator, m_alloc);
 	}
 

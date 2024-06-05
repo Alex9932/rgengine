@@ -280,7 +280,8 @@ void GetR3DStats(R3DStats* stats) {
 R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	R3D_Material* material = (R3D_Material*)alloc_materials->Allocate();
 
-	rgLogInfo(RG_LOG_RENDER, "Material: %p", material);
+	//rgLogInfo(RG_LOG_RENDER, "Material: 0x%0.16lx", (RG_VPTR)material);
+	rgLogInfo(RG_LOG_RENDER, "Material: %p", (RG_VPTR)material);
 
 	LoaderPushTexture(info->albedo, &material->albedo);
 	LoaderPushTexture(info->normal, &material->normal);

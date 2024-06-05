@@ -58,8 +58,10 @@
 
 #ifdef RG_ENV64
 #define RG_CASTADDR(a) ((void*)(Uint64)(a))
+#define RG_VPTR Uint64
 #else
 #define RG_CASTADDR(a) ((void*)(a))
+#define RG_VPTR Uint32
 #endif
 
 #define RG_LOG_GAME   SDL_LOG_CATEGORY_APPLICATION

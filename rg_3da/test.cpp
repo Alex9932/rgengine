@@ -136,7 +136,7 @@ class FireworkEntityBehavior : public EntityBehavior {
             
             if (pos.y >= m_explodeHeight) { // Explode height
 
-                rgLogInfo(RG_LOG_GAME, "EXPLODE");
+                //rgLogInfo(RG_LOG_GAME, "EXPLODE");
 
                 PlaySoundInfo snd_info = {};
                 snd_info.position = w_pos;
@@ -165,7 +165,7 @@ class FireworkEntityBehavior : public EntityBehavior {
         }
 
         void Launch(const vec3& pos) {
-            rgLogInfo(RG_LOG_GAME, "Launching...");
+            //rgLogInfo(RG_LOG_GAME, "Launching...");
             Entity* ent = GetEntity();
             ent->GetTransform()->SetPosition(pos);
 
@@ -245,7 +245,7 @@ class Application : public BaseGame {
             desc.ambient = 0.45f;
             desc.intensity = 3.3f;
             desc.turbidity = 1.86f;
-            desc.time = 4.33f;
+            desc.time = 2.33f;
         }
         ~Application() {}
 
@@ -291,7 +291,8 @@ class Application : public BaseGame {
             R3DStaticModelInfo objinfo = {};
 
             ObjImporter importer;
-            importer.ImportModel("gamedata/models/megumin_obj/doublesided_cape.obj", &objinfo);
+            importer.ImportModel("gamedata/models/meg/untitled.obj", &objinfo);
+            //importer.ImportModel("gamedata/models/megumin_obj/doublesided_cape.obj", &objinfo);
             //importer.ImportModel("gamedata/models/cude/untitled.obj", &objinfo);
             //importer.ImportModel("gamedata/sponzaobj/sponza.obj", &objinfo);
 
@@ -357,6 +358,12 @@ class Application : public BaseGame {
         
         void Quit() {
             GetWorld()->ClearWorld();
+
+            Render::GetParticleSystem()->DeleteEmitter(pExplodeEmitter);
+            Render::GetParticleSystem()->DeleteEmitter(pRocketEmitter);
+
+            GetSoundSystem()->DestroyBuffer(lsnd);
+            GetSoundSystem()->DestroyBuffer(esnd);
 
             RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
             RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);

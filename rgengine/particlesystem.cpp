@@ -139,6 +139,7 @@ namespace Engine {
 			if (*it == comp) {
 				*it = std::move(m_emitters.back());
 				m_emitters.pop_back();
+				comp->Destroy();
 				RG_DELETE_CLASS(this->m_alloc, ParticleEmitter, comp);
 				break;
 			}

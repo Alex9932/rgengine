@@ -509,13 +509,13 @@ namespace Engine {
 		R3D_Vertex* vertices = (R3D_Vertex*)rg_malloc(sizeof(R3D_Vertex) * vertex_count);
 		Uint32* indices = (Uint32*)rg_malloc(sizeof(Uint32) * index_count);
 
-		R3D_MaterialInfo* materials = (R3D_MaterialInfo*)rg_malloc(scene->mNumMaterials * sizeof(R3D_MaterialInfo));
+		R3D_MaterialInfo* materials = (R3D_MaterialInfo*)rg_malloc((scene->mNumMaterials - 1) * sizeof(R3D_MaterialInfo));
 
 		char new_path[128];
 		char n_new_path[128];
 
-		for (Uint32 i = 0; i < scene->mNumMaterials; i++) {
-			aiMaterial* mat = scene->mMaterials[i];
+		for (Uint32 i = 0; i < scene->mNumMaterials - 1; i++) {
+			aiMaterial* mat = scene->mMaterials[i + 1];
 
 			//aiColor4D diffuse;
 			//ai_real d;
@@ -609,14 +609,14 @@ namespace Engine {
 
 			minfo[i].indexCount  = mesh->mNumFaces * 3;
 			minfo[i].indexOffset = idx_offset;
-			minfo[i].materialIdx = mesh->mMaterialIndex;
+			minfo[i].materialIdx = mesh->mMaterialIndex - 1;
 
 			idx_offset += minfo[i].indexCount;
 		}
 
 		// Materials
 		info->matInfo  = materials;
-		info->matCount = scene->mNumMaterials;
+		info->matCount = scene->mNumMaterials - 1;
 
 		// Meshes
 		info->mInfo  = minfo;

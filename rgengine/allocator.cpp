@@ -141,7 +141,7 @@ namespace Engine {
     void* LinearAllocator::Allocate(size_t len) {
 
         mutex.lock();
-        if ((size_t)this->m_cur + len > (size_t)this->m_base + this->m_len) { return NULL; }
+        if ((size_t)this->m_cur + len > (size_t)this->m_base + this->m_len) { mutex.unlock(); return NULL; }
         void* ptr = this->m_cur;
         size_t s = (size_t)this->m_cur + len;
         this->m_cur = (void*)s;
