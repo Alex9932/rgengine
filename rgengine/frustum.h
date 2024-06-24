@@ -13,12 +13,8 @@
 
 typedef struct CreateFrustumInfo {
 	Frustum* result;
-	Float32  znear;
-	Float32  zfar;
-	Float32  fov;
-	Float32  aspect;
-	vec3     position;
-	vec3     rotation;
+	mat4*    proj;
+	mat4*    view;
 } CreateFrustumInfo;
 
 namespace Engine {

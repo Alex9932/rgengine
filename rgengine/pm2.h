@@ -53,6 +53,15 @@ typedef struct PM2_V3_Material {
 	vec4       color;
 } PM2_V3_Material;
 
+// Work in progress
+typedef struct PM2_V4_Material {
+	// Albedo - %gamedata%/textures/@texture@.png
+	// Normal - %gamedata%/textures/@texture@_bump.png
+	// PBR    - %gamedata%/textures/@texture@_pbr.png
+	PM2_String texture;
+	vec4       color;
+} PM2_V4_Material;
+
 typedef struct PM2_MeshInfo {
 	Uint32 material;
 	Uint32 indices;

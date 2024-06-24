@@ -560,6 +560,8 @@ namespace Engine {
 
 		Uint32 idx_offset = 0;
 
+		AABB aabb = { {10000, 10000, 10000}, {-10000, -10000, -10000} };
+
 		for (Uint32 i = 0; i < scene->mNumMeshes; i++) {
 			aiMesh* mesh = scene->mMeshes[i];
 			Uint32 offset = vtx;
@@ -575,6 +577,15 @@ namespace Engine {
 				vec4 np_vec = rotation_matrix * p_vec;
 				vec4 nn_vec = rotation_matrix * n_vec;
 				vec4 nt_vec = rotation_matrix * t_vec;
+
+				if (np_vec.x < aabb.min.x) { aabb.min.x = np_vec.x; }
+				if (np_vec.y < aabb.min.y) { aabb.min.y = np_vec.y; }
+				if (np_vec.z < aabb.min.z) { aabb.min.z = np_vec.z; }
+				if (np_vec.x > aabb.max.x) { aabb.max.x = np_vec.x; }
+				if (np_vec.y > aabb.max.y) { aabb.max.y = np_vec.y; }
+				if (np_vec.z > aabb.max.z) { aabb.max.z = np_vec.z; }
+
+
 				vertices[vtx].pos.x = np_vec.x;
 				vertices[vtx].pos.y = np_vec.y;
 				vertices[vtx].pos.z = np_vec.z;
@@ -632,6 +643,8 @@ namespace Engine {
 		info->indices  = indices;
 		info->iCount   = index_count;
 		info->iType    = RG_INDEX_U32;
+
+		info->aabb     = aabb;
 
 
 		importer.FreeScene();

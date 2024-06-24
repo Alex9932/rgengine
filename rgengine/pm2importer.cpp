@@ -174,10 +174,22 @@ namespace Engine {
         SortMeshInfo(r3d_meshinfo, header.offset);
 
 
+        AABB aabb = { {10000, 10000, 10000}, {-10000, -10000, -10000} };
+
         for (Uint32 i = 0; i < header.vertices; i++) {
-            r3d_vertices[i].pos.x  = vertices[i].position.x;
-            r3d_vertices[i].pos.y  = vertices[i].position.y;
-            r3d_vertices[i].pos.z  = vertices[i].position.z;
+
+            vec3* c_pos = &vertices[i].position;
+
+            if (c_pos->x < aabb.min.x) { aabb.min.x = c_pos->x; }
+            if (c_pos->y < aabb.min.y) { aabb.min.y = c_pos->y; }
+            if (c_pos->z < aabb.min.z) { aabb.min.z = c_pos->z; }
+            if (c_pos->x > aabb.max.x) { aabb.max.x = c_pos->x; }
+            if (c_pos->y > aabb.max.y) { aabb.max.y = c_pos->y; }
+            if (c_pos->z > aabb.max.z) { aabb.max.z = c_pos->z; }
+
+            r3d_vertices[i].pos.x  = c_pos->x;
+            r3d_vertices[i].pos.y  = c_pos->y;
+            r3d_vertices[i].pos.z  = c_pos->z;
             r3d_vertices[i].norm.x = vertices[i].normal.x;
             r3d_vertices[i].norm.y = vertices[i].normal.y;
             r3d_vertices[i].norm.z = vertices[i].normal.z;
@@ -308,6 +320,8 @@ namespace Engine {
         info->indices  = indices;
         info->iCount   = header.indices;
         info->iType    = index_type;
+
+        info->aabb     = aabb;
 
 
         delete reader;

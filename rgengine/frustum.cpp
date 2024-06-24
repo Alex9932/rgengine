@@ -1,3 +1,11 @@
+/*
+ * rgEngine frustum.h
+ *
+ *  Created on: Jun 7, 2024
+ *      Author: alex9932
+ *
+ */
+
 #include "frustum.h"
 
 namespace Engine {
@@ -12,16 +20,7 @@ namespace Engine {
 
 	void CreateFrustum(CreateFrustumInfo* info) {
 
-		// TODO: proj & view matrix pointers in info
-
-		// make matrix
-		mat4 projection;
-		mat4 camera_view;
-		mat4_frustum(&projection, info->fov, info->aspect, info->znear, info->zfar);
-		mat4_view(&camera_view, info->position, info->rotation);
-
-
-		mat4 clip_matrix = projection * camera_view;
+		mat4 clip_matrix = *info->proj * *info->view;
 		float* clip = clip_matrix.m;
 
 		info->result->planes[0].x = clip[3]  - clip[0];
@@ -56,10 +55,6 @@ namespace Engine {
 
 	}
 
-	static RG_INLINE Float32 DistanceToPlane(vec4* plane, const vec3& p) {
-		return plane->xyz.dot(p) - plane->w;
-	}
-
 	Bool SphereInFrustum(Frustum* f, const vec3& pos, Float32 r) {
 		Bool result = true;
 		for (Uint32 i = 0; i < 6; i++) {
@@ -72,7 +67,70 @@ namespace Engine {
 	}
 
 	Bool AABBInFrustum(Frustum* f, const AABB& aabb) {
-		return false;
+		for (int i = 0; i < 6; ++i) {
+			if (!(f->planes[i].x * aabb.min.x + f->planes[i].y * aabb.min.y + f->planes[i].z * aabb.min.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.max.x + f->planes[i].y * aabb.max.y + f->planes[i].z * aabb.max.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.min.x + f->planes[i].y * aabb.max.y + f->planes[i].z * aabb.min.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.max.x + f->planes[i].y * aabb.max.y + f->planes[i].z * aabb.min.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.min.x + f->planes[i].y * aabb.min.y + f->planes[i].z * aabb.max.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.max.x + f->planes[i].y * aabb.min.y + f->planes[i].z * aabb.max.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.min.x + f->planes[i].y * aabb.max.y + f->planes[i].z * aabb.max.z + f->planes[i].w > 0.0f) &&
+				!(f->planes[i].x * aabb.max.x + f->planes[i].y * aabb.max.y + f->planes[i].z * aabb.max.z + f->planes[i].w > 0.0f)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
+#if 0
+	Bool cubeFullyInFrustum(float x1, float y1, float z1, float x2, float y2, float z2) {
+		for (int i = 0; i < 6; ++i) {
+			if (!(this.m_Frustum[i][0] * x1 + this.m_Frustum[i][1] * y1 + this.m_Frustum[i][2] * z1 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x2 + this.m_Frustum[i][1] * y1 + this.m_Frustum[i][2] * z1 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x1 + this.m_Frustum[i][1] * y2 + this.m_Frustum[i][2] * z1 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x2 + this.m_Frustum[i][1] * y2 + this.m_Frustum[i][2] * z1 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x1 + this.m_Frustum[i][1] * y1 + this.m_Frustum[i][2] * z2 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x2 + this.m_Frustum[i][1] * y1 + this.m_Frustum[i][2] * z2 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x1 + this.m_Frustum[i][1] * y2 + this.m_Frustum[i][2] * z2 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+
+			if (!(this.m_Frustum[i][0] * x2 + this.m_Frustum[i][1] * y2 + this.m_Frustum[i][2] * z2 + this.m_Frustum[i][3] > 0.0F)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+#endif
+
+	Bool PointInFrustum(Frustum* f, const vec3& p) {
+		Bool result = true;
+		for (int i = 0; i < 6; ++i) {
+			if (f->planes[i].x * p.x + f->planes[i].y * p.y + f->planes[i].z * p.z + f->planes[i].w <= 0.0f) {
+				result = false;
+			}
+		}
+
+		return result;
+	}
 }

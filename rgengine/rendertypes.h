@@ -4,6 +4,7 @@
 #include "rgtypes.h"
 #include "rgvector.h"
 #include "rgmatrix.h"
+#include "rgmath.h"
 
 #include "imgui/imgui.h"
 
@@ -201,6 +202,8 @@ typedef struct R3DStaticModelInfo {
 	Uint32        vCount;
 	Uint32        iCount;
 	IndexType     iType;
+
+	AABB          aabb;
 } R3DStaticModelInfo;
 
 typedef struct R3DRiggedModelInfo {

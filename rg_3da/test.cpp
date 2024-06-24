@@ -232,6 +232,8 @@ static bool EHandler(SDL_Event* event) {
 
 static vec4 sphere = {0, 0, 0, 0.1f};
 
+static AABB aabb = { { 0, 0, 0 }, { 1, 1, 1 } };
+
 static void DrawImGui(Camera* camera) {
     ImGuizmo::BeginFrame();
     ImGuiIO& io = ImGui::GetIO();
@@ -295,21 +297,23 @@ class Application : public BaseGame {
             camcontrol->Update();
             camera->Update(GetDeltaTime());
 
+            mat4 camera_view;
+            vec3 cam_position = camera->GetTransform()->GetPosition();
+            vec3 cam_rotation = camera->GetTransform()->GetRotation();
+            mat4_view(&camera_view, cam_position, cam_rotation);
+
             CreateFrustumInfo finfo = {};
             finfo.result = &frustum;
-            finfo.znear  = camera->GetNearPlane();
-            finfo.zfar   = camera->GetFarPlane();
-            finfo.aspect = camera->GetAspect();
-            finfo.fov    = camera->GetFov();
-            finfo.position = camera->GetTransform()->GetPosition();
-            finfo.rotation = camera->GetTransform()->GetRotation();
+            finfo.proj = camera->GetProjection();
+            finfo.view = &camera_view;
             CreateFrustum(&finfo);
 
             ImGui::Begin("Frustum Cull");
-            Bool inFrustum = SphereInFrustum(&frustum, sphere.xyz, sphere.w);
+            //Bool inFrustum = SphereInFrustum(&frustum, sphere.xyz, sphere.w);
+            Bool inFrustum = AABBInFrustum(&frustum, aabb);
             ImGui::InputFloat3("Position", sphere.xyz.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
             if (inFrustum) {
-                ImGui::Text("Sphere in frustum");
+                ImGui::Text("In frustum");
             }
             ImGui::End();
 
@@ -338,10 +342,12 @@ class Application : public BaseGame {
             R3DStaticModelInfo objinfo = {};
 
             ObjImporter importer;
-            importer.ImportModel("gamedata/models/meg/untitled.obj", &objinfo);
+            importer.ImportModel("gamedata/models/meg/untitled2.obj", &objinfo);
             //importer.ImportModel("gamedata/models/megumin_obj/doublesided_cape.obj", &objinfo);
             //importer.ImportModel("gamedata/models/cude/untitled.obj", &objinfo);
             //importer.ImportModel("gamedata/sponzaobj/sponza.obj", &objinfo);
+
+            aabb = objinfo.aabb;
 
             //PM2Importer importer;
             //importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
