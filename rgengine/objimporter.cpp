@@ -514,6 +514,10 @@ namespace Engine {
 		char new_path[128];
 		char n_new_path[128];
 
+		// skip first assimp material
+		// assimp's materials -> [default unused, mat0, mat1, mat2, ...]
+		// engine's materials -> [mat0, mat1, mat2, ...]
+
 		for (Uint32 i = 0; i < scene->mNumMaterials - 1; i++) {
 			aiMaterial* mat = scene->mMaterials[i + 1];
 
@@ -559,7 +563,7 @@ namespace Engine {
 		for (Uint32 i = 0; i < scene->mNumMeshes; i++) {
 			aiMesh* mesh = scene->mMeshes[i];
 			Uint32 offset = vtx;
-			bool a = false;
+			Bool a = false;
 
 			for (Uint32 j = 0; j < mesh->mNumVertices; j++) {
 				vec4 p_vec = { mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z, 1 };

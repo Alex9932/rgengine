@@ -228,6 +228,9 @@
     <ClCompile Include="particlesystem.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="frustum.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -415,6 +418,9 @@
     </ClInclude>
     <ClInclude Include="particlesystem.h">
       <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="frustum.h">
+      <Filter>Header Files\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

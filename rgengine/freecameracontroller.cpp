@@ -35,8 +35,13 @@ namespace Engine {
 		}
 
 		vec3 cam_fwd = { 0, 0, -1 };
-		vec3 cam_up = { 0, 1, 0 };
+		vec3 cam_up  = { 0, 1, 0 };
+		vec3 rotated_fwd = {};
+		vec3 rotated_up = {};
 
+		vec3_rotate(&rotated_fwd, cam_fwd, rot);
+		vec3_rotate(&rotated_up,  cam_up,  rot);
+#if 0
 		mat4 view_matrix = MAT4_IDENTITY();
 		//mat4_rotatey(&view_matrix, -rot.y);
 		//mat4_rotate(&view_matrix, { -rot.x, -rot.y, 0});
@@ -50,6 +55,9 @@ namespace Engine {
 
 
 		vec3 rotated_fwd = view_matrix * cam_fwd;
+		vec3 rotated_up = view_matrix * cam_up;
+#endif
+
 #if 0
 		vec3 rotated_fwd;
 		rotated_fwd.x = SDL_cosf(rot.x) * SDL_cosf(rot.y);
@@ -57,7 +65,6 @@ namespace Engine {
 		rotated_fwd.z = SDL_sinf(rot.x) * SDL_cosf(rot.y);
 		rotated_fwd = rotated_fwd.normalize();
 #endif
-		vec3 rotated_up = view_matrix * cam_up;
 
 		vec3 left = rotated_up.cross(rotated_fwd);
 #if 0

@@ -23,6 +23,10 @@
 #include <objimporter.h>
 #include <pm2importer.h>
 
+
+#include <imgui/ImGuizmo.h>
+#include <frustum.h>
+
 using namespace Engine;
 
 static void PSpawnCB_rocket(Particle* particle, ParticleEmitter* emitter, const vec3& pos) {
@@ -226,8 +230,29 @@ static bool EHandler(SDL_Event* event) {
     return true;
 }
 
+static vec4 sphere = {0, 0, 0, 0.1f};
+
+static void DrawImGui(Camera* camera) {
+    ImGuizmo::BeginFrame();
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+    mat4 view  = {};
+    mat4 model = {};
+    vec3 position = camera->GetTransform()->GetPosition();
+    vec3 rotation = camera->GetTransform()->GetRotation();
+    mat4_view(&view, position, rotation);
+    mat4_model(&model, sphere.xyz, { 0, 0, 0 }, { 1, 1, 1 });
+    ImGuizmo::Manipulate(view.m, camera->GetProjection()->m, ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, model.m);
+    vec3 newpos = {};
+    mat4_decompose(&newpos, NULL, NULL, model);
+    sphere.xyz = newpos;
+
+}
+
 class Application : public BaseGame {
 
+    Frustum frustum;
     Camera* camera = NULL;
     FreeCameraController* camcontrol = NULL;
 
@@ -251,8 +276,12 @@ class Application : public BaseGame {
 
         void MainUpdate() {
 
+
             Render::DrawRendererStats();
             Render::DrawProfilerStats();
+
+
+            DrawImGui(camera);
 
             // Set light data
             Render::SetGlobalLight(&desc);
@@ -265,6 +294,24 @@ class Application : public BaseGame {
 
             camcontrol->Update();
             camera->Update(GetDeltaTime());
+
+            CreateFrustumInfo finfo = {};
+            finfo.result = &frustum;
+            finfo.znear  = camera->GetNearPlane();
+            finfo.zfar   = camera->GetFarPlane();
+            finfo.aspect = camera->GetAspect();
+            finfo.fov    = camera->GetFov();
+            finfo.position = camera->GetTransform()->GetPosition();
+            finfo.rotation = camera->GetTransform()->GetRotation();
+            CreateFrustum(&finfo);
+
+            ImGui::Begin("Frustum Cull");
+            Bool inFrustum = SphereInFrustum(&frustum, sphere.xyz, sphere.w);
+            ImGui::InputFloat3("Position", sphere.xyz.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
+            if (inFrustum) {
+                ImGui::Text("Sphere in frustum");
+            }
+            ImGui::End();
 
             R3D_CameraInfo cam = {};
             cam.projection = *camera->GetProjection();

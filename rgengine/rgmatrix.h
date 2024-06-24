@@ -94,7 +94,7 @@ union mat4 {
 };
 
 RG_DECLSPEC void mat4_ortho(mat4* dst, float l, float r, float b, float t, float n, float f);
-RG_DECLSPEC void mat4_frustum(mat4* dst, float fov, float aspect, float near, float far);
+RG_DECLSPEC void mat4_frustum(mat4* dst, float fov, float aspect, float znear, float zfar);
 
 RG_DECLSPEC void mat4_view(mat4* dst, const vec3& pos, const vec3& rot);
 RG_DECLSPEC void mat4_model(mat4* dst, const vec3& pos, const vec3& rot, const vec3& scale);

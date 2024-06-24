@@ -119,6 +119,19 @@ vec3 vec3_mulquat(const vec3& v, const quat& q) {
     return r;
 }
 
+void vec3_rotate(vec3* dst, const vec3& vector, const vec3& angles) {
+    mat4 view_matrix = MAT4_IDENTITY();
+    mat4 rx, ry, rz, ryz;
+
+    mat4_rotatex(&rx, -angles.x);
+    mat4_rotatey(&ry, -angles.y);
+    mat4_rotatez(&rz, -angles.z);
+    ryz = rz * ry;
+    view_matrix = ryz * rx;
+
+    *dst = (view_matrix * vector).normalize();
+}
+
 quat quat_axisAngle(const vec4& axis_angle) {
     quat dest;
     float half = axis_angle.w / 2.0f;

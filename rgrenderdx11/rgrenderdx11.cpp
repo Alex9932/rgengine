@@ -217,7 +217,6 @@ void R_SwapBuffers() {
 	}
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	ImGui_ImplDX11_NewFrame();
 
 	DX11_SwapBuffers();
 
