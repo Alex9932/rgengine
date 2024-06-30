@@ -21,6 +21,11 @@ typedef struct Frustum {
 typedef struct AABB {
 	vec3 min;
 	vec3 max;
+
+	void Add(const vec3& v) {
+		min += v;
+		max += v;
+	}
 } AABB;
 
 RG_DECLSPEC mat3 MAT3_IDENTITY();

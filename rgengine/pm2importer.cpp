@@ -77,6 +77,32 @@ namespace Engine {
 
     }
 
+    static void ReadMaterialsV4(PM2_Header* header, R3D_MaterialInfo* materials, FSReader* reader, String model_root) {
+
+        char albedo[128];
+        char normal[128];
+        char pbr[128];
+
+        char str_buffer[128];
+        for (Uint32 i = 0; i < header->materials; i++) {
+
+            Uint32 len = reader->ReadU32();
+            SDL_memset(str_buffer, 0, 128);
+            reader->Read(str_buffer, len);
+
+            // %gamedata%/textures/%texture%
+            SDL_snprintf(materials[i].albedo, 128, "%s/textures/%s.png",      GetGamedataPath(), str_buffer);
+            SDL_snprintf(materials[i].normal, 128, "%s/textures/%s_bump.png", GetGamedataPath(), str_buffer);
+            SDL_snprintf(materials[i].pbr,    128, "%s/textures/%s_pbr.png",  GetGamedataPath(), str_buffer);
+
+            vec4 diffuse;
+            reader->Read4F32(diffuse);
+            materials[i].color = { diffuse.r, diffuse.g, diffuse.b };
+
+        }
+
+    }
+
     ////////////////////////////////////////
     // Static sort functions
 
@@ -148,12 +174,12 @@ namespace Engine {
         //Uint32 materials[header.materials];
         R3D_MaterialInfo* materials = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * header.materials);
 
-        if (header.version == 2) {
-            ReadMaterialsV2(&header, materials, reader, model_root);
-        } else if (header.version == 3) {
-            ReadMaterialsV3(&header, materials, reader, model_root);
+        switch (header.version) {
+            case 2: { ReadMaterialsV2(&header, materials, reader, model_root); break; }
+            case 3: { ReadMaterialsV3(&header, materials, reader, model_root); break; }
+            case 4: { ReadMaterialsV4(&header, materials, reader, model_root); break; }
+            default: { RG_ERROR_MSG("PM2: Unknown file format!") break; }
         }
-
 
         reader->Read(mesh_info, sizeof(PM2_MeshInfo) * header.offset);
         reader->Read(vertices, sizeof(PM2_Vertex) * header.vertices);

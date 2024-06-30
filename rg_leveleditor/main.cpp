@@ -337,14 +337,6 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 			*/
 
-			pm2Importer.ImportModel("gamedata/flatplane/scene.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
-			pm2Importer.FreeModelData(&objinfo);
-
-			pm2Importer.ImportModel("gamedata/models/welder/model.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
-			pm2Importer.FreeModelData(&objinfo);
-
 			/*
 			Entity* ent0 = world->NewEntity();
 			ent0->GetComponent(Component_TAG)->AsTagComponent()->SetString("Skybox");
@@ -354,16 +346,29 @@ class Application : public BaseGame {
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 			*/
 
+
+			pm2Importer.ImportModel("gamedata/flatplane/scene.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
 			Entity* ent1 = world->NewEntity();
 			ent1->GetComponent(Component_TAG)->AsTagComponent()->SetString("Ground");
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+			ent1->SetAABB(&objinfo.aabb);
 			ent1->GetTransform()->SetPosition({ 0, 0, 1 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
+
+
+			pm2Importer.ImportModel("gamedata/models/welder/model.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
 			Entity* ent2 = world->NewEntity();
 			ent2->GetComponent(Component_TAG)->AsTagComponent()->SetString("Model");
 			ent2->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle2));
+			ent2->SetAABB(&objinfo.aabb);
 			ent2->GetTransform()->SetPosition({ 0, 1, 0 });
 			ent2->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent2->GetTransform()->SetScale({ 1, 1, 1 });

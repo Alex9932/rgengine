@@ -22,7 +22,8 @@ namespace Engine {
 	RG_DECLSPEC void CreateFrustum(CreateFrustumInfo* info);
 
 	RG_DECLSPEC Bool SphereInFrustum(Frustum* f, const vec3& pos, Float32 r);
-	RG_DECLSPEC Bool AABBInFrustum(Frustum* f, const AABB& aabb);
+	RG_DECLSPEC Bool AABBInFrustum(Frustum* f, AABB* aabb);
+	RG_DECLSPEC Bool AABBFullyInFrustum(Frustum* f, AABB* aabb);
 
 }
 

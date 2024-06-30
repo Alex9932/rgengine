@@ -117,7 +117,7 @@ static void TaskWorker(void* userdata) {
 
 }
 
-static void PSpawnCB(Particle* particle, ParticleEmitter* emitter) {
+static void PSpawnCB(Particle* particle, ParticleEmitter* emitter, const vec3& pos) {
 	vec3 offset = {0, 1.2f, 0};
 
 
@@ -255,7 +255,7 @@ class Application : public BaseGame {
 			cam.projection = *camera->GetProjection();
 			cam.position = camera->GetTransform()->GetPosition();
 			cam.rotation = camera->GetTransform()->GetRotation();
-			Render::R3D_SetCamera(&cam);
+			Render::SetCamera(&cam);
 
 
 
@@ -345,25 +345,13 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 
 			//pm2Importer.ImportModel("gamedata/models/lamp/lamp.pm2", &objinfo);
-			pm2Importer.ImportModel("gamedata/models/table/table.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle3 = Render::R3D_CreateStaticModel(&objinfo);
-			pm2Importer.FreeModelData(&objinfo);
 
-			pm2Importer.ImportModel("gamedata/models/mikufigure/model.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&objinfo);
-			pm2Importer.FreeModelData(&objinfo);
 
 #endif
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("platform/new/megumin_v4.obj");
 			//R3D_StaticModel* mdl_handle1 = OBJ_ToModel("gamedata/sponza_old/sponza.obj");
 
 #if 1
-			R3DStaticModelInfo pm2info = {};
-			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
-			//objImporter.ImportModel("F:/c/models/San_Miguel/san-miguel-low-poly.obj", &pm2info);
-			//jImporter.ImportModel("D:/models/livingroom/lala.obj", &pm2info);
-			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
-			pm2Importer.FreeModelData(&pm2info);
 
 			/*
 			pm2Importer.ImportModel("gamedata/models/skybox/geometry.pm2", &pm2info);
@@ -395,37 +383,7 @@ class Application : public BaseGame {
 			PMXImporter pmxImporter;
 			PMDImporter pmdImporter;
 
-			R3DRiggedModelInfo pmdinfo = {};
-
-			pmdImporter.ImportRiggedModel(modelname0, &pmdinfo);
-			R3D_RiggedModel* mdl_handle5 = Render::R3D_CreateRiggedModel(&pmdinfo);
-			pmdImporter.FreeRiggedModelData(&pmdinfo);
-			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
-
-			pmdImporter.ImportRiggedModel(modelname1, &pmdinfo);
-			R3D_RiggedModel* mdl_handle6 = Render::R3D_CreateRiggedModel(&pmdinfo);
-			pmdImporter.FreeRiggedModelData(&pmdinfo);
-			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
-
-			pmxImporter.ImportRiggedModel(modelname2, &pmdinfo);
-			R3D_RiggedModel* mdl_handle7 = Render::R3D_CreateRiggedModel(&pmdinfo);
-			pmxImporter.FreeRiggedModelData(&pmdinfo);
-			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
-
 			VMDImporter vmdImporter;
-			anim0 = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
-			anim1 = vmdImporter.ImportAnimation("vmd/zero_allstar_ph_baked.vmd", kmodel2);
-			anim2 = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel3);
-			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
-			
-			//anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
-			anim0->SetRepeat(true);
-			anim1->SetRepeat(true);
-			anim2->SetRepeat(true);
-
-			kmodel->GetAnimator()->PlayAnimation(anim0);
-			kmodel2->GetAnimator()->PlayAnimation(anim1);
-			kmodel3->GetAnimator()->PlayAnimation(anim2);
 
 #endif
 
@@ -483,15 +441,27 @@ class Application : public BaseGame {
 
 
 
+			R3DStaticModelInfo pm2info = {};
+			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
+			//objImporter.ImportModel("F:/c/models/San_Miguel/san-miguel-low-poly.obj", &pm2info);
+			//jImporter.ImportModel("D:/models/livingroom/lala.obj", &pm2info);
+			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
+			pm2Importer.FreeModelData(&pm2info);
 			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+			ent1->SetAABB(&pm2info.aabb);
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
 
+
+			pm2Importer.ImportModel("gamedata/models/table/table.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle3 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
 			Entity* ent3 = world->NewEntity();
 			ent3->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle3));
+			ent3->SetAABB(&objinfo.aabb);
 			ent3->GetTransform()->SetPosition({ 6, 0, 1 });
 			ent3->GetTransform()->SetRotation({ 0, -1.05f, 0 });
 			ent3->GetTransform()->SetScale({ 1, 1, 1 });
@@ -557,8 +527,14 @@ class Application : public BaseGame {
 			emInfo.width  = 11;
 			emInfo.height = 7;
 #endif
+
+			pm2Importer.ImportModel("gamedata/models/mikufigure/model.pm2", &objinfo);
+			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&objinfo);
+			pm2Importer.FreeModelData(&objinfo);
+
 			Entity* sndentl = world->NewEntity();
 			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
+			sndentl->SetAABB(&objinfo.aabb);
 			sndentl->AttachComponent(sourcel);
 			emitter = Render::GetParticleSystem()->NewEmitter(&emInfo);
 			sndentl->AttachComponent(emitter);
@@ -588,26 +564,60 @@ class Application : public BaseGame {
 #endif
 
 #if 1
+			R3DRiggedModelInfo pmdinfo = {};
+
+
+			pmdImporter.ImportRiggedModel(modelname0, &pmdinfo);
+			R3D_RiggedModel* mdl_handle5 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			pmdImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
 			Entity* ent5 = world->NewEntity();
 			ent5->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle5, kmodel));
+			ent5->SetAABB(&pmdinfo.aabb);
 			ent5->GetTransform()->SetPosition({ 10.5f, 0, -2.2f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent5->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent5->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
+
+			pmdImporter.ImportRiggedModel(modelname1, &pmdinfo);
+			R3D_RiggedModel* mdl_handle6 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			pmdImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
 			Entity* ent6 = world->NewEntity();
 			ent6->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle6, kmodel2));
+			ent5->SetAABB(&pmdinfo.aabb);
 			ent6->GetTransform()->SetPosition({ 10.5f, 0, -0.4f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent6->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent6->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
+			pmxImporter.ImportRiggedModel(modelname2, &pmdinfo);
+			R3D_RiggedModel* mdl_handle7 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			pmxImporter.FreeRiggedModelData(&pmdinfo);
+			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
 			Entity* ent7 = world->NewEntity();
 			ent7->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle7, kmodel3));
+			ent5->SetAABB(&pmdinfo.aabb);
 			ent7->GetTransform()->SetPosition({ 10.5f, 0, 1.4f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent7->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent7->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+
+
+			anim0 = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
+			anim1 = vmdImporter.ImportAnimation("vmd/zero_allstar_ph_baked.vmd", kmodel2);
+			anim2 = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel3);
+			//anim = vmdImporter.ImportAnimation("vmd/wavefile_v2.vmd", kmodel);
+
+			//anim = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);
+			anim0->SetRepeat(true);
+			anim1->SetRepeat(true);
+			anim2->SetRepeat(true);
+
+			kmodel->GetAnimator()->PlayAnimation(anim0);
+			kmodel2->GetAnimator()->PlayAnimation(anim1);
+			kmodel3->GetAnimator()->PlayAnimation(anim2);
 #endif
 /*
 			Entity* ent4 = world->NewEntity();

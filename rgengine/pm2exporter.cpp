@@ -20,7 +20,12 @@
 //  PM2_String albedo;
 //  PM2_String normal;
 //  PM2_String pbr;    // v3
-//  vec4       color;     
+//  vec4       color;
+// }
+// [Materials] v4
+// {
+//  PM2_String texture;
+//  vec4       color;
 // }
 
 // [Mesh info]
@@ -109,6 +114,7 @@ namespace Engine {
 		// Materials
 		for (Uint32 i = 0; i < info->matCount; i++) {
 			R3D_MaterialInfo* mat = &info->matInfo[i];
+			//WritePM2String(writer, mat->texture);
 			WritePM2String(writer, mat->albedo);
 			WritePM2String(writer, mat->normal);
 			WritePM2String(writer, mat->pbr);

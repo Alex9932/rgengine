@@ -4,6 +4,7 @@
 #include "transform.h"
 #include "uuid.h"
 #include "allocator.h"
+#include "rgmath.h"
 
 enum ComponentType {
 	Component_TAG = 0,              // Name tag          (TagComponent)
@@ -119,6 +120,9 @@ namespace Engine {
 
 			RG_INLINE Transform* GetTransform() { return this->m_transform; }
 
+			RG_INLINE void SetAABB(AABB* aabb) { m_aabb = *aabb; }
+			RG_INLINE AABB* GetAABB() { return &m_aabb; }
+
 			RG_INLINE void SetBehavior(EntityBehavior* behavior) {
 				m_behavior = behavior;
 				if (behavior) {
@@ -132,6 +136,7 @@ namespace Engine {
 			Transform*      m_transform;
 			World*          m_world;
 			EntityBehavior* m_behavior;
+			AABB            m_aabb;
 			Component*      m_components[Component_MAXENUM];
 
 	};

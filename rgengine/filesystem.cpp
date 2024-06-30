@@ -350,4 +350,16 @@ namespace Engine {
         RG_ASSERT_MSG(_path, "Invalid path type!");
         SDL_snprintf(dst, maxlen, "%s/%s", _path, path);
     }
+
+    String GetSystemPath() {
+        return SYSTEM_PATH;
+    }
+
+    String GetGamedataPath() {
+        return GAMEDATA_PATH;
+    }
+
+    String GetUserdataPath() {
+        return USERDATA_PATH;
+    }
 }

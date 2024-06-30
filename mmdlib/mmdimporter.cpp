@@ -36,7 +36,23 @@ static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx
 	SDL_memcpy(indices, pmd->indices, sizeof(Uint16) * pmd->index_count);
 
 	R3D_Vertex* vertices = (R3D_Vertex*)rg_malloc(sizeof(R3D_Vertex) * pmd->vertex_count);
+	
+    AABB aabb = { {10000, 10000, 10000}, {-10000, -10000, -10000} };
+
 	for (Uint32 i = 0; i < pmd->vertex_count; i++) {
+
+		vec3 c_pos;
+		c_pos.x = pmd->vertices[i].vertex.x;
+		c_pos.y = pmd->vertices[i].vertex.y;
+		c_pos.z = pmd->vertices[i].vertex.z;
+
+		if (c_pos.x < aabb.min.x) { aabb.min.x = c_pos.x; }
+		if (c_pos.y < aabb.min.y) { aabb.min.y = c_pos.y; }
+		if (c_pos.z < aabb.min.z) { aabb.min.z = c_pos.z; }
+		if (c_pos.x > aabb.max.x) { aabb.max.x = c_pos.x; }
+		if (c_pos.y > aabb.max.y) { aabb.max.y = c_pos.y; }
+		if (c_pos.z > aabb.max.z) { aabb.max.z = c_pos.z; }
+
 		vertices[i].pos.x  = pmd->vertices[i].vertex.x;
 		vertices[i].pos.y  = pmd->vertices[i].vertex.y;
 		vertices[i].pos.z  = pmd->vertices[i].vertex.z;
@@ -47,7 +63,7 @@ static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx
 		vertices[i].tang.y = 0;
 		vertices[i].tang.z = 1;
 		vertices[i].uv.x   = pmd->vertices[i].vertex.u;
-		vertices[i].uv.y   = pmd->vertices[i].vertex.v;
+		vertices[i].uv.y   = 1.0f - pmd->vertices[i].vertex.v;
 	}
 
 #if RG_PMD_RECALCULATE_TANGENTS

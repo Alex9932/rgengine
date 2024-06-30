@@ -533,22 +533,21 @@ namespace Engine {
 
 			SDL_memset(new_path, 0, 128);
 			SDL_memset(n_new_path, 0, 128);
-				
+
 			if (ai_d_str.length) {
 				FixPath(new_path, ai_d_str.C_Str());
 				SDL_snprintf(materials[i].albedo, 128, "%s/%s", GAMEDATA_PATH, new_path);
 			} else {
-				SDL_snprintf(materials[i].albedo, 128, "platform/textures/def_diffuse.png");
+				SDL_snprintf(materials[i].albedo, 128, "%s/textures/def_diffuse.png", GetPlatformPath());
 			}
-
 			if (ai_n_str.length != 0) {
 				FixPath(n_new_path, ai_n_str.C_Str());
 				SDL_snprintf(materials[i].normal, 128, "%s/%s", GAMEDATA_PATH, n_new_path);
 			} else {
-				SDL_snprintf(materials[i].normal, 128, "platform/textures/def_normal.png");
+				SDL_snprintf(materials[i].normal, 128, "%s/textures/def_normal.png", GetPlatformPath());
 			}
 
-			SDL_snprintf(materials[i].pbr, 128, "platform/textures/def_pbr.png");
+			SDL_snprintf(materials[i].pbr, 128, "%s/textures/def_pbr.png", GetPlatformPath());
 			materials[i].color = {1, 1, 1};
 		}
 

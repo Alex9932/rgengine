@@ -123,6 +123,8 @@ namespace Engine {
 		RG_DECLSPEC void DrawRendererStats();
 		RG_DECLSPEC void DrawProfilerStats();
 
+		RG_DECLSPEC void SetCamera(R3D_CameraInfo* info);
+
 		RG_DECLSPEC void UpdateSystems();
 		RG_DECLSPEC void Update();
 

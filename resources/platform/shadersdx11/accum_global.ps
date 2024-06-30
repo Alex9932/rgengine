@@ -142,9 +142,9 @@ float CalculateShadow(float3 N, float3 pos) {
 
 	float shadow = 0;
 	float SIZE = 2048;
-	float2 size = 1.0f / float2(SIZE, SIZE) * l_scale;
+	float2 size = 1.0f / float2(SIZE, SIZE) * 0.4;// * l_scale;
 
-	int scale = int(l_mul);
+	int scale = 2;//int(l_mul);
 
 	for(int y = -scale; y <= scale; ++y) {
 		for(int x = -scale; x <= scale; ++x) {

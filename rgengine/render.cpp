@@ -12,6 +12,7 @@
 #include "particlesystem.h"
 
 #include "profiler.h"
+#include "frustum.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
@@ -83,6 +84,8 @@ namespace Engine {
         static ParticleSystem*      particlesystem         = NULL;
 
         static RenderSetupInfo      setupParams            = {};
+
+        static Frustum              frustum                = {};
 
         ////////////////// R3D_RENDER //////////////////
 
@@ -375,10 +378,19 @@ namespace Engine {
         }
 
         static void RenderWorld(World* world) {
+
+            
+
             R3D_PushModelInfo info = {};
 
             for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
                 Entity* ent = world->GetEntity(i);
+
+                AABB aabb = *ent->GetAABB();
+                aabb.Add(ent->GetTransform()->GetPosition());
+
+                Bool inFrustum = AABBInFrustum(&frustum, &aabb);
+                if (!inFrustum) { continue; }
 
                 info.matrix = *ent->GetTransform()->GetMatrix();
 
@@ -395,6 +407,20 @@ namespace Engine {
                     Render::R3D_PushModel(&info);
                 }
             }
+        }
+
+        void SetCamera(R3D_CameraInfo* info) {
+
+            // Undate frustum
+            mat4 camera_view;
+            mat4_view(&camera_view, info->position, info->rotation);
+            CreateFrustumInfo finfo = {};
+            finfo.result = &frustum;
+            finfo.proj   = &info->projection;
+            finfo.view   = &camera_view;
+            CreateFrustum(&finfo);
+
+            R3D_SetCamera(info);
         }
 
         void UpdateSystems() {

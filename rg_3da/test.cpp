@@ -230,10 +230,7 @@ static bool EHandler(SDL_Event* event) {
     return true;
 }
 
-static vec4 sphere = {0, 0, 0, 0.1f};
-
-static AABB aabb = { { 0, 0, 0 }, { 1, 1, 1 } };
-
+/*
 static void DrawImGui(Camera* camera) {
     ImGuizmo::BeginFrame();
     ImGuiIO& io = ImGui::GetIO();
@@ -251,10 +248,10 @@ static void DrawImGui(Camera* camera) {
     sphere.xyz = newpos;
 
 }
+*/
 
 class Application : public BaseGame {
 
-    Frustum frustum;
     Camera* camera = NULL;
     FreeCameraController* camcontrol = NULL;
 
@@ -283,7 +280,7 @@ class Application : public BaseGame {
             Render::DrawProfilerStats();
 
 
-            DrawImGui(camera);
+            //DrawImGui(camera);
 
             // Set light data
             Render::SetGlobalLight(&desc);
@@ -297,31 +294,11 @@ class Application : public BaseGame {
             camcontrol->Update();
             camera->Update(GetDeltaTime());
 
-            mat4 camera_view;
-            vec3 cam_position = camera->GetTransform()->GetPosition();
-            vec3 cam_rotation = camera->GetTransform()->GetRotation();
-            mat4_view(&camera_view, cam_position, cam_rotation);
-
-            CreateFrustumInfo finfo = {};
-            finfo.result = &frustum;
-            finfo.proj = camera->GetProjection();
-            finfo.view = &camera_view;
-            CreateFrustum(&finfo);
-
-            ImGui::Begin("Frustum Cull");
-            //Bool inFrustum = SphereInFrustum(&frustum, sphere.xyz, sphere.w);
-            Bool inFrustum = AABBInFrustum(&frustum, aabb);
-            ImGui::InputFloat3("Position", sphere.xyz.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
-            if (inFrustum) {
-                ImGui::Text("In frustum");
-            }
-            ImGui::End();
-
             R3D_CameraInfo cam = {};
             cam.projection = *camera->GetProjection();
             cam.position = camera->GetTransform()->GetPosition();
             cam.rotation = camera->GetTransform()->GetRotation();
-            Render::R3D_SetCamera(&cam);
+            Render::SetCamera(&cam);
 
         }
         
@@ -347,7 +324,7 @@ class Application : public BaseGame {
             //importer.ImportModel("gamedata/models/cude/untitled.obj", &objinfo);
             //importer.ImportModel("gamedata/sponzaobj/sponza.obj", &objinfo);
 
-            aabb = objinfo.aabb;
+            //aabb = objinfo.aabb;
 
             //PM2Importer importer;
             //importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
@@ -360,10 +337,11 @@ class Application : public BaseGame {
             // Create entity
             Entity* ent = world->NewEntity();
             ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
+            ent->SetAABB(&objinfo.aabb);
             //ent->GetTransform()->SetScale({ 0.01f, 0.01f, 0.01f });
 
 
-            // Forework
+            // Firework
             ParticleEmitterInfo fwExplode = {};
             fwExplode.spawn_cb      = PSpawnCB_explode;
             fwExplode.delete_cb     = NULL;

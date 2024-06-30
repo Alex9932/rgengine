@@ -219,6 +219,8 @@ typedef struct R3DRiggedModelInfo {
 	Uint32        vCount;
 	Uint32        iCount;
 	IndexType     iType;
+
+	AABB          aabb;
 } R3DRiggedModelInfo;
 
 typedef struct R3DCreateBufferInfo {

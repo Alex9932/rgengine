@@ -54,6 +54,11 @@ namespace Engine {
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src);
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
+    RG_DECLSPEC String GetSystemPath();
+    RG_DECLSPEC String GetGamedataPath();
+    RG_DECLSPEC String GetUserdataPath();
+    RG_INLINE   String GetPlatformPath() { return GetSystemPath(); }
+
 #if 1
     static void FixPath(char* dst, String str) {
         size_t len = SDL_strlen(str);
