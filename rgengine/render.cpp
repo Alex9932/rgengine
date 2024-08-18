@@ -593,7 +593,7 @@ namespace Engine {
             return &setupParams;
         }
 
-        void SetRenderFlags(RenderFlags flags) {
+        void SetRenderFlags(Uint32 flags) {
             setupParams.flags = flags;
         }
 

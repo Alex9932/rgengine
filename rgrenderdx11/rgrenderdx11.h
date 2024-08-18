@@ -4,5 +4,6 @@
 #include <allocator.h>
 
 Engine::Allocator* RGetAllocator();
+Uint32 RGetSetupFlags();
 
 #endif

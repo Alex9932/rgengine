@@ -23,12 +23,10 @@ enum TextureType {
 };
 */
 
-typedef Uint32 RenderFlags;
-
-#define RG_RENDER_FULLSCREEN 1
-#define RG_RENDER_USE3D      2
-#define RG_RENDER_RESERVED   4
-#define RG_RENDER_NOLIGHT    8
+#define RG_RENDER_FULLSCREEN    1
+#define RG_RENDER_USE3D         2
+#define RG_RENDER_NOPOSTPROCESS 4
+#define RG_RENDER_NOLIGHT       8
 
 // Backend handles
 
@@ -44,7 +42,7 @@ typedef struct R3D_ParticleBuffer R3D_ParticleBuffer;
 
 typedef struct RenderSetupInfo {
 
-	RenderFlags flags;
+	Uint32 flags;
 	
 	// TODO
 

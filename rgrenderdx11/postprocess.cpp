@@ -482,6 +482,9 @@ void DoPostprocess() {
 	lightpass->SetInput(1, GetLightpassShaderResource());
 	lightpass->Draw();
 
+	// Skip post effects
+	if (RG_CHECK_FLAG(RGetSetupFlags(), RG_RENDER_NOPOSTPROCESS)) { return; }
+
 	ID3D11ShaderResourceView* lightpass_output = GetLightpassShaderResource();
 
 	// SSR

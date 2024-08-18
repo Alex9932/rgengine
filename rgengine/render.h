@@ -148,7 +148,7 @@ namespace Engine {
 		RG_DECLSPEC void UpdateParticleBuffer(R3DUpdateBufferInfo* info);
 
 		RG_DECLSPEC RenderSetupInfo* GetSetupParams();
-		RG_DECLSPEC void SetRenderFlags(RenderFlags flags);
+		RG_DECLSPEC void SetRenderFlags(Uint32 flags);
 
 	}
 }

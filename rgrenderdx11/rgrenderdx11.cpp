@@ -38,7 +38,7 @@ static Engine::Allocator* allocator      = NULL;
 static ivec2              wndSize        = {0};
 static Bool               wndResized     = false;
 
-static RenderFlags        flags;
+static Uint32             flags;
 
 static Bool               isShadersReloadRequired = false;
 
@@ -85,6 +85,10 @@ static bool _EventHandler(SDL_Event* event) {
 
 Engine::Allocator* RGetAllocator() {
 	return allocator;
+}
+
+Uint32 RGetSetupFlags() {
+	return flags;
 }
 
 // NOT TEMPORARY DATA //
@@ -264,7 +268,14 @@ void R_GetInfo(RenderInfo* info) {
 	info->r3d_draw_calls     = r3d_stats.drawCalls;
 	info->r3d_dispatch_calls = r3d_stats.dispatchCalls;
 
-	info->r3d_renderResult   = FXGetOuputTexture();
+	/*if (RG_CHECK_FLAG(flags, RG_RENDER_NOLIGHT)) {
+		info->r3d_renderResult = GetGBufferShaderResource(0);
+	} else*/ if (RG_CHECK_FLAG(flags, RG_RENDER_NOPOSTPROCESS)) {
+		info->r3d_renderResult = GetLightpassShaderResource();
+	} else {
+		info->r3d_renderResult = FXGetOuputTexture();
+	}
+	
 	info->r2d_renderResult   = R2DGetOuputTexture();
 
 }

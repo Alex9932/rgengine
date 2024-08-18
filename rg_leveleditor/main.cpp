@@ -51,7 +51,7 @@ class Application : public BaseGame {
 		Application() {
 			this->isClient   = true;
 			this->isGraphics = true;
-			Render::SetRenderFlags(RG_RENDER_USE3D);
+			Render::SetRenderFlags(RG_RENDER_USE3D | RG_RENDER_NOLIGHT | RG_RENDER_NOPOSTPROCESS);
 		}
 
 		~Application() {
