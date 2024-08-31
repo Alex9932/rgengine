@@ -27,6 +27,9 @@
     <ClCompile Include="ksmimporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="anim_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="obj_loader.h">

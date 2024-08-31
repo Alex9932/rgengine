@@ -10,6 +10,8 @@ namespace Engine {
 			RG_DECLSPEC LookatCameraController(Camera* camera);
 			RG_DECLSPEC ~LookatCameraController();
 
+			RG_DECLSPEC void SetLookAtPosition(vec3* pos);
+
 			RG_DECLSPEC void Update();
 
 		private:

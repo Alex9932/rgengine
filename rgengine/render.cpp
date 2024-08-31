@@ -76,6 +76,7 @@ namespace Engine {
 
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
+        static Bool                 isCullingEnabled       = false;
 
         static ivec2                wndSize                = { 0, 0 };
 
@@ -389,8 +390,10 @@ namespace Engine {
                 AABB aabb = *ent->GetAABB();
                 aabb.Add(ent->GetTransform()->GetPosition());
 
-                Bool inFrustum = AABBInFrustum(&frustum, &aabb);
-                if (!inFrustum) { continue; }
+                if (isCullingEnabled) {
+                    Bool inFrustum = AABBInFrustum(&frustum, &aabb);
+                    if (!inFrustum) { continue; }
+                }
 
                 info.matrix = *ent->GetTransform()->GetMatrix();
 

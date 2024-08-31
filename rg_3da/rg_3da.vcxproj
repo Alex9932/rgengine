@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="anim_test.cpp" />
     <ClCompile Include="ksmimporter.cpp" />
     <ClCompile Include="obj_loader.cpp" />
     <ClCompile Include="main.cpp" />

@@ -13,6 +13,10 @@ namespace Engine {
 
 	LookatCameraController::~LookatCameraController() { }
 
+	void LookatCameraController::SetLookAtPosition(vec3* pos) {
+		m_center = *pos;
+	}
+
 	void LookatCameraController::Update() {
 
 		Transform* camTransform = m_camptr->GetTransform();
