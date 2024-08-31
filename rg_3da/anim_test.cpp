@@ -140,7 +140,7 @@ class Application : public BaseGame {
 				anim[i]->SetRepeat(true);
 			}
 
-			kmodel->GetAnimator()->PlayAnimation(anim[0]);
+			//kmodel->GetAnimator()->PlayAnimation(anim[0]);
 
 			// Create player entity
 			player = world->NewEntity();
