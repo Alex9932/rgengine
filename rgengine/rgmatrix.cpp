@@ -83,17 +83,6 @@ void mat4_rotatez(mat4* mat, float angle) {
 
 // x - yaw, y - pitch, z - roll
 void mat4_rotate(mat4* mat, const vec3& angles) {
-    //float sinx = SDL_sinf(angles.x);
-    //float cosx = SDL_cosf(angles.x);
-    //float siny = SDL_sinf(angles.y);
-    //float cosy = SDL_cosf(angles.y);
-    //float sinz = SDL_sinf(angles.z);
-    //float cosz = SDL_cosf(angles.z);
-    //mat->m00 =  cosy*cosz; mat->m10 = sinx*siny*cosz - cosx*sinz; mat->m20 = cosx*siny*cosz + sinx*sinz; mat->m30 = 0;
-    //mat->m01 =  cosy*sinz; mat->m11 = sinx*siny*sinz + cosx*cosz; mat->m21 = cosx*siny*sinz - sinx*cosz; mat->m31 = 0;
-    //mat->m02 = -siny;      mat->m12 = sinx*cosy;                  mat->m22 = cosx*cosy;                  mat->m32 = 0;
-    //mat->m03 =  0;         mat->m13 = 0;                          mat->m23 = 0;                          mat->m33 = 1;
-
     mat4 rx, ry, rz, ryz;
     mat4_rotatex(&rx, angles.x);
     mat4_rotatey(&ry, angles.y);
@@ -109,6 +98,7 @@ void mat4_translate(mat4* mat, const vec3& pos) {
     mat->m30 = 0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
 }
 
+// TODO: fix this
 void mat4_fromquat(mat4* mat, const quat& q) {
     mat->m00 = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
     mat->m10 = 2.0f * (q.x * q.y + q.w * q.z);
@@ -251,83 +241,4 @@ void mat4ToQuat(quat* dest, const mat4& matrix) {
     dest->y = y;
     dest->z = z;
     dest->w = w;
-
-#if 0
-    float w, x, y, z;
-    float diagonal = matrix.m00 + matrix.m11 + matrix.m22;
-
-    if (diagonal > 0) {
-        float w4 = (float)(SDL_sqrtf(diagonal + 1) * 2);
-        w = w4 / 4;
-        x = (matrix.m21 - matrix.m12) / w4;
-        y = (matrix.m02 - matrix.m20) / w4;
-        z = (matrix.m10 - matrix.m01) / w4;
-    }
-    else if ((matrix.m00 > matrix.m11) && (matrix.m00 > matrix.m22)) {
-        float x4 = (float)(SDL_sqrtf(1 + matrix.m00 - matrix.m11 - matrix.m22) * 2);
-        w = (matrix.m21 - matrix.m12) / x4;
-        x = x4 / 4;
-        y = (matrix.m01 + matrix.m10) / x4;
-        z = (matrix.m02 + matrix.m20) / x4;
-    }
-    else if (matrix.m11 > matrix.m22) {
-        float y4 = (float)(SDL_sqrtf(1 + matrix.m11 - matrix.m00 - matrix.m22) * 2);
-        w = (matrix.m02 - matrix.m20) / y4;
-        x = (matrix.m01 + matrix.m10) / y4;
-        y = y4 / 4;
-        z = (matrix.m12 + matrix.m21) / y4;
-    }
-    else {
-        float z4 = (float)(SDL_sqrtf(1 + matrix.m22 - matrix.m00 - matrix.m11) * 2);
-        w = (matrix.m10 - matrix.m01) / z4;
-        x = (matrix.m02 + matrix.m20) / z4;
-        y = (matrix.m12 + matrix.m21) / z4;
-        z = z4 / 4;
-    }
-
-    dest->x = x;
-    dest->y = y;
-    dest->z = z;
-    dest->w = w;
-#endif
-
-#if 0
-    float w, x, y, z;
-    float diagonal = matrix.m00 + matrix.m11 + matrix.m22;
-
-    if (diagonal > 0) {
-        float w4 = (float)(SDL_sqrtf(diagonal + 1) * 2);
-        w = w4 / 4;
-        x = (matrix.m21 - matrix.m12) / w4;
-        y = (matrix.m02 - matrix.m20) / w4;
-        z = (matrix.m10 - matrix.m01) / w4;
-    }
-    else if ((matrix.m00 > matrix.m11) && (matrix.m00 > matrix.m22)) {
-        float x4 = (float)(SDL_sqrtf(1 + matrix.m00 - matrix.m11 - matrix.m22) * 2);
-        w = (matrix.m21 - matrix.m12) / x4;
-        x = x4 / 4;
-        y = (matrix.m01 + matrix.m10) / x4;
-        z = (matrix.m02 + matrix.m20) / x4;
-    }
-    else if (matrix.m11 > matrix.m22) {
-        float y4 = (float)(SDL_sqrtf(1 + matrix.m11 - matrix.m00 - matrix.m22) * 2);
-        w = (matrix.m02 - matrix.m20) / y4;
-        x = (matrix.m01 + matrix.m10) / y4;
-        y = y4 / 4;
-        z = (matrix.m12 + matrix.m21) / y4;
-    }
-    else {
-        float z4 = (float)(SDL_sqrtf(1 + matrix.m22 - matrix.m00 - matrix.m11) * 2);
-        w = (matrix.m10 - matrix.m01) / z4;
-        x = (matrix.m02 + matrix.m20) / z4;
-        y = (matrix.m12 + matrix.m21) / z4;
-        z = z4 / 4;
-    }
-
-    dest->x = x;
-    dest->y = y;
-    dest->z = z;
-    dest->w = w;
-
-#endif
 }

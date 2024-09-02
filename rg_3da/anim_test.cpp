@@ -103,6 +103,10 @@ class Application : public BaseGame {
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
+			vec3 camera_offset = { 0, 1.67f, 0 };
+			vec3 camera_pos = player->GetTransform()->GetWorldPosition() + camera_offset;
+			cam_controller->SetLookAtPosition(&camera_offset);
+
 		}
 
 		void Initialize() {
@@ -119,11 +123,19 @@ class Application : public BaseGame {
 			VMDImporter vmdImporter;
 
 			// Load geometry
+#if 0
 			R3DRiggedModelInfo info = {};
-			pmdImporter.ImportRiggedModel("mmd_models/Rin_Kagamine.pmd", &info);
+			pmxImporter.ImportRiggedModel("pmx/gumiv3/GUMI_V3.pmx", &info);
+			R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&info);
+			pmxImporter.FreeRiggedModelData(&info);
+			kmodel = pmxImporter.ImportKinematicsModel("pmx/gumiv3/GUMI_V3.pmx");
+#endif
+
+			R3DRiggedModelInfo info = {};
+			pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
 			R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&info);
 			pmdImporter.FreeRiggedModelData(&info);
-			kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Rin_Kagamine.pmd");
+			kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
 
 			// Load animations
 			anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);

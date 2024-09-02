@@ -493,29 +493,7 @@ union quat {
 
     RG_INLINE quat slerp(const quat& q, float t) {
         quat r;
-#if 0
-        float dot = w * q.w + x * q.x + y * q.y + z * q.z;
-        float theta = SDL_acosf(dot);
-        if (theta < 0) {
-            theta = -theta;
-        }
 
-        float st = SDL_sinf(theta);
-        float sut = SDL_sinf(t * theta);
-        float sout = SDL_sinf((1.0f - t) * theta);
-        float c1 = sout / st;
-        float c2 = sut / st;
-
-        r.x = c1 * x + c2 * q.x;
-        r.y = c1 * y + c2 * q.y;
-        r.z = c1 * z + c2 * q.z;
-        r.w = c1 * w + c2 * q.w;
-
-        float len = SDL_sqrtf(r.x * r.x + r.y * r.y + r.z * r.z + r.w * r.w);
-        r.x /= len;
-        r.y /= len;
-        r.z /= len;
-#else
         float dot = w * q.w + x * q.x + y * q.y + z * q.z;
         float blendI = 1.0f - t;
         if (dot < 0) {
@@ -530,7 +508,7 @@ union quat {
             r.y = blendI * y + t * q.y;
             r.z = blendI * z + t * q.z;
         }
-#endif
+
         return r;
     }
 
