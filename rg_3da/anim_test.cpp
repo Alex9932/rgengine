@@ -1,7 +1,9 @@
 #if 1
 
-#include <engine.h>
+#define GAME_DLL
 #include <rgentrypoint.h>
+
+#include <engine.h>
 
 #include <render.h>
 #include <window.h>
@@ -199,7 +201,7 @@ class Application : public BaseGame {
 
 			ObjImporter objImporter;
 			R3DStaticModelInfo l_info = {};
-			objImporter.ImportModel("gamedata/levels/esc/level.obj", &l_info);
+			objImporter.ImportModel("gamedata/flatplane/untitled.obj", &l_info);
 			R3D_StaticModel* level_mdl_handle = Render::R3D_CreateStaticModel(&l_info);
 			objImporter.FreeModelData(&l_info);
 
@@ -222,13 +224,18 @@ class Application : public BaseGame {
 
 };
 
-int EntryPoint(int argc, String* argv) {
-	Application app;
-	Initialize(&app);
-	Start();
-	return 0;
+static Application* app;
+
+void Module_Initialize() {
+	app = new Application();
 }
 
-rgmain(EntryPoint)
+void Module_Destroy() {
+	delete app;
+}
+
+BaseGame* Module_GetApplication() {
+	return app;
+}
 
 #endif

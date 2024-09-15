@@ -40,6 +40,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rgtools", "rgtools\rgtools.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rg_server", "rg_server\rg_server.vcxproj", "{4B8C5F56-2D11-483A-87FD-FEDE7E03057E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "entrypoint", "entrypoint\entrypoint.vcxproj", "{58CF2F21-DA0C-456E-8359-E784B450F2E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -120,6 +122,14 @@ Global
 		{4B8C5F56-2D11-483A-87FD-FEDE7E03057E}.Release|x64.Build.0 = Release|x64
 		{4B8C5F56-2D11-483A-87FD-FEDE7E03057E}.Release|x86.ActiveCfg = Release|Win32
 		{4B8C5F56-2D11-483A-87FD-FEDE7E03057E}.Release|x86.Build.0 = Release|Win32
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Debug|x64.ActiveCfg = Debug|x64
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Debug|x64.Build.0 = Debug|x64
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Debug|x86.ActiveCfg = Debug|Win32
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Debug|x86.Build.0 = Debug|Win32
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Release|x64.ActiveCfg = Release|x64
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Release|x64.Build.0 = Release|x64
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Release|x86.ActiveCfg = Release|Win32
+		{58CF2F21-DA0C-456E-8359-E784B450F2E4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

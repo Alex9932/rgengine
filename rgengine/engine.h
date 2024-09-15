@@ -47,28 +47,28 @@
 								if(c == 0) Engine::SetAssertMessage(msg);                        \
 								SDL_assert_always(c)
 
+class RG_DECLSPEC BaseGame {
+    protected:
+        Bool isClient = false;
+        Bool isGraphics = false;
+
+    public:
+        BaseGame() {}
+        virtual ~BaseGame() {}
+        virtual void MainUpdate() {}
+        virtual void Initialize() {}
+        virtual void Quit() {}
+        virtual String GetName()    { return "unnamed"; }
+        RG_INLINE Bool IsClient()   { return isClient; }
+        RG_INLINE Bool IsGraphics() { return isGraphics; }
+};
+
 namespace Engine {
 
     class World;
     class SoundSystem;
     class Profiler;
     class RGPhysics;
-
-    class RG_DECLSPEC BaseGame {
-        protected:
-            Bool isClient = false;
-            Bool isGraphics = false;
-
-        public:
-            BaseGame() {}
-            virtual ~BaseGame() {}
-            virtual void MainUpdate() {}
-            virtual void Initialize() {}
-            virtual void Quit() {}
-            virtual String GetName() { return "unnamed"; }
-            RG_INLINE Bool IsClient() { return isClient; }
-            RG_INLINE Bool IsGraphics() { return isGraphics; }
-    };
 
     RG_DECLSPEC void SetAssertMessage(String str);
 
@@ -81,7 +81,7 @@ namespace Engine {
     RG_DECLSPEC Sint32 ProcessArguments(int argc, String* argv);
     RG_DECLSPEC Bool   IsArgument(String arg);
 
-    RG_DECLSPEC void Initialize(BaseGame* game);
+    RG_DECLSPEC void Initialize();
     RG_DECLSPEC void Start();
     RG_DECLSPEC void Quit();
     RG_DECLSPEC void ForceQuit();

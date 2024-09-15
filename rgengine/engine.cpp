@@ -41,6 +41,10 @@ void rg_free(void* ptr) {
     free(ptr);
 }
 
+typedef void (*PFN_MODULE_INITIALIZE)();
+typedef void (*PFN_MODULE_DESTROY)();
+typedef BaseGame* (*PFN_MODULE_GETAPPLICATION)();
+
 namespace Engine {
 
     static String        rg_assert_message = NULL;
@@ -65,6 +69,9 @@ namespace Engine {
     static Uint32        num_threads   = 1;
     static Bool          num_tcustom   = false;
     static String        lib_renderer  = NULL;
+
+    static String        lib_game      = NULL;
+    static LibraryHandle game_module   = 0;
 
     static BaseGame*     game_ptr      = NULL;
     static Bool          running       = false;
@@ -181,6 +188,12 @@ namespace Engine {
                 }
                 lib_renderer = arg_strs[i + 1];
             }
+            else if (rg_streql(arg_strs[i], "-game")) {
+                if (arg_count <= i + 1) {
+                    return -1;
+                }
+                lib_game = arg_strs[i + 1];
+            }
             else if (rg_streql(arg_strs[i], "-fsjson")) {
                 if (arg_count <= i + 1) {
                     return -1;
@@ -239,8 +252,7 @@ namespace Engine {
         }
     }
 
-    void Initialize(BaseGame* game) {
-        game_ptr = game;
+    void Initialize() {
         running = true;
 
         SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
@@ -302,6 +314,26 @@ namespace Engine {
             rgLogWarn(RG_LOG_SYSTEM, " ~ Engine started in DEBUG profile!");
             rgLogWarn(RG_LOG_SYSTEM, " ~ ");
         }
+
+        rgLogInfo(RG_LOG_SYSTEM, "Loading game module...");
+
+        if (lib_game == NULL) {
+            RG_ERROR_MSG("No game! No life!");
+        }
+
+        game_module = DL_LoadLibrary(lib_game);
+
+        PFN_MODULE_INITIALIZE     ModuleInitialize     = (PFN_MODULE_INITIALIZE)DL_GetProcAddress(game_module, "Module_Initialize");
+        PFN_MODULE_GETAPPLICATION ModuleGetApplication = (PFN_MODULE_GETAPPLICATION)DL_GetProcAddress(game_module, "Module_GetApplication");
+
+        rgLogInfo(RG_LOG_SYSTEM, "Initializing game module...");
+        ModuleInitialize();
+        game_ptr = ModuleGetApplication();
+
+        if (!game_ptr) {
+            RG_ERROR_MSG("Invalid handle");
+        }
+
         rgLogInfo(RG_LOG_SYSTEM, "Game: %s", game_ptr->GetName());
 
         std_allocator = new STDAllocator("SYSTEM");
@@ -428,6 +460,9 @@ namespace Engine {
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
             Window_Destroy();
         }
+
+        PFN_MODULE_DESTROY ModuleDestroy = (PFN_MODULE_DESTROY)DL_GetProcAddress(game_module, "Module_Destroy");
+        ModuleDestroy();
 
         Thread_Destroy();
 
