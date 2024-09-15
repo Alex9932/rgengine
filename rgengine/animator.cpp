@@ -14,6 +14,7 @@ namespace Engine {
         this->animationChanged  = false;
         this->transition_time   = 0.0f;
         this->timestamp         = 0.0;
+        SDL_memset(this->_offset, 0, 3);
     }
 
     Animator::~Animator() {

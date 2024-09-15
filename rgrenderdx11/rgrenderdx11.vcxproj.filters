@@ -163,7 +163,7 @@
     <None Include="..\resources\platform\shadersdx11\bypass2d.vs">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\resources\platform\shadersdx11\gbuffer.ps">
+    <None Include="..\resources\platform\shadersdx11\gbuffer_solid.ps">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\resources\platform\shadersdx11\gbuffer.vs">
@@ -252,6 +252,9 @@
     </None>
     <None Include="..\resources\platform\shadersdx11\fx\tonemapping.ps">
       <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer_transparent.ps">
+      <Filter>shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

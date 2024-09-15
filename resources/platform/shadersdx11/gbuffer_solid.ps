@@ -28,16 +28,20 @@ Texture2D t_unit1 : register(t1);
 Texture2D t_unit2 : register(t2);
 SamplerState SampleType : register(s0);
 
+
+// Split this to:
+//  - gbuffer_solid.ps       // ignore alpha channel
+//  - gbuffer_transparent.ps // discard fragment if alpha < 1
+// Add forward pass
+//  - forward.vs
+//  - forward.ps
+
 PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 
 	// Texture color
 	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
-	if(tColor.a < 0.8) {
-		discard;
-	}
 	
 	// Normal calculation
-
 	float3 N = {0, 0, 0};
     
 	#if NORMALMAP

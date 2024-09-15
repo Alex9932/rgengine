@@ -1,8 +1,8 @@
 #include "shadowbuffer.h"
 #include "dx11.h"
 
-// Render target (NOT NOW)
-//static RenderTarget             rendertarget;
+// Render target (NOW)
+static RenderTarget              rendertarget;
 
 // Depth buffer
 static ID3D11Texture2D*          depthBuffer       = NULL;
@@ -15,12 +15,18 @@ static ID3D11DepthStencilState*  depthStencilState = NULL;
 
 static ivec2 viewport;
 
+ID3D11ShaderResourceView* GetShadowColor() {
+    return rendertarget.resView;
+}
+
 ID3D11ShaderResourceView* GetShadowDepth() {
 	return depthResView;
 }
 
 static void _CreateFramebuffer(ivec2* size) {
 	viewport = *size;
+
+    DX11_MakeRenderTarget(&rendertarget, size, DXGI_FORMAT_R16G16B16A16_FLOAT);
 
 	DX11_MakeTexture(&depthBuffer, NULL, size, DXGI_FORMAT_R32_TYPELESS, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL);
 
@@ -41,6 +47,7 @@ static void _CreateFramebuffer(ivec2* size) {
 }
 
 static void _DestroyFramebuffer() {
+    DX11_FreeRenderTarget(&rendertarget);
     depthStencilView->Release();
     depthBuffer->Release();
     depthResView->Release();
@@ -97,11 +104,16 @@ void ResizeShadowBuffer(ivec2* size) {
 void BindShadowBuffer() {
     ID3D11DeviceContext* ctx = DX11_GetContext();
 
-    ctx->OMSetRenderTargets(0, NULL, depthStencilView);
+    ID3D11RenderTargetView* buffers[] = {
+        rendertarget.rtView
+    };
+
+    ctx->OMSetRenderTargets(1, buffers, depthStencilView);
     ctx->OMSetDepthStencilState(depthStencilState, 1);
     ctx->RSSetState(rasterState);
 
-    //ctx->ClearRenderTargetView(dx_backbuffer, clearColor);
+    FLOAT clearColor[] = {1, 1, 1, 1};
+    ctx->ClearRenderTargetView(buffers[0], clearColor);
     ctx->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     DX11_SetViewport(viewport.x, viewport.y);

@@ -325,7 +325,7 @@ class Application : public BaseGame {
 			viewport = new Viewport(camera);
 
 			// Temp
-			//ObjImporter objImporter;
+			ObjImporter objImporter;
 			PM2Importer pm2Importer;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
@@ -361,16 +361,16 @@ class Application : public BaseGame {
 
 
 
-			pm2Importer.ImportModel("gamedata/models/welder/model.pm2", &objinfo);
+			objImporter.ImportModel("gamedata/models/mosaic/mosaic.obj", &objinfo);
 			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
-			pm2Importer.FreeModelData(&objinfo);
+			objImporter.FreeModelData(&objinfo);
 
 			Entity* ent2 = world->NewEntity();
 			ent2->GetComponent(Component_TAG)->AsTagComponent()->SetString("Model");
 			ent2->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle2));
 			ent2->SetAABB(&objinfo.aabb);
-			ent2->GetTransform()->SetPosition({ 0, 1, 0 });
-			ent2->GetTransform()->SetRotation({ 0, 0, 0 });
+			ent2->GetTransform()->SetPosition({ 0, 2.5f, 0 });
+			ent2->GetTransform()->SetRotation({ 0, (3.1415f / 2) + 3.1415f, 0 });
 			ent2->GetTransform()->SetScale({ 1, 1, 1 });
 
 			/*

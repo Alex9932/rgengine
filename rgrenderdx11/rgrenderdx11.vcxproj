@@ -206,8 +206,9 @@
     <None Include="..\resources\platform\shadersdx11\fx\reflection.ps_" />
     <None Include="..\resources\platform\shadersdx11\fx\ssao.ps" />
     <None Include="..\resources\platform\shadersdx11\fx\tonemapping.ps" />
-    <None Include="..\resources\platform\shadersdx11\gbuffer.ps" />
+    <None Include="..\resources\platform\shadersdx11\gbuffer_solid.ps" />
     <None Include="..\resources\platform\shadersdx11\gbuffer.vs" />
+    <None Include="..\resources\platform\shadersdx11\gbuffer_transparent.ps" />
     <None Include="..\resources\platform\shadersdx11\main.ps" />
     <None Include="..\resources\platform\shadersdx11\main.vs" />
     <None Include="..\resources\platform\shadersdx11\particle.gs" />

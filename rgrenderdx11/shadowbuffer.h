@@ -4,7 +4,7 @@
 #include <rgvector.h>
 #include <d3d11.h>
 
-//ID3D11ShaderResourceView* GetShadowBufferShaderResource(Uint32 idx);
+ID3D11ShaderResourceView* GetShadowColor();
 ID3D11ShaderResourceView* GetShadowDepth();
 
 void CreateShadowBuffer(ivec2* size);

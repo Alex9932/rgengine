@@ -148,7 +148,8 @@ static void LoadShaders() {
 	char gbuff_vs[128];
 	char gbuff_ps[128];
 	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.vs");
-	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer.ps");
+	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer_solid.ps");
+	//Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/gbuffer_transparent.ps");
 	shader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
 
 	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/skybox.vs");
@@ -687,7 +688,7 @@ static inline DXGI_FORMAT GetIndexType(IndexType type) {
 
 #define SKYBOX_SCALE 250
 
-static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial) {
+static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial, Bool useOnlyColor) {
 	matrixBuffer.model = *matrix;
 	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
 
@@ -731,8 +732,10 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial
 			DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
 
 			mat->albedo->Bind(0);
-			mat->normal->Bind(1);
-			mat->pbr->Bind(2);
+			if (!useOnlyColor) {
+				mat->normal->Bind(1);
+				mat->pbr->Bind(2);
+			}
 
 			current_mat = mat;
 		}
@@ -837,7 +840,7 @@ static void DoShadowmapPass() {
 		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
 		mat4* matrix = (mat4*)squeue->Next();
 		if (matrix->m33 < 1) { matrix->m33 = 1; }
-		DrawStaticModel(mdl, matrix, false);
+		DrawStaticModel(mdl, matrix, true, true);
 	}
 
 	for (Uint32 i = 0; i < rsize; i++) {
@@ -845,7 +848,7 @@ static void DoShadowmapPass() {
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
 		mat4* matrix = (mat4*)rqueue->Next();
 		if (matrix->m33 < 1) { matrix->m33 = 1; }
-		DrawStaticModel(&mdl->s_model, matrix, false);
+		DrawStaticModel(&mdl->s_model, matrix, true, true);
 	}
 
 	squeue->Reset();
@@ -873,7 +876,7 @@ static void DoGBufferPass() {
 		R3D_StaticModel* mdl = (R3D_StaticModel*)squeue->Next();
 		mat4* matrix = (mat4*)squeue->Next();
 		if (matrix->m33 < 1) { continue; } // Culled, skip this one
-		DrawStaticModel(mdl, matrix, true);
+		DrawStaticModel(mdl, matrix, true, false);
 	}
 
 	for (Uint32 i = 0; i < rsize; i++) {
@@ -881,7 +884,7 @@ static void DoGBufferPass() {
 		R3D_BoneBuffer* buff = (R3D_BoneBuffer*)rqueue->Next();  // NOT USED
 		mat4* matrix = (mat4*)rqueue->Next();
 		if (matrix->m33 < 1) { continue; } // Culled, skip this one
-		DrawStaticModel(&mdl->s_model, matrix, true);
+		DrawStaticModel(&mdl->s_model, matrix, true, false);
 	}
 
 	squeue->Reset();

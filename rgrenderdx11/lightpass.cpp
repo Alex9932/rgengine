@@ -477,7 +477,7 @@ void DoLightpass() {
 	Float32 clearColor[] = { 0, 0, 0, 1 };
 	ctx->ClearRenderTargetView(outputView, clearColor);
 
-    ID3D11ShaderResourceView* resourceViews[4] = {}; // 4-th shadowmap
+    ID3D11ShaderResourceView* resourceViews[5] = {}; // 4-th shadowmap, 5-th colorshadow
     resourceViews[0] = GetGBufferShaderResource(0);
     resourceViews[1] = GetGBufferShaderResource(1);
     resourceViews[2] = GetGBufferShaderResource(2);
@@ -528,7 +528,8 @@ void DoLightpass() {
     // Bind shader & input resources
     globalshader->Bind();
     resourceViews[3] = GetShadowDepth();
-    DX11_GetContext()->PSSetShaderResources(0, 4, resourceViews);
+    resourceViews[4] = GetShadowColor();
+    DX11_GetContext()->PSSetShaderResources(0, 5, resourceViews);
 
     // Bind buffers
     stride = sizeof(Float32) * 3;
@@ -579,7 +580,15 @@ void SetLightDescription(R3D_GlobalLightDescrition* desc) {
     float phase = desc->time;// 3.1415 / 2 + 3.1415 / 8;
     sunpos = { SDL_cosf(phase) * 20, SDL_sinf(phase) * 20, 1.5f };
 
-    mat4_lookat(&lview, sunpos, { 0, 0, 0 }, { 0, 1, 0 });
+    mat4 lrot, lpos;
+
+    mat4_lookat(&lrot, sunpos, { 0, 0, 0 }, { 0, 1, 0 });
+
+    vec3 cam_pos = *GetCameraPosition();
+
+    mat4_translate(&lpos, -cam_pos);
+
+    lview = lrot * lpos;
 
     lightmatrix = lproj * lview;
 

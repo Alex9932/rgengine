@@ -304,6 +304,19 @@ namespace Engine {
 
         }
 
+        static Float32 ft_array[128] = {};
+        static void UpdateFrametime(Float32 ft) {
+            for (Sint32 i = 126; i >= 0; i--) {
+                ft_array[i + 1] = ft_array[i];
+            }
+            ft_array[0] = ft;
+        }
+
+        static float FrametimeGetter(void* data, int idx) {
+            Float32* ft_data = (Float32*)data;
+            return ft_data[idx];
+        }
+
         void DrawRendererStats() {
             RenderInfo renderer_info = {};
             GetInfo(&renderer_info);
@@ -338,6 +351,8 @@ namespace Engine {
             ImGui::Separator();
 
             ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
+            
+            ImGui::PlotLines("Frametime", FrametimeGetter, ft_array, 128);
 
             ImGui::End();
         }
@@ -380,7 +395,7 @@ namespace Engine {
 
         static void RenderWorld(World* world) {
 
-            
+            UpdateFrametime(GetDeltaTime());
 
             R3D_PushModelInfo info = {};
 

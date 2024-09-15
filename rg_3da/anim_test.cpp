@@ -11,15 +11,31 @@
 #include <camera.h>
 #include <kinematicsmodel.h>
 #include <lookatcameracontroller.h>
+#include <freecameracontroller.h>
+
+#include <event.h>
+#include <input.h>
 
 // MMD tools
 #include <mmdimporter.h>
+
+#include <objimporter.h>
+
+
+
+/*
+
+
+
+
+*/
 
 using namespace Engine;
 
 
 static Camera*                 camera         = NULL;
-static LookatCameraController* cam_controller = NULL;
+static FreeCameraController*   cam_controller = NULL;
+//static LookatCameraController* cam_controller = NULL;
 
 static Entity*                 player         = NULL;
 static KinematicsModel*        kmodel         = NULL;
@@ -32,6 +48,17 @@ static Animation* anim[9] = {};
 
 static int val = 0;
 static const char* items[] = { "None", "Stand", "Walk", "Run", "Squat", "Sneaking", "Idle", "Do Idle 1" , "Do Idle 2" , "Do Idle 3" };
+
+
+static Bool Handler(SDL_Event* event) {
+
+	//if () {
+
+	//}
+
+	return true;
+
+}
 
 class Application : public BaseGame {
 	public:
@@ -50,6 +77,10 @@ class Application : public BaseGame {
 		~Application() {}
 
 		void MainUpdate() {
+
+			if (IsKeyDown(SDL_SCANCODE_W)) {
+
+			}
 
 			ImGui::Begin("Scene light");
 			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
@@ -103,9 +134,9 @@ class Application : public BaseGame {
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
 			Render::R3D_UpdateBoneBuffer(&binfo);
 
-			vec3 camera_offset = { 0, 1.67f, 0 };
-			vec3 camera_pos = player->GetTransform()->GetWorldPosition() + camera_offset;
-			cam_controller->SetLookAtPosition(&camera_offset);
+			//vec3 camera_offset = { 0, 1.67f, 0 };
+			//vec3 camera_pos = player->GetTransform()->GetWorldPosition() + camera_offset;
+			//cam_controller->SetLookAtPosition(&camera_offset);
 
 		}
 
@@ -115,7 +146,9 @@ class Application : public BaseGame {
 
 			// Create 3-rd person camera
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
-			cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), LookatCameraController)(camera);
+			//cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), LookatCameraController)(camera);
+
+			cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
 
 
 			PMXImporter pmxImporter;
@@ -161,13 +194,28 @@ class Application : public BaseGame {
 			// Scale visual
 			player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
+
+			// Level
+
+			ObjImporter objImporter;
+			R3DStaticModelInfo l_info = {};
+			objImporter.ImportModel("gamedata/levels/esc/level.obj", &l_info);
+			R3D_StaticModel* level_mdl_handle = Render::R3D_CreateStaticModel(&l_info);
+			objImporter.FreeModelData(&l_info);
+
+
+			Entity* level = world->NewEntity();
+			level->SetAABB(&l_info.aabb);
+			level->AttachComponent(Render::GetModelSystem()->NewModelComponent(level_mdl_handle));
+
 		}
 
 		void Quit() {
 		
 			GetWorld()->ClearWorld();
 
-			RG_DELETE_CLASS(GetDefaultAllocator(), LookatCameraController, cam_controller);
+			//RG_DELETE_CLASS(GetDefaultAllocator(), LookatCameraController, cam_controller);
+			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, cam_controller);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);
 		
 		}

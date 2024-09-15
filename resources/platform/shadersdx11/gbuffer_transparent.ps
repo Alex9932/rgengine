@@ -1,0 +1,85 @@
+#define NORMALMAP 1
+
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 vpos     : VPOS;
+	float3 normal   : NORMAL;
+	float3 tangent  : TANGENT;
+	float3 binormal : BINORMAL;
+	float2 uv       : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 albedo : SV_Target0; // Albedo, metallic;
+	float4 normal : SV_Target1; // Normal, roughness;
+	float4 wpos   : SV_Target2; // WPos, emissive;
+};
+
+cbuffer ConstBuffer : register(b0) {
+	float4 color;
+	uint   __offset0;
+	uint   __offset2;
+	uint   __offset3;
+	uint   __offset4;
+};
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+SamplerState SampleType : register(s0);
+
+
+// Split this to:
+//  - gbuffer_solid.ps       // ignore alpha channel
+//  - gbuffer_transparent.ps // discard fragment if alpha < 1
+// Add forward pass
+//  - forward.vs
+//  - forward.ps
+
+PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
+
+	// Texture color
+	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+	if(tColor.a < 1) { discard; }
+	
+	// Normal calculation
+
+	float3 N = {0, 0, 0};
+    
+	#if NORMALMAP
+		float3x3 TBN = {psin.tangent, psin.binormal, psin.normal};
+
+		float4 tNormal = t_unit1.Sample(SampleType, psin.uv);
+		N = normalize(tNormal.xyz * 2.0 - 1.0);
+		N = normalize(mul(N, TBN));
+
+	#else
+		N = normalize(psin.normal);
+	#endif
+
+	if(isFrontFace) { N = -N; }
+
+	// PBR Texture
+
+	float4 pbrColor = t_unit2.Sample(SampleType, psin.uv);
+#if 0
+	float metallic  = pbrColor.r * pbrColor.r;
+    float roughness = pbrColor.g * pbrColor.g;
+    float emissive  = pbrColor.b * pbrColor.b;
+#else
+	float metallic  = pbrColor.r;
+    float roughness = pbrColor.g;
+    float emissive  = pbrColor.b;
+#endif
+	
+	PSOUTPUT pout;
+	pout.albedo.xyz = tColor.xyz * color.xyz; // Albedo
+	pout.albedo.w   = metallic;
+	pout.normal.xyz = N;                      // Normal
+	pout.normal.w   = roughness;
+	pout.wpos.xyz   = psin.vpos;              // Wpos
+	pout.wpos.w     = emissive;
+	return pout;
+
+
+}

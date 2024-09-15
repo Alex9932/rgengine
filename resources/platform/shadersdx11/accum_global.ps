@@ -20,6 +20,7 @@ Texture2D    t_unit0    : register(t0); // Albedo
 Texture2D    t_unit1    : register(t1); // Normal
 Texture2D    t_unit2    : register(t2); // WPos
 Texture2D    t_unit3    : register(t3); // Shadowmap
+Texture2D    t_unit4    : register(t4); // Color shadowmap
 SamplerState SampleType : register(s0);
 
 ////////////////////////////////////////////////////////////////////
@@ -110,7 +111,7 @@ float3x3 CalculateLight(float3 N, float3 V, float3 Pos, float3 albedo, float met
 
 ////////////////////////////////////////////////////////////////////
 
-float CalculateShadow(float3 N, float3 pos) {
+float3 CalculateShadow(float3 N, float3 pos) {
 	float4 lightspace_pos = mul(float4(pos, 1), lightMatrix);
 	float3 projected = lightspace_pos.xyz / lightspace_pos.w; // NDC
 	projected.y *= -1;
@@ -122,13 +123,19 @@ float CalculateShadow(float3 N, float3 pos) {
 	if(luv.x < 0 || luv.x > 1 || luv.y < 0 || luv.y > 1) {
 		return 1;
 	}
+	
+	float3 shadow_color = t_unit4.Sample(SampleType, luv).rgb;
 
 #if 0
-	float closestDepth = t_unit3.Sample(SampleType, luv).r;
-	return currentDepth - bias > closestDepth ? 0.0 : 1.0;
+	float  closestDepth = t_unit3.Sample(SampleType, luv).r;
+	float  result_shadow = (currentDepth - bias > closestDepth ? 0.0 : 1.0);
+	float3 result_sc = float3(1, 1, 1);
+	if(result_shadow < 1) {
+		result_sc = (1 - result_shadow) * shadow_color;
+	}
+	return result_sc;
 #else
 
-	
 	float closestDepth = t_unit3.Sample(SampleType, luv).r;
 	float shadow_depth = clamp(currentDepth - bias - closestDepth, 0, 1) * 5.0155;
 
@@ -154,7 +161,15 @@ float CalculateShadow(float3 N, float3 pos) {
 		}    
 	}
 
-	return shadow / pow(scale*2 + 1, 2);
+	float result_shadow = shadow / pow(scale*2 + 1, 2);
+
+	return result_shadow;
+	
+	//float3 result_sc = float3(1, 1, 1);
+	//if(result_shadow < 0.5) {
+	//	result_sc = (1 - result_shadow) * shadow_color;
+	//}
+	//return result_sc;
 #endif
 
 }
@@ -189,7 +204,7 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	PSOUTPUT pout;
 
 	float3x3 calculated_light  = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
-	float    calculated_shadow = CalculateShadow(N, pColor.xyz);
+	float3   calculated_shadow = CalculateShadow(N, pColor.xyz);
 
 
 	//(kD * albedo / PI + specular) * radiance * NdotL; - light

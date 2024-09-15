@@ -5,59 +5,51 @@
 #include "rgmath.h"
 #include <vector>
 
-enum KeyFrameType {
-    RG_KEYFRAME_BONE = 0,
-    //    RG_KEYFRAME_VERTEX
-};
-
 typedef struct BoneKeyFrame {
     Uint32 timestamp;
-    vec3 scale;
-    quat rotation;
-    vec3 translation;
-    vec4 interp_x;
-    vec4 interp_y;
-    vec4 interp_z;
-    vec4 interp_r;
+    vec3   scale;
+    quat   rotation;
+    vec3   translation;
+    vec4   interp_x;
+    vec4   interp_y;
+    vec4   interp_z;
+    vec4   interp_r;
 } BoneKeyFrame;
 
 namespace Engine {
 
     class AnimationTrack {
         private:
-            Uint32 frames = 0;
-            Uint32 nameCRCHash;
             std::vector<BoneKeyFrame> keyframes;
-            char name[32];
-            Uint32 framecount = 0;
+            Uint32 frames      = 0;
+            Uint32 nameCRCHash = 0;
+            char   name[32];
+            Uint32 framecount  = 0;
 
         public:
             RG_INLINE AnimationTrack(String name) {
                 SDL_strlcpy(this->name, name, 32);
                 this->nameCRCHash = rgCRC32(name, (Uint32)SDL_strlen(name));
             }
-            RG_DECLSPEC ~AnimationTrack() {}
-
-            RG_DECLSPEC void SortByTimestamp();
+            RG_INLINE ~AnimationTrack() {}
 
             RG_INLINE Uint32 GetNameHash() { return this->nameCRCHash; }
             RG_INLINE String GetName() { return this->name; }
             RG_INLINE BoneKeyFrame* GetKeyFrame(Uint32 i) { return &this->keyframes[i]; }
-            //RG_INLINE Uint32 GetKeyframeCount() { return this->keyframes.size(); }
             RG_INLINE Uint32 GetKeyframeCount() { return framecount; }
             RG_INLINE void AddKeyFrame(BoneKeyFrame* keyframe) { this->keyframes.push_back(*keyframe); framecount++; }
+
+            RG_DECLSPEC void SortByTimestamp();
     };
 
     class Animation {
         private:
             std::vector<AnimationTrack*> bone_tracks;
-            //std::vector<AnimationTrack<BoneKeyFrame>*> bone_tracks;
-            //std::vector<AnimationTrack<VertexKeyFrame>> vertex_tracks;
-            double anim_time = 0;
-            double anim_fps = 30; // VMD animations in 30 fps
+            double anim_time  = 0;
+            double anim_fps   = 30; // VMD animations in 30 fps
             double anim_speed = 1;
-            Uint32 lastframe = 0;
-            Bool repeat = false;
+            Uint32 lastframe  = 0;
+            Bool   repeat     = false;
 
         public:
             RG_DECLSPEC Animation();
@@ -65,9 +57,6 @@ namespace Engine {
 
             RG_DECLSPEC void Update(double dt);
             RG_DECLSPEC void Reset();
-
-            //AnimationTrack<BoneKeyFrame>* GetBoneAnimationTrack(Uint32 crc_hash);
-            //void AddBoneAnimationTrack(AnimationTrack<BoneKeyFrame>* track);
 
             RG_INLINE AnimationTrack** GetBoneAnimationTracks() { return &this->bone_tracks[0]; }
             RG_DECLSPEC AnimationTrack* GetBoneAnimationTrack(String name);

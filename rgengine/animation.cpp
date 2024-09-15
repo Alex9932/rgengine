@@ -30,44 +30,14 @@ namespace Engine {
         return NULL;
     }
 
-    //void Animation::AddBoneAnimationTrack(AnimationTrack<BoneKeyFrame>* track) {
-    //    this->bone_tracks.push_back(track);
-    //}
-
     AnimationTrack* Animation::GetBoneAnimationTrack(String name) {
         AnimationTrack* track = NULL;
         for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
             track = this->bone_tracks[i];
-            //if(Engine::Utils::strstw(name, track->GetName())) {
             if (Engine::rg_streql(name, track->GetName())) {
-                //rgLogInfo(RG_LOG_SYSTEM, "Track: %s, bone: %s", track->GetName(), name);
                 return track;
             }
         }
-
-        //    Uint32 s_len = strlen(name);
-        //
-        //    for (Uint32 i = 0; i < this->bone_tracks.size(); ++i) {
-        //        track = this->bone_tracks[i];
-        //
-        //        String tname = track->GetName();
-        //        Uint32 b_len = strlen(tname);
-        //        if(s_len != b_len) { continue; }
-        //
-        //        bool ok = true;
-        //
-        //        for (Uint32 k = 0; k < s_len; ++k) {
-        //            if(name[k] != tname[k]) {
-        //                ok = false;
-        //                break;
-        //            }
-        //        }
-        //
-        //        if(ok) {
-        //            return track;
-        //        }
-        //
-        //    }
 
         return NULL;
     }
