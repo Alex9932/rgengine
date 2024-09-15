@@ -22,7 +22,8 @@ int main(int argc, char** argv) {
 		"-render",
 		"rgrenderdx11.dll",
 		"-game",
-		"rg_3da.dll"
+		//"rg_3da.dll"
+		"rg_leveleditor.dll"
 	};
 
 	ProcessArguments(_argc, _argv);

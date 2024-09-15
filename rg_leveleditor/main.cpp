@@ -12,6 +12,7 @@
 #include <world.h>
 #include <imgui/imgui.h>
 #include <imgui/ImGuizmo.h>
+#include <imgui/ImGuiFileDialog.h>
 
 #include "viewport.h"
 
@@ -34,6 +35,9 @@ static R3D_GlobalLightDescrition globaLightDesc = {
 
 static Bool disableRequested = false;
 static Bool popupWindow      = false;
+
+static ObjImporter objImporter;
+static PM2Importer pm2Importer;
 
 static void ShowInputWnd() {
 	disableRequested = true;
@@ -198,21 +202,26 @@ class Application : public BaseGame {
 							ShowInputWnd();
 						}
 
-						/*
+						
 						if (viewport->IsManipulationResult()) {
 							ManipulateResult result = {};
 							viewport->GetManipulateResult(&result);
+							//rgLogInfo(RG_LOG_SYSTEM, "Matipulation: %f %f %f", result.pos.x, result.pos.y, result.pos.z);
+#if 1
 							transform->SetPosition(result.pos);
-							transform->SetScale(result.scale);
+							//transform->SetScale(result.scale);
 							transform->Recalculate();
+#endif
 						}
-						*/
+						
 						if (ImGui::TreeNode("Components")) {
 							//TagComponent* tag = ent->GetComponent(Component_TAG)->AsTagComponent();
 							//ImGui::InputText("Name", tag->GetCharBuffer(), tag->GetBufferSize());
 
-							if (ImGui::Button("Attach")) {
-
+							if (ImGui::Button("Attach model")) {
+								//ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".obj,.pm2,.pmd", ".");
+								ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".pm2", ".", 1, ent);
+								
 							}
 							ImGui::TreePop();
 						}
@@ -221,9 +230,9 @@ class Application : public BaseGame {
 							toRemove = ent;
 						}
 
-						//if (!toRemove) {
-						//	viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
-						//}
+						if (!toRemove) {
+							viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
+						}
 
 						ImGui::TreePop();
 					}
@@ -241,10 +250,34 @@ class Application : public BaseGame {
 			}
 
 			if (addEntity) {
-				world->NewEntity();
+				Entity* ent = world->NewEntity();
+				ent->GetTransform()->SetPosition({ 0, 0, 0 });
+				ent->GetTransform()->SetRotation({ 0, 0, 0 });
+				ent->GetTransform()->SetScale({ 1, 1, 1 });
 			}
 
 			ImGui::End();
+
+			if (ImGuiFileDialog::Instance()->Display("Open model")) {
+				if (ImGuiFileDialog::Instance()->IsOk()) {
+					// Saved entity's pointer
+					Entity* ent = (Entity*)ImGuiFileDialog::Instance()->GetUserDatas();
+
+					std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+					rgLogInfo(RG_LOG_SYSTEM, "Model: %s", filePathName.c_str());
+
+					R3DStaticModelInfo objinfo = {};
+					pm2Importer.ImportModel(filePathName.c_str(), &objinfo);
+					R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
+					pm2Importer.FreeModelData(&objinfo);
+
+					ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+					ent->SetAABB(&objinfo.aabb);
+
+				}
+
+				ImGuiFileDialog::Instance()->Close();
+			}
 
 			ImGui::Begin("Global light");
 			//static vec4 color;
@@ -326,8 +359,6 @@ class Application : public BaseGame {
 			viewport = new Viewport(camera);
 
 			// Temp
-			ObjImporter objImporter;
-			PM2Importer pm2Importer;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/greenscreen/scene.obj", &objinfo);
 			//objImporter.ImportModel("gamedata/background/scene.obj", &objinfo);
@@ -361,7 +392,7 @@ class Application : public BaseGame {
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
 
 
-
+#if 0
 			objImporter.ImportModel("gamedata/models/mosaic/mosaic.obj", &objinfo);
 			R3D_StaticModel* mdl_handle2 = Render::R3D_CreateStaticModel(&objinfo);
 			objImporter.FreeModelData(&objinfo);
@@ -373,7 +404,7 @@ class Application : public BaseGame {
 			ent2->GetTransform()->SetPosition({ 0, 2.5f, 0 });
 			ent2->GetTransform()->SetRotation({ 0, (3.1415f / 2) + 3.1415f, 0 });
 			ent2->GetTransform()->SetScale({ 1, 1, 1 });
-
+#endif
 			/*
 			PointLight* l = Render::GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
