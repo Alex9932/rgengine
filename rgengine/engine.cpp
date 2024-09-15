@@ -220,54 +220,82 @@ namespace Engine {
         return false;
     }
 
-    static void handle_signal(int sig) {
-        printf("SIGNAL: Terminate\n");
-
+    static void SignalHandler(int sig) {
         switch (sig) {
-        case SIGINT: {
-            break;
+            case SIGINT:   { printf("SIGNAL: Interrupt\n"); break; }
+            case SIGILL:   { printf("SIGNAL: Illegal instruction\n"); break; }
+            case SIGFPE:   { printf("SIGNAL: Floating point exception\n"); break; }
+            case SIGSEGV:  { printf("SIGNAL: Segmentation violation\n"); break; }
+            case SIGTERM:  { printf("SIGNAL: Terminate\n"); break; }
+            case SIGBREAK: { printf("SIGNAL: Break\n"); Quit(); break; }
+            case SIGABRT:  { printf("SIGNAL: Abnormal termination\n"); break; }
+            default: { printf("SIGNAL: Terminate (unknown)\n"); break; }
         }
-        case SIGILL: {
-            break;
+    }
+
+    static void SetupSignalHandler() {
+#if defined(RG_PLATFORM_WINDOWS)
+        // Testing
+        signal(SIGINT,   SignalHandler);
+        signal(SIGILL,   SignalHandler);
+        signal(SIGFPE,   SignalHandler);
+        signal(SIGSEGV,  SignalHandler);
+        signal(SIGTERM,  SignalHandler);
+        signal(SIGBREAK, SignalHandler);
+        signal(SIGABRT,  SignalHandler);
+#elif defined(RG_PLATFORM_LINUX)
+
+#endif
+    }
+
+    static void rgCPUID(char* CPUBrandString) {
+        int CPUInfo[4] = { -1 };
+        unsigned nExIds, i = 0;
+        __cpuid(CPUInfo, 0x80000000);
+        nExIds = CPUInfo[0];
+        for (i = 0x80000000; i <= nExIds; ++i) {
+            __cpuid(CPUInfo, i);
+            if (i == 0x80000002) {
+                memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+            }
+            else if (i == 0x80000003) {
+                memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+            }
+            else if (i == 0x80000004) {
+                memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+            }
         }
-        case SIGFPE: {
-            break;
+    }
+
+    static void SetupGameModule() {
+        PFN_MODULE_INITIALIZE     ModuleInitialize     = NULL;
+        PFN_MODULE_GETAPPLICATION ModuleGetApplication = NULL;
+
+        rgLogInfo(RG_LOG_SYSTEM, "Loading game module...");
+
+        if (lib_game == NULL) {
+            RG_ERROR_MSG("No game! No life!");
         }
-        case SIGSEGV: {
-            printf("SIGNAL: Segmentation violation\n");
-            break;
-        }
-        case SIGTERM: {
-            break;
-        }
-        case SIGBREAK: {
-            break;
-        }
-        case SIGABRT: {
-            break;
-        }
-        default: {
-            break;
-        }
-        }
+
+        game_module = DL_LoadLibrary(lib_game);
+
+        ModuleInitialize     = (PFN_MODULE_INITIALIZE)DL_GetProcAddress(game_module, "Module_Initialize");
+        ModuleGetApplication = (PFN_MODULE_GETAPPLICATION)DL_GetProcAddress(game_module, "Module_GetApplication");
+
+        rgLogInfo(RG_LOG_SYSTEM, "Initializing game module...");
+        ModuleInitialize();
+        game_ptr = ModuleGetApplication();
+
+        if (!game_ptr) { RG_ERROR_MSG("Invalid handle"); }
+        rgLogInfo(RG_LOG_SYSTEM, "Game: %s", game_ptr->GetName());
     }
 
     void Initialize() {
         running = true;
 
         SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
+        SetupSignalHandler();
 
-#if defined(RG_PLATFORM_WINDOWS)
-        signal(SIGINT, handle_signal);
-        signal(SIGILL, handle_signal);
-        signal(SIGFPE, handle_signal);
-        signal(SIGSEGV, handle_signal);
-        signal(SIGTERM, handle_signal);
-        signal(SIGBREAK, handle_signal);
-        signal(SIGABRT, handle_signal);
-#elif defined(RG_PLATFORM_LINUX)
-
-#endif
 
         SDL_snprintf(version_str, 64, "%d.%d.%d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH);
         SDL_snprintf(platform_str, 64, "%s", SDL_GetPlatform());
@@ -283,23 +311,8 @@ namespace Engine {
         rgLogInfo(RG_LOG_SYSTEM, "Engine version: %d.%d.%d, Build: %d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH, RG_BUILD);
         rgLogInfo(RG_LOG_SYSTEM, "SDL version: %d.%d.%d", ver.major, ver.minor, ver.patch);
 
-        int CPUInfo[4] = { -1 };
-        unsigned nExIds, i = 0;
         char CPUBrandString[64] = {};
-        __cpuid(CPUInfo, 0x80000000);
-        nExIds = CPUInfo[0];
-        for (i = 0x80000000; i <= nExIds; ++i) {
-            __cpuid(CPUInfo, i);
-            if (i == 0x80000002) {
-                memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
-            }
-            else if (i == 0x80000003) {
-                memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
-            }
-            else if (i == 0x80000004) {
-                memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
-            }
-        }
+        rgCPUID(CPUBrandString);
 
         rgLogInfo(RG_LOG_SYSTEM, "Platform: %s, %s %s CPU, line %d, %d Mb ram.",
             SDL_GetPlatform(),
@@ -315,26 +328,7 @@ namespace Engine {
             rgLogWarn(RG_LOG_SYSTEM, " ~ ");
         }
 
-        rgLogInfo(RG_LOG_SYSTEM, "Loading game module...");
-
-        if (lib_game == NULL) {
-            RG_ERROR_MSG("No game! No life!");
-        }
-
-        game_module = DL_LoadLibrary(lib_game);
-
-        PFN_MODULE_INITIALIZE     ModuleInitialize     = (PFN_MODULE_INITIALIZE)DL_GetProcAddress(game_module, "Module_Initialize");
-        PFN_MODULE_GETAPPLICATION ModuleGetApplication = (PFN_MODULE_GETAPPLICATION)DL_GetProcAddress(game_module, "Module_GetApplication");
-
-        rgLogInfo(RG_LOG_SYSTEM, "Initializing game module...");
-        ModuleInitialize();
-        game_ptr = ModuleGetApplication();
-
-        if (!game_ptr) {
-            RG_ERROR_MSG("Invalid handle");
-        }
-
-        rgLogInfo(RG_LOG_SYSTEM, "Game: %s", game_ptr->GetName());
+        SetupGameModule();
 
         std_allocator = new STDAllocator("SYSTEM");
         //RegisterAllocator(std_allocator);
@@ -461,8 +455,11 @@ namespace Engine {
             Window_Destroy();
         }
 
+
+        rgLogInfo(RG_LOG_SYSTEM, "Unloading game module...");
         PFN_MODULE_DESTROY ModuleDestroy = (PFN_MODULE_DESTROY)DL_GetProcAddress(game_module, "Module_Destroy");
         ModuleDestroy();
+        DL_UnloadLibrary(game_module);
 
         Thread_Destroy();
 
