@@ -137,11 +137,13 @@
     <ClCompile Include="component.cpp" />
     <ClCompile Include="levelexporter.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="popup.cpp" />
     <ClCompile Include="viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="component.h" />
     <ClInclude Include="levelexporter.h" />
+    <ClInclude Include="popup.h" />
     <ClInclude Include="viewport.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

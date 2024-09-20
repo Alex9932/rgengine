@@ -23,6 +23,8 @@
 #include <pm2importer.h>
 
 
+#include "popup.h"
+
 using namespace Engine;
 
 static R3D_GlobalLightDescrition globaLightDesc = {
@@ -33,41 +35,8 @@ static R3D_GlobalLightDescrition globaLightDesc = {
 	1.86f
 };
 
-// Popup mode
-#define POPUP_MODE_INFO        0x00000000
-#define POPUP_MODE_TEXTINPUT   0x00000001
-#define POPUP_MODE_PROGRESSBAR 0x00000002
-
-// Popup buttons
-#define POPUP_BTN_NOBTN        0x00000000
-#define POPUP_BTN_OK_CANCEL    0x00000001
-
-// Popup buttons id
-#define POPUP_BTNID_OK         0x00000001
-#define POPUP_BTNID_CANCEL     0x00000000
-#define POPUP_BTNID_NOBTN      0xFFFFFFFF
-
-static Bool   disableRequested  = false;
-static Bool   popupWindow       = false;
-static char   popupTitle[128];
-static char   popupContent[128];
-static Uint32 popupMode         = POPUP_MODE_INFO;
-static Uint32 popupButtons      = POPUP_BTN_NOBTN;
-
-static Uint32  popupBtnPressed  = POPUP_BTNID_NOBTN;
-static Float32 popupProgress    = 0.0f;
-static char    popupInputBuffer[256];
-
 static ObjImporter objImporter;
 static PM2Importer pm2Importer;
-
-static void ShowInputWnd(String title, String text) {
-	disableRequested = true;
-	SDL_snprintf(popupTitle, 128, title);
-	SDL_snprintf(popupContent, 128, text);
-	popupMode = POPUP_MODE_TEXTINPUT;
-	popupButtons = POPUP_BTN_OK_CANCEL;
-}
 
 class Application : public BaseGame {
 	private:
@@ -185,12 +154,8 @@ class Application : public BaseGame {
 
 			///////////////
 
-			if (disableRequested) {
-				popupWindow = true;
-				disableRequested = false;
-			}
 
-			if (popupWindow) {
+			if (PopupShown()) {
 				ImGui::BeginDisabled();
 			}
 
@@ -224,7 +189,7 @@ class Application : public BaseGame {
 						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
 
 						if (ImGui::Button("Rename")) {
-							ShowInputWnd("Rename", "Enter new entity name");
+							PopupShowInput("Rename", "Enter new entity name");
 						}
 
 						
@@ -322,58 +287,15 @@ class Application : public BaseGame {
 			viewport->DrawComponent();
 			ImGui::PopStyleVar();
 
-			if (popupWindow) {
+			
+			if (PopupShown()) {
 				ImGui::EndDisabled();
 			}
 
 			// Docker end
-
 			ImGui::End();
 
-
-			if (popupWindow) {
-
-				ImGui::SetNextWindowPos({ 670, 410 });
-				ImGui::SetNextWindowSize({ 260, 80 });
-				ImGui::Begin(popupTitle);
-				
-				// center content
-				if (popupMode == POPUP_MODE_INFO) {
-					ImGui::Text(popupContent);
-				} else if (popupMode == POPUP_MODE_PROGRESSBAR) {
-					ImGui::Text(popupContent);
-					ImGui::ProgressBar(popupProgress);
-				} else if (popupMode == POPUP_MODE_TEXTINPUT) {
-					ImGui::Text(popupContent);
-					ImGui::InputText("#txtinput", popupInputBuffer, 256);
-				} else {
-					ImGui::Text("Invalid popup_info");
-				}
-
-
-				// down buttons
-				if (popupButtons == POPUP_BTN_OK_CANCEL) {
-					if (ImGui::Button("Ok")) {
-						popupBtnPressed = POPUP_BTNID_OK;
-						popupWindow = false;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("Cancel")) {
-						popupBtnPressed = POPUP_BTNID_CANCEL;
-						popupWindow = false;
-					}
-				}
-
-				ImGui::End();
-
-				//progress += GetDeltaTime() * 0.333f;
-
-				//if (progress > 1) {
-				//	ExportLevel("testlevel");
-				//	popupWindow = false;
-				//}
-
-			}
+			PopupDraw();
 
 			if (isStats) {
 				RenderInfo renderer_info = {};

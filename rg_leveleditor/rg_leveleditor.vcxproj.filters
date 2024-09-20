@@ -27,6 +27,9 @@
     <ClCompile Include="levelexporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="popup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="viewport.h">
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="levelexporter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="popup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
