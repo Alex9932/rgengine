@@ -298,7 +298,6 @@ class Application : public BaseGame {
 			PopupDraw();
 
 			if (isStats) {
-				RenderInfo renderer_info = {};
 				Render::DrawRendererStats();
 			}
 
@@ -341,7 +340,7 @@ class Application : public BaseGame {
 			ent0->GetTransform()->SetScale({ 1, 1, 1 });
 			*/
 
-
+#if 0
 			pm2Importer.ImportModel("gamedata/flatplane/scene.pm2", &objinfo);
 			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
@@ -353,7 +352,7 @@ class Application : public BaseGame {
 			ent1->GetTransform()->SetPosition({ 0, 0, 1 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent1->GetTransform()->SetScale({ 1, 1, 1 });
-
+#endif
 
 #if 0
 			objImporter.ImportModel("gamedata/models/mosaic/mosaic.obj", &objinfo);

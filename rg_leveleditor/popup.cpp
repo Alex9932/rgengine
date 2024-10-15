@@ -20,13 +20,20 @@ static Uint32  popupBtnPressed = POPUP_BTNID_NOBTN;
 static Float32 popupProgress   = 0.0f;
 static char    popupInputBuffer[256];
 
+static void*   popupUserdata   = NULL;
 
-void PopupShow(String title, String text, Uint32 mode, Uint32 btns) {
+void PopupShow(String title, String text, Uint32 mode, Uint32 btns, void* data) {
+	if (popupWindow) { return; }
 	popupWindow      = true;
 	popupMode        = mode;
 	popupButtons     = btns;
+	popupUserdata    = data;
 	SDL_snprintf(popupTitle, 128, title);
 	SDL_snprintf(popupContent, 128, text);
+}
+
+void PopupHide() {
+	popupWindow = false;
 }
 
 void PopupDraw() {
@@ -81,5 +88,6 @@ Bool    PopupShown()                    { return popupWindow; }
 Uint32  PopupGetBtnPressed()            { return popupBtnPressed; }
 String  PopupGetInputBuffer()           { return popupInputBuffer; }
 Float32 PopupGetProgress()              { return popupProgress; }
+void*   PopupGetUserdata()              { return popupUserdata; }
 void    PopupSetInputBuffer(String str) { SDL_snprintf(popupInputBuffer, 256, "%s", str); }
 void    PopupSetProgress(Float32 p)     { popupProgress = p; }

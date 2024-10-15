@@ -24,12 +24,12 @@
 #define POPUP_BTNID_CANCEL     0x00000000
 #define POPUP_BTNID_NOBTN      0xFFFFFFFF
 
-void PopupShow(String title, String text, Uint32 mode, Uint32 btns);
+void PopupShow(String title, String text, Uint32 mode, Uint32 btns, void* data = NULL);
 void PopupDraw();
 
-RG_INLINE void PopupShowInfo(String title, String text) { PopupShow(title, text, POPUP_MODE_INFO, POPUP_BTN_OK_CANCEL); }
-RG_INLINE void PopupShowInput(String title, String text) { PopupShow(title, text, POPUP_MODE_TEXTINPUT, POPUP_BTN_OK_CANCEL); }
-RG_INLINE void PopupShowProgress(String title, String text) { PopupShow(title, text, POPUP_MODE_PROGRESSBAR, POPUP_BTN_OK_CANCEL); }
+RG_INLINE void PopupShowInfo(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_INFO, POPUP_BTN_OK_CANCEL, data); }
+RG_INLINE void PopupShowInput(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_TEXTINPUT, POPUP_BTN_OK_CANCEL, data); }
+RG_INLINE void PopupShowProgress(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_PROGRESSBAR, POPUP_BTN_OK_CANCEL, data); }
 
 Bool PopupShown();
 void PopupSetInputBuffer(String str);
