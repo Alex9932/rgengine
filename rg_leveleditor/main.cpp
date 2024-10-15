@@ -14,7 +14,9 @@
 #include <imgui/ImGuizmo.h>
 #include <imgui/ImGuiFileDialog.h>
 
+// Windows
 #include "viewport.h"
+#include "entitylist.h"
 
 #include "levelexporter.h"
 
@@ -41,6 +43,7 @@ static PM2Importer pm2Importer;
 class Application : public BaseGame {
 	private:
 		Viewport* viewport = NULL;
+		EntityList* entitylist = NULL;
 		// Other components
 
 		Camera*               camera     = NULL;
@@ -75,7 +78,9 @@ class Application : public BaseGame {
 
 			static Bool isStats = false;
 
-			// Docker
+			////////////////////////////
+			// Docker                 //
+			////////////////////////////
 			static bool opt_fullscreen = true;
 			static bool opt_padding = false;
 			static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
@@ -119,7 +124,9 @@ class Application : public BaseGame {
 				ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 			}
 
-			///////////////
+			////////////////////////////
+			// Menubar                //
+			////////////////////////////
 
 			if (ImGui::BeginMenuBar()) {
 				if (ImGui::BeginMenu("File")) {
@@ -152,14 +159,15 @@ class Application : public BaseGame {
 				ImGui::EndMenuBar();
 			}
 
-			///////////////
+			////////////////////////////
+			// In docker windows      //
+			////////////////////////////
 
 
 			if (PopupShown()) {
 				ImGui::BeginDisabled();
 			}
 
-			World* world = GetWorld();
 
 			ImGui::Begin("Window 1");
 			ImGui::Text("Text 1");
@@ -167,86 +175,9 @@ class Application : public BaseGame {
 			ImGui::Text("Text 3");
 			ImGui::End();
 
-			Bool    addEntity = false;
-			Entity* toRemove  = NULL;
+			entitylist->DrawComponent();
 
-			ImGui::Begin("World");
-			if(ImGui::TreeNode("Entities")) {
-				Uint32 len = world->GetEntityCount();
-				for (Uint32 i = 0; i < len; i++) {
-					Entity* ent = world->GetEntity(i);
-					Transform* transform = ent->GetTransform();
-					mat4 model = *transform->GetMatrix();
-					char ent_name[128];
-					TagComponent* tag = ent->GetComponent(Component_TAG)->AsTagComponent();
-					if (tag) {
-						SDL_snprintf(ent_name, 128, "%s", tag->GetString());
-					} else {
-						SDL_snprintf(ent_name, 128, "%lx", ent->GetID());
-					}
-					if(ImGui::TreeNode(ent_name)) {
-						ImGui::InputFloat3("Position", transform->GetPosition().array);
-						ImGui::InputFloat3("Rotation", transform->GetRotation().array);
-
-						if (ImGui::Button("Rename")) {
-							PopupShowInput("Rename", "Enter new entity name");
-						}
-
-						
-						if (viewport->IsManipulationResult()) {
-							ManipulateResult result = {};
-							viewport->GetManipulateResult(&result);
-							//rgLogInfo(RG_LOG_SYSTEM, "Matipulation: %f %f %f", result.pos.x, result.pos.y, result.pos.z);
-#if 1
-							transform->SetPosition(result.pos);
-							//transform->SetScale(result.scale);
-							transform->Recalculate();
-#endif
-						}
-						
-						if (ImGui::TreeNode("Components")) {
-							//TagComponent* tag = ent->GetComponent(Component_TAG)->AsTagComponent();
-							//ImGui::InputText("Name", tag->GetCharBuffer(), tag->GetBufferSize());
-
-							if (ImGui::Button("Attach model")) {
-								//ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".obj,.pm2,.pmd", ".");
-								ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".pm2", ".", 1, ent);
-								
-							}
-							ImGui::TreePop();
-						}
-
-						if (ImGui::Button("Remove")) {
-							toRemove = ent;
-						}
-
-						if (!toRemove) {
-							viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
-						}
-
-						ImGui::TreePop();
-					}
-				}
-
-				if (ImGui::Button("New entity")) {
-					addEntity = true;
-				}
-
-				ImGui::TreePop();
-			}
-
-			if (toRemove) {
-				world->FreeEntity(toRemove);
-			}
-
-			if (addEntity) {
-				Entity* ent = world->NewEntity();
-				ent->GetTransform()->SetPosition({ 0, 0, 0 });
-				ent->GetTransform()->SetRotation({ 0, 0, 0 });
-				ent->GetTransform()->SetScale({ 1, 1, 1 });
-			}
-
-			ImGui::End();
+			// TODO: Replace this to native file dialog
 
 			if (ImGuiFileDialog::Instance()->Display("Open model")) {
 				if (ImGuiFileDialog::Instance()->IsOk()) {
@@ -292,7 +223,9 @@ class Application : public BaseGame {
 				ImGui::EndDisabled();
 			}
 
-			// Docker end
+			////////////////////////////
+			// Docker end             //
+			////////////////////////////
 			ImGui::End();
 
 			PopupDraw();
@@ -317,8 +250,9 @@ class Application : public BaseGame {
 
 			camcontrol = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
 
-			// Viewport
+			// Windows
 			viewport = new Viewport(camera);
+			entitylist = new EntityList();
 
 			// Temp
 			R3DStaticModelInfo objinfo = {};
@@ -379,6 +313,7 @@ class Application : public BaseGame {
 
 		void Quit() {
 			delete viewport;
+			delete entitylist;
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);

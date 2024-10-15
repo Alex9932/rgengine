@@ -9,7 +9,6 @@ UIComponent::~UIComponent() {
 }
 
 void UIComponent::DrawComponent() {
-
 	ImGui::Begin(m_wndname, NULL, m_flags);
 
 	ImVec2 _wndpos  = ImGui::GetWindowPos();

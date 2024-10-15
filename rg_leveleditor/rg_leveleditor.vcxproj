@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="component.cpp" />
+    <ClCompile Include="entitylist.cpp" />
     <ClCompile Include="levelexporter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="popup.cpp" />
@@ -142,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="component.h" />
+    <ClInclude Include="entitylist.h" />
     <ClInclude Include="levelexporter.h" />
     <ClInclude Include="popup.h" />
     <ClInclude Include="viewport.h" />
