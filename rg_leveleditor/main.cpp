@@ -11,8 +11,6 @@
 #include <lightsystem.h>
 #include <world.h>
 #include <imgui/imgui.h>
-#include <imgui/ImGuizmo.h>
-#include <imgui/ImGuiFileDialog.h>
 
 // Windows
 #include "viewport.h"
@@ -42,7 +40,7 @@ static PM2Importer pm2Importer;
 
 class Application : public BaseGame {
 	private:
-		Viewport* viewport = NULL;
+		Viewport*   viewport   = NULL;
 		EntityList* entitylist = NULL;
 		// Other components
 
@@ -177,28 +175,6 @@ class Application : public BaseGame {
 
 			entitylist->DrawComponent();
 
-			// TODO: Replace this to native file dialog
-
-			if (ImGuiFileDialog::Instance()->Display("Open model")) {
-				if (ImGuiFileDialog::Instance()->IsOk()) {
-					// Saved entity's pointer
-					Entity* ent = (Entity*)ImGuiFileDialog::Instance()->GetUserDatas();
-
-					std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-					rgLogInfo(RG_LOG_SYSTEM, "Model: %s", filePathName.c_str());
-
-					R3DStaticModelInfo objinfo = {};
-					pm2Importer.ImportModel(filePathName.c_str(), &objinfo);
-					R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
-					pm2Importer.FreeModelData(&objinfo);
-
-					ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
-					ent->SetAABB(&objinfo.aabb);
-
-				}
-
-				ImGuiFileDialog::Instance()->Close();
-			}
 
 			ImGui::Begin("Global light");
 			//static vec4 color;

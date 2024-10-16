@@ -8,14 +8,70 @@
 #include <engine.h>
 
 //#include <imgui/ImGuizmo.h>
-#include <imgui/ImGuiFileDialog.h>
+//#include <imgui/ImGuiFileDialog.h>
+
+#include <nfd.h>
+#include <nfd_sdl2.h>
+#include <window.h>
 
 #include <rgmatrix.h>
 
+#include <render.h>
+#include <modelsystem.h>
+#include <pm2importer.h>
+
 using namespace Engine;
 
-EntityList::EntityList() : UIComponent("Entity list") {}
-EntityList::~EntityList() {}
+static PM2Importer pm2Importer;
+
+static void GetNativeWindowHandle(nfdwindowhandle_t* handle) {
+	SDL_Window* hwnd = GetWindow();
+	NFD_GetNativeWindowFromSDLWindow(hwnd, handle);
+}
+
+static Bool ShowOpenDialog(char* dst_path, size_t maxlen) {
+
+	rgLogInfo(RG_LOG_GAME, "Show OpenDialog");
+	nfdopendialogu8args_t args = {};
+	GetNativeWindowHandle(&args.parentWindow);
+	nfdu8filteritem_t filters[2] = { {"PM2 Model file", "pm2"}, {"Wavefront model", "obj"} };
+	args.filterList = filters;
+	args.filterCount = 2;
+	//args.defaultPath = "/";
+
+	nfdu8char_t* outPath;
+	nfdresult_t res = NFD_OpenDialogU8_With(&outPath, &args);
+
+	switch (res) {
+		case NFD_OKAY: {
+
+			rgLogInfo(RG_LOG_GAME, "File selected: %s", outPath);
+			SDL_snprintf(dst_path, maxlen, "%s", outPath);
+			NFD_FreePathU8(outPath);
+			return true;
+
+		}
+
+		case NFD_CANCEL: { rgLogInfo(RG_LOG_GAME, "NFD: Cancel"); break; }
+		case NFD_ERROR: { rgLogInfo(RG_LOG_GAME, "NFD: Internal error"); break; }
+		default: { rgLogInfo(RG_LOG_GAME, "NFD: Default case"); break; }
+	}
+
+	return false;
+
+}
+
+EntityList::EntityList() : UIComponent("Entity list") {
+	if (NFD_Init() != NFD_OKAY) {
+		rgLogError(RG_LOG_SYSTEM, "NFD_Init failed: %s\n", NFD_GetError());
+		RG_ERROR_MSG("NFD_Init failed! Check log for more information.");
+	}
+}
+
+EntityList::~EntityList() {
+	NFD_Quit();
+}
+
 
 void EntityList::Draw() {
 	World* world = GetWorld();
@@ -46,7 +102,7 @@ void EntityList::Draw() {
 				}
 
 #if 0
-// Manipulation
+				// Manipulation
 
 				if (viewport->IsManipulationResult()) {
 					ManipulateResult result = {};
@@ -66,7 +122,23 @@ void EntityList::Draw() {
 
 					if (ImGui::Button("Attach model")) {
 						//ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".obj,.pm2,.pmd", ".");
-						ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".pm2", ".", 1, ent);
+						//ImGuiFileDialog::Instance()->OpenDialog("Open model", "Choose File", ".pm2", ".", 1, ent);
+
+						char path[256];
+						if(ShowOpenDialog(path, 256)) {
+							// Load selected model
+
+							rgLogInfo(RG_LOG_SYSTEM, "Model: %s", path);
+
+							R3DStaticModelInfo objinfo = {};
+							pm2Importer.ImportModel(path, &objinfo);
+							R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&objinfo);
+							pm2Importer.FreeModelData(&objinfo);
+
+							ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+							ent->SetAABB(&objinfo.aabb);
+
+						}
 
 					}
 					ImGui::TreePop();
