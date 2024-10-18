@@ -10,7 +10,6 @@
 
 #include <window.h>
 
-static Bool    popupWindow     = false;
 static char    popupTitle[128];
 static char    popupContent[128];
 static Uint32  popupMode       = POPUP_MODE_INFO;
@@ -22,22 +21,32 @@ static char    popupInputBuffer[256];
 
 static void*   popupUserdata   = NULL;
 
-void PopupShow(String title, String text, Uint32 mode, Uint32 btns, void* data) {
-	if (popupWindow) { return; }
-	popupWindow      = true;
+// 0 - no window
+static PopupID popupCurrentIdx = 0;
+static PopupID popupNextIdx    = 0;
+
+static PopupID popupLastWnd    = 0;
+
+void PopupShow(PopupID wndidx, String title, String text, Uint32 mode, Uint32 btns, void* data) {
+	if (popupCurrentIdx != 0) { return; }
+	popupCurrentIdx  = wndidx;
 	popupMode        = mode;
 	popupButtons     = btns;
 	popupUserdata    = data;
+	popupBtnPressed  = POPUP_BTNID_NOBTN;
+	popupProgress    = 0.0f;
+	SDL_memset(popupInputBuffer, 0, 256);
 	SDL_snprintf(popupTitle, 128, title);
 	SDL_snprintf(popupContent, 128, text);
 }
 
 void PopupHide() {
-	popupWindow = false;
+	popupLastWnd = popupCurrentIdx;
+	popupCurrentIdx = 0;
 }
 
 void PopupDraw() {
-	if (!popupWindow) { return; }
+	if (popupCurrentIdx == 0) { return; }
 
 	ivec2 popupsize = { 260, 100 };
 
@@ -72,22 +81,32 @@ void PopupDraw() {
 	if (popupButtons == POPUP_BTN_OK_CANCEL) {
 		if (ImGui::Button("Ok")) {
 			popupBtnPressed = POPUP_BTNID_OK;
-			popupWindow = false;
+			popupLastWnd = popupCurrentIdx;
+			popupCurrentIdx = 0;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel")) {
 			popupBtnPressed = POPUP_BTNID_CANCEL;
-			popupWindow = false;
+			popupLastWnd = popupCurrentIdx;
+			popupCurrentIdx = 0;
 		}
 	}
 
 	ImGui::End();
 }
 
-Bool    PopupShown()                    { return popupWindow; }
+PopupID PopupShown()                    { return popupCurrentIdx; }
 Uint32  PopupGetBtnPressed()            { return popupBtnPressed; }
 String  PopupGetInputBuffer()           { return popupInputBuffer; }
 Float32 PopupGetProgress()              { return popupProgress; }
 void*   PopupGetUserdata()              { return popupUserdata; }
 void    PopupSetInputBuffer(String str) { SDL_snprintf(popupInputBuffer, 256, "%s", str); }
 void    PopupSetProgress(Float32 p)     { popupProgress = p; }
+
+PopupID PopupNextID() {
+	popupNextIdx++;
+	return popupNextIdx;
+}
+
+PopupID PopupClosed() { return popupLastWnd; }
+void PopupFree() { popupLastWnd = 0; }

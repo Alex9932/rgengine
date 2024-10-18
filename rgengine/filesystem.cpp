@@ -1,5 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define DLL_EXPORT
+
+#define FS_SAFEMODE
+
 #include "filesystem.h"
 
 #include <map>
@@ -9,6 +12,8 @@
 #include "engine.h"
 #include "rgmath.h"
 #include "rgstring.h"
+
+#include "window.h"
 
 struct rg_fs_header {
     char magic[4];
@@ -246,9 +251,19 @@ namespace Engine {
         Resource* res = GetResourceInFS(file);
         if (res != NULL) { return res; }
 
-        FILE* fptr = fopen(file, "rb");
         SDL_snprintf(string_buffer, 128, "FILE NOT FOUND => %s", file);
+
+        FILE* fptr = fopen(file, "rb");
+#ifndef FS_SAFEMODE
         RG_ASSERT_MSG(fptr, string_buffer);
+#else
+        if (!fptr) {
+            rgLogError(RG_LOG_SYSTEM, "File not found: %s", file);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "rgEngine", string_buffer, GetWindow());
+            return NULL;
+        }
+#endif
+
         res = (Resource*)allocator->Allocate(sizeof(Resource));
         fseek(fptr, 0, SEEK_END);
         res->length = ftell(fptr);

@@ -24,18 +24,25 @@
 #define POPUP_BTNID_CANCEL     0x00000000
 #define POPUP_BTNID_NOBTN      0xFFFFFFFF
 
-void PopupShow(String title, String text, Uint32 mode, Uint32 btns, void* data = NULL);
+typedef Uint32 PopupID;
+
+void PopupShow(PopupID wndid, String title, String text, Uint32 mode, Uint32 btns, void* data = NULL);
 void PopupDraw();
 
-RG_INLINE void PopupShowInfo(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_INFO, POPUP_BTN_OK_CANCEL, data); }
-RG_INLINE void PopupShowInput(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_TEXTINPUT, POPUP_BTN_OK_CANCEL, data); }
-RG_INLINE void PopupShowProgress(String title, String text, void* data = NULL) { PopupShow(title, text, POPUP_MODE_PROGRESSBAR, POPUP_BTN_OK_CANCEL, data); }
+RG_INLINE void PopupShowInfo(PopupID wndid, String title, String text, void* data = NULL) { PopupShow(wndid, title, text, POPUP_MODE_INFO, POPUP_BTN_OK_CANCEL, data); }
+RG_INLINE void PopupShowInput(PopupID wndid, String title, String text, void* data = NULL) { PopupShow(wndid, title, text, POPUP_MODE_TEXTINPUT, POPUP_BTN_OK_CANCEL, data); }
+RG_INLINE void PopupShowProgress(PopupID wndid, String title, String text, void* data = NULL) { PopupShow(wndid, title, text, POPUP_MODE_PROGRESSBAR, POPUP_BTN_OK_CANCEL, data); }
 
-Bool PopupShown();
+PopupID PopupShown(); // Return current window id
 void PopupSetInputBuffer(String str);
 void PopupSetProgress(Float32 p);
 String PopupGetInputBuffer();
 Float32 PopupGetProgress();
 Uint32 PopupGetBtnPressed();
+
+PopupID PopupNextID();
+
+PopupID PopupClosed(); // Last closed window id
+void PopupFree();      // Reset last id
 
 #endif

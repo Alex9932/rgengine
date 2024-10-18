@@ -2,6 +2,7 @@
 #define _ENTITYLIST_H
 
 #include "component.h"
+#include "popup.h"
 
 class EntityList : public UIComponent {
 	public:
@@ -9,6 +10,9 @@ class EntityList : public UIComponent {
 		~EntityList();
 
 		virtual void Draw();
+
+	private:
+		PopupID popupidx;
 };
 
 #endif

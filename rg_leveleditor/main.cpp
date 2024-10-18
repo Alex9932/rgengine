@@ -18,10 +18,6 @@
 
 #include "levelexporter.h"
 
-// Temp
-#include <objimporter.h>
-#include <pm2importer.h>
-
 
 #include "popup.h"
 
@@ -34,9 +30,6 @@ static R3D_GlobalLightDescrition globaLightDesc = {
 	0.3f,
 	1.86f
 };
-
-static ObjImporter objImporter;
-static PM2Importer pm2Importer;
 
 class Application : public BaseGame {
 	private:
