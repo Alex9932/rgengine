@@ -135,16 +135,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="component.cpp" />
+    <ClCompile Include="docker.cpp" />
     <ClCompile Include="entitylist.cpp" />
     <ClCompile Include="levelexporter.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="menubar.cpp" />
     <ClCompile Include="popup.cpp" />
     <ClCompile Include="viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="component.h" />
+    <ClInclude Include="docker.h" />
+    <ClInclude Include="dockerglobal.h" />
     <ClInclude Include="entitylist.h" />
     <ClInclude Include="levelexporter.h" />
+    <ClInclude Include="menubar.h" />
     <ClInclude Include="popup.h" />
     <ClInclude Include="viewport.h" />
   </ItemGroup>

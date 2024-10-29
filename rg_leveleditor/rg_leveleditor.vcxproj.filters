@@ -33,6 +33,12 @@
     <ClCompile Include="entitylist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="docker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menubar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="viewport.h">
@@ -48,6 +54,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="entitylist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="docker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menubar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dockerglobal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
