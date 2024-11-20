@@ -5,6 +5,10 @@
 #include "event.h"
 
 #include "world.h"
+
+#include "entity.h"
+#include "staticobject.h"
+
 #include "kinematicsmodel.h"
 
 #include "modelsystem.h"
@@ -76,7 +80,9 @@ namespace Engine {
 
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
-        static Bool                 isCullingEnabled       = false;
+        
+        static Bool                 isEntityCullingEnabled = false;
+        static Bool                 isStaticCullingEnabled = true;
 
         static ivec2                wndSize                = { 0, 0 };
 
@@ -393,38 +399,66 @@ namespace Engine {
             ImGui::End();
         }
 
-        static void RenderWorld(World* world) {
+        RG_FORCE_INLINE static void DrawEntity(R3D_PushModelInfo* info, Entity* ent) {
+            ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+            RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
 
-            UpdateFrametime(GetDeltaTime());
+            info->matrix = *ent->GetTransform()->GetMatrix();
 
-            R3D_PushModelInfo info = {};
+            if (mc) {
+                info->handle_static = mc->GetHandle();
+                Render::R3D_PushModel(info);
+            }
+            
+            if (rmc) {
+                info->handle_rigged = rmc->GetHandle();
+                info->handle_bonebuffer = rmc->GetKinematicsModel()->GetBufferHandle();
+                Render::R3D_PushModel(info);
+            }
+        }
 
+        RG_FORCE_INLINE static void ProcessEntities(R3D_PushModelInfo* info, World* world) {
             for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
                 Entity* ent = world->GetEntity(i);
 
                 AABB aabb = *ent->GetAABB();
                 aabb.Add(ent->GetTransform()->GetPosition());
 
-                if (isCullingEnabled) {
+                if (isEntityCullingEnabled) {
                     Bool inFrustum = AABBInFrustum(&frustum, &aabb);
                     if (!inFrustum) { continue; }
                 }
 
-                info.matrix = *ent->GetTransform()->GetMatrix();
-
-                ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
-                if (mc) {
-                    info.handle_static = mc->GetHandle();
-                    Render::R3D_PushModel(&info);
-                }
-
-                RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
-                if (rmc) {
-                    info.handle_rigged     = rmc->GetHandle();
-                    info.handle_bonebuffer = rmc->GetKinematicsModel()->GetBufferHandle();
-                    Render::R3D_PushModel(&info);
-                }
+                DrawEntity(info, ent);
             }
+        }
+
+        RG_FORCE_INLINE static void ProcessStatic(R3D_PushModelInfo* info, World* world) {
+            for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
+                StaticObject* staticobj = world->GetStaticObject(i);
+
+                if (isStaticCullingEnabled) {
+                    Bool inFrustum = AABBInFrustum(&frustum, staticobj->GetAABB());
+                    if (!inFrustum) { continue; }
+                }
+
+                info->matrix        = *staticobj->GetMatrix();
+                info->handle_static = staticobj->GetModelHandle();
+
+                Render::R3D_PushModel(info);
+            }
+        }
+
+        static void RenderWorld(World* world) {
+            R3D_PushModelInfo info = {};
+
+            UpdateFrametime(GetDeltaTime());
+
+            // Draw static geometry
+            ProcessStatic(&info, world);
+
+            // Draw dynamic entities
+            ProcessEntities(&info, world);
         }
 
         void SetCamera(R3D_CameraInfo* info) {

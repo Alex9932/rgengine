@@ -179,6 +179,7 @@
     <ClCompile Include="soundbuffer.cpp" />
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
+    <ClCompile Include="staticobject.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="entity.cpp" />
@@ -234,6 +235,7 @@
     <ClInclude Include="soundbuffer.h" />
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />
+    <ClInclude Include="staticobject.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="logger.h" />

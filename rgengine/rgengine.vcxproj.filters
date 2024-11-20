@@ -234,6 +234,9 @@
     <ClCompile Include="rgvector.cpp">
       <Filter>Source Files\math</Filter>
     </ClCompile>
+    <ClCompile Include="staticobject.cpp">
+      <Filter>Source Files\world</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -424,6 +427,9 @@
     </ClInclude>
     <ClInclude Include="frustum.h">
       <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="staticobject.h">
+      <Filter>Header Files\world</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

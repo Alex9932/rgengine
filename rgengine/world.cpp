@@ -3,6 +3,7 @@
 #include "world.h"
 #include "transform.h"
 #include "entity.h"
+#include "staticobject.h"
 #include "engine.h"
 
 #include "render.h"
@@ -21,13 +22,15 @@ namespace Engine {
 	}
 
 	World::World() {
-		this->m_allocTransform = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Transform pool", RG_ENTITY_COUNT, sizeof(Transform));
-		this->m_allocEntity    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Entity pool",    RG_ENTITY_COUNT, sizeof(Entity));
+		this->m_allocTransform = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Transform pool",  RG_ENTITY_COUNT, sizeof(Transform));
+		this->m_allocEntity    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Entity pool",     RG_ENTITY_COUNT, sizeof(Entity));
+		this->m_allocStatic    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Static geometry", RG_ENTITY_COUNT, sizeof(StaticObject));
 	}
 
 	World::~World() {
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocTransform);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocEntity);
+		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocStatic);
 	}
 
 	Transform* World::NewTransform() {
@@ -109,6 +112,10 @@ namespace Engine {
 		return NULL;
 	}
 
+	StaticObject* World::GetStaticObject(Uint32 idx) {
+		return this->m_static[idx];
+	}
+
 	void World::ClearWorld() {
 
 		for (Uint32 i = 0; i < m_entities.size(); i++) {
@@ -119,8 +126,9 @@ namespace Engine {
 			RG_DELETE_CLASS(m_allocEntity, Entity, ent);
 		}
 
-		//m_allocTransform->DeallocateAll();
+		// WARN: Destructor NOT CALLED !!!
 		m_allocEntity->DeallocateAll();
+		m_allocTransform->DeallocateAll();
 		m_entities.clear();
 	}
 
