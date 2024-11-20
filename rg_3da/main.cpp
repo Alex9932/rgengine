@@ -265,18 +265,18 @@ class Application : public BaseGame {
 			binfo.data = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
-			Render::R3D_UpdateBoneBuffer(&binfo);
+			Render::UpdateBoneBuffer(&binfo);
 
 
 			binfo.data = kmodel2->GetTransforms();
 			binfo.handle = kmodel2->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel2->GetBoneCount();
-			Render::R3D_UpdateBoneBuffer(&binfo);
+			Render::UpdateBoneBuffer(&binfo);
 
 			binfo.data = kmodel3->GetTransforms();
 			binfo.handle = kmodel3->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel3->GetBoneCount();
-			Render::R3D_UpdateBoneBuffer(&binfo);
+			Render::UpdateBoneBuffer(&binfo);
 
 #if 1
 
@@ -341,7 +341,7 @@ class Application : public BaseGame {
 			//pm2Importer.ImportModel("gamedata/models/megumin/v5.pm2", &objinfo);
 
 
-			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
+			R3D_StaticModel* mdl_handle0 = Render::CreateStaticModel(&objinfo);
 			//objImporter.FreeModelData(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
@@ -446,7 +446,7 @@ class Application : public BaseGame {
 			pm2Importer.ImportModel("gamedata/sponza/level.pm2", &pm2info);
 			//objImporter.ImportModel("F:/c/models/San_Miguel/san-miguel-low-poly.obj", &pm2info);
 			//jImporter.ImportModel("D:/models/livingroom/lala.obj", &pm2info);
-			R3D_StaticModel* mdl_handle1 = Render::R3D_CreateStaticModel(&pm2info);
+			R3D_StaticModel* mdl_handle1 = Render::CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 			Entity* ent1 = world->NewEntity();
 			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
@@ -458,7 +458,7 @@ class Application : public BaseGame {
 
 
 			pm2Importer.ImportModel("gamedata/models/table/table.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle3 = Render::R3D_CreateStaticModel(&objinfo);
+			R3D_StaticModel* mdl_handle3 = Render::CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 			Entity* ent3 = world->NewEntity();
 			ent3->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle3));
@@ -530,7 +530,7 @@ class Application : public BaseGame {
 #endif
 
 			pm2Importer.ImportModel("gamedata/models/mikufigure/model.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle4 = Render::R3D_CreateStaticModel(&objinfo);
+			R3D_StaticModel* mdl_handle4 = Render::CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* sndentl = world->NewEntity();
@@ -569,7 +569,7 @@ class Application : public BaseGame {
 
 
 			pmdImporter.ImportRiggedModel(modelname0, &pmdinfo);
-			R3D_RiggedModel* mdl_handle5 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			R3D_RiggedModel* mdl_handle5 = Render::CreateRiggedModel(&pmdinfo);
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
 			Entity* ent5 = world->NewEntity();
@@ -582,7 +582,7 @@ class Application : public BaseGame {
 
 
 			pmdImporter.ImportRiggedModel(modelname1, &pmdinfo);
-			R3D_RiggedModel* mdl_handle6 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			R3D_RiggedModel* mdl_handle6 = Render::CreateRiggedModel(&pmdinfo);
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
 			Entity* ent6 = world->NewEntity();
@@ -594,7 +594,7 @@ class Application : public BaseGame {
 			ent6->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 			pmxImporter.ImportRiggedModel(modelname2, &pmdinfo);
-			R3D_RiggedModel* mdl_handle7 = Render::R3D_CreateRiggedModel(&pmdinfo);
+			R3D_RiggedModel* mdl_handle7 = Render::CreateRiggedModel(&pmdinfo);
 			pmxImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
 			Entity* ent7 = world->NewEntity();

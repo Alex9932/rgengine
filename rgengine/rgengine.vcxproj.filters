@@ -237,6 +237,9 @@
     <ClCompile Include="staticobject.cpp">
       <Filter>Source Files\world</Filter>
     </ClCompile>
+    <ClCompile Include="renderctx.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -430,6 +433,9 @@
     </ClInclude>
     <ClInclude Include="staticobject.h">
       <Filter>Header Files\world</Filter>
+    </ClInclude>
+    <ClInclude Include="renderctx.h">
+      <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

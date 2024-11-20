@@ -85,14 +85,12 @@ namespace Engine {
         }
 
         Render::LoadRenderer(lib_renderer);
-        Render::Setup(Render::GetSetupParams());
 
     }
 
     void Window_Destroy() {
 
         Render::DestroySubSystem();
-        Render::Destroy();
         Render::UnloadRenderer();
 
         FreeEventHandler(_EventHandler);
@@ -222,7 +220,7 @@ namespace Engine {
 
         SDL_SetWindowResizable(hwnd, SDL_TRUE);
 
-        Render::Initialize(hwnd);
+        Render::InitializeContext(hwnd);
         Render::InitSubSystem();
 
         SDL_SetWindowIcon(hwnd, icn_surface.surface);

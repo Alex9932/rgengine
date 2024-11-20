@@ -82,7 +82,7 @@ class Application : public BaseGame {
 			cam.projection = *camera->GetProjection();
 			cam.position = camera->GetTransform()->GetPosition();
 			cam.rotation = camera->GetTransform()->GetRotation();
-			Render::R3D_SetCamera(&cam);
+			Render::SetCamera(&cam);
 
 
 			ImGuizmo::BeginFrame();

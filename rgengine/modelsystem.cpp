@@ -14,7 +14,7 @@ namespace Engine {
 	ModelComponent::~ModelComponent() { }
 
 	void ModelComponent::Destroy() {
-		Render::R3D_DestroyStaticModel(GetHandle());
+		Render::DestroyStaticModel(GetHandle());
 		Render::GetModelSystem()->DeleteModelComponent(this);
 	}
 
@@ -26,9 +26,9 @@ namespace Engine {
 	RiggedModelComponent::~RiggedModelComponent() { }
 
 	void RiggedModelComponent::Destroy() {
-		Render::R3D_DestroyBoneBuffer(m_kmodel->GetBufferHandle());
+		Render::DestroyBoneBuffer(m_kmodel->GetBufferHandle());
 		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
-		Render::R3D_DestroyRiggedModel(GetHandle());
+		Render::DestroyRiggedModel(GetHandle());
 		Render::GetModelSystem()->DeleteRiggedModelComponent(this);
 	}
 

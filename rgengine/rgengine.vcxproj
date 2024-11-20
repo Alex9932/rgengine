@@ -169,6 +169,7 @@
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="render.cpp" />
+    <ClCompile Include="renderctx.cpp" />
     <ClCompile Include="rgmath.cpp" />
     <ClCompile Include="rgmatrix.cpp" />
     <ClCompile Include="rgphysics.cpp" />
@@ -228,6 +229,7 @@
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
+    <ClInclude Include="renderctx.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
     <ClInclude Include="rgphysics.h" />

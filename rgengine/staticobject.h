@@ -30,6 +30,8 @@ namespace Engine {
 			mat4             m_transform;
 
 			R3D_StaticModel* m_handle;
+
+			// TODO: static physics bodies
 	};
 
 }

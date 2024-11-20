@@ -149,7 +149,7 @@ class Application : public BaseGame {
 			cam.projection = *camera->GetProjection();
 			cam.position = camera->GetTransform()->GetPosition();
 			cam.rotation = camera->GetTransform()->GetRotation();
-			Render::R3D_SetCamera(&cam);
+			Render::SetCamera(&cam);
 
 			ivec2 scrsize;
 			GetWindowSize(&scrsize);
@@ -236,7 +236,7 @@ class Application : public BaseGame {
 						R3D_RiggedModel* mdl_handle = component->GetHandle();
 						ent_model->DetachComponent(Component_RIGGEDMODELCOMPONENT);
 						Render::GetModelSystem()->DeleteRiggedModelComponent(component);
-						Render::R3D_DestroyRiggedModel(mdl_handle);
+						Render::DestroyRiggedModel(mdl_handle);
 						pmdimporter.FreeRiggedModelData(&rmodelInfo);
 						delete kinematicsModel;
 					} else {
@@ -244,7 +244,7 @@ class Application : public BaseGame {
 						R3D_StaticModel* mdl_handle = component->GetHandle();
 						ent_model->DetachComponent(Component_MODELCOMPONENT);
 						Render::GetModelSystem()->DeleteModelComponent(component);
-						Render::R3D_DestroyStaticModel(mdl_handle);
+						Render::DestroyStaticModel(mdl_handle);
 						pm2Importer.FreeModelData(&modelInfo);
 					}
 
@@ -311,10 +311,10 @@ class Application : public BaseGame {
 					}
 
 					if (isAnimated) {
-						R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&rmodelInfo);
+						R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&rmodelInfo);
 						ent_model->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle, kinematicsModel));
 					} else {
-						R3D_StaticModel* mdl_handle = Render::R3D_CreateStaticModel(&modelInfo);
+						R3D_StaticModel* mdl_handle = Render::CreateStaticModel(&modelInfo);
 						ent_model->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
 					}
 
@@ -374,7 +374,7 @@ class Application : public BaseGame {
 				binfo.data   = kinematicsModel->GetTransforms();
 				binfo.handle = kinematicsModel->GetBufferHandle();
 				binfo.length = sizeof(mat4) * kinematicsModel->GetBoneCount();
-				Render::R3D_UpdateBoneBuffer(&binfo);
+				Render::UpdateBoneBuffer(&binfo);
 			}
 
 		}
@@ -397,7 +397,7 @@ class Application : public BaseGame {
 			//objImporter.FreeModelData(&objinfo);
 
 			pm2Importer.ImportModel("gamedata/greenscreen/scene.pm2", &objinfo);
-			R3D_StaticModel* mdl_handle0 = Render::R3D_CreateStaticModel(&objinfo);
+			R3D_StaticModel* mdl_handle0 = Render::CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* ent_bg = world->NewEntity();
