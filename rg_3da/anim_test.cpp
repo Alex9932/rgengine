@@ -1,4 +1,4 @@
-#if 1
+#if 0
 
 #define GAME_DLL
 #include <rgentrypoint.h>

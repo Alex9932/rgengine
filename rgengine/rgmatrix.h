@@ -41,27 +41,18 @@ union mat4 {
     float m2[4][4];
     vec4 rows[4];
 
-#if RG_SIMD
-    RG_INLINE __m128 vecmatSSE(__m128 mvec, const mat4& mat) {
-
-        __m128 vX = _mm_shuffle_ps(mvec, mvec, 0x00);
-        __m128 vY = _mm_shuffle_ps(mvec, mvec, 0x55);
-        __m128 vZ = _mm_shuffle_ps(mvec, mvec, 0xAA);
-        __m128 vW = _mm_shuffle_ps(mvec, mvec, 0xFF);
-
-        __m128 r = _mm_mul_ps(vX, mat.rows[0].m);
-        r = _mm_add_ps(r, _mm_mul_ps(vY, mat.rows[1].m));
-        r = _mm_add_ps(r, _mm_mul_ps(vZ, mat.rows[2].m));
-        r = _mm_add_ps(r, _mm_mul_ps(vW, mat.rows[3].m));
-
-        return r;
-    }
-#endif
-
     RG_INLINE vec4 operator*(const vec4& v) {
         vec4 r;
 #if RG_SIMD
-        r.m = vecmatSSE(v.m, *this);
+        __m128 vX = _mm_shuffle_ps(v.m, v.m, 0x00);
+        __m128 vY = _mm_shuffle_ps(v.m, v.m, 0x55);
+        __m128 vZ = _mm_shuffle_ps(v.m, v.m, 0xAA);
+        __m128 vW = _mm_shuffle_ps(v.m, v.m, 0xFF);
+        __m128 _r = _mm_mul_ps(vX, this->rows[0].m);
+        _r = _mm_add_ps(_r, _mm_mul_ps(vY, this->rows[1].m));
+        _r = _mm_add_ps(_r, _mm_mul_ps(vZ, this->rows[2].m));
+        _r = _mm_add_ps(_r, _mm_mul_ps(vW, this->rows[3].m));
+        r.m = _r;
 #else
         r.x = v.x * m[0] + v.y * m[4] + v.z * m[8] + v.w * m[12];
         r.y = v.x * m[1] + v.y * m[5] + v.z * m[9] + v.w * m[13];
@@ -98,6 +89,7 @@ RG_DECLSPEC void mat4_frustum(mat4* dst, float fov, float aspect, float znear, f
 
 RG_DECLSPEC void mat4_view(mat4* dst, const vec3& pos, const vec3& rot);
 RG_DECLSPEC void mat4_model(mat4* dst, const vec3& pos, const vec3& rot, const vec3& scale);
+RG_DECLSPEC void mat4_modelQ(mat4* dst, const vec3& pos, const quat& rot, const vec3& scale);
 
 RG_DECLSPEC void mat4_transpose(mat4* dst, const mat4& src);
 RG_DECLSPEC void mat4_rotatex(mat4* mat, float angle);

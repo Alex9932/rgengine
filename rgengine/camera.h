@@ -17,6 +17,12 @@ namespace Engine {
 			RG_DECLSPEC void Update(double dt);
 
 			RG_DECLSPEC void ReaclculateProjection();
+			RG_DECLSPEC void RecalculateView();
+
+			RG_INLINE void RecalculateMatrices() {
+				ReaclculateProjection();
+				RecalculateView();
+			}
 
 			RG_INLINE void SetNearPlane(Float32 n) { this->m_near = n;   }
 			RG_INLINE void SetFarPlane(Float32 f)  { this->m_far  = f;   }
@@ -29,6 +35,7 @@ namespace Engine {
 			RG_INLINE Float32 GetFov()       { return m_fov;    }
 
 			RG_INLINE mat4* GetProjection() { return &this->m_proj; }
+			RG_INLINE mat4* GetView()       { return &this->m_view; }
 
 		private:
 			Float32 m_near;
@@ -36,6 +43,7 @@ namespace Engine {
 			Float32 m_fov;
 			Float32 m_aspect;
 			mat4    m_proj;
+			mat4    m_view;
 
 	};
 

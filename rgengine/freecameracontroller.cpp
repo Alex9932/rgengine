@@ -17,7 +17,7 @@ namespace Engine {
 
 		Float64 dt = GetDeltaTime();
 
-		vec3 rot = m_camptr->GetTransform()->GetRotation();
+		//vec3 rot = m_camptr->GetTransform()->GetRotation();
 
 		Float32 sens = 0.1f;
 
@@ -25,10 +25,10 @@ namespace Engine {
 			Float64 dx = GetMouseDX();
 			Float64 dy = GetMouseDY();
 
-			rot.x += dy * sens;
-			rot.y += dx * sens;
+			m_angles.x += dy * sens;
+			m_angles.y += dx * sens;
 
-			m_camptr->GetTransform()->SetRotation(rot);
+			m_camptr->GetTransform()->SetRotation(m_angles);
 #if 0
 			rgLogInfo(RG_LOG_SYSTEM, "Pressed %f %f", rot.x, rot.y);
 #endif
@@ -39,8 +39,8 @@ namespace Engine {
 		vec3 rotated_fwd = {};
 		vec3 rotated_up = {};
 
-		vec3_rotate(&rotated_fwd, cam_fwd, rot);
-		vec3_rotate(&rotated_up,  cam_up,  rot);
+		vec3_rotate(&rotated_fwd, cam_fwd, m_angles);
+		vec3_rotate(&rotated_up,  cam_up, m_angles);
 #if 0
 		mat4 view_matrix = MAT4_IDENTITY();
 		//mat4_rotatey(&view_matrix, -rot.y);

@@ -12,6 +12,7 @@ namespace Engine {
 		this->m_fov    = fov;
 		this->m_aspect = aspect;
 		this->ReaclculateProjection();
+		this->RecalculateView();
 	}
 
 	Camera::~Camera() {
@@ -21,9 +22,14 @@ namespace Engine {
 		mat4_frustum(&this->m_proj, this->m_fov, this->m_aspect, this->m_near, this->m_far);
 	}
 
-	void Camera::Update(Float64 dt) {
-	
+	void Camera::RecalculateView() {
+		vec3 pos = GetTransform()->GetPosition();
+		vec3 rot = GetTransform()->GetRotation();
+		mat4_view(&this->m_view, pos, rot);
+	}
 
+	void Camera::Update(Float64 dt) {
+		RecalculateMatrices();
 	}
 
 }

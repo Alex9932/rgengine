@@ -26,10 +26,9 @@ void Viewport::Draw() {
 		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
 		ImGuizmo::SetRect(m_wndpos.x, m_wndpos.y, m_wndsize.x, m_wndsize.y);
 
-		mat4 view = {};
-		mat4_view(&view, m_camera->GetTransform()->GetPosition(), m_camera->GetTransform()->GetRotation());
-		ImGuizmo::Manipulate(view.m, m_camera->GetProjection()->m, m_op, m_mode, m_model->m);
-		mat4_decompose(&m_pos, &m_rot, &m_scale, *m_model);
+		ImGuizmo::Manipulate(m_camera->GetView()->m, m_camera->GetProjection()->m, m_op, m_mode, m_model.m);
+
+		mat4_decompose(&m_pos, &m_rot, &m_scale, m_model);
 		m_isResult = true;
 	}
 

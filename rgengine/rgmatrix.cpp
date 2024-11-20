@@ -1,6 +1,15 @@
 #define DLL_EXPORT
 #include "rgmatrix.h"
 
+#define RG_GLM_DEBUG 0
+
+#if RG_GLM_DEBUG
+// DEBUG ONLY
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#endif
+
 #undef far
 #undef near
 
@@ -43,6 +52,20 @@ void mat4_model(mat4* dst, const vec3& pos, const vec3& rot, const vec3& scale) 
         0, 0, 0, 1
     };
     mat4_rotate(&m_rotate, rot);
+    mat4_translate(&m_translate, pos);
+    *dst = m_translate * m_rotate * m_scale;
+}
+
+void mat4_modelQ(mat4* dst, const vec3& pos, const quat& rot, const vec3& scale) {
+    mat4 m_translate;
+    mat4 m_rotate;
+    mat4 m_scale = {
+        scale.x, 0, 0, 0,
+        0, scale.y, 0, 0,
+        0, 0, scale.z, 0,
+        0, 0, 0, 1
+    };
+    mat4_fromquat(&m_rotate, rot);
     mat4_translate(&m_translate, pos);
     *dst = m_translate * m_rotate * m_scale;
 }
@@ -100,6 +123,25 @@ void mat4_translate(mat4* mat, const vec3& pos) {
 
 // TODO: fix this
 void mat4_fromquat(mat4* mat, const quat& q) {
+
+#if 0
+    Float32 m1 = 1 - 2*q.y*q.y - 2*q.z*q.z;
+    Float32 m2 = 2*q.x*q.y + 2*q.z*q.w;
+    Float32 m3 = 2*q.x*q.z - 2*q.y*q.w;
+
+    Float32 m4 = 2*q.x*q.y - 2*q.z*q.w;
+    Float32 m5 = 1 - 2*q.x*q.x - 2*q.z*q.z;
+    Float32 m6 = 2*q.y*q.z + 2*q.x*q.w;
+
+    Float32 m7 = 2*q.x*q.z - 2*q.y*q.w;
+    Float32 m8 = 2*q.y*q.z - 2*q.x*q.w;
+    Float32 m9 = 1 - 2*q.x*q.x - 2*q.y*q.y;
+
+    mat->m00 = m1; mat->m01 = m4; mat->m02 = m7; mat->m03 = 0;
+    mat->m10 = m2; mat->m11 = m5; mat->m12 = m8; mat->m13 = 0;
+    mat->m20 = m3; mat->m21 = m6; mat->m22 = m9; mat->m23 = 0;
+    mat->m30 = 0;  mat->m31 = 0;  mat->m32 = 0;  mat->m33 = 1;
+#else
     mat->m00 = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
     mat->m10 = 2.0f * (q.x * q.y + q.w * q.z);
     mat->m20 = 2.0f * (q.x * q.z - q.w * q.y);
@@ -116,6 +158,7 @@ void mat4_fromquat(mat4* mat, const quat& q) {
     mat->m13 = 0.0f;
     mat->m23 = 0.0f;
     mat->m33 = 1.0f;
+#endif
 }
 
 void mat4_inverse(mat4* dst, const mat4& src) {
@@ -155,7 +198,68 @@ float mat4_determinant(const mat4& m) {
         m.m01 * m.m10 * m.m23 * m.m32 - m.m00 * m.m11 * m.m23 * m.m32 - m.m02 * m.m11 * m.m20 * m.m33 + m.m01 * m.m12 * m.m20 * m.m33 +
         m.m02 * m.m10 * m.m21 * m.m33 - m.m00 * m.m12 * m.m21 * m.m33 - m.m01 * m.m10 * m.m22 * m.m33 + m.m00 * m.m11 * m.m22 * m.m33;
 }
+#if RG_GLM_DEBUG
+// DEBUG ONLY
+void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& matrix) {
+    glm::mat4 transformation;
 
+    glm::vec3 _scale;
+    glm::quat _rotation;
+    glm::vec3 _translation;
+    glm::vec3 _skew;
+    glm::vec4 _perspective;
+
+    // Setup matrix
+    Float32* mptr = (Float32*)&transformation;
+    for (Uint32 i = 0; i < 16; i++) {
+        mptr[i] = matrix.m[i];
+    }
+
+    glm::decompose(transformation, _scale, _rotation, _translation, _skew, _perspective);
+
+    if (position) {
+        position->x = _translation.x;
+        position->y = _translation.y;
+        position->z = _translation.z;
+    }
+
+    if (quaternion) {
+        quaternion->x = _rotation.x;
+        quaternion->y = _rotation.y;
+        quaternion->z = _rotation.z;
+        quaternion->w = _rotation.w;
+    }
+
+    if (scale) {
+        scale->x = _scale.x;
+        scale->y = _scale.y;
+        scale->z = _scale.z;
+    }
+
+}
+
+void mat4ToQuat(quat* dest, const mat4& matrix) {
+
+    glm::mat4 rotMatrix;
+    Float32* mptr = (Float32*)&rotMatrix;
+
+    for (Uint32 i = 0; i < 16; i++) {
+        mptr[i] = matrix.m[i];
+    }
+
+    glm::quat rotation = glm::quat_cast(rotMatrix);
+
+    dest->x = rotation.x;
+    dest->y = rotation.y;
+    dest->z = rotation.z;
+    dest->w = rotation.w;
+
+}
+#endif
+
+#if !RG_GLM_DEBUG
+
+#if 1
 void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& matrix) {
     vec3 _x = { matrix.m00, matrix.m10, matrix.m20 };
     vec3 _y = { matrix.m01, matrix.m11, matrix.m21 };
@@ -202,7 +306,35 @@ void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& m
         scale->z = sz;
     }
 }
+#endif
 
+#if 0
+void mat4ToQuat(quat* dest, const mat4& matrix) {
+    Float32 x = 0, y = 0, z = 0, w = 1;
+
+    Float32 diagonal = matrix.m00 + matrix.m11 + matrix.m22;
+    Float32 root = 0;
+
+    if (diagonal > 0) {
+        Float32 s = 0.5f / SDL_sqrtf(diagonal + 1.0f);
+        w = 0.25f / s;
+        x = (matrix.m21 - matrix.m12) * s;
+        y = (matrix.m02 - matrix.m20) * s;
+        z = (matrix.m10 - matrix.m01) * s;
+    }
+    else {
+
+    }
+
+
+    dest->x = x;
+    dest->y = y;
+    dest->z = z;
+    dest->w = w;
+}
+#endif
+
+#if 1
 void mat4ToQuat(quat* dest, const mat4& matrix) {
 
     float w, x, y, z;
@@ -240,5 +372,8 @@ void mat4ToQuat(quat* dest, const mat4& matrix) {
     dest->x = x;
     dest->y = y;
     dest->z = z;
-    dest->w = w;
+    dest->w = w;    
 }
+#endif
+
+#endif

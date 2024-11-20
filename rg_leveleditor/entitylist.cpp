@@ -117,7 +117,8 @@ static void OpenModel(String _path, Entity* ent) {
 				path[j] = '/';
 				j++;
 			}
-		} else {
+		}
+		else {
 			firstseparator = false;
 			path[j] = c;
 			j++;
@@ -127,17 +128,21 @@ static void OpenModel(String _path, Entity* ent) {
 	rgLogInfo(RG_LOG_SYSTEM, "Model: %s", path);
 	if (rg_strenw(path, "pm2")) {
 		ImportPM2(path, ent);
-	} else if (rg_strenw(path, "obj")) {
+	}
+	else if (rg_strenw(path, "obj")) {
 		ImportOBJ(path, ent);
-	} else if (rg_strenw(path, "pmd")) {
+	}
+	else if (rg_strenw(path, "pmd")) {
 		ImportPMD(path, ent);
-	} else if (rg_strenw(path, "pmx")) {
+	}
+	else if (rg_strenw(path, "pmx")) {
 		ImportPMX(path, ent);
 	}
 }
 
 EntityList::EntityList() : UIComponent("Entity list") {
 	popupidx = PopupNextID();
+	activeID = 0;
 	rgLogInfo(RG_LOG_SYSTEM, "Popup: Registered ID %d\n", popupidx);
 
 	if (NFD_Init() != NFD_OKAY) {
@@ -197,16 +202,28 @@ void EntityList::Draw() {
 								OpenModel(path, ent);
 							}
 						}
-					} else {
+					}
+					else {
 						//ImGui::Text("Model component");
 						if (ImGui::TreeNode("Model component")) {
 							if (ImGui::Button("Remove")) {
-								
+
 							}
 							ImGui::TreePop();
 						}
 					}
 					ImGui::TreePop();
+				}
+
+				if (ImGui::RadioButton("Select", activeID == ent->GetID())) {
+					if (activeID == ent->GetID()) {
+						ent->GetTransform()->Enable();
+						activeID = 0;
+					}
+					else {
+						ent->GetTransform()->Disable();
+						activeID = ent->GetID();
+					}
 				}
 
 				if (ImGui::Button("Rename")) {
@@ -218,12 +235,6 @@ void EntityList::Draw() {
 				if (ImGui::Button("Remove")) {
 					toRemove = ent;
 				}
-
-#if 0
-				if (!toRemove) {
-					viewport->Manipulate(&model, ImGuizmo::TRANSLATE, ImGuizmo::WORLD);
-				}
-#endif
 
 				// Handle popup window
 				if (PopupClosed() == popupidx && PopupGetBtnPressed() == POPUP_BTNID_OK) {
@@ -252,6 +263,7 @@ void EntityList::Draw() {
 		ent->GetTransform()->SetPosition({ 0, 0, 0 });
 		ent->GetTransform()->SetRotation({ 0, 0, 0 });
 		ent->GetTransform()->SetScale({ 1, 1, 1 });
+		ent->GetTransform()->Recalculate();
 
 		SDL_snprintf(entname, 64, "Entity {%x}", (Uint32)ent->GetID());
 		ent->GetComponent(Component_TAG)->AsTagComponent()->SetString(entname);

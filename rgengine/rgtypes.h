@@ -20,6 +20,7 @@
 	#define RG_PLATFORM_WINDOWS
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
+	#include <float.h>
 	#ifdef DLL_EXPORT
 	#define RG_DECLSPEC __declspec(dllexport)
 	#else

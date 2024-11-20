@@ -1,9 +1,10 @@
-#if 0
+#if 1
 #if 0
 //#ifdef _WIN32
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") 
 #endif
 
+#define GAME_DLL
 #include <rgentrypoint.h>
 
 #include <stdio.h>
@@ -650,13 +651,18 @@ class Application : public BaseGame {
 
 };
 
-int EntryPoint(int argc, String* argv) {
-	Application app;
-	Initialize(&app);
-	Start();
-	return 0;
+static Application* app;
+
+void Module_Initialize() {
+	app = new Application();
 }
 
-rgmain(EntryPoint)
+void Module_Destroy() {
+	delete app;
+}
+
+BaseGame* Module_GetApplication() {
+	return app;
+}
 
 #endif

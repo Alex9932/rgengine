@@ -45,7 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -175,6 +175,7 @@
     <ClCompile Include="rgstb.cpp" />
     <ClCompile Include="rgstring.cpp" />
     <ClCompile Include="rgthread.cpp" />
+    <ClCompile Include="rgvector.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />

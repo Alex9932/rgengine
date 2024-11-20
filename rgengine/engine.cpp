@@ -141,9 +141,10 @@ namespace Engine {
         handle = dlopen(name, RTLD_LAZY);
 #endif
         if (handle == NULL) {
-            char err[128];
-            SDL_snprintf(err, 128, "Unable to load library: %s!", name);
-            RG_ERROR_MSG(err);
+            char err_msg[128];
+            DWORD err_code = GetLastError();
+            SDL_snprintf(err_msg, 128, "Unable to load library: %s!\nError code: 0x%.8x", name, err_code);
+            RG_ERROR_MSG(err_msg);
         }
 
         rgLogInfo(RG_LOG_SYSTEM, "Loaded library: %s", name);
@@ -483,6 +484,7 @@ namespace Engine {
     }
 
     void ForceQuit() {
+        rgLogWarn(RG_LOG_SYSTEM, "Engine: FORCE QUIT!");
         Logger_Destroy();
 #if defined(RG_PLATFORM_WINDOWS)
         ExitProcess(0xFFFFFFFF);
@@ -492,6 +494,8 @@ namespace Engine {
     }
 
     void HandleError(String message) {
+        rgLogError(RG_LOG_SYSTEM, " * * * * * * * * * ENGINE ERROR * * * * * * * * *");
+        rgLogError(RG_LOG_SYSTEM, "Engine: %s", message);
         SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
         ExitProcess(0xFFFFFFFF);
     }

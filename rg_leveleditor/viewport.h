@@ -11,6 +11,7 @@ typedef struct ManipulateResult {
 	quat rot;
 	vec3 scale;
 	Float32 _offset2;
+	mat4 matrix;
 } ManipulateResult;
 
 class Viewport : public UIComponent {
@@ -24,7 +25,7 @@ class Viewport : public UIComponent {
 		void SetImGuizmoRect();
 
 		RG_INLINE void Manipulate(mat4* model, ImGuizmo::OPERATION op, ImGuizmo::MODE mode) {
-			m_model = model;
+			m_model = *model;
 			m_mode  = mode;
 			m_op    = op;
 			m_manipulate = true;
@@ -36,6 +37,7 @@ class Viewport : public UIComponent {
 				result->pos = m_pos;
 				result->rot = m_rot;
 				result->scale = m_scale;
+				result->matrix = m_model;
 			}
 		}
 
@@ -47,7 +49,7 @@ class Viewport : public UIComponent {
 		Bool                m_isResult   = false;
 		ImGuizmo::OPERATION m_op         = ImGuizmo::UNIVERSAL;
 		ImGuizmo::MODE      m_mode       = ImGuizmo::LOCAL;
-		mat4*               m_model      = NULL;
+		mat4                m_model      = {};
 		vec3                m_pos        = {};
 		quat                m_rot        = {};
 		vec3                m_scale      = {};

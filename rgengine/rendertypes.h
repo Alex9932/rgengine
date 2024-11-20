@@ -250,6 +250,7 @@ typedef struct R3D_PushModelInfo {
 
 typedef struct R3D_CameraInfo {
 	mat4 projection;
+	//mat4 view;
 	vec3 position;
 	vec3 rotation;
 } R3D_CameraInfo;

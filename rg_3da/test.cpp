@@ -1,5 +1,6 @@
 #if 0
 
+#define GAME_DLL
 #include <engine.h>
 #include <rgentrypoint.h>
 
@@ -405,13 +406,18 @@ class Application : public BaseGame {
         }
 };
 
-int EntryPoint(int argc, String* argv) {
-	Application app;
-	Initialize(&app);
-	Start();
-	return 0;
+static Application* app;
+
+void Module_Initialize() {
+    app = new Application();
 }
 
-rgmain(EntryPoint)
+void Module_Destroy() {
+    delete app;
+}
+
+BaseGame* Module_GetApplication() {
+    return app;
+}
 
 #endif

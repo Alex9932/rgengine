@@ -11,10 +11,13 @@ namespace Engine {
 
 			RG_DECLSPEC void Update();
 
+			RG_INLINE void SetAngles(const vec3& angles) { m_angles = angles; }
+
 		private:
 			Camera* m_camptr = NULL;
 			vec3    m_dir    = {};
 			Float32 m_speed  = 0;
+			vec3    m_angles = {};
 
 	};
 }

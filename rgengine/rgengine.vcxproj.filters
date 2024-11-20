@@ -231,6 +231,9 @@
     <ClCompile Include="frustum.cpp">
       <Filter>Source Files\math</Filter>
     </ClCompile>
+    <ClCompile Include="rgvector.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
