@@ -94,11 +94,11 @@ namespace Engine {
 
 
     static SDL_AssertState AssertionHandler(const SDL_AssertData* data, void* userdata) {
-        rgLogError(RG_LOG_ASSERT, "Assertion failure at %s (%s:%d) '%s' %s", data->function, data->filename, data->linenum, data->condition, rg_assert_message);
+        char message[2048];
+        SDL_snprintf(message, 2048, "Assertion failure at %s (%s:%d) '%s'\n%s", data->function, data->filename, data->linenum, data->condition, rg_assert_message);
+        rgLogError(RG_LOG_ASSERT, "%s", message);
 
         if (game_ptr->IsGraphics()) {
-            char message[2048];
-            SDL_snprintf(message, 2048, "Assertion failure at %s (%s:%d) '%s'\n%s", data->function, data->filename, data->linenum, data->condition, rg_assert_message);
             // TODO
             //Error(message);
         }

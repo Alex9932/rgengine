@@ -303,7 +303,7 @@ namespace Engine {
             }
         }
 
-        RG_FORCE_INLINE static void ProcessEntities(R3D_PushModelInfo* info, World* world) {
+        static void ProcessEntities(R3D_PushModelInfo* info, World* world) {
             for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
                 Entity* ent = world->GetEntity(i);
 
@@ -319,7 +319,7 @@ namespace Engine {
             }
         }
 
-        RG_FORCE_INLINE static void ProcessStatic(R3D_PushModelInfo* info, World* world) {
+        static void ProcessStatic(R3D_PushModelInfo* info, World* world) {
             for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
                 StaticObject* staticobj = world->GetStaticObject(i);
 
