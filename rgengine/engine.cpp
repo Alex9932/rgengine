@@ -29,6 +29,8 @@
 
 #include "soundsystem.h"
 
+#include "filedialog.h"
+
 void* rg_malloc(size_t size) {
     if (size > 0x7FFFFFFF) {
         RG_ERROR_MSG("OUT OF MEMORY!");
@@ -367,6 +369,8 @@ namespace Engine {
         if (game_ptr->IsClient()) {
             Window_Show();
             soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
+
+            RG_NFDInit();
         }
 
         game_ptr->Initialize();
@@ -452,6 +456,7 @@ namespace Engine {
         game_ptr->Quit();
 
         if (game_ptr->IsClient()) {
+            RG_NFDDestroy();
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
             Window_Destroy();
         }

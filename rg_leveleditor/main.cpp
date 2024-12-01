@@ -16,6 +16,7 @@
 // Windows
 #include "viewport.h"
 #include "entitylist.h"
+#include "staticlist.h"
 #include "docker.h"
 #include "menubar.h"
 #include "popup.h"
@@ -54,6 +55,7 @@ class Application : public BaseGame {
 	private:
 		Viewport*   viewport   = NULL;
 		EntityList* entitylist = NULL;
+		StaticList* staticlist = NULL;
 		// Other components
 
 		Camera*               camera     = NULL;
@@ -106,6 +108,8 @@ class Application : public BaseGame {
 			ImGui::SameLine();
 			ImGui::Button("Other useful button");
 			ImGui::End();
+
+			staticlist->DrawComponent();
 
 			entitylist->DrawComponent();
 
@@ -172,12 +176,14 @@ class Application : public BaseGame {
 			// Windows
 			viewport = new Viewport(camera);
 			entitylist = new EntityList();
+			staticlist = new StaticList();
 
 		}
 
 		void Quit() {
 			delete viewport;
 			delete entitylist;
+			delete staticlist;
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);

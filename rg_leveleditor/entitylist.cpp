@@ -6,8 +6,6 @@
 
 //#include <imgui/ImGuizmo.h>
 
-#include <nfd.h>
-#include <nfd_sdl2.h>
 #include <window.h>
 
 #include <rgmatrix.h>
@@ -21,6 +19,8 @@
 
 #include <rgstring.h>
 
+#include <filedialog.h>
+
 using namespace Engine;
 
 static ObjImporter objImporter;
@@ -28,42 +28,9 @@ static PM2Importer pm2Importer;
 static PMDImporter pmdImporter;
 static PMXImporter pmxImporter;
 
-static void GetNativeWindowHandle(nfdwindowhandle_t* handle) {
-	SDL_Window* hwnd = GetWindow();
-	NFD_GetNativeWindowFromSDLWindow(hwnd, handle);
-}
 
-static Bool ShowOpenDialog(char* dst_path, size_t maxlen) {
 
-	rgLogInfo(RG_LOG_GAME, "Show OpenDialog");
-	nfdopendialogu8args_t args = {};
-	GetNativeWindowHandle(&args.parentWindow);
-	nfdu8filteritem_t filters[4] = { {"PM2 Model file", "pm2"}, {"Wavefront model", "obj"}, {"MMD Polygon model", "pmd"}, {"MMD Extended polygon model", "pmx"} };
-	args.filterList = filters;
-	args.filterCount = 4;
-	//args.defaultPath = "/";
 
-	nfdu8char_t* outPath;
-	nfdresult_t res = NFD_OpenDialogU8_With(&outPath, &args);
-
-	switch (res) {
-		case NFD_OKAY: {
-
-			rgLogInfo(RG_LOG_GAME, "File selected: %s", outPath);
-			SDL_snprintf(dst_path, maxlen, "%s", outPath);
-			NFD_FreePathU8(outPath);
-			return true;
-
-		}
-
-		case NFD_CANCEL: { rgLogInfo(RG_LOG_GAME, "NFD: Cancel"); break; }
-		case NFD_ERROR: { rgLogInfo(RG_LOG_GAME, "NFD: Internal error"); break; }
-		default: { rgLogInfo(RG_LOG_GAME, "NFD: Default case"); break; }
-	}
-
-	return false;
-
-}
 
 static void ImportPM2(String path, Entity* ent) {
 	R3DStaticModelInfo info = {};
@@ -145,14 +112,11 @@ EntityList::EntityList() : UIComponent("Entity list") {
 	activeID = 0;
 	rgLogInfo(RG_LOG_SYSTEM, "Popup: Registered ID %d\n", popupidx);
 
-	if (NFD_Init() != NFD_OKAY) {
-		rgLogError(RG_LOG_SYSTEM, "NFD_Init failed: %s\n", NFD_GetError());
-		RG_ERROR_MSG("NFD_Init failed! Check log for more information.");
-	}
+	
 }
 
 EntityList::~EntityList() {
-	NFD_Quit();
+	
 }
 
 void EntityList::Draw() {
@@ -197,7 +161,8 @@ void EntityList::Draw() {
 					if (!hasModel) {
 						if (ImGui::Button("Attach model")) {
 							char path[256];
-							if (ShowOpenDialog(path, 256)) {
+							FD_Filter filters[4] = {{"PM2 Model file", "pm2"}, {"Wavefront model", "obj"}, {"MMD Polygon model", "pmd"}, {"MMD Extended polygon model", "pmx"}};
+							if (ShowOpenDialog(path, 256, filters, 4)) {
 								// Load selected model
 								OpenModel(path, ent);
 							}
