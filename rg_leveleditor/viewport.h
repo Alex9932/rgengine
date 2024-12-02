@@ -43,6 +43,9 @@ class Viewport : public UIComponent {
 
 		RG_INLINE Bool IsManipulationResult() { return m_isResult; }
 
+		RG_INLINE void SetGizmoID(UUID id) { m_gizmoID = id; }
+		RG_INLINE UUID GetGizmoID() { return m_gizmoID; }
+
 	private:
 		Engine::Camera*     m_camera     = NULL;
 		Bool                m_manipulate = false;
@@ -53,6 +56,8 @@ class Viewport : public UIComponent {
 		vec3                m_pos        = {};
 		quat                m_rot        = {};
 		vec3                m_scale      = {};
+
+		UUID                m_gizmoID    = 0;
 
 
 };

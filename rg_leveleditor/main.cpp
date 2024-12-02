@@ -23,6 +23,8 @@
 
 #include "dockerglobal.h"
 
+#include "staticobject.h"
+
 using namespace Engine;
 
 static R3D_GlobalLightDescrition globaLightDesc = {
@@ -110,13 +112,21 @@ class Application : public BaseGame {
 			ImGui::End();
 
 			staticlist->DrawComponent();
-
 			entitylist->DrawComponent();
 
-			UUID entId = entitylist->GetActiveEntity();
-			if (entId != 0) {
-				Entity* ent = world->GetEntityByUUID(entId);
-				viewport->Manipulate(ent->GetTransform()->GetMatrix(), guizmo_modes[guizmo_mode], ImGuizmo::WORLD);
+			UUID gizmoId = viewport->GetGizmoID();
+			if (gizmoId != 0) {
+				Entity* ent = world->GetEntityByUUID(gizmoId);
+				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
+				mat4* mat = NULL;
+
+				if (ent) { mat = ent->GetTransform()->GetMatrix(); }
+				if (obj) { mat = obj->GetMatrix(); }
+
+				// Manipulate
+				if (mat) {
+					viewport->Manipulate(mat, guizmo_modes[guizmo_mode], ImGuizmo::WORLD);
+				}
 			}
 
 			// TODO: External window class
@@ -135,19 +145,28 @@ class Application : public BaseGame {
 			ImGui::PopStyleVar();
 
 			// ManipulateResult is available AFTER component redraw
-			if (viewport->IsManipulationResult() && entId != 0) {
+			if (viewport->IsManipulationResult() && gizmoId != 0) {
 				ManipulateResult result;
 				viewport->GetManipulateResult(&result);
 
-				Entity* ent = world->GetEntityByUUID(entId);
-				Transform* transform = ent->GetTransform();
+				Entity* ent = world->GetEntityByUUID(gizmoId);
+				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
 
-				//vec3 r = result.rot.toEuler();
-				//transform->SetRotation(r);
-				//transform->SetPosition(result.pos);
-				//transform->Recalculate();
+				if (ent) {
+					Transform* transform = ent->GetTransform();
 
-				transform->SetMatrix(&result.matrix);
+					//vec3 r = result.rot.toEuler();
+					//transform->SetRotation(r);
+					//transform->SetPosition(result.pos);
+					//transform->Recalculate();
+
+					transform->SetMatrix(&result.matrix);
+				}
+
+				if (obj) {
+					// Just copy matrix
+					SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4));
+				}
 			}
 
 			
@@ -175,15 +194,15 @@ class Application : public BaseGame {
 
 			// Windows
 			viewport = new Viewport(camera);
-			entitylist = new EntityList();
-			staticlist = new StaticList();
+			entitylist = new EntityList(viewport);
+			staticlist = new StaticList(viewport);
 
 		}
 
 		void Quit() {
-			delete viewport;
 			delete entitylist;
 			delete staticlist;
+			delete viewport;
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);
 			RG_DELETE_CLASS(GetDefaultAllocator(), Camera, camera);

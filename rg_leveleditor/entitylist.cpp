@@ -21,6 +21,8 @@
 
 #include <filedialog.h>
 
+#include "viewport.h"
+
 using namespace Engine;
 
 static ObjImporter objImporter;
@@ -107,11 +109,10 @@ static void OpenModel(String _path, Entity* ent) {
 	}
 }
 
-EntityList::EntityList() : UIComponent("Entity list") {
-	popupidx = PopupNextID();
-	activeID = 0;
-	rgLogInfo(RG_LOG_SYSTEM, "Popup: Registered ID %d\n", popupidx);
-
+EntityList::EntityList(Viewport* vp) : UIComponent("Entity list") {
+	m_popupidx = PopupNextID();
+	rgLogInfo(RG_LOG_SYSTEM, "Popup: Registered ID %d\n", m_popupidx);
+	m_vp = vp;
 	
 }
 
@@ -180,19 +181,19 @@ void EntityList::Draw() {
 					ImGui::TreePop();
 				}
 
-				if (ImGui::RadioButton("Select", activeID == ent->GetID())) {
-					if (activeID == ent->GetID()) {
+				if (ImGui::RadioButton("Select", m_vp->GetGizmoID() == ent->GetID())) {
+					if (m_vp->GetGizmoID() == ent->GetID()) {
 						ent->GetTransform()->Enable();
-						activeID = 0;
+						m_vp->SetGizmoID(0);
 					}
 					else {
 						ent->GetTransform()->Disable();
-						activeID = ent->GetID();
+						m_vp->SetGizmoID(ent->GetID());
 					}
 				}
 
 				if (ImGui::Button("Rename")) {
-					PopupShowInput(popupidx, "Rename", "Enter new entity name");
+					PopupShowInput(m_popupidx, "Rename", "Enter new entity name");
 				}
 
 				ImGui::SameLine();
@@ -202,7 +203,7 @@ void EntityList::Draw() {
 				}
 
 				// Handle popup window
-				if (PopupClosed() == popupidx && PopupGetBtnPressed() == POPUP_BTNID_OK) {
+				if (PopupClosed() == m_popupidx && PopupGetBtnPressed() == POPUP_BTNID_OK) {
 					tag->SetString(PopupGetInputBuffer());
 					PopupFree();
 				}

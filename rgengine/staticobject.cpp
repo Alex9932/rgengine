@@ -13,6 +13,7 @@ namespace Engine {
 		m_handle    = handle;
 		m_transform = *transform;
 		m_aabb      = *aabb;
+		m_id        = GenerateUUID();;
 	}
 
 	StaticObject::~StaticObject() {

@@ -52,18 +52,53 @@ namespace Engine {
 		// Add to deletion queue
 		m_delqueue.push_back(e);
 	}
-
-	static void RemoveEntity(Allocator* alloc, std::vector<Entity*>& entities, Entity* ent_ptr) {
-		std::vector<Entity*>::iterator it = entities.begin();
+	/*
+	template <typename T>
+	static void RemoveObject(Allocator* alloc, std::vector<T*>& objects, T* ptr) {
+		std::vector<T*>::iterator it = objects.begin();
 		Uint32 idx = 0;
-		for (; it != entities.end(); it++) {
-			if (*it == ent_ptr) {
+		for (; it != objects.end(); it++) {
+			if (*it == ptr) {
 
-				*it = std::move(entities.back());
-				entities.pop_back();
+				*it = std::move(objects.back());
+				objects.pop_back();
 
-				FreeComponents(ent_ptr);
-				RG_DELETE_CLASS(alloc, Entity, ent_ptr);
+				RG_DELETE_CLASS(alloc, T, ptr);
+				break;
+			}
+			idx++;
+		}
+	}
+	*/
+
+	static void RemoveEntity(Allocator* alloc, std::vector<Entity*>& objects, Entity* s_ptr) {
+		std::vector<Entity*>::iterator it = objects.begin();
+		Uint32 idx = 0;
+
+		for (; it != objects.end(); it++) {
+			if (*it == s_ptr) {
+
+				*it = std::move(objects.back());
+				objects.pop_back();
+
+				RG_DELETE_CLASS(alloc, Entity, s_ptr);
+				break;
+			}
+			idx++;
+		}
+	}
+
+	static void RemoveStatic(Allocator* alloc, std::vector<StaticObject*>& objects, StaticObject* s_ptr) {
+		std::vector<StaticObject*>::iterator it = objects.begin();
+		Uint32 idx = 0;
+
+		for (; it != objects.end(); it++) {
+			if (*it == s_ptr) {
+
+				*it = std::move(objects.back());
+				objects.pop_back();
+
+				RG_DELETE_CLASS(alloc, StaticObject, s_ptr);
 				break;
 			}
 			idx++;
@@ -76,9 +111,16 @@ namespace Engine {
 
 		// Remove entities
 		for (size_t i = 0; i < m_delqueue.size(); i++) {
+			FreeComponents(m_delqueue[i]);
 			RemoveEntity(m_allocEntity, m_entities, m_delqueue[i]);
 		}
 		m_delqueue.clear();
+
+		// Remove static
+		for (size_t i = 0; i < m_staticdelqueue.size(); i++) {
+			RemoveStatic(m_allocStatic, m_static, m_staticdelqueue[i]);
+		}
+		m_staticdelqueue.clear();
 
 		// Update
 
@@ -112,8 +154,29 @@ namespace Engine {
 		return NULL;
 	}
 
+	StaticObject* World::NewStatic(R3D_StaticModel* h, mat4* t, AABB* aabb) {
+		StaticObject* s = RG_NEW_CLASS(m_allocStatic, StaticObject)(h, t, aabb);
+		this->m_static.push_back(s);
+		return s;
+	}
+
+	void World::FreeStatic(StaticObject* s) {
+		m_staticdelqueue.push_back(s);
+	}
+
 	StaticObject* World::GetStaticObject(Uint32 idx) {
 		return this->m_static[idx];
+	}
+
+	StaticObject* World::GetStaticObjectByUUID(UUID uuid) {
+		std::vector<StaticObject*>::iterator it = this->m_static.begin();
+		for (; it != this->m_static.end(); it++) {
+			StaticObject* e = *it;
+			if (e->GetID() == uuid) {
+				return e;
+			}
+		}
+		return NULL;
 	}
 
 	void World::ClearWorld() {

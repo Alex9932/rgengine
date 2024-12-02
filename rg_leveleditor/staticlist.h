@@ -3,14 +3,17 @@
 
 #include "component.h"
 
+class Viewport;
+
 class StaticList : public UIComponent {
 	public:
-		StaticList();
+		StaticList(Viewport* vp);
 		~StaticList();
 
 		virtual void Draw();
 
 	private:
+		Viewport* m_vp = NULL;
 
 };
 

@@ -5,18 +5,18 @@
 #include "component.h"
 #include "popup.h"
 
+class Viewport;
+
 class EntityList : public UIComponent {
 	public:
-		EntityList();
+		EntityList(Viewport* vp);
 		~EntityList();
 
 		virtual void Draw();
 
-		RG_INLINE UUID GetActiveEntity() { return activeID; }
-
 	private:
-		PopupID popupidx;
-		UUID    activeID;
+		PopupID   m_popupidx;
+		Viewport* m_vp;
 };
 
 #endif
