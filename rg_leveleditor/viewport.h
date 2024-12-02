@@ -3,7 +3,6 @@
 
 #include "component.h"
 #include <camera.h>
-#include <imgui/ImGuizmo.h>
 
 typedef struct ManipulateResult {
 	vec3 pos;
@@ -24,10 +23,8 @@ class Viewport : public UIComponent {
 
 		void SetImGuizmoRect();
 
-		RG_INLINE void Manipulate(mat4* model, ImGuizmo::OPERATION op, ImGuizmo::MODE mode) {
+		RG_INLINE void Manipulate(mat4* model) {
 			m_model = *model;
-			m_mode  = mode;
-			m_op    = op;
 			m_manipulate = true;
 			m_isResult   = false;
 		}
@@ -46,19 +43,22 @@ class Viewport : public UIComponent {
 		RG_INLINE void SetGizmoID(UUID id) { m_gizmoID = id; }
 		RG_INLINE UUID GetGizmoID() { return m_gizmoID; }
 
+		RG_INLINE void SetGizmoOp(Uint32 op) { m_guizmo_op = op % 3; }
+		RG_INLINE void SetGizmoMode(Uint32 mode) { m_guizmo_mode = mode % 2; }
+
 	private:
-		Engine::Camera*     m_camera     = NULL;
-		Bool                m_manipulate = false;
-		Bool                m_isResult   = false;
-		ImGuizmo::OPERATION m_op         = ImGuizmo::UNIVERSAL;
-		ImGuizmo::MODE      m_mode       = ImGuizmo::LOCAL;
-		mat4                m_model      = {};
-		vec3                m_pos        = {};
-		quat                m_rot        = {};
-		vec3                m_scale      = {};
+		Engine::Camera*     m_camera      = NULL;
+		Bool                m_manipulate  = false;
+		Bool                m_isResult    = false;
+		mat4                m_model       = {};
+		vec3                m_pos         = {};
+		quat                m_rot         = {};
+		vec3                m_scale       = {};
 
-		UUID                m_gizmoID    = 0;
+		UUID                m_gizmoID     = 0;
 
+		Uint32              m_guizmo_op   = 0;
+		Uint32              m_guizmo_mode = 0;
 
 };
 

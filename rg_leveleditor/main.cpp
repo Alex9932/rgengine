@@ -12,6 +12,7 @@
 #include <window.h>
 #include <world.h>
 #include <imgui/imgui.h>
+#include <imgui/ImGuizmo.h>
 
 // Windows
 #include "viewport.h"
@@ -35,19 +36,23 @@ static R3D_GlobalLightDescrition globaLightDesc = {
 	1.86f
 };
 
-static ImGuizmo::OPERATION guizmo_modes[] = {
-	ImGuizmo::TRANSLATE,
-	ImGuizmo::ROTATE,
-	ImGuizmo::TRANSLATE | ImGuizmo::ROTATE
-};
+static Uint32 gizmo_op   = 0;
+static Uint32 gizmo_mode = 0;
 
-static Uint32 guizmo_mode = 0;
+static Viewport* viewport;
 
 static Bool EHandler(SDL_Event* event) {
 
 	if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_TAB) {
-		guizmo_mode++;
-		guizmo_mode = guizmo_mode % (sizeof(guizmo_modes) / sizeof(ImGuizmo::OPERATION));
+		if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
+			gizmo_mode++;
+			gizmo_mode = gizmo_mode % 2;
+			viewport->SetGizmoMode(gizmo_mode);
+		} else {
+			gizmo_op++;
+			gizmo_op = gizmo_op % 3;
+			viewport->SetGizmoOp(gizmo_op);
+		}
 	}
 
 	return true;
@@ -55,7 +60,6 @@ static Bool EHandler(SDL_Event* event) {
 
 class Application : public BaseGame {
 	private:
-		Viewport*   viewport   = NULL;
 		EntityList* entitylist = NULL;
 		StaticList* staticlist = NULL;
 		// Other components
@@ -125,7 +129,7 @@ class Application : public BaseGame {
 
 				// Manipulate
 				if (mat) {
-					viewport->Manipulate(mat, guizmo_modes[guizmo_mode], ImGuizmo::WORLD);
+					viewport->Manipulate(mat);
 				}
 			}
 
