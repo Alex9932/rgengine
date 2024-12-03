@@ -14,10 +14,13 @@
 #include <imgui/imgui.h>
 #include <imgui/ImGuizmo.h>
 
+#include <lightsystem.h>
+
 // Windows
 #include "viewport.h"
 #include "entitylist.h"
 #include "staticlist.h"
+#include "lightlist.h"
 #include "docker.h"
 #include "menubar.h"
 #include "popup.h"
@@ -62,6 +65,7 @@ class Application : public BaseGame {
 	private:
 		EntityList* entitylist = NULL;
 		StaticList* staticlist = NULL;
+		LightList*  lightlist  = NULL;
 		// Other components
 
 		Camera*               camera     = NULL;
@@ -115,22 +119,25 @@ class Application : public BaseGame {
 			ImGui::Button("Other useful button");
 			ImGui::End();
 
+			lightlist->DrawComponent();
 			staticlist->DrawComponent();
 			entitylist->DrawComponent();
 
 			RGUUID gizmoId = viewport->GetGizmoID();
 			if (gizmoId != 0) {
-				Entity* ent = world->GetEntityByUUID(gizmoId);
+				// TODO: optimize this
+				Entity*       ent = world->GetEntityByUUID(gizmoId);
 				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
-				mat4* mat = NULL;
+				LightSource*  src = world->GetLightSourceByUUID(gizmoId);
 
-				if (ent) { mat = ent->GetTransform()->GetMatrix(); }
-				if (obj) { mat = obj->GetMatrix(); }
+				mat4 mat = MAT4_IDENTITY();
+
+				if (ent) { mat = *ent->GetTransform()->GetMatrix(); }
+				if (obj) { mat = *obj->GetMatrix(); }
+				if (src) { mat4_translate(&mat, src->source.position); }
 
 				// Manipulate
-				if (mat) {
-					viewport->Manipulate(mat);
-				}
+				viewport->Manipulate(&mat);
 			}
 
 			// TODO: External window class
@@ -139,7 +146,7 @@ class Application : public BaseGame {
 			ImGui::SliderFloat("Ambient", &globaLightDesc.ambient, 0, 1);
 			ImGui::SliderFloat("Intensity", &globaLightDesc.intensity, 0, 20);
 			ImGui::SliderFloat("Turbidity", &globaLightDesc.turbidity, 0, 6);
-			ImGui::ColorPicker4("Color", globaLightDesc.color.array);
+			ImGui::ColorPicker3("Color", globaLightDesc.color.array);
 			Render::SetGlobalLight(&globaLightDesc);
 			ImGui::End();
 
@@ -153,8 +160,9 @@ class Application : public BaseGame {
 				ManipulateResult result;
 				viewport->GetManipulateResult(&result);
 
-				Entity* ent = world->GetEntityByUUID(gizmoId);
+				Entity* ent       = world->GetEntityByUUID(gizmoId);
 				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
+				LightSource*  src = world->GetLightSourceByUUID(gizmoId);
 
 				if (ent) {
 					Transform* transform = ent->GetTransform();
@@ -167,10 +175,11 @@ class Application : public BaseGame {
 					transform->SetMatrix(&result.matrix);
 				}
 
-				if (obj) {
-					// Just copy matrix
-					SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4));
-				}
+				// Just copy matrix
+				if (obj) { SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4)); }
+
+				// Just copy postiton
+				if (src) { mat4_decompose(&src->source.position, NULL, NULL, result.matrix); }
 			}
 
 			
@@ -200,12 +209,14 @@ class Application : public BaseGame {
 			viewport = new Viewport(camera);
 			entitylist = new EntityList(viewport);
 			staticlist = new StaticList(viewport);
+			lightlist = new LightList(viewport);
 
 		}
 
 		void Quit() {
 			delete entitylist;
 			delete staticlist;
+			delete lightlist;
 			delete viewport;
 
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, camcontrol);

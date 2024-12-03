@@ -42,6 +42,9 @@
     <ClCompile Include="staticlist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lightlist.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="viewport.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="staticlist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lightlist.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

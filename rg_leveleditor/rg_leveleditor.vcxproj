@@ -138,6 +138,7 @@
     <ClCompile Include="docker.cpp" />
     <ClCompile Include="entitylist.cpp" />
     <ClCompile Include="levelexporter.cpp" />
+    <ClCompile Include="lightlist.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="menubar.cpp" />
     <ClCompile Include="popup.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="dockerglobal.h" />
     <ClInclude Include="entitylist.h" />
     <ClInclude Include="levelexporter.h" />
+    <ClInclude Include="lightlist.h" />
     <ClInclude Include="menubar.h" />
     <ClInclude Include="popup.h" />
     <ClInclude Include="staticlist.h" />

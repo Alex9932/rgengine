@@ -523,6 +523,8 @@ void DoLightpass(RQueue* lights) {
 
 	}
 
+    lights->Reset();
+
     // Bind shader & input resources
     globalshader->Bind();
     resourceViews[3] = GetShadowDepth();

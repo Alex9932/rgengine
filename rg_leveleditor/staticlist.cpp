@@ -71,9 +71,7 @@ StaticList::~StaticList() {
 void StaticList::Draw() {
 
 	World* world = GetWorld();
-
 	StaticObject* toRemove = NULL;
-
 	char obj_name[128];
 
 	if (ImGui::TreeNode("Objects")) {
