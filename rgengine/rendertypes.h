@@ -264,7 +264,6 @@ enum LightType {
 
 typedef struct R3D_LightSource {
 	LightType type;
-	RGUUID    uuid;
 	vec3      color;
 	vec3      position;
 	Float32   intensity;

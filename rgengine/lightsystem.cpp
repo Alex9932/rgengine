@@ -2,6 +2,7 @@
 #include "lightsystem.h"
 #include "engine.h"
 #include "render.h"
+#include "world.h"
 
 #define RG_LIGHTPOOL_SIZE 4096
 
@@ -41,7 +42,9 @@ namespace Engine {
 	}
 
 	PointLight* LightSystem::NewPointLight() {
-		PointLight* comp = RG_NEW_CLASS(this->m_palloc, PointLight)();
+		LightSource* src = GetWorld()->NewLightSource();
+		src->source.type = RG_POINTLIGHT;
+		PointLight* comp = RG_NEW_CLASS(this->m_palloc, PointLight)(src);
 		this->m_pointlights.push_back(comp);
 		return comp;
 	}
@@ -60,7 +63,9 @@ namespace Engine {
 	}
 
 	SpotLight* LightSystem::NewSpotLight() {
-		SpotLight* comp = RG_NEW_CLASS(this->m_salloc, SpotLight)();
+		LightSource* src = GetWorld()->NewLightSource();
+		src->source.type = RG_SPOTLIGHT;
+		SpotLight* comp = RG_NEW_CLASS(this->m_salloc, SpotLight)(src);
 		this->m_spotlights.push_back(comp);
 		return comp;
 	}

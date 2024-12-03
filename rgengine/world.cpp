@@ -10,7 +10,10 @@
 #include "modelsystem.h"
 #include "lightsystem.h"
 
+// HARD-LOCKED COUNTS
 #define RG_ENTITY_COUNT 4096
+#define RG_STATIC_COUNT 16384
+#define RG_LIGHTS_COUNT 1024
 
 namespace Engine {
 
@@ -24,13 +27,15 @@ namespace Engine {
 	World::World() {
 		this->m_allocTransform = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Transform pool",  RG_ENTITY_COUNT, sizeof(Transform));
 		this->m_allocEntity    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Entity pool",     RG_ENTITY_COUNT, sizeof(Entity));
-		this->m_allocStatic    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Static geometry", RG_ENTITY_COUNT, sizeof(StaticObject));
+		this->m_allocStatic    = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Static geometry", RG_STATIC_COUNT, sizeof(StaticObject));
+		this->m_allocLight     = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Light sources",   RG_LIGHTS_COUNT, sizeof(LightSource));
 	}
 
 	World::~World() {
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocTransform);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocEntity);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocStatic);
+		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocLight);
 	}
 
 	Transform* World::NewTransform() {
@@ -50,7 +55,7 @@ namespace Engine {
 
 	void World::FreeEntity(Entity* e) {
 		// Add to deletion queue
-		m_delqueue.push_back(e);
+		m_entitydelqueue.push_back(e);
 	}
 	/*
 	template <typename T>
@@ -110,11 +115,11 @@ namespace Engine {
 		Float64 dt = GetDeltaTime();
 
 		// Remove entities
-		for (size_t i = 0; i < m_delqueue.size(); i++) {
-			FreeComponents(m_delqueue[i]);
-			RemoveEntity(m_allocEntity, m_entities, m_delqueue[i]);
+		for (size_t i = 0; i < m_entitydelqueue.size(); i++) {
+			FreeComponents(m_entitydelqueue[i]);
+			RemoveEntity(m_allocEntity, m_entities, m_entitydelqueue[i]);
 		}
-		m_delqueue.clear();
+		m_entitydelqueue.clear();
 
 		// Remove static
 		for (size_t i = 0; i < m_staticdelqueue.size(); i++) {
@@ -173,6 +178,31 @@ namespace Engine {
 		for (; it != this->m_static.end(); it++) {
 			StaticObject* e = *it;
 			if (e->GetID() == uuid) {
+				return e;
+			}
+		}
+		return NULL;
+	}
+
+	LightSource* World::NewLightSource() {
+		LightSource* s = (LightSource*)m_allocLight->Allocate();
+		this->m_lights.push_back(s);
+		return s;
+	}
+
+	void World::FreeStatic(LightSource* src) {
+		m_lightsdelqueue.push_back(src);
+	}
+
+	LightSource* World::GetLightSource(Uint32 idx) {
+		return this->m_lights[idx];
+	}
+
+	LightSource* World::GetLightSourceByUUID(RGUUID uuid) {
+		std::vector<LightSource*>::iterator it = this->m_lights.begin();
+		for (; it != this->m_lights.end(); it++) {
+			LightSource* e = *it;
+			if (e->uuid == uuid) {
 				return e;
 			}
 		}
