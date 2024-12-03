@@ -15,5 +15,5 @@ static std::mt19937_64 rEngine(rDevice());
 static std::uniform_int_distribution<Uint64> rUniformDistr;
 
 namespace Engine {
-    UUID GenerateUUID() { return rUniformDistr(rEngine); }
+    RGUUID GenerateUUID() { return rUniformDistr(rEngine); }
 }

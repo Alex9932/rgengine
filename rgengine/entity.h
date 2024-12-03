@@ -115,8 +115,8 @@ namespace Engine {
 			RG_INLINE void DetachComponent(ComponentType type) { this->m_components[type] = NULL; }
 			RG_INLINE Component* GetComponent(ComponentType type) { return this->m_components[type]; }
 
-			RG_INLINE UUID GetID() { return this->m_id; }
-			RG_INLINE void SetID(UUID id) { this->m_id = id; } // !!! DO NOT CALL DIRECTLY !!!
+			RG_INLINE RGUUID GetID() { return this->m_id; }
+			RG_INLINE void SetID(RGUUID id) { this->m_id = id; } // !!! DO NOT CALL DIRECTLY !!!
 
 			RG_INLINE Transform* GetTransform() { return this->m_transform; }
 
@@ -132,7 +132,7 @@ namespace Engine {
 			RG_INLINE EntityBehavior* GetBehavior() { return m_behavior; }
 
 		private:
-			UUID            m_id;
+			RGUUID          m_id;
 			Transform*      m_transform;
 			World*          m_world;
 			EntityBehavior* m_behavior;

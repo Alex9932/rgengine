@@ -416,7 +416,7 @@ class Application : public BaseGame {
 
 
 			ent0 = world->NewEntity();
-			ent0->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+			ent0->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle0));
 
 			//Engine::PointLight* l = Render::GetLightSystem()->NewPointLight();
 			//l->SetColor({ 1, 0.5, 0.0 });
@@ -449,7 +449,7 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle1 = Render::CreateStaticModel(&pm2info);
 			pm2Importer.FreeModelData(&pm2info);
 			Entity* ent1 = world->NewEntity();
-			ent1->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle1));
+			ent1->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle1));
 			ent1->SetAABB(&pm2info.aabb);
 			ent1->GetTransform()->SetPosition({ -1, 0, 0 });
 			ent1->GetTransform()->SetRotation({ 0, 0, 0 });
@@ -461,7 +461,7 @@ class Application : public BaseGame {
 			R3D_StaticModel* mdl_handle3 = Render::CreateStaticModel(&objinfo);
 			pm2Importer.FreeModelData(&objinfo);
 			Entity* ent3 = world->NewEntity();
-			ent3->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle3));
+			ent3->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle3));
 			ent3->SetAABB(&objinfo.aabb);
 			ent3->GetTransform()->SetPosition({ 6, 0, 1 });
 			ent3->GetTransform()->SetRotation({ 0, -1.05f, 0 });
@@ -534,7 +534,7 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* sndentl = world->NewEntity();
-			sndentl->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle4));
+			sndentl->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle4));
 			sndentl->SetAABB(&objinfo.aabb);
 			sndentl->AttachComponent(sourcel);
 			emitter = Render::GetParticleSystem()->NewEmitter(&emInfo);
@@ -573,7 +573,7 @@ class Application : public BaseGame {
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
 			Entity* ent5 = world->NewEntity();
-			ent5->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle5, kmodel));
+			ent5->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle5, kmodel));
 			ent5->SetAABB(&pmdinfo.aabb);
 			ent5->GetTransform()->SetPosition({ 10.5f, 0, -2.2f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
@@ -586,7 +586,7 @@ class Application : public BaseGame {
 			pmdImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
 			Entity* ent6 = world->NewEntity();
-			ent6->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle6, kmodel2));
+			ent6->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle6, kmodel2));
 			ent5->SetAABB(&pmdinfo.aabb);
 			ent6->GetTransform()->SetPosition({ 10.5f, 0, -0.4f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
@@ -598,7 +598,7 @@ class Application : public BaseGame {
 			pmxImporter.FreeRiggedModelData(&pmdinfo);
 			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
 			Entity* ent7 = world->NewEntity();
-			ent7->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle7, kmodel3));
+			ent7->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle7, kmodel3));
 			ent5->SetAABB(&pmdinfo.aabb);
 			ent7->GetTransform()->SetPosition({ 10.5f, 0, 1.4f });
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });

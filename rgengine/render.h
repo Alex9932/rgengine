@@ -42,8 +42,6 @@ namespace Engine {
 
 		//RG_DECLSPEC void ToggleConsole();
 
-		RG_DECLSPEC ModelSystem* GetModelSystem();
-		RG_DECLSPEC LightSystem* GetLightSystem();
 		RG_DECLSPEC ParticleSystem* GetParticleSystem();
 
 

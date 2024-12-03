@@ -500,8 +500,10 @@ void DoLightpass() {
 	ctx->VSSetConstantBuffers(0, 1, &constBuffer);
 	ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
 
+    // TODO: !!! REWRITE THIS !!!
+
 	// Draw point lights
-	Engine::LightSystem* system = Engine::Render::GetLightSystem();
+	Engine::LightSystem* system = Engine::GetLightSystem();
 
 	constants.viewproj = *GetCameraProjection() * *GetCameraView();
 	constants.model    = MAT4_IDENTITY();

@@ -30,14 +30,14 @@ namespace Engine {
 			RG_DECLSPEC void Update();
 
 			RG_DECLSPEC Entity* GetEntity(Uint32 idx);
-			RG_DECLSPEC Entity* GetEntityByUUID(UUID uuid);
+			RG_DECLSPEC Entity* GetEntityByUUID(RGUUID uuid);
 			RG_INLINE   Uint32  GetEntityCount() { return (Uint32)m_entities.size(); }
 
 			RG_DECLSPEC StaticObject* NewStatic(R3D_StaticModel* handle, mat4* transform, AABB* aabb);
 			RG_DECLSPEC void FreeStatic(StaticObject* s);
 
 			RG_DECLSPEC StaticObject* GetStaticObject(Uint32 idx);
-			RG_DECLSPEC StaticObject* GetStaticObjectByUUID(UUID uuid);
+			RG_DECLSPEC StaticObject* GetStaticObjectByUUID(RGUUID uuid);
 			RG_INLINE   Uint32        GetStaticCount() { return (Uint32)m_static.size(); }
 
 			RG_DECLSPEC void ClearWorld();

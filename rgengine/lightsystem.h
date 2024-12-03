@@ -5,17 +5,18 @@
 #include "rgvector.h"
 #include "allocator.h"
 
+#include "rendertypes.h"
+
 #include <vector>
 
 namespace Engine {
 
 	class PointLight : public Component {
 		public:
-			PointLight()  : Component(Component_POINTLIGHT) {
-				m_offset    = { 0 };
-				m_position  = { 0 };
-				m_color     = { 0 };
-				m_intensity = 0;
+			PointLight() : Component(Component_POINTLIGHT) {
+				m_source = {};
+				m_source.uuid = GenerateUUID();
+				m_source.type = RG_POINTLIGHT;
 			}
 			~PointLight() {}
 
@@ -23,58 +24,64 @@ namespace Engine {
 
 			RG_INLINE void Update(Float64 dt) {
 				if (this->m_ent) {
-					this->m_position = this->m_ent->GetTransform()->GetWorldPosition() + this->m_offset;
+					//this->m_position = this->m_ent->GetTransform()->GetWorldPosition() + this->m_offset;
+					this->m_source.position = this->m_ent->GetTransform()->GetWorldPosition();
 				}
 			}
 
-			RG_INLINE void    SetColor(const vec3& color)  { this->m_color = color; }
-			RG_INLINE vec3&   GetColor()                   { return this->m_color;  }
+			RG_INLINE void    SetColor(const vec3& color)  { this->m_source.color = color; }
+			RG_INLINE vec3&   GetColor()                   { return this->m_source.color;  }
 
-			RG_INLINE void    SetIntensity(Float32 intens) { this->m_intensity = intens; }
-			RG_INLINE Float32 GetIntensity()               { return this->m_intensity;   }
+			RG_INLINE void    SetIntensity(Float32 intens) { this->m_source.intensity = intens; }
+			RG_INLINE Float32 GetIntensity()               { return this->m_source.intensity;   }
 
-			RG_INLINE vec3&   GetPosition()                { return this->m_position; }
+			RG_INLINE void    SetPosition(const vec3& pos) { this->m_source.position = pos;  }
+			RG_INLINE vec3&   GetPosition()                { return this->m_source.position; }
 
-			RG_INLINE void    SetOffset(const vec3& off)   { this->m_offset = off; }
+			//RG_INLINE void    SetOffset(const vec3& off)   { this->m_source.offset = off; }
 
 		private:
-			vec3    m_offset    = {};
-			vec3    m_position  = {};
-			Float32 m_intensity = 0;
-			vec3    m_color     = {};
+			R3D_LightSource m_source;
 	};
 
 	class SpotLight : public Component {
 		public:
-			SpotLight() : Component(Component_SPOTLIGHT) {}
+			SpotLight() : Component(Component_SPOTLIGHT) {
+				m_source = {};
+				m_source.uuid = GenerateUUID();
+				m_source.type = RG_SPOTLIGHT;
+			}
 			~SpotLight() {}
 
 			virtual void Destroy();
 
 			RG_INLINE void Update(Float64 dt) {
 				if (this->m_ent) {
-					this->m_position = this->m_ent->GetTransform()->GetWorldPosition() + this->m_offset;
+					//this->m_position = this->m_ent->GetTransform()->GetWorldPosition() + this->m_offset;
+					this->m_source.position = this->m_ent->GetTransform()->GetWorldPosition();
 				}
 			}
 
-			RG_INLINE void    SetOffset(const vec3& off)    { this->m_offset = off;  }
-			RG_INLINE vec3&   GetOffset()                   { return this->m_offset; }
+			RG_INLINE void    SetColor(const vec3& color) { this->m_source.color = color; }
+			RG_INLINE vec3&   GetColor()                  { return this->m_source.color;  }
 
-			RG_INLINE void    SetDirection(const vec3& dir) { this->m_direction = dir;  }
-			RG_INLINE vec3&   GetDirection()                { return this->m_direction; }
-			
-			RG_INLINE void    SetColor(const vec3& color)   { this->m_color = color; }
-			RG_INLINE vec3&   GetColor()                    { return this->m_color;  }
+			RG_INLINE void    SetIntensity(Float32 intens) { this->m_source.intensity = intens; }
+			RG_INLINE Float32 GetIntensity()               { return this->m_source.intensity;   }
 
-			RG_INLINE void    SetIntensity(Float32 intens)  { this->m_intensity = intens; }
-			RG_INLINE Float32 GetIntensity()                { return this->m_intensity;   }
+			RG_INLINE void    SetPosition(const vec3& pos) { this->m_source.position = pos;  }
+			RG_INLINE vec3&   GetPosition()                { return this->m_source.position; }
+
+			RG_INLINE void    SetDirection(const vec3& dir) { this->m_source.direction = dir;  }
+			RG_INLINE vec3&   GetDirection()                { return this->m_source.direction; }
+
+			RG_INLINE void    SetCutoff(Float32 factor) { this->m_source.coneAngle = factor; }
+			RG_INLINE Float32 GetCutoff()               { return this->m_source.coneAngle;   }
+
+			//RG_INLINE void    SetOffset(const vec3& off)    { this->m_offset = off;  }
+			//RG_INLINE vec3&   GetOffset()                   { return this->m_offset; }
 
 		private:
-			vec3    m_offset    = {};
-			vec3    m_position  = {};
-			Float32 m_intensity = 0;
-			vec3    m_color     = {};
-			vec3    m_direction = {};
+			R3D_LightSource m_source;
 	};
 
 	class LightSystem {

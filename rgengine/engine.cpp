@@ -28,6 +28,8 @@
 #include "rgthread.h"
 
 #include "soundsystem.h"
+#include "modelsystem.h"
+#include "lightsystem.h"
 
 #include "filedialog.h"
 
@@ -92,6 +94,8 @@ namespace Engine {
 
     static RGPhysics*    rgphysics     = NULL;
 
+    static ModelSystem*  modelSystem   = NULL;
+    static LightSystem*  lightSystem   = NULL;
     static SoundSystem*  soundsystem   = NULL;
 
 
@@ -369,6 +373,8 @@ namespace Engine {
         if (game_ptr->IsClient()) {
             Window_Show();
             soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
+            modelSystem = RG_NEW_CLASS(std_allocator, ModelSystem)();
+            lightSystem = RG_NEW_CLASS(std_allocator, LightSystem)();
 
             RG_NFDInit();
         }
@@ -424,6 +430,9 @@ namespace Engine {
             if (game_ptr->IsClient()) {
                 core_profiler->StartSection(profiles[4]);
                 soundsystem->Update(GetDeltaTime());
+                modelSystem->UpdateComponents();
+                lightSystem->UpdateComponents();
+
                 core_profiler->StartSection(profiles[5]);
                 Render::UpdateSystems();
             }
@@ -458,6 +467,8 @@ namespace Engine {
         if (game_ptr->IsClient()) {
             RG_NFDDestroy();
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
+            RG_DELETE_CLASS(std_allocator, ModelSystem, modelSystem);
+            RG_DELETE_CLASS(std_allocator, LightSystem, lightSystem);
             Window_Destroy();
         }
 
@@ -543,6 +554,14 @@ namespace Engine {
 
     SoundSystem* GetSoundSystem() {
         return soundsystem;
+    }
+
+    ModelSystem* GetModelSystem() {
+        return modelSystem;
+    }
+
+    LightSystem* GetLightSystem() {
+        return lightSystem;
     }
 
     Profiler* GetProfiler() {

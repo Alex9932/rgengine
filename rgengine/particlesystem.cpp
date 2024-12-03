@@ -1,3 +1,4 @@
+#define DLL_EXPORT
 #include "particlesystem.h"
 #include "rgthread.h"
 #include "render.h"

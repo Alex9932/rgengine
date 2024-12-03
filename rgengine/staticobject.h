@@ -24,14 +24,14 @@ namespace Engine {
 			RG_INLINE mat4* GetMatrix() { return &m_transform; }
 			RG_INLINE AABB* GetAABB()   { return &m_aabb; }
 
-			RG_INLINE UUID  GetID()     { return m_id; }
+			RG_INLINE RGUUID GetID()    { return m_id; }
 
 			RG_INLINE R3D_StaticModel* GetModelHandle() { return m_handle; }
 
 		private:
 			AABB             m_aabb;
 			mat4             m_transform;
-			UUID             m_id;
+			RGUUID           m_id;
 
 			R3D_StaticModel* m_handle;
 

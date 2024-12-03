@@ -1,3 +1,4 @@
+#define DLL_EXPORT
 #include "modelsystem.h"
 #include "engine.h"
 #include "render.h"
@@ -15,7 +16,7 @@ namespace Engine {
 
 	void ModelComponent::Destroy() {
 		Render::DestroyStaticModel(GetHandle());
-		Render::GetModelSystem()->DeleteModelComponent(this);
+		GetModelSystem()->DeleteModelComponent(this);
 	}
 
 	RiggedModelComponent::RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
@@ -29,7 +30,7 @@ namespace Engine {
 		Render::DestroyBoneBuffer(m_kmodel->GetBufferHandle());
 		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
 		Render::DestroyRiggedModel(GetHandle());
-		Render::GetModelSystem()->DeleteRiggedModelComponent(this);
+		GetModelSystem()->DeleteRiggedModelComponent(this);
 	}
 
 

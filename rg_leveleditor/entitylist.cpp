@@ -39,7 +39,7 @@ static void ImportPM2(String path, Entity* ent) {
 	pm2Importer.ImportModel(path, &info);
 	R3D_StaticModel* hmdl = Render::CreateStaticModel(&info);
 	pm2Importer.FreeModelData(&info);
-	ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(hmdl));
+	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
 }
 
@@ -48,7 +48,7 @@ static void ImportOBJ(String path, Entity* ent) {
 	objImporter.ImportModel(path, &info);
 	R3D_StaticModel* hmdl = Render::CreateStaticModel(&info);
 	objImporter.FreeModelData(&info);
-	ent->AttachComponent(Render::GetModelSystem()->NewModelComponent(hmdl));
+	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
 }
 
@@ -58,7 +58,7 @@ static void ImportPMD(String path, Entity* ent) {
 	R3D_RiggedModel* hmdl = Render::CreateRiggedModel(&info);
 	pmdImporter.FreeRiggedModelData(&info);
 	KinematicsModel* kmdl = pmdImporter.ImportKinematicsModel(path);
-	ent->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
+	ent->AttachComponent(GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
 	ent->SetAABB(&info.aabb);
 }
 
@@ -68,7 +68,7 @@ static void ImportPMX(String path, Entity* ent) {
 	R3D_RiggedModel* hmdl = Render::CreateRiggedModel(&info);
 	pmxImporter.FreeRiggedModelData(&info);
 	KinematicsModel* kmdl = pmxImporter.ImportKinematicsModel(path);
-	ent->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
+	ent->AttachComponent(GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
 	ent->SetAABB(&info.aabb);
 }
 

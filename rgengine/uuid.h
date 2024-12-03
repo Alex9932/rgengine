@@ -9,12 +9,11 @@
 
 #include "rgtypes.h"
 
-#define UUID_DEFINED
-typedef Uint64 UUID;
+typedef Uint64 RGUUID;
 
 namespace Engine {
 
-    RG_DECLSPEC UUID GenerateUUID();
+    RG_DECLSPEC RGUUID GenerateUUID();
 
 }
 

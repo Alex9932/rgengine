@@ -235,7 +235,7 @@ class Application : public BaseGame {
 						RiggedModelComponent* component = ent_model->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
 						R3D_RiggedModel* mdl_handle = component->GetHandle();
 						ent_model->DetachComponent(Component_RIGGEDMODELCOMPONENT);
-						Render::GetModelSystem()->DeleteRiggedModelComponent(component);
+						GetModelSystem()->DeleteRiggedModelComponent(component);
 						Render::DestroyRiggedModel(mdl_handle);
 						pmdimporter.FreeRiggedModelData(&rmodelInfo);
 						delete kinematicsModel;
@@ -243,7 +243,7 @@ class Application : public BaseGame {
 						ModelComponent* component = ent_model->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
 						R3D_StaticModel* mdl_handle = component->GetHandle();
 						ent_model->DetachComponent(Component_MODELCOMPONENT);
-						Render::GetModelSystem()->DeleteModelComponent(component);
+						GetModelSystem()->DeleteModelComponent(component);
 						Render::DestroyStaticModel(mdl_handle);
 						pm2Importer.FreeModelData(&modelInfo);
 					}
@@ -312,10 +312,10 @@ class Application : public BaseGame {
 
 					if (isAnimated) {
 						R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&rmodelInfo);
-						ent_model->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle, kinematicsModel));
+						ent_model->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle, kinematicsModel));
 					} else {
 						R3D_StaticModel* mdl_handle = Render::CreateStaticModel(&modelInfo);
-						ent_model->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle));
+						ent_model->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle));
 					}
 
 
@@ -401,15 +401,15 @@ class Application : public BaseGame {
 			pm2Importer.FreeModelData(&objinfo);
 
 			Entity* ent_bg = world->NewEntity();
-			ent_bg->AttachComponent(Render::GetModelSystem()->NewModelComponent(mdl_handle0));
+			ent_bg->AttachComponent(GetModelSystem()->NewModelComponent(mdl_handle0));
 			ent_bg->GetTransform()->SetPosition({ 0, 0, 0 });
 			ent_bg->GetTransform()->SetRotation({ 0, 0, 0 });
 			ent_bg->GetTransform()->SetScale({ 1, 1, 1 });
 
-			l = Render::GetLightSystem()->NewPointLight();
+			l = GetLightSystem()->NewPointLight();
 			l->SetColor({ 1, 0.9, 0.8 });
 			l->SetIntensity(50);
-			l->SetOffset({ -1.86, 2.96, 1.81 });
+			//l->SetOffset({ -1.86, 2.96, 1.81 });
 			ent_bg->AttachComponent(l);
 
 

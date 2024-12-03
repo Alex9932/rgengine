@@ -36,8 +36,6 @@ namespace Engine {
 
         static ivec2                wndSize                = { 0, 0 };
 
-        static ModelSystem*         modelSystem            = NULL;
-        static LightSystem*         lightSystem            = NULL;
         static ParticleSystem*      particlesystem         = NULL;
 
         static RenderSetupInfo      setupParams            = {};
@@ -92,8 +90,6 @@ namespace Engine {
 
             LoadRendererContext(&renderctx, handle);
 
-            modelSystem = RG_NEW_CLASS(GetDefaultAllocator(), ModelSystem)();
-            lightSystem = RG_NEW_CLASS(GetDefaultAllocator(), LightSystem)();
             particlesystem = RG_NEW_CLASS(GetDefaultAllocator(), ParticleSystem)();
 
             isRendererLoaded = true;
@@ -104,8 +100,6 @@ namespace Engine {
 
         void UnloadRenderer() {
 
-            RG_DELETE_CLASS(GetDefaultAllocator(), ModelSystem, modelSystem);
-            RG_DELETE_CLASS(GetDefaultAllocator(), LightSystem, lightSystem);
             RG_DELETE_CLASS(GetDefaultAllocator(), ParticleSystem, particlesystem);
             
             FreeEventHandler(_EventHandler);
@@ -362,9 +356,6 @@ namespace Engine {
         }
 
         void UpdateSystems() {
-            modelSystem->UpdateComponents();
-            lightSystem->UpdateComponents();
-            // TODO
             particlesystem->UpdateComponents(NULL);
         }
 
@@ -478,14 +469,6 @@ namespace Engine {
         //void ToggleConsole() {
         //
         //}
-
-        ModelSystem* GetModelSystem() {
-            return modelSystem;
-        }
-
-        LightSystem* GetLightSystem() {
-            return lightSystem;
-        }
 
         ParticleSystem* GetParticleSystem() {
             return particlesystem;

@@ -118,7 +118,7 @@ class Application : public BaseGame {
 			staticlist->DrawComponent();
 			entitylist->DrawComponent();
 
-			UUID gizmoId = viewport->GetGizmoID();
+			RGUUID gizmoId = viewport->GetGizmoID();
 			if (gizmoId != 0) {
 				Entity* ent = world->GetEntityByUUID(gizmoId);
 				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);

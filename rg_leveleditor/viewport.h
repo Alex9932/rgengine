@@ -40,8 +40,8 @@ class Viewport : public UIComponent {
 
 		RG_INLINE Bool IsManipulationResult() { return m_isResult; }
 
-		RG_INLINE void SetGizmoID(UUID id) { m_gizmoID = id; }
-		RG_INLINE UUID GetGizmoID() { return m_gizmoID; }
+		RG_INLINE void SetGizmoID(RGUUID id) { m_gizmoID = id; }
+		RG_INLINE RGUUID GetGizmoID() { return m_gizmoID; }
 
 		RG_INLINE void SetGizmoOp(Uint32 op) { m_guizmo_op = op % 3; }
 		RG_INLINE void SetGizmoMode(Uint32 mode) { m_guizmo_mode = mode % 2; }
@@ -55,7 +55,7 @@ class Viewport : public UIComponent {
 		quat                m_rot         = {};
 		vec3                m_scale       = {};
 
-		UUID                m_gizmoID     = 0;
+		RGUUID              m_gizmoID     = 0;
 
 		Uint32              m_guizmo_op   = 0;
 		Uint32              m_guizmo_mode = 0;

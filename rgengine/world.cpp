@@ -143,7 +143,7 @@ namespace Engine {
 		return this->m_entities[idx];
 	}
 
-	Entity* World::GetEntityByUUID(UUID uuid) {
+	Entity* World::GetEntityByUUID(RGUUID uuid) {
 		std::vector<Entity*>::iterator it = this->m_entities.begin();
 		for (; it != this->m_entities.end(); it++) {
 			Entity* e = *it;
@@ -168,7 +168,7 @@ namespace Engine {
 		return this->m_static[idx];
 	}
 
-	StaticObject* World::GetStaticObjectByUUID(UUID uuid) {
+	StaticObject* World::GetStaticObjectByUUID(RGUUID uuid) {
 		std::vector<StaticObject*>::iterator it = this->m_static.begin();
 		for (; it != this->m_static.end(); it++) {
 			StaticObject* e = *it;

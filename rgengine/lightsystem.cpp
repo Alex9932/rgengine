@@ -8,11 +8,11 @@
 namespace Engine {
 
 	void PointLight::Destroy() {
-		Render::GetLightSystem()->DeletePointLight(this);
+		GetLightSystem()->DeletePointLight(this);
 	}
 
 	void SpotLight::Destroy() {
-		Render::GetLightSystem()->DeleteSpotLight(this);
+		GetLightSystem()->DeleteSpotLight(this);
 	}
 
 	LightSystem::LightSystem() {

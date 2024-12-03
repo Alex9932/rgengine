@@ -35,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         312
+#define RG_BUILD         313
 #define RG_VERSION_MAJ   0
 #define RG_VERSION_MIN   8
-#define RG_VERSION_PATCH 1
+#define RG_VERSION_PATCH 2
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);
@@ -58,8 +58,8 @@ class RG_DECLSPEC BaseGame {
         virtual void MainUpdate() {}
         virtual void Initialize() {}
         virtual void Quit() {}
-        virtual String GetName()    { return "unnamed"; }
-        RG_INLINE Bool IsClient()   { return isClient; }
+        virtual String GetName()    { return "unnamed";  }
+        RG_INLINE Bool IsClient()   { return isClient;   }
         RG_INLINE Bool IsGraphics() { return isGraphics; }
 };
 
@@ -67,6 +67,8 @@ namespace Engine {
 
     class World;
     class SoundSystem;
+    class ModelSystem;
+    class LightSystem;
     class Profiler;
     class RGPhysics;
 
@@ -100,6 +102,8 @@ namespace Engine {
     RG_DECLSPEC World* GetWorld();
 
     RG_DECLSPEC SoundSystem* GetSoundSystem();
+    RG_DECLSPEC ModelSystem* GetModelSystem();
+    RG_DECLSPEC LightSystem* GetLightSystem();
 
     RG_DECLSPEC String    GetProfile(Uint32 idx);
     RG_DECLSPEC Profiler* GetProfiler();

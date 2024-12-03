@@ -8,6 +8,8 @@
 
 #include "imgui/imgui.h"
 
+#include "uuid.h"
+
 enum IndexType {
 	RG_INDEX_U32 = 4,
 	RG_INDEX_U16 = 2,
@@ -254,5 +256,22 @@ typedef struct R3D_CameraInfo {
 	vec3 position;
 	vec3 rotation;
 } R3D_CameraInfo;
+
+enum LightType {
+	RG_POINTLIGHT = 0,
+	RG_SPOTLIGHT
+};
+
+typedef struct R3D_LightSource {
+	LightType type;
+	RGUUID    uuid;
+	vec3      color;
+	vec3      position;
+	Float32   intensity;
+
+	// Spotlight
+	vec3      direction;
+	Float32   coneAngle;
+} R3D_LightSource;
 
 #endif

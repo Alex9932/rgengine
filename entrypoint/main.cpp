@@ -1,5 +1,7 @@
 #include <rgentrypoint.h>
 
+//#define RG_RELEASE
+
 using namespace Engine;
 
 #ifdef RG_RELEASE
