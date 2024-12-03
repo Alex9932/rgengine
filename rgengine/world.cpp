@@ -190,7 +190,7 @@ namespace Engine {
 		return s;
 	}
 
-	void World::FreeStatic(LightSource* src) {
+	void World::FreeLightSource(LightSource* src) {
 		m_lightsdelqueue.push_back(src);
 	}
 

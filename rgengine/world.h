@@ -42,7 +42,7 @@ namespace Engine {
 			RG_INLINE   Uint32        GetStaticCount() { return (Uint32)m_static.size(); }
 
 			RG_DECLSPEC LightSource* NewLightSource();
-			RG_DECLSPEC void FreeStatic(LightSource* src);
+			RG_DECLSPEC void FreeLightSource(LightSource* src);
 
 			RG_DECLSPEC LightSource* GetLightSource(Uint32 idx);
 			RG_DECLSPEC LightSource* GetLightSourceByUUID(RGUUID uuid);
