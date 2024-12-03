@@ -80,7 +80,8 @@ mat4* GetCameraView();
 vec3* GetCameraPosition();
 vec3* GetCameraRotation();
 
-Engine::LinearAllocator* GetMatrixAllocator();
+//Engine::LinearAllocator* GetMatrixAllocator();
+//Engine::LinearAllocator* GetLightAllocator();
 
 void GetR3DStats(R3DStats* stats);
 

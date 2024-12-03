@@ -57,6 +57,8 @@ extern "C" {
 	extern RG_DECLSPEC void                R3D_DestroyParticleBuffer(R3D_ParticleBuffer* hbuff);
 	extern RG_DECLSPEC void                R3D_UpdateParticleBuffer(R3DUpdateBufferInfo* info);
 
+	extern RG_DECLSPEC void                R3D_PushLightSource(R3D_LightSource* info);
+
 	extern RG_DECLSPEC void                R3D_PushModel(R3D_PushModelInfo* info);
 	extern RG_DECLSPEC void				   R3D_SetCamera(R3D_CameraInfo* info);
 

@@ -57,6 +57,7 @@ typedef R3D_ParticleBuffer* (*PFN_R3D_CREATEPARTICLEBUFFER)(R3DCreateBufferInfo*
 typedef void                (*PFN_R3D_DESTROYPARTICLEBUFFER)(R3D_ParticleBuffer*);
 typedef void                (*PFN_R3D_UPDATEPARTICLEBUFFER)(R3DUpdateBufferInfo*);
 
+typedef void                (*PFN_R3D_PUSHLIGHTSOURCE)(R3D_LightSource*);
 typedef void                (*PFN_R3D_PUSHMODEL)(R3D_PushModelInfo*);
 typedef void                (*PFN_R3D_SETCAMERA)(R3D_CameraInfo*);
 
@@ -110,6 +111,7 @@ namespace Engine {
 		PFN_R3D_DESTROYPARTICLEBUFFER R3D_DestroyParticleBuffer;
 		PFN_R3D_UPDATEPARTICLEBUFFER  R3D_UpdateParticleBuffer;
 
+		PFN_R3D_PUSHLIGHTSOURCE       R3D_PushLightSource;
 		PFN_R3D_PUSHMODEL             R3D_PushModel;
 		PFN_R3D_SETCAMERA             R3D_SetCamera;
 

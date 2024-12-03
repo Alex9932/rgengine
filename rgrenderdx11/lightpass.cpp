@@ -2,7 +2,6 @@
 
 #include <rgmath.h>
 #include <render.h>
-#include <lightsystem.h>
 #include <filesystem.h>
 
 #include "shader.h"
@@ -430,7 +429,7 @@ static void mat4_lookat(mat4* dst, const vec3& pos, const vec3& center, const ve
     */
 }
 
-void DoLightpass() {
+void DoLightpass(RQueue* lights) {
 
     //mat4* GetCameraProjection() { return &cam_proj; }
     //mat4* GetCameraView() { return &cam_view; }
@@ -500,25 +499,22 @@ void DoLightpass() {
 	ctx->VSSetConstantBuffers(0, 1, &constBuffer);
 	ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
 
-    // TODO: !!! REWRITE THIS !!!
-
 	// Draw point lights
-	Engine::LightSystem* system = Engine::GetLightSystem();
 
 	constants.viewproj = *GetCameraProjection() * *GetCameraView();
 	constants.model    = MAT4_IDENTITY();
-
-	Uint32 pCount = system->GetPointLightCount();
+    
+    Uint32 pCount = lights->Size();
 	for (Uint32 i = 0; i < pCount; i++) {
 
-		Engine::PointLight* l = system->GetPointLight(i);
+        R3D_LightSource* l = (R3D_LightSource*)lights->Next();
 
-		light.color     = l->GetColor();
-		light.intensity = l->GetIntensity();
-		light.pos       = l->GetPosition();
+		light.color     = l->color;
+		light.intensity = l->intensity;
+		light.pos       = l->position;
 
         Float32 s = light.intensity * 10;
-        mat4_model(&constants.model, l->GetPosition(), { 0, 0, 0 }, {s, s, s});
+        mat4_model(&constants.model, light.pos, { 0, 0, 0 }, {s, s, s});
 
 		cBuffer->SetData(0, sizeof(ShaderConstants), &constants);
 		lBuffer->SetData(0, sizeof(ShaderLight), &light);

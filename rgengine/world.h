@@ -48,8 +48,6 @@ namespace Engine {
 			RG_DECLSPEC LightSource* GetLightSourceByUUID(RGUUID uuid);
 			RG_INLINE   Uint32       GetLightCount() { return (Uint32)m_entities.size(); }
 
-
-
 			RG_DECLSPEC void ClearWorld();
 
 		private:

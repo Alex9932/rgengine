@@ -16,6 +16,11 @@ enum IndexType {
 	RG_INDEX_U8  = 1  // !!! DO NOT RECOMENDED TO USE !!!
 };
 
+enum LightType {
+	RG_POINTLIGHT = 0,
+	RG_SPOTLIGHT = 1
+};
+
 /*
 enum TextureType {
 	RG_TEXTURE_U8_R_ONLY  = 1,
@@ -169,6 +174,17 @@ typedef struct R3D_MeshInfo {
 	Uint32        indexCount;
 } R3D_MeshInfo;
 
+typedef struct R3D_LightSource {
+	LightType type;
+	vec3      color;
+	vec3      position;
+	Float32   intensity;
+
+	// Spotlight
+	vec3      direction;
+	Float32   coneAngle;
+} R3D_LightSource;
+
 // Info structures
 typedef struct R3DCreateMaterialInfo {
 	String albedo; //
@@ -249,28 +265,11 @@ typedef struct R3D_PushModelInfo {
 	mat4 matrix;
 } R3D_PushModelInfo;
 
-
 typedef struct R3D_CameraInfo {
 	mat4 projection;
 	//mat4 view;
 	vec3 position;
 	vec3 rotation;
 } R3D_CameraInfo;
-
-enum LightType {
-	RG_POINTLIGHT = 0,
-	RG_SPOTLIGHT
-};
-
-typedef struct R3D_LightSource {
-	LightType type;
-	vec3      color;
-	vec3      position;
-	Float32   intensity;
-
-	// Spotlight
-	vec3      direction;
-	Float32   coneAngle;
-} R3D_LightSource;
 
 #endif

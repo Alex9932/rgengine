@@ -7,6 +7,8 @@
 
 #include <rendertypes.h>
 
+#include "queue.h"
+
 typedef struct GlobalLight {
 	vec3    direction;
 	vec3    color;
@@ -21,7 +23,7 @@ void ResizeLightpass(ivec2* size);
 
 void ReloadShadersLightpass();
 
-void DoLightpass();
+void DoLightpass(RQueue* lights);
 
 void SetGlobalLight(GlobalLight* light);
 

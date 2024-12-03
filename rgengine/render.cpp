@@ -339,6 +339,13 @@ namespace Engine {
 
             // Draw dynamic entities
             ProcessEntities(&info, world);
+
+            // Push light sources
+            // TODO: Add optimizations
+            for (Uint32 i = 0; i < world->GetLightCount(); i++) {
+                LightSource* src = world->GetLightSource(i);
+                renderctx.R3D_PushLightSource(&src->source);
+            }
         }
 
         void SetCamera(R3D_CameraInfo* info) {

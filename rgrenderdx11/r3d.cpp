@@ -24,18 +24,23 @@
 #define R_MAX_MODELS      4096
 #define R_ATLASES_COUNT   4096
 
+#define R_MAX_LIGHTS      1024
+
 using namespace Engine;
 
 static PoolAllocator*   alloc_materials;
 static PoolAllocator*   alloc_staticmodels;
 static PoolAllocator*   alloc_riggedmodels;
 static LinearAllocator* alloc_matrices;
+static LinearAllocator* alloc_lights;
 static PoolAllocator*   alloc_bonebuffers;
 static PoolAllocator*   alloc_atlases;
 static PoolAllocator*   alloc_particlebuffers;
 
 static RQueue* staticQueue;
 static RQueue* riggedQueue;
+
+static RQueue* lightQueue;
 
 struct MatrixBuffer {
 	mat4 viewproj;
@@ -175,12 +180,15 @@ void InitializeR3D(ivec2* size) {
 	alloc_staticmodels    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_StaticModelPool", R_MODELS_COUNT, sizeof(R3D_StaticModel));
 	alloc_riggedmodels    = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_RiggedModelPool", R_MODELS_COUNT, sizeof(R3D_RiggedModel));
 	alloc_matrices        = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_MatrixPool", sizeof(mat4) * R_MODELS_COUNT * 2);
+	alloc_lights          = RG_NEW_CLASS(RGetAllocator(), LinearAllocator)("R_LightPool",  sizeof(R3D_LightSource) * R_MAX_LIGHTS);
 	alloc_bonebuffers     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_BoneBuffersPool", R_MODELS_COUNT, sizeof(R3D_BoneBuffer));
 	alloc_atlases         = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_AtlasHandlesPool", R_ATLASES_COUNT, sizeof(R3D_AtlasHandle));
 	alloc_particlebuffers = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_ParticleBuffersPool", R_ATLASES_COUNT, sizeof(R3D_ParticleBuffer));
 	//alloc_matrices     = RG_NEW_CLASS(RGetAllocator(), PoolAllocator)("R_MatrixPool", R_MODELS_COUNT * 2, sizeof(mat4));
 	staticQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 2);
 	riggedQueue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_MODELS * 3);
+
+	lightQueue  = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_LIGHTS);
 
 	LoadShaders();
 
@@ -231,12 +239,15 @@ void DestroyR3D() {
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_staticmodels);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_riggedmodels);
 	RG_DELETE_CLASS(RGetAllocator(), LinearAllocator, alloc_matrices);
+	RG_DELETE_CLASS(RGetAllocator(), LinearAllocator, alloc_lights);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_bonebuffers);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_atlases);
 	RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_particlebuffers);
 	//RG_DELETE_CLASS(RGetAllocator(), PoolAllocator, alloc_matrices);
 	RG_DELETE_CLASS(RGetAllocator(), RQueue, staticQueue);
 	RG_DELETE_CLASS(RGetAllocator(), RQueue, riggedQueue);
+	RG_DELETE_CLASS(RGetAllocator(), RQueue, lightQueue);
+	
 }
 
 void ResizeR3D(ivec2* wndSize) {
@@ -265,7 +276,8 @@ mat4* GetCameraView()       { return &cam_view; }
 vec3* GetCameraPosition()   { return &cam_pos; }
 vec3* GetCameraRotation()   { return &cam_rot; }
 
-LinearAllocator* GetMatrixAllocator() { return alloc_matrices; }
+//LinearAllocator* GetMatrixAllocator() { return alloc_matrices; }
+//LinearAllocator* GetLightAllocator()  { return alloc_lights;   }
 
 void GetR3DStats(R3DStats* stats) {
 	stats->texturesLoaded = texturesLoaded;
@@ -653,6 +665,12 @@ void R3D_UpdateParticleBuffer(R3DUpdateBufferInfo* info) {
 	info->handle_particle->bBuffer->SetData(info->offset, info->length, info->data);
 }
 
+void R3D_PushLightSource(R3D_LightSource* light) {
+	R3D_LightSource* src = (R3D_LightSource*)alloc_lights->Allocate(sizeof(R3D_LightSource));
+	SDL_memcpy(src, light, sizeof(R3D_LightSource));
+	lightQueue->Push(src);
+}
+
 void R3D_PushModel(R3D_PushModelInfo* info) {
 	mat4* mat = (mat4*)alloc_matrices->Allocate(sizeof(mat4));
 	SDL_memcpy(mat, &info->matrix, sizeof(mat4));
@@ -911,11 +929,12 @@ void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
 
 	GetStaticQueue()->Clear();
 	GetRiggedQueue()->Clear();
-	GetMatrixAllocator()->Deallocate();
 
 	RenderParticles(); // Particle pass
 
-	DoLightpass();     // Light pass
-	DoPostprocess();   // Postprocess
+	DoLightpass(lightQueue); // Light pass
+	DoPostprocess();         // Postprocess
 
+	alloc_matrices->Deallocate();
+	alloc_lights->Deallocate();
 }
