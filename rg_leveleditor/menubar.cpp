@@ -22,11 +22,8 @@ void MenubarDraw() {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Render")) {
-			if (ImGui::MenuItem("Nope")) {}
+			if (ImGui::MenuItem("Lock FPS", "", docker_fps_lock)) { docker_fps_lock = !docker_fps_lock; }
 			if (ImGui::MenuItem("Toggle renderer stats", "", docker_isStats)) { docker_isStats = !docker_isStats; }
-			//if (ImGui::MenuItem("Test disable")) {
-			//	popupWindow = true;
-			//}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Docker")) {

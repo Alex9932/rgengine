@@ -10,8 +10,11 @@
 
 #include <imgui/imgui.h>
 
+#include <window.h>
+
 Bool docker_opt_fullscreen = true;
 Bool docker_opt_padding    = false;
+Bool docker_fps_lock       = true;
 Bool docker_isStats        = false;
 
 ImGuiDockNodeFlags docker_dockspace_flags = ImGuiDockNodeFlags_None;
@@ -49,6 +52,9 @@ void DockerBegin() {
 
 	if (!docker_opt_padding)   { ImGui::PopStyleVar(); }
 	if (docker_opt_fullscreen) { ImGui::PopStyleVar(2); }
+
+	if (docker_fps_lock) { Engine::SetFpsLimit(120); }
+	else { Engine::SetFpsLimit(0); }
 
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {

@@ -33,7 +33,7 @@ void LightList::Draw() {
 
 				ImGui::InputFloat3("Position", src->source.position.array);
 
-				ImGui::SliderFloat("Intensity", &src->source.intensity, 0, 1);
+				ImGui::SliderFloat("Intensity", &src->source.intensity, 0, 100, "%.3f", ImGuiSliderFlags_Logarithmic);
 				ImGui::ColorPicker3("Color", src->source.color.array);
 
 				if (ImGui::RadioButton("Select", m_vp->GetGizmoID() == src->uuid)) {

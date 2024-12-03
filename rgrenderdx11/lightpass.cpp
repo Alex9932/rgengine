@@ -523,7 +523,7 @@ void DoLightpass(RQueue* lights) {
 
 	}
 
-    lights->Reset();
+    lights->Clear();
 
     // Bind shader & input resources
     globalshader->Bind();
