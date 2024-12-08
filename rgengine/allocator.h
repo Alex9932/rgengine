@@ -21,6 +21,7 @@
 #define RG_NEW(c)         RG_NEW_CLASS(Engine::GetDefaultAllocator(), c)
 #define RG_DELETE(c, ptr) RG_DELETE_CLASS(Engine::GetDefaultAllocator(), c, ptr)
 
+RG_DECLSPEC void* rg_alloca(size_t size);
 RG_DECLSPEC void* rg_malloc(size_t size);
 RG_DECLSPEC void  rg_free(void* ptr);
 

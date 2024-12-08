@@ -186,6 +186,7 @@ namespace Engine {
 
 	LightSource* World::NewLightSource() {
 		LightSource* s = (LightSource*)m_allocLight->Allocate();
+		SDL_memset(s, 0, sizeof(LightSource));
 		s->uuid = GenerateUUID();
 		this->m_lights.push_back(s);
 		return s;

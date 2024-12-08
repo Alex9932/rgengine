@@ -33,18 +33,6 @@
 
 #include "filedialog.h"
 
-void* rg_malloc(size_t size) {
-    if (size > 0x7FFFFFFF) {
-        RG_ERROR_MSG("OUT OF MEMORY!");
-        return NULL;
-    }
-    return malloc(size);
-}
-
-void rg_free(void* ptr) {
-    free(ptr);
-}
-
 typedef void (*PFN_MODULE_INITIALIZE)();
 typedef void (*PFN_MODULE_DESTROY)();
 typedef BaseGame* (*PFN_MODULE_GETAPPLICATION)();

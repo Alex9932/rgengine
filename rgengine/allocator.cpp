@@ -6,6 +6,46 @@
 #define RG_ALLOC_FREE_ON_DESTROY 0
 #define RG_ALLOCATOR_DEBUG 0
 
+void* rg_alloca(size_t size) {
+    void* ptr = NULL;
+
+#ifdef RG_PLATFORM_WINDOWS
+
+    __try {
+        ptr = alloca(size);
+    }
+    __except (GetExceptionCode() == STATUS_STACK_OVERFLOW) {
+        RG_ERROR_MSG("STACK OVERFLOW!");
+    }
+
+#else
+
+    // TODO: Add exception handler
+    ptr = alloca(size);
+
+#endif // RG_PLATFORM_WINDOWS
+
+    if (ptr) { return ptr; }
+    RG_ERROR_MSG("OUT OF MEMORY!");
+    return NULL;
+}
+
+void* rg_malloc(size_t size) {
+    if (size > 0x7FFFFFFF) {
+        RG_ERROR_MSG("OUT OF MEMORY!");
+        return NULL;
+    }
+
+    void* ptr = malloc(size);
+    if (ptr) { return ptr; }
+    RG_ERROR_MSG("OUT OF MEMORY!");
+    return NULL;
+}
+
+void rg_free(void* ptr) {
+    free(ptr);
+}
+
 namespace Engine {
 
 	static std::vector<Allocator*> allocators;
