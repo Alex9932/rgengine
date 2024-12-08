@@ -15,7 +15,6 @@
 
 #include <vector>
 #include <map>
-#include <functional>
 #endif
 
 #if 1
@@ -26,26 +25,6 @@
 #endif
 
 namespace Engine {
-#if 0
-	static size_t rgHash(void* data, size_t len) {
-		size_t result = 0;
-		result = rgCRC32((const char*)data, len);
-		return result;
-	}
-
-#else
-	static size_t rgHash(void* data, size_t len) {
-		std::hash<Uint8> hasher;
-		size_t hash = 0;
-
-		Uint8* array = (Uint8*)data;
-		for (size_t i = 0; i < len; i++) {
-			hash ^= hasher(array[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);;
-		}
-
-		return hash;
-	}
-#endif
 
 	static RG_INLINE void FetchTriangle(R3D_Vertex* vertices, Uint32* indices, Uint32 i, R3D_Vertex** v0, R3D_Vertex** v1, R3D_Vertex** v2) {
 		Uint32 v0idx = indices[i * 3 + 0];

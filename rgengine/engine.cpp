@@ -501,7 +501,7 @@ namespace Engine {
         rgLogError(RG_LOG_SYSTEM, " * * * * * * * * * ENGINE ERROR * * * * * * * * *");
         rgLogError(RG_LOG_SYSTEM, "Engine: %s", message);
         SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
-        ExitProcess(0xFFFFFFFF);
+        ExitProcess(0xFFFFFFFF); // Fix abnormal termination
     }
 
     Bool IsDebug() {

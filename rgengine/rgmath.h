@@ -37,7 +37,8 @@ RG_INLINE Uint32 rgCRC32(const void* buf, Uint32 len) { return rgCRC32((const ch
 RG_INLINE Uint32 rgCRC32(const char* buf, size_t len) { return rgCRC32(buf, (Uint32)len); }
 #endif
 
-RG_DECLSPEC Uint32 rgCRC32(const char* data, Uint32 len);
+RG_DECLSPEC Uint32 rgCRC32(const void* data, Uint32 len);
+RG_DECLSPEC size_t rgHash(const void* data, size_t len);
 
 RG_DECLSPEC vec3 vec3_mulquat(const vec3& v, const quat& q);
 RG_DECLSPEC void vec3_rotate(vec3* dst, const vec3& vector, const vec3& angles);

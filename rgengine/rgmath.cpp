@@ -1,6 +1,7 @@
 #define DLL_EXPORT
 #include "rgmath.h"
 #include <random>
+#include <functional>
 
 static const Uint32 crc32_table[] = {
   0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9,
@@ -85,13 +86,26 @@ static mat4 MAT4IDENTITY = {
 mat3 MAT3_IDENTITY() { return MAT3IDENTITY; }
 mat4 MAT4_IDENTITY() { return MAT4IDENTITY; }
 
-Uint32 rgCRC32(const char* buf, Uint32 len) {
+Uint32 rgCRC32(const void* data, Uint32 len) {
+    Uint8* buf = (Uint8*)data;
     Uint32 crc = 0xFFFFFFFF;
     while (len--) {
         crc = (crc << 8) ^ crc32_table[((crc >> 24) ^ *buf) & 255];
         buf++;
     }
     return crc;
+}
+
+size_t rgHash(const void* data, size_t len) {
+    std::hash<Uint8> hasher;
+    size_t hash = 0;
+
+    Uint8* buf = (Uint8*)data;
+    for (size_t i = 0; i < len; i++) {
+        hash ^= hasher(buf[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);;
+    }
+
+    return hash;
 }
 
 vec3 vec3_mulquat(const vec3& v, const quat& q) {
