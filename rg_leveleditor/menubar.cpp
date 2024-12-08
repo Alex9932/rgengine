@@ -21,7 +21,8 @@ void MenubarDraw() {
 			if (ImGui::MenuItem("Exit")) { /* Engine::Quit(); */ }
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Render")) {
+		if (ImGui::BeginMenu("Option")) {
+			if (ImGui::MenuItem("Split geometry", "", docker_splitgeom)) { docker_splitgeom = !docker_splitgeom; }
 			if (ImGui::MenuItem("Lock FPS", "", docker_fps_lock)) { docker_fps_lock = !docker_fps_lock; }
 			if (ImGui::MenuItem("Toggle renderer stats", "", docker_isStats)) { docker_isStats = !docker_isStats; }
 			ImGui::EndMenu();

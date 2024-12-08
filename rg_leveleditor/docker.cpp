@@ -15,6 +15,7 @@
 Bool docker_opt_fullscreen = true;
 Bool docker_opt_padding    = false;
 Bool docker_fps_lock       = true;
+Bool docker_splitgeom      = false;
 Bool docker_isStats        = false;
 
 ImGuiDockNodeFlags docker_dockspace_flags = ImGuiDockNodeFlags_None;

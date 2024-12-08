@@ -15,6 +15,12 @@
 #include <filedialog.h>
 
 #include "viewport.h"
+#include "dockerglobal.h"
+
+#include <vector>
+#include <map>
+
+#include <rgmath.h>
 
 using namespace Engine;
 
@@ -68,6 +74,9 @@ StaticList::StaticList(Viewport* vp) : UIComponent("Static list") {
 StaticList::~StaticList() {
 }
 
+static void RecalculateStaticModels(R3DStaticModelInfo* dst, R3DStaticModelInfo* src, std::vector<vec3>& offsets);
+static void FreeStaticModels(R3DStaticModelInfo* mdls, Uint32 count);
+
 void StaticList::Draw() {
 
 	World* world = GetWorld();
@@ -120,15 +129,36 @@ void StaticList::Draw() {
 			R3DStaticModelInfo model = {};
 			OpenModel(path, &model);
 
-			R3D_StaticModel* hmdl = Render::CreateStaticModel(&model);
-			pm2Importer.FreeModelData(&model);
+			// Recalculate (separate objects if needed)
+			if (docker_splitgeom) {
+				std::vector<vec3> offsets;
+				R3DStaticModelInfo* models = (R3DStaticModelInfo*)rg_malloc(sizeof(R3DStaticModelInfo) * model.mCount);
 
-			mat4 transform = MAT4_IDENTITY();
+				RecalculateStaticModels(models, &model, offsets);
 
-			// TODO: Use camera position
-			mat4_translate(&transform, {0, 0, 0});
+				mat4 transform = MAT4_IDENTITY();
+				for (Uint32 i = 0; i < model.mCount; i++) {
+					R3D_StaticModel* hmdl = Render::CreateStaticModel(&models[i]);
+					// TODO: re-zero position
+					mat4_translate(&transform, offsets[i]);
+					world->NewStatic(hmdl, &transform, &model.aabb);
+				}
+				
+				FreeStaticModels(models, model.mCount);
 
-			world->NewStatic(hmdl, &transform, &model.aabb);
+				rg_free(models);
+
+			} else {
+				R3D_StaticModel* hmdl = Render::CreateStaticModel(&model);
+				pm2Importer.FreeModelData(&model);
+
+				mat4 transform = MAT4_IDENTITY();
+
+				// TODO: Use camera position
+				mat4_translate(&transform, { 0, 0, 0 });
+
+				world->NewStatic(hmdl, &transform, &model.aabb);
+			}
 		}
 	}
 
@@ -136,4 +166,115 @@ void StaticList::Draw() {
 		world->FreeStatic(toRemove);
 	}
 
+}
+
+template <typename T>
+static void ProcessIndex(R3DStaticModelInfo* src_info, Uint32 count, Uint32 offset, std::vector<R3D_Vertex>& vertices, std::vector<T>& indices) {
+
+	// Hash - idx
+	std::map<size_t, Uint32> vtx_hashtable;
+	
+	T* src = (T*)src_info->indices;
+
+	for (Uint32 i = 0; i < count; i++) {
+		T idx = src[offset + i];
+
+		R3D_Vertex vtx = src_info->vertices[idx];
+		size_t vtx_hash = rgHash(&vtx, sizeof(R3D_Vertex));
+
+		if (vtx_hashtable.count(vtx_hash) == 0) {
+			vtx_hashtable[vtx_hash] = vertices.size();
+			vertices.push_back(vtx);
+		}
+
+		indices.push_back(vtx_hashtable[vtx_hash]);
+	}
+}
+
+static void RecalculateStaticModels(R3DStaticModelInfo* dst, R3DStaticModelInfo* src, std::vector<vec3>& offsets) {
+
+	std::vector<R3D_Vertex> vertices;
+	std::vector<Uint16> indices16;
+	std::vector<Uint32> indices32;
+
+	for (Uint32 i = 0; i < src->mCount; i++) {
+		R3DStaticModelInfo* info = &dst[i];
+
+		info->matCount = 1;
+		info->matInfo  = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo)); // allocate
+		SDL_memcpy(info->matInfo, &src->matInfo[src->mInfo[i].materialIdx], sizeof(R3D_MaterialInfo));
+
+		info->mCount = 1;
+		info->mInfo  = (R3D_MatMeshInfo*)rg_malloc(sizeof(R3D_MatMeshInfo)); // allocate
+		info->mInfo->materialIdx = 0;
+		info->mInfo->indexOffset = 0;
+		info->mInfo->indexCount  = src->mInfo[i].indexCount;
+
+		info->iType   = src->iType;
+		info->iCount  = src->mInfo[i].indexCount;
+		info->indices = rg_malloc(src->iType * src->mInfo[i].indexCount); // allocate
+
+		if (src->iType == RG_INDEX_U16) {
+			ProcessIndex(src, src->mInfo[i].indexCount, src->mInfo[i].indexOffset, vertices, indices16);
+			Uint16* dst = (Uint16*)info->indices;
+			for (Uint32 j = 0; j < src->mInfo[i].indexCount; j++) {
+				dst[j] = indices16[j];
+			}
+		}
+		else if (src->iType == RG_INDEX_U32) {
+			ProcessIndex(src, src->mInfo[i].indexCount, src->mInfo[i].indexOffset, vertices, indices32);
+			Uint32* dst = (Uint32*)info->indices;
+			for (Uint32 j = 0; j < src->mInfo[i].indexCount; j++) {
+				dst[j] = indices32[j];
+			}
+		}
+
+		rgLogInfo(RG_LOG_SYSTEM, "Index buffer sizes: %d %d %d", src->mInfo[i].indexCount, indices16.size(), indices32.size());
+
+		// Just copy
+		info->vCount   = vertices.size();
+		info->vertices = (R3D_Vertex*)rg_malloc(sizeof(R3D_Vertex) * vertices.size()); // allocate
+
+		AABB aabb = { {10000, 10000, 10000}, {-10000, -10000, -10000} };
+		vec3 offset = {};
+
+		for (Uint32 j = 0; j < info->vCount; j++) {
+			info->vertices[j] = vertices[j];
+
+			vec3* c_pos = &vertices[j].pos;
+			if (c_pos->x < aabb.min.x) { aabb.min.x = c_pos->x; }
+			if (c_pos->y < aabb.min.y) { aabb.min.y = c_pos->y; }
+			if (c_pos->z < aabb.min.z) { aabb.min.z = c_pos->z; }
+			if (c_pos->x > aabb.max.x) { aabb.max.x = c_pos->x; }
+			if (c_pos->y > aabb.max.y) { aabb.max.y = c_pos->y; }
+			if (c_pos->z > aabb.max.z) { aabb.max.z = c_pos->z; }
+
+		}
+
+		// TODO: center of model (not min vertex)
+		offset = aabb.min;
+
+		// Recalculate vertices
+		for (Uint32 j = 0; j < info->vCount; j++) {
+			info->vertices[j].pos = info->vertices[j].pos - offset;
+		}
+
+
+		offsets.push_back(offset);
+
+		// TODO: Calculate AABB
+		info->aabb = aabb;
+
+		// Reset buffers
+		vertices.clear();
+		indices16.clear();
+		indices32.clear();
+
+	}
+}
+
+static void FreeStaticModels(R3DStaticModelInfo* mdls, Uint32 count) {
+	for (Uint32 i = 0; i < count; i++) {
+		pm2Importer.FreeModelData(&mdls[i]);
+	}
 }
