@@ -13,6 +13,8 @@
 
 #include <map>
 
+#define R_TX_IN_QUEUE 65536
+
 static Texture* DEFAULT_TEXTURE;
 
 static std::map<Uint32, Texture*> loaded_textures;
@@ -34,8 +36,8 @@ void LoaderInit() {
 	tInfo.data = &tdata;
 	DEFAULT_TEXTURE = RG_NEW_CLASS(RGetAllocator(), Texture)(&tInfo);
 
-	t_pool = new Engine::PoolAllocator("Texture queue", 4096, sizeof(TexturePoolBlock));
-	t_queue = RG_NEW_CLASS(RGetAllocator(), RQueue)(4096);
+	t_pool = new Engine::PoolAllocator("Texture queue", R_TX_IN_QUEUE, sizeof(TexturePoolBlock));
+	t_queue = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_TX_IN_QUEUE);
 
 }
 

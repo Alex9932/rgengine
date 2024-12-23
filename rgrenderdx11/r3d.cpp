@@ -19,9 +19,9 @@
 
 #include <profiler.h>
 
-#define R_MATERIALS_COUNT 4096
-#define R_MODELS_COUNT    4096
-#define R_MAX_MODELS      4096
+#define R_MATERIALS_COUNT 16000
+#define R_MODELS_COUNT    16000
+#define R_MAX_MODELS      16000
 #define R_ATLASES_COUNT   4096
 
 #define R_MAX_LIGHTS      1024

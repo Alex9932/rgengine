@@ -31,6 +31,9 @@ namespace Engine {
 		m_buffer       = Render::CreateParticleBuffer(&bufferInfo);
 
 		m_allocator = RG_NEW(PoolAllocator)("ParticleEmitter", info->max_particles, sizeof(Particle));
+
+		// Clear allocated memory
+		SDL_memset(m_allocator->GetBasePointer(), 0, info->max_particles * sizeof(Particle));
 	}
 
 	void ParticleEmitter::Destroy() {
