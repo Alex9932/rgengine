@@ -49,6 +49,8 @@
 #include <rgphysics.h>
 #include <phcomponent.h>
 
+#include <console.h>
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
 
@@ -96,6 +98,11 @@ static bool EHandler(SDL_Event* event) {
 
 			case SDL_SCANCODE_E: {
 				emitter->EmitParticle();
+				break;
+			}
+			case SDL_SCANCODE_GRAVE: {
+				rgLogInfo(RG_LOG_GAME, "Toggled console");
+				ToggleConsole();
 				break;
 			}
 

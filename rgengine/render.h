@@ -28,6 +28,8 @@ namespace Engine {
 		void InitializeContext(SDL_Window* hwnd);
 		void SwapBuffers();
 
+		Renderer* GetRenderContext();
+
 		// ImGui window
 		RG_DECLSPEC void DrawRendererStats();
 		RG_DECLSPEC void DrawProfilerStats();
@@ -39,8 +41,6 @@ namespace Engine {
 
 		RG_DECLSPEC void SetGlobalLight(R3D_GlobalLightDescrition* desc);
 		RG_DECLSPEC void GetInfo(RenderInfo* info);
-
-		//RG_DECLSPEC void ToggleConsole();
 
 		RG_DECLSPEC ParticleSystem* GetParticleSystem();
 

@@ -15,6 +15,8 @@
 #include "lightsystem.h"
 #include "particlesystem.h"
 
+#include "console.h"
+
 #include "profiler.h"
 #include "frustum.h"
 
@@ -167,9 +169,14 @@ namespace Engine {
 
             rgLogInfo(RG_LOG_SYSTEM, "~ ~ ~ ~ ~ ~ ~");
 #endif
+
+            InitializeConsole();
+
         }
 
         void DestroySubSystem() {
+
+            DestroyConsole();
 
             renderctx.R2D_DestroyBuffer(r2d_buffer);
             renderctx.R2D_DestroyTexture(r2d_texture);
@@ -188,6 +195,10 @@ namespace Engine {
 
         void SwapBuffers() {
             renderctx.SwapBuffers();
+        }
+
+        Renderer* GetRenderContext() {
+            return &renderctx;
         }
 
         static Float32 ft_array[128] = {};
@@ -395,6 +406,10 @@ namespace Engine {
 
             renderctx.R2D_Begin();
 
+
+
+            UpdateConsole();
+
             R2DBindInfo bindinfo = {};
 
             bindinfo.texture = r2d_texture_bg;
@@ -472,10 +487,6 @@ namespace Engine {
         void GetInfo(RenderInfo* info) {
             renderctx.GetInfo(info);
         }
-
-        //void ToggleConsole() {
-        //
-        //}
 
         ParticleSystem* GetParticleSystem() {
             return particlesystem;
