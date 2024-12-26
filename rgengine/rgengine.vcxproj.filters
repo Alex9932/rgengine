@@ -246,6 +246,9 @@
     <ClCompile Include="console.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="font.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -447,6 +450,9 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="console.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="font.h">
       <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>

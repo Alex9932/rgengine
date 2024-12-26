@@ -145,6 +145,7 @@
     <ClCompile Include="event.cpp" />
     <ClCompile Include="filedialog.cpp" />
     <ClCompile Include="filesystem.cpp" />
+    <ClCompile Include="font.cpp" />
     <ClCompile Include="freecameracontroller.cpp" />
     <ClCompile Include="frustum.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="exporter.h" />
     <ClInclude Include="filedialog.h" />
     <ClInclude Include="filesystem.h" />
+    <ClInclude Include="font.h" />
     <ClInclude Include="freecameracontroller.h" />
     <ClInclude Include="frustum.h" />
     <ClInclude Include="imgui\dirent\dirent.h" />
