@@ -30,6 +30,11 @@ namespace Engine {
 				return NULL;
 			}
 
+			FT_Int maj, min, p;
+			FT_Library_Version(ft, &maj, &min, &p);
+
+			rgLogInfo(RG_LOG_DEBUG, "Freetype: %d.%d.%d", maj, min, p);
+
 			allocator = RG_NEW(STDAllocator)("FontAlloc");
 		}
 
@@ -72,7 +77,7 @@ namespace Engine {
 		Uint32 glyph_size  = scale * scale;
 
 		m_scale  = scale;
-		m_glyphs = (Glyph*)allocator->Allocate(glyph_count);
+		m_glyphs = (Glyph*)allocator->Allocate(glyph_count * sizeof(Glyph));
 		m_bitmap = (Uint8*)allocator->Allocate(glyph_count * glyph_size);
 
 		// Load fontfile

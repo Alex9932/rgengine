@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
 	int _argc = 7;
 	String _argv[] = {
 		argv[0], // exec path
+		//"-debug",
 		"-fsjson",
 		"fsgame.json",
 		"-render",
