@@ -22,6 +22,7 @@ extern "C" {
 	extern RG_DECLSPEC void         R2D_BufferData(R2DBufferDataInfo* info);
 
 	extern RG_DECLSPEC R2D_Texture* R2D_CreateTexture(R2DCreateTextureInfo* info);
+	extern RG_DECLSPEC R2D_Texture* R2D_CreateMemTexture(R2DCreateMemTextureInfo* info);
 	extern RG_DECLSPEC void         R2D_DestroyTexture(R2D_Texture* texture);
 	extern RG_DECLSPEC void         R2D_TextureData(R2DTextureDataInfo* info);
 

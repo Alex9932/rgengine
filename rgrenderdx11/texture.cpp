@@ -16,9 +16,19 @@ static inline DXGI_FORMAT GetTextureFormat(Uint32 channels) {
 	}
 }
 
-Texture::Texture(TextureInfo* info) {
+static inline Uint32 GetChannels(TextureType type) {
+	switch (type) {
+		case RG_TEXTURE_U8_R_ONLY:  return 1;
+		case RG_TEXTURE_U8_RGBA:    return 4;
+		case RG_TEXTURE_F32_R_ONLY: return 1;
+		case RG_TEXTURE_F32_RGBA:   return 4;
+		default: return 0;
+	}
+}
 
-	Uint32 channels = info->channels;
+Texture::Texture(R2DCreateMemTextureInfo* info) {
+
+	Uint32 channels = GetChannels(info->type);
 	void*  data_ptr = info->data;
 
 #if 0
@@ -73,10 +83,11 @@ Texture::Texture(TextureInfo* info) {
 
 	this->memLength = info->width * info->height * channels;
 
-
+#if 0
 	if (info->channels == 3) {
 		rg_free(data_ptr);
 	}
+#endif
 
 	texturesMemory += this->memLength;
 }

@@ -31,6 +31,8 @@ namespace Engine {
 
     static Renderer* r_ctx;
 
+    static R2D_Texture* font_tex;
+
     static R2D_Buffer* buff1; // bg
     static R2D_Buffer* buff2; // log console
     static R2D_Buffer* buff3; // command line
@@ -92,6 +94,14 @@ namespace Engine {
         r_ctx = Render::GetRenderContext();
 
         font = RG_NEW(Font)("gamedata/fonts/UbuntuMono-R.ttf", 12);
+
+        R2DCreateMemTextureInfo tinfo = {};
+        tinfo.data = font->GetBitmap();
+        tinfo.type = RG_TEXTURE_U8_R_ONLY;
+        tinfo.width  = RG_FONT_ATLAS_WIDTH * 12;
+        tinfo.height = RG_FONT_ATLAS_HEIGHT * 12;
+
+        font_tex = r_ctx->R2D_CreateMemTexture(&tinfo);
 
         R2DCreateBufferInfo binfo = {};
 
@@ -161,6 +171,7 @@ namespace Engine {
         r_ctx->R2D_PushMatrix(&mat);
 
         binfo.buffer = buff2;
+        binfo.texture = font_tex;
         dinfo.offset = 0;
         dinfo.count  = 78;
 

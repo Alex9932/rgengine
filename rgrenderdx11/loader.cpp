@@ -28,11 +28,11 @@ struct TexturePoolBlock {
 };
 
 void LoaderInit() {
-	TextureInfo tInfo = {};
+	R2DCreateMemTextureInfo tInfo = {};
 	Uint32 tdata = 0xFFFFFFFF;
-	tInfo.width = 1;
+	tInfo.width  = 1;
 	tInfo.height = 1;
-	tInfo.channels = 4;
+	tInfo.type = RG_TEXTURE_U8_RGBA;
 	tInfo.data = &tdata;
 	DEFAULT_TEXTURE = RG_NEW_CLASS(RGetAllocator(), Texture)(&tInfo);
 
@@ -99,10 +99,10 @@ void DoLoadTextures() {
 
 	int w, h, c;
 	Uint8* data = RG_STB_load_from_file(block->path, &w, &h, &c, 4);
-	TextureInfo albedoInfo = {};
+	R2DCreateMemTextureInfo albedoInfo = {};
 	albedoInfo.width    = w;
 	albedoInfo.height   = h;
-	albedoInfo.channels = 4;
+	albedoInfo.type     = RG_TEXTURE_U8_RGBA;
 	albedoInfo.data     = data;
 
 	Texture* tx = RG_NEW_CLASS(RGetAllocator(), Texture)(&albedoInfo);

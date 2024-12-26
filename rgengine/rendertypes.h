@@ -21,14 +21,12 @@ enum LightType {
 	RG_SPOTLIGHT = 1
 };
 
-/*
 enum TextureType {
 	RG_TEXTURE_U8_R_ONLY  = 1,
 	RG_TEXTURE_U8_RGBA    = 2,
 	RG_TEXTURE_F32_R_ONLY = 3,
 	RG_TEXTURE_F32_RGBA   = 4
 };
-*/
 
 #define RG_RENDER_FULLSCREEN    1
 #define RG_RENDER_USE3D         2
@@ -107,13 +105,14 @@ typedef struct R2DBufferDataInfo {
 
 typedef struct R2DCreateTextureInfo {
 	String path;
-	/*
+} R2DCreateTextureInfo;
+
+typedef struct R2DCreateMemTextureInfo {
 	TextureType type;
 	Uint32      width;
 	Uint32      height;
 	void*       data;
-	*/
-} R2DCreateTextureInfo;
+} R2DCreateMemTextureInfo;
 
 typedef struct R2DTextureDataInfo {
 	// Not implemented yet

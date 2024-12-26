@@ -245,6 +245,12 @@ R2D_Texture* R2D_CreateTexture(R2DCreateTextureInfo* info) {
 	return txptr;
 }
 
+R2D_Texture* R2D_CreateMemTexture(R2DCreateMemTextureInfo* info) {
+	R2D_Texture* txptr = (R2D_Texture*)alloc_textures->Allocate();
+	txptr->texture = RG_NEW_CLASS(RGetAllocator(), Texture)(info);
+	return txptr;
+}
+
 void R2D_DestroyTexture(R2D_Texture* txptr) {
 	if (txptr->texture != GetDefaultTexture()) {
 		RG_DELETE_CLASS(RGetAllocator(), Texture, txptr->texture);

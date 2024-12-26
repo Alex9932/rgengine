@@ -21,22 +21,23 @@ namespace Engine {
         ctx->GetInfo     = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
 
         // R2D
-        ctx->R2D_CreateBuffer   = (PFN_R2D_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R2D_CreateBuffer");
-        ctx->R2D_DestroyBuffer  = (PFN_R2D_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R2D_DestroyBuffer");
-        ctx->R2D_BufferData     = (PFN_R2D_BUFFERDATA)Engine::DL_GetProcAddress(handle, "R2D_BufferData");
-        ctx->R2D_CreateTexture  = (PFN_R2D_CREATETEXTURE)Engine::DL_GetProcAddress(handle, "R2D_CreateTexture");
-        ctx->R2D_DestroyTexture = (PFN_R2D_DESTROYTEXTURE)Engine::DL_GetProcAddress(handle, "R2D_DestroyTexture");
-        ctx->R2D_TextureData    = (PFN_R2D_TEXTUREDATA)Engine::DL_GetProcAddress(handle, "R2D_TextureData");
-        ctx->R2D_PushMatrix     = (PFN_R2D_PUSHMATRIX)Engine::DL_GetProcAddress(handle, "R2D_PushMatrix");
-        ctx->R2D_PopMatrix      = (PFN_R2D_POPMATRIX)Engine::DL_GetProcAddress(handle, "R2D_PopMatrix");
-        ctx->R2D_ResetStack     = (PFN_R2D_RESETSTACK)Engine::DL_GetProcAddress(handle, "R2D_ResetStack");
-        ctx->R2D_Begin          = (PFN_R2D_BEGIN)Engine::DL_GetProcAddress(handle, "R2D_Begin");
-        ctx->R2D_Bind           = (PFN_R2D_BIND)Engine::DL_GetProcAddress(handle, "R2D_Bind");
-        ctx->R2D_Draw           = (PFN_R2D_DRAW)Engine::DL_GetProcAddress(handle, "R2D_Draw");
+        ctx->R2D_CreateBuffer     = (PFN_R2D_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R2D_CreateBuffer");
+        ctx->R2D_DestroyBuffer    = (PFN_R2D_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R2D_DestroyBuffer");
+        ctx->R2D_BufferData       = (PFN_R2D_BUFFERDATA)Engine::DL_GetProcAddress(handle, "R2D_BufferData");
+        ctx->R2D_CreateTexture    = (PFN_R2D_CREATETEXTURE)Engine::DL_GetProcAddress(handle, "R2D_CreateTexture");
+        ctx->R2D_CreateMemTexture = (PFN_R2D_CREATEMEMTEXTURE)Engine::DL_GetProcAddress(handle, "R2D_CreateMemTexture");
+        ctx->R2D_DestroyTexture   = (PFN_R2D_DESTROYTEXTURE)Engine::DL_GetProcAddress(handle, "R2D_DestroyTexture");
+        ctx->R2D_TextureData      = (PFN_R2D_TEXTUREDATA)Engine::DL_GetProcAddress(handle, "R2D_TextureData");
+        ctx->R2D_PushMatrix       = (PFN_R2D_PUSHMATRIX)Engine::DL_GetProcAddress(handle, "R2D_PushMatrix");
+        ctx->R2D_PopMatrix        = (PFN_R2D_POPMATRIX)Engine::DL_GetProcAddress(handle, "R2D_PopMatrix");
+        ctx->R2D_ResetStack       = (PFN_R2D_RESETSTACK)Engine::DL_GetProcAddress(handle, "R2D_ResetStack");
+        ctx->R2D_Begin            = (PFN_R2D_BEGIN)Engine::DL_GetProcAddress(handle, "R2D_Begin");
+        ctx->R2D_Bind             = (PFN_R2D_BIND)Engine::DL_GetProcAddress(handle, "R2D_Bind");
+        ctx->R2D_Draw             = (PFN_R2D_DRAW)Engine::DL_GetProcAddress(handle, "R2D_Draw");
 
         // R3D
         ctx->R3D_CreateMaterial        = (PFN_R3D_CREATEMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_CreateMaterial");
-        ctx->R3D_DestroyMaterial        = (PFN_R3D_DESTROYMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_DestroyMaterial");
+        ctx->R3D_DestroyMaterial       = (PFN_R3D_DESTROYMATERIAL)Engine::DL_GetProcAddress(handle, "R3D_DestroyMaterial");
 
         ctx->R3D_CreateStaticModel     = (PFN_R3D_CREATESTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_CreateStaticModel");
         ctx->R3D_DestroyStaticModel    = (PFN_R3D_DESTROYSTATICMODEL)Engine::DL_GetProcAddress(handle, "R3D_DestroyStaticModel");

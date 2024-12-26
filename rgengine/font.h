@@ -36,6 +36,7 @@ namespace Engine {
 
 			RG_INLINE Uint32 GetScale()  { return m_scale; }
 			RG_INLINE Glyph* GetGlyphs() { return m_glyphs; }
+			RG_INLINE Uint8* GetBitmap() { return m_bitmap; }
 
 		private:
 			Uint32 m_scale;

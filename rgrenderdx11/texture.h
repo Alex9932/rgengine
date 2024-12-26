@@ -3,17 +3,11 @@
 
 #include <d3d11.h>
 #include <rgtypes.h>
-
-struct TextureInfo {
-	Uint32 width;
-	Uint32 height;
-	Uint32 channels;
-	void*  data;
-};
+#include <rendertypes.h>
 
 class Texture {
 	public:
-		Texture(TextureInfo* info);
+		Texture(R2DCreateMemTextureInfo* info);
 		virtual ~Texture();
 
 		void Bind(Uint32 bindPoint);
