@@ -57,8 +57,9 @@ namespace Engine {
 			for (Uint32 x = 0; x < w; x++) {
 				Uint32 data_ptr = w * y + x;
 				Uint32 dst_ptr = dstw * (offsety + y) + offsetx + x;
-// 1-channel texture (r-only)
-#if 1
+
+#if 0
+				// 1-channel texture (r-only)
 				dst[dst_ptr] = data[data_ptr];
 #else
 				dst[dst_ptr * 4 + 0] = data[data_ptr];
@@ -78,7 +79,7 @@ namespace Engine {
 
 		m_scale  = scale;
 		m_glyphs = (Glyph*)allocator->Allocate(glyph_count * sizeof(Glyph));
-		m_bitmap = (Uint8*)allocator->Allocate(glyph_count * glyph_size);
+		m_bitmap = (Uint8*)allocator->Allocate(glyph_count * glyph_size * 4); // TODO: Use 1-channel texture
 
 		// Load fontfile
 		FT_Face face;
