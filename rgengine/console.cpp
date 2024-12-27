@@ -4,6 +4,7 @@
 #include "rendertypes.h"
 #include "utf8.h"
 
+#include "engine.h"
 #include "logger.h"
 #include "event.h"
 
@@ -64,12 +65,99 @@ namespace Engine {
         }
     }
 
+    static Uint32 Strlen16(Uint16* str) {
+        Uint32 i = 0;
+        for (;; i++) {
+            Uint16 c = str[i];
+            if (c == 0 || c == 10) { break; }
+        }
+        return i;
+    }
+    
+    static void Backspace() {
+        if (cursor > 0) {
+            Uint32 cb_len = Strlen16(command_buffer);
+            Uint32 i = 0;
+            for (i = cursor - 1; i < cb_len + 1; ++i) {
+                command_buffer[i] = command_buffer[i + 1];
+            }
+            cursor--;
+        }
+    }
+
+    static Uint32 Append(Uint32 pointer, String str) {
+        utf8_decoder.DecodeString(str);
+        Uint16* res = utf8_decoder.GetResult();
+        Uint32 len = utf8_decoder.GetResultLength();
+        Uint32 cb_len = Strlen16(command_buffer);
+
+        for (Sint32 i = cb_len + 1; i >= (Sint32)pointer; i--) {
+            command_buffer[i + len] = command_buffer[i];
+        }
+
+        SDL_memcpy(&command_buffer[pointer], res, sizeof(Uint16) * len);
+
+        return len;
+    }
+
     static Bool Input(SDL_Event* event) {
+        if (!is_shown) { return true; }
+
+        if (event->type == SDL_TEXTINPUT) {
+            cursor += Append(cursor, event->text.text);
+        } else if (event->type == SDL_KEYDOWN) {
+
+            switch (event->key.keysym.scancode) {
+                case SDL_SCANCODE_RETURN: { // Execute command
+                    utf8_encoder.EncodeString(command_buffer);
+                    String result = utf8_encoder.GetResult();
+                    rgLogInfo(RG_LOG_GAME, "@ %s\n", result);
+                    //Command::ExecuteCommand(result);
+
+                    //Engine::ExecuteCommand(result);
+
+                    SDL_memset(command_buffer, 0, 1024);
+                    cursor = 0;
+                    break;
+                }
+                case SDL_SCANCODE_BACKSPACE: {
+                    Backspace();
+                    break;
+                }
+                case SDL_SCANCODE_LEFT: {
+                    if (cursor > 0) { cursor--; }
+                    break;
+                }
+                case SDL_SCANCODE_RIGHT: {
+                    if (cursor < Strlen16(command_buffer)) { cursor++; }
+                    break;
+                }
+                case SDL_SCANCODE_HOME: {
+                    cursor = 0;
+                    break;
+                }
+                case SDL_SCANCODE_END: {
+                    cursor = Strlen16(command_buffer);
+                    break;
+                }
+                default:
+                    break;
+            }
+
+
+        }/* else if (event->type == SDL_KEYUP) {
+            switch (event->key.keysym.scancode) {
+                case SDL_SCANCODE_BACKSPACE:
+                    break;
+                default:
+                    break;
+            }
+        }*/
 
         return true;
     }
 
-    static void PushChar(char c, vec4* color, Float32 scale, Uint32* idx, Float32* x, Float32* y) {
+    static void PushChar(Uint16 c, vec4* color, Float32 scale, Uint32* idx, Float32* x, Float32* y) {
 
         Glyph g = font->GetGlyphs()[c];
         Float32 xpos = *x + g.bearing_x * scale;
@@ -94,18 +182,22 @@ namespace Engine {
 
     }
 
-    static void AppendBuffer(String s, Uint32* idx, Float32* x, Float32* y, vec4* color) {
-        Uint32 len = SDL_strlen(s);
-
+    static void AppendBuffer(Uint16* s, Uint32 slen, Uint32* idx, Float32* x, Float32* y, vec4* color) {
         Float32 scale = 1;
-
-        for (Uint32 i = 0; i < len; i++) {
-            char c = s[i];
+        for (Uint32 i = 0; i < slen; i++) {
+            Uint16 c = s[i];
             if (c == '\n') {
                 continue;
             }
             PushChar(c, color, scale, idx, x, y);
         }
+    }
+
+    static void AppendBuffer(String s, Uint32* idx, Float32* x, Float32* y, vec4* color) {
+        utf8_decoder.DecodeString(s);
+        Uint16* raw_str = utf8_decoder.GetResult();
+        Uint32 slen = utf8_decoder.GetResultLength();
+        AppendBuffer(raw_str, slen, idx, x, y, color);
     }
 
     static void UpdateVertexBuffer() {
@@ -128,8 +220,17 @@ namespace Engine {
         // Command line
         vec4 wcolor = { 1, 1, 1, 1 };
         vec4 ycolor = { 1, 0.75f, 0.27f, 1 };
+
+        Uint32 slen = Strlen16(command_buffer);
         AppendBuffer("> ", &txt_vertices, &x, &y, &wcolor);
-        //AppendBuffer(s, &txt_vertices, &x, &y);
+        Float32 offset = x;
+        AppendBuffer(command_buffer, slen, &txt_vertices, &x, &y, &wcolor);
+
+        if ((Uint32)GetUptime() % 2) {
+            x = offset + font->GetRawStringLength(command_buffer, cursor);
+            //Float32 cy = -5;
+            PushChar('|', &wcolor, 1, &txt_vertices, &x, &y);
+        }
 
         x = scr_size.x - 150;
         char msgs_buffer[64];
@@ -149,6 +250,8 @@ namespace Engine {
     void InitializeConsole() {
         RegisterEventHandler(Input);
         r_ctx = Render::GetRenderContext();
+
+        SDL_memset(command_buffer, 0, sizeof(command_buffer));
 
         font = RG_NEW(Font)("gamedata/fonts/UbuntuMono-R.ttf", FONT_SIZE);
 

@@ -127,7 +127,7 @@ namespace Engine {
 		FreeFTLibrary();
 	}
 
-	Float32 Font::GetRawStringLength(WString str, Uint32 len) {
+	Float32 Font::GetRawStringLength(Uint16* str, Uint32 len) {
 		Float32 x = 0;
 		Uint16 c = 0;
 		for (Uint32 i = 0; ((c = str[i]) != 0 && i < len); i++) {

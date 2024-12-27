@@ -31,8 +31,8 @@ namespace Engine {
 			Font(String font, Uint32 size);
 			virtual ~Font();
 
-			RG_DECLSPEC Float32 GetRawStringLength(WString str, Uint32 len);
-			RG_INLINE Float32 GetRawStringLength(WString str) { GetRawStringLength(str, -1); }
+			RG_DECLSPEC Float32 GetRawStringLength(Uint16* str, Uint32 len);
+			RG_INLINE Float32 GetRawStringLength(Uint16* str) { GetRawStringLength(str, -1); }
 
 			RG_INLINE Uint32 GetScale()  { return m_scale; }
 			RG_INLINE Glyph* GetGlyphs() { return m_glyphs; }
