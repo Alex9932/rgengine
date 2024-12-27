@@ -220,8 +220,10 @@ R2D_Buffer* R2D_CreateBuffer(R2DCreateBufferInfo* info) {
 
 	BufferCreateInfo vbufferInfo = {};
 	vbufferInfo.type   = BUFFER_VERTEX;
-	vbufferInfo.access = BUFFER_GPU_ONLY;
-	vbufferInfo.usage  = BUFFER_DEFAULT;
+	//vbufferInfo.access = BUFFER_GPU_ONLY;
+	//vbufferInfo.usage  = BUFFER_DEFAULT;
+	vbufferInfo.access = BUFFER_CPU_WRITE;
+	vbufferInfo.usage = BUFFER_DYNAMIC;
 	vbufferInfo.length = info->length * sizeof(R2D_Vertex);
 	buffer->buffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&vbufferInfo);
 	buffer->buffer->SetData(0, vbufferInfo.length, info->initial_data);
@@ -236,7 +238,7 @@ void R2D_DestroyBuffer(R2D_Buffer* buffer) {
 }
 
 void R2D_BufferData(R2DBufferDataInfo* info) {
-	info->buffer->buffer->SetData(info->offset, info->length, info->data);
+	info->buffer->buffer->SetData(info->offset * sizeof(R2D_Vertex), info->length * sizeof(R2D_Vertex), info->data);
 }
 
 R2D_Texture* R2D_CreateTexture(R2DCreateTextureInfo* info) {
