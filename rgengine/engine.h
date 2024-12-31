@@ -8,7 +8,7 @@
 
  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
  SPDX-License-Identifier: MIT
- Copyright (c) 2018-2024 Alex9932
+ Copyright (c) 2018-2025 Alex9932
 
  THIRDPATY SOFTWERE
  Used libraries:
