@@ -510,7 +510,7 @@ void DoPostprocess() {
 	ssr->SetInput(3, lightpass_output);
 	ssr->SetInput(4, GetGBufferDepth());
 	ssr->SetConstants(ssrBuffer->GetHandle());
-	//ssr->Draw();
+	ssr->Draw();
 
 	// Blur ssr
 
