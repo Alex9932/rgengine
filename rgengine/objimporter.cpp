@@ -510,6 +510,9 @@ namespace Engine {
 			aiGetMaterialTexture(mat, aiTextureType_DIFFUSE, 0, &ai_d_str);
 			aiGetMaterialTexture(mat, aiTextureType_DISPLACEMENT, 0, &ai_n_str);
 
+			aiColor4D color;
+			aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE, &color);
+
 			SDL_memset(new_path, 0, 128);
 			SDL_memset(n_new_path, 0, 128);
 
@@ -528,6 +531,10 @@ namespace Engine {
 
 			SDL_snprintf(materials[i].pbr, 128, "%s/textures/def_pbr.png", GetPlatformPath());
 			materials[i].color = {1, 1, 1};
+			materials[i].color.r = color.r;
+			materials[i].color.g = color.g;
+			materials[i].color.b = color.b;
+			//materials[i].color.a = color.a;
 		}
 
 		R3D_MatMeshInfo* minfo = (R3D_MatMeshInfo*)rg_malloc(scene->mNumMeshes * sizeof(R3D_MatMeshInfo));
@@ -547,7 +554,10 @@ namespace Engine {
 
 			for (Uint32 j = 0; j < mesh->mNumVertices; j++) {
 				vec4 p_vec = { mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z, 1 };
-				vec4 n_vec = { mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z, 0 };
+				vec4 n_vec = {};
+				if (mesh->mNormals) {
+					n_vec = { mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z, 0 };
+				}
 				vec4 t_vec = {};
 				if (mesh->mTangents) {
 					t_vec = { mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z, 0 };
@@ -590,13 +600,19 @@ namespace Engine {
 			}
 
 
-			//Uint32 idxoffset = idx;
+			Uint32 sidx = idx;
 			for (Uint32 j = 0; j < mesh->mNumFaces; j++) {
 				indices[idx + 0] = offset + mesh->mFaces[j].mIndices[0];
 				indices[idx + 1] = offset + mesh->mFaces[j].mIndices[1];
 				indices[idx + 2] = offset + mesh->mFaces[j].mIndices[2];
 				idx += 3;
 			}
+
+			// Calculate nomrlas if needed
+			//if (!mesh->mNormals) {
+			//	Uint32* ptr = &indices[sidx];
+			//	RecalculateNormals(vertices, ptr, mesh->mNumFaces * 3);
+			//}
 
 			//RecalculateTangetns(mesh->mNumVertices, vertices, idxoffset, mesh->mNumFaces*3, indices);
 
@@ -606,6 +622,9 @@ namespace Engine {
 
 			idx_offset += minfo[i].indexCount;
 		}
+
+		// Regen normals
+		//RecalculateNormals(vertices, indices, index_count);
 
 		// Materials
 		info->matInfo  = materials;

@@ -29,6 +29,8 @@
 
 #include "staticobject.h"
 
+#include "console.h"
+
 using namespace Engine;
 
 static R3D_GlobalLightDescrition globaLightDesc = {
@@ -46,16 +48,31 @@ static Viewport* viewport;
 
 static Bool EHandler(SDL_Event* event) {
 
-	if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_TAB) {
-		if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
-			gizmo_mode++;
-			gizmo_mode = gizmo_mode % 2;
-			viewport->SetGizmoMode(gizmo_mode);
-		} else {
-			gizmo_op++;
-			gizmo_op = gizmo_op % 3;
-			viewport->SetGizmoOp(gizmo_op);
+	switch (event->type) {
+
+		case SDL_KEYDOWN: {
+
+			if (event->key.keysym.scancode == SDL_SCANCODE_TAB) {
+				if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
+					gizmo_mode++;
+					gizmo_mode = gizmo_mode % 2;
+					viewport->SetGizmoMode(gizmo_mode);
+				} else {
+					gizmo_op++;
+					gizmo_op = gizmo_op % 3;
+					viewport->SetGizmoOp(gizmo_op);
+				}
+			}
+
+			if (event->key.keysym.scancode == SDL_SCANCODE_GRAVE) {
+				rgLogInfo(RG_LOG_GAME, "Toggled console");
+				ToggleConsole();
+			}
+
+			break;
 		}
+
+		default: { break; }
 	}
 
 	return true;

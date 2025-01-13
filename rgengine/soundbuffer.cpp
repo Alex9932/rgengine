@@ -71,7 +71,7 @@ namespace Engine {
 			!RG_CHECK_FLAG(m_flags, RG_SOUND_ENDED) &&
 			proc) {
 
-			rgLogInfo(RG_LOG_SYSTEM, "Process buffer");
+			rgLogInfo(RG_LOG_DEBUG, "Process buffer");
 
 			alSourceUnqueueBuffers(m_source->GetSource(), 1, &buff);
 			//m_current = (m_current++) & 1;
@@ -97,7 +97,7 @@ namespace Engine {
 	void StreamBuffer::Play() {
 		if (!RG_CHECK_FLAG(m_flags, RG_SOUND_PAUSED)) {
 
-			rgLogInfo(RG_LOG_SYSTEM, "Initial queue buffers");
+			rgLogInfo(RG_LOG_DEBUG, "Initial queue buffers");
 			// Queue 2 buffers
 			m_current = 0;
 			RefillBufferData(m_buffers[m_current], m_stream.stream);
@@ -110,7 +110,7 @@ namespace Engine {
 
 		}
 		else {
-			rgLogInfo(RG_LOG_SYSTEM, "RESUME");
+			rgLogInfo(RG_LOG_DEBUG, "RESUME");
 		}
 		RG_RESET_FLAG(m_flags, RG_SOUND_PAUSED);
 		RG_RESET_FLAG(m_flags, RG_SOUND_ENDED);
