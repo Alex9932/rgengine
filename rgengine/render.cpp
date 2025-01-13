@@ -327,9 +327,19 @@ namespace Engine {
         static void ProcessStatic(R3D_PushModelInfo* info, World* world) {
             for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
                 StaticObject* staticobj = world->GetStaticObject(i);
+                
+                mat4* mat = staticobj->GetMatrix();
+
+                vec3 p = {};
+                p.x = mat->m03;
+                p.y = mat->m13;
+                p.z = mat->m23;
+
+                AABB aabb = *staticobj->GetAABB();
+                aabb.Add(p);
 
                 if (isStaticCullingEnabled) {
-                    Bool inFrustum = AABBInFrustum(&frustum, staticobj->GetAABB());
+                    Bool inFrustum = AABBInFrustum(&frustum, &aabb);
                     if (!inFrustum) { continue; }
                 }
 
