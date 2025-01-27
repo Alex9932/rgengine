@@ -12,6 +12,7 @@
 
 namespace Engine {
 
+#if 0
     static void ReadMaterialsV2(PM2_Header* header, R3D_MaterialInfo* materials, FSReader* reader, String model_root) {
 
         char str_buffer[128];
@@ -76,8 +77,11 @@ namespace Engine {
         }
 
     }
+#endif
 
     static void ReadMaterialsV4(PM2_Header* header, R3D_MaterialInfo* materials, FSReader* reader, String model_root) {
+
+        //vec4 diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 
         char albedo[128];
         char normal[128];
@@ -91,13 +95,16 @@ namespace Engine {
             reader->Read(str_buffer, len);
 
             // %gamedata%/textures/%texture%
+            SDL_snprintf(materials[i].texture, 128, "%s", str_buffer);
+#if 0
             SDL_snprintf(materials[i].albedo, 128, "%s/textures/%s.png",      GetGamedataPath(), str_buffer);
             SDL_snprintf(materials[i].normal, 128, "%s/textures/%s_bump.png", GetGamedataPath(), str_buffer);
             SDL_snprintf(materials[i].pbr,    128, "%s/textures/%s_pbr.png",  GetGamedataPath(), str_buffer);
+#endif
 
-            vec4 diffuse;
-            reader->Read4F32(diffuse);
-            materials[i].color = { diffuse.r, diffuse.g, diffuse.b };
+            // Not used in v4
+            //reader->Read4F32(diffuse);
+            //materials[i].color = { diffuse.r, diffuse.g, diffuse.b };
 
         }
 
@@ -155,7 +162,8 @@ namespace Engine {
             RG_ERROR_MSG(buffer);
         }
 
-        if (header.version < 2 && header.version > 3) {
+        //if (header.version < 2 && header.version > 3) {
+        if (header.version < 4) {
             RG_ERROR_MSG("Unsupported pm2 version!");
         }
 
@@ -175,8 +183,10 @@ namespace Engine {
         R3D_MaterialInfo* materials = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * header.materials);
 
         switch (header.version) {
+#if 0
             case 2: { ReadMaterialsV2(&header, materials, reader, model_root); break; }
             case 3: { ReadMaterialsV3(&header, materials, reader, model_root); break; }
+#endif
             case 4: { ReadMaterialsV4(&header, materials, reader, model_root); break; }
             default: { RG_ERROR_MSG("PM2: Unknown file format!") break; }
         }

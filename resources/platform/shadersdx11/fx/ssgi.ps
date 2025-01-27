@@ -9,11 +9,11 @@ struct PSOUTPUT {
 
 #define RG_SMAPLE_LEVEL 0
 
-Texture2D t_unit0 : register(t0);
-Texture2D t_unit1 : register(t1);
-Texture2D t_unit2 : register(t2);
-Texture2D t_unit3 : register(t3);
-Texture2D t_unit4 : register(t4);
+Texture2D t_unit0 : register(t0); // alb
+Texture2D t_unit1 : register(t1); // norm
+Texture2D t_unit2 : register(t2); // wpos
+Texture2D t_unit3 : register(t3); // light
+Texture2D t_unit4 : register(t4); // depth
 SamplerState SampleType : register(s0);
 
 cbuffer ConstBuffer : register(b0) {
@@ -40,7 +40,6 @@ float4 Project(float4 pos) {
 	return v / v.w;
 }
 
-// TODO: Binary search
 float4 TraceRay(float3 wpos, float3 dir) {
 	float maxRayDistance = 20;
 
@@ -78,49 +77,30 @@ float4 TraceRay(float3 wpos, float3 dir) {
 	return 0;
 }
 
-PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
+// TODO: Screen-space global illumination
 
+PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	int screenx = screen_size >> 16;
 	int screeny = screen_size & 0x0000FFFF;
-	
 	float2 noproj_uv = fragCoord.xy/float2(screenx, screeny);
 
-
-	//float4 alb_met = t_unit0.Sample(SampleType, noproj_uv);
 	float4 nor_rou = t_unit1.Sample(SampleType, noproj_uv);
 	float4 wps_emi = t_unit2.Sample(SampleType, noproj_uv);
 
-	float4 lightres = t_unit3.Sample(SampleType, noproj_uv);
+	float3 N = normalize(nor_rou.xyz); // Normal
+	float3 P = wps_emi.xyz;            // Position
+	float  R = nor_rou.w;              // Roughtness
+	float  E = wps_emi.w;              // Emission
 
-#if 1
-	//float3 albedo    = alb_met.rgb;
-	float3 normal    = normalize(nor_rou.xyz);
-	float3 wpos      = wps_emi.xyz;
-	//float  metallic  = alb_met.a;
-	float  roughness = nor_rou.a;
-	//float  emissive  = wps_emi.a;
 
-	float3 viewVector = normalize(wpos - camera_position.xyz);
-	float3 reflection = normalize(reflect(viewVector, normal));
 
-	float  fresnel    = 1 - max(0, dot(-viewVector, normal));
+	float4 tColor = 0;
 
-	float reflectivity = fresnel * (1 - roughness); // TMP
-
-	float4 tColor = TraceRay(wpos, reflection) * pow(reflectivity, 0.75);
-
-	//if(tColor.r < 0.001 && tColor.g < 0.001 && tColor.b < 0.001) {
-	//	tColor = lightres.rgb;
-	//}
-
-#endif
+	tColor.xyz = t_unit3.Sample(SampleType, noproj_uv).xyz;
+	tColor.w = 1;
 
 	PSOUTPUT pout;
-	
 	pout.color.rgba = tColor;
-
-	//pout.color.rgb = lightres.rgb*roughness + (1-roughness)*tColor;
-	//pout.color.rgb = lightres.rgb;
-	//pout.color.a   = 1;
 	return pout;
+
 }

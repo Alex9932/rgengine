@@ -45,12 +45,12 @@ namespace Engine {
     static Font* font;
 
     static vec4 colors[] = {
-        {1, 0, 0, 1},
-        {1, 0.3, 0.3, 1},
-        {0.9, 0.8, 0, 1},
-        {0.2, 1, 0.4, 1},
-        {0.3, 0.4, 0.9, 1},
-        {1, 1, 1, 1}
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {1.0f, 0.3f, 0.3f, 1.0f},
+        {0.9f, 0.8f, 0.0f, 1.0f},
+        {0.2f, 1.0f, 0.4f, 1.0f},
+        {0.3f, 0.4f, 0.9f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f}
     };
 
     static vec4* GetColor(SDL_LogPriority p) {
@@ -156,7 +156,8 @@ namespace Engine {
 
         return true;
     }
-
+    
+    // TODO: Rewrite text's mesh gen
     static void PushChar(Uint16 c, vec4* color, Float32 scale, Uint32* idx, Float32* x, Float32* y) {
 
         Glyph g = font->GetGlyphs()[c];
@@ -232,7 +233,7 @@ namespace Engine {
             PushChar('|', &wcolor, 1, &txt_vertices, &x, &y);
         }
 
-        x = scr_size.x - 150;
+        x = (Float32)scr_size.x - 150;
         char msgs_buffer[64];
         SDL_snprintf(msgs_buffer, 64, "[%d]", Logger_GetMessages());
         AppendBuffer(msgs_buffer, &txt_vertices, &x, &y, &ycolor);
@@ -312,7 +313,7 @@ namespace Engine {
         r_ctx->R2D_PushMatrix(&mat);
 
         // Draw background
-        Float32 c_size = (Logger_GetLines() + 2) * FONT_SIZE;
+        Float32 c_size = (Float32)(Logger_GetLines() + 2) * FONT_SIZE;
         mat4_model(&mat, { 0, (Float32)(scr_size.y - c_size), 0 }, { 0, 0, 0 }, { (Float32)scr_size.x, c_size, 1 });
         r_ctx->R2D_PushMatrix(&mat);
 

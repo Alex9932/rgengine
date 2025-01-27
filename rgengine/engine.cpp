@@ -482,6 +482,41 @@ namespace Engine {
         SDL_Quit();
     }
 
+    void RequestShutdown() {
+        
+        int btn = 0;
+        SDL_MessageBoxButtonData boxbtns[2] = {};
+        SDL_MessageBoxColorScheme boxcolor = {};
+        SDL_MessageBoxData boxdata = {};
+
+        boxbtns[0].buttonid = 1;
+        boxbtns[0].flags = 0;
+        boxbtns[0].text = "Yes";
+        boxbtns[1].buttonid = 2;
+        boxbtns[1].flags = SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+        boxbtns[1].text = "No";
+
+        // TODO: Create GLOBAL color scheme
+        boxcolor.colors[SDL_MESSAGEBOX_COLOR_BACKGROUND] = { 25, 25, 25 };
+        boxcolor.colors[SDL_MESSAGEBOX_COLOR_TEXT] = { 205, 205, 205 };
+        boxcolor.colors[SDL_MESSAGEBOX_COLOR_BUTTON_BORDER] = { 0, 0, 0 };
+        boxcolor.colors[SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND] = { 32, 32, 32 };
+        boxcolor.colors[SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED] = { 55, 55, 55 };
+
+        boxdata.flags       = SDL_MESSAGEBOX_WARNING;
+        boxdata.window      = GetWindow();
+        boxdata.title       = "rgEngine";
+        boxdata.message     = "Do you want quit?";
+        boxdata.numbuttons  = 2;
+        boxdata.buttons     = boxbtns;
+        boxdata.colorScheme = &boxcolor;
+
+        SDL_ShowMessageBox(&boxdata, &btn);
+        if (btn == 1) {
+            Quit();
+        }
+    }
+
     void Quit() {
         shutdown_rq = true;
         PushEvent(0, RG_EVENT_SHUTDOWN_RQ, NULL, NULL);

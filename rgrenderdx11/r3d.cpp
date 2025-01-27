@@ -296,10 +296,19 @@ R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	//rgLogInfo(RG_LOG_RENDER, "Material: 0x%0.16lx", (RG_VPTR)material);
 	rgLogInfo(RG_LOG_RENDER, "Material: %p", (RG_VPTR)material);
 
-	LoaderPushTexture(info->albedo, &material->albedo);
-	LoaderPushTexture(info->normal, &material->normal);
-	LoaderPushTexture(info->pbr, &material->pbr);
-	material->color = info->color;
+	char albedo[256];
+	char normal[256];
+	char pbr[256];
+
+	SDL_snprintf(albedo, 256, "%s/textures/%s.png",      GetGamedataPath(), info->texture);
+	//SDL_snprintf(normal, 256, "%s/textures/%s_norm.png", GetGamedataPath(), info->texture);
+	SDL_snprintf(normal, 256, "platform/textures/def_normal.png", GetGamedataPath(), info->texture);
+	SDL_snprintf(pbr,    256, "%s/textures/%s_pbr.png",  GetGamedataPath(), info->texture);
+
+	LoaderPushTexture(albedo, &material->albedo);
+	LoaderPushTexture(normal, &material->normal);
+	LoaderPushTexture(pbr, &material->pbr);
+	material->color = { 1.0f, 1.0f, 1.0f };
 
 	texturesLoaded += 3;
 
@@ -392,10 +401,13 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 
 	for (Uint32 i = 0; i < info->matCount; i++) {
 		R3DCreateMaterialInfo creatematinfo = {};
+		creatematinfo.texture = info->matInfo[i].texture;
+#if 0
 		creatematinfo.albedo = info->matInfo[i].albedo;
 		creatematinfo.normal = info->matInfo[i].normal;
 		creatematinfo.pbr    = info->matInfo[i].pbr;
 		creatematinfo.color  = info->matInfo[i].color;
+#endif
 		materials[i] = R3D_CreateMaterial(&creatematinfo);
 	}
 
@@ -486,10 +498,14 @@ R3D_RiggedModel* R3D_CreateRiggedModel(R3DRiggedModelInfo* info) {
 
 	for (Uint32 i = 0; i < info->matCount; i++) {
 		R3DCreateMaterialInfo creatematinfo = {};
+
+		creatematinfo.texture = info->matInfo[i].texture;
+#if 0
 		creatematinfo.albedo = info->matInfo[i].albedo;
 		creatematinfo.normal = info->matInfo[i].normal;
 		creatematinfo.pbr    = info->matInfo[i].pbr;
 		creatematinfo.color  = info->matInfo[i].color;
+#endif
 		materials[i] = R3D_CreateMaterial(&creatematinfo);
 	}
 

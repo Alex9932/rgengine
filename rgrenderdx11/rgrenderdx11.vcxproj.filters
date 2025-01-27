@@ -256,5 +256,8 @@
     <None Include="..\resources\platform\shadersdx11\gbuffer_transparent.ps">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\resources\platform\shadersdx11\fx\ssgi.ps">
+      <Filter>shaders\fx</Filter>
+    </None>
   </ItemGroup>
 </Project>

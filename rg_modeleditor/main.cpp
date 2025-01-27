@@ -214,10 +214,12 @@ class Application : public BaseGame {
 					}
 					SDL_snprintf(mat_name, 64, "Material %d", i);
 					if (ImGui::TreeNode(mat_name)) {
-						ImGui::InputText("Albedo", mat->albedo, 128);
+						ImGui::InputText("Texture", mat->texture, 128);
+#if 0
 						ImGui::InputText("Normal", mat->normal, 128);
 						ImGui::InputText("PBR", mat->pbr, 128);
 						ImGui::ColorEdit3("Color", mat->color.array);
+#endif
 						ImGui::TreePop();
 					}
 				}

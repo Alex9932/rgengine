@@ -152,6 +152,16 @@ struct SSAOBufferData {
 	mat4 proj;
 };
 
+struct SSGIBufferData {
+	mat4 proj;
+	mat4 view;
+	mat4 viewProj;
+	mat4 invProj;
+	mat4 invView;
+	vec4 camera_position;
+	int  screen_size;
+};
+
 struct GodRaysBufferData {
 	mat4 viewproj;
 	vec3 lightpos;
@@ -189,6 +199,11 @@ static BBufferData blurData;
 static FX* ssao;
 static Buffer* ssaoBuffer;
 static SSAOBufferData ssaoData;
+
+// SSGI
+static FX* ssgi;
+static Buffer* ssgiBuffer;
+static SSGIBufferData ssgiData;
 
 // Godrays
 static FX* godrays;
@@ -246,6 +261,11 @@ static void LoadFX() {
 
 	ssao = RG_NEW_CLASS(RGetAllocator(), FX)(size, "ssao.ps");
 
+	ivec2 giSize = *size;
+	giSize.x /= 2;
+	giSize.y /= 2;
+	ssgi = RG_NEW_CLASS(RGetAllocator(), FX)(&giSize, "ssgi.ps");
+
 	godrays = RG_NEW_CLASS(RGetAllocator(), FX)(size, "godrays.ps");
 }
 
@@ -269,6 +289,7 @@ static void FreeFX() {
 
 	RG_DELETE_CLASS(RGetAllocator(), FX, mix);
 	RG_DELETE_CLASS(RGetAllocator(), FX, ssao);
+	RG_DELETE_CLASS(RGetAllocator(), FX, ssgi);
 	RG_DELETE_CLASS(RGetAllocator(), FX, godrays);
 }
 
@@ -315,6 +336,9 @@ void CreateFX(ivec2* size) {
 	abufferInfo.length = sizeof(SSAOBufferData);
 	ssaoBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
+	abufferInfo.length = sizeof(SSGIBufferData);
+	ssgiBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
+
 	abufferInfo.length = sizeof(GodRaysBufferData);
 	godraysBuffer = RG_NEW_CLASS(RGetAllocator(), Buffer)(&abufferInfo);
 
@@ -332,6 +356,7 @@ void DestroyFX() {
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, blurBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssrBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssaoBuffer);
+	RG_DELETE_CLASS(RGetAllocator(), Buffer, ssgiBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, godraysBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, mixBuffer);
 
@@ -382,6 +407,13 @@ void ResizeFX(ivec2* size) {
 	blury3->Resize(&subSize);
 
 	ssao->Resize(size);
+
+
+	ivec2 giSize = *size;
+	giSize.x /= 2;
+	giSize.y /= 2;
+	ssgi->Resize(&giSize);
+
 	godrays->Resize(size);
 
 	mix->Resize(size);
@@ -394,22 +426,14 @@ static inline Uint32 PackVector(ivec2* vec) {
 	return shiftx | y;
 }
 
-static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
-
+static ID3D11ShaderResourceView* DoBlur(ID3D11ShaderResourceView* entry) {
 	blurData.Directions = 16.0;
 	blurData.Quality = 3.0;
 	blurData.Size = 8.0;
 
-	// Apply threshold
-
-	contrast->SetInput(0, entry);
-	contrast->Draw();
-
-	// Downscale blur
-
 	blurData.ScreenSize = PackVector(blurx1->GetSize());
 	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
-	blurx1->SetInput(0, contrast->GetOutput());
+	blurx1->SetInput(0, entry);
 	blurx1->SetConstants(blurBuffer->GetHandle());
 	blurx1->Draw();
 
@@ -468,6 +492,99 @@ static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
 	return blury1->GetOutput();
 }
 
+static ID3D11ShaderResourceView* DoBloom(ID3D11ShaderResourceView* entry) {
+	// Apply threshold
+	contrast->SetInput(0, entry);
+	contrast->Draw();
+
+	// Downscale blur
+	return DoBlur(contrast->GetOutput());
+}
+
+static void DoGodrays() {
+	godraysData.viewproj = *GetCameraProjection() * *GetCameraView();
+	godraysData.lightpos = *GetSunPosition() * 100;// { -7, 100, 2 };
+
+	godraysBuffer->SetData(0, sizeof(GodRaysBufferData), &godraysData);
+
+	//godrays->SetInput(0, GetShadowDepth());  // Light depth-map
+	//godrays->SetInput(1, GetGBufferDepth()); // G-Buffer depth-map
+
+	godrays->SetInput(0, GetGBufferShaderResource(0)); // Skybox color
+	//godrays->SetInput(1, GetGBufferShaderResource(2)); // Alpha-channel used
+	godrays->SetInput(1, GetGBufferDepth()); // Depth buffer
+
+	godrays->SetConstants(godraysBuffer->GetHandle());
+	godrays->Draw();
+}
+
+static void DoSSR() {
+	ID3D11ShaderResourceView* lightpass_output = GetLightpassShaderResource();
+
+	ssrData.proj = *GetCameraProjection();
+	ssrData.view = *GetCameraView();
+	ssrData.viewProj = ssrData.proj * ssrData.view;
+
+	mat4_inverse(&ssrData.invProj, ssrData.proj);
+	mat4_inverse(&ssrData.invView, ssrData.view);
+	ssrData.camera_position.xyz = *GetCameraPosition();
+	ssrData.camera_position.w = 1;
+
+	ivec2 ssrSize = viewport;
+	ssrSize.x /= 4;
+	ssrSize.y /= 4;
+	ssrData.screen_size = PackVector(&ssrSize);
+
+	ssrBuffer->SetData(0, sizeof(SSRBufferData), &ssrData);
+	ssr->SetInput(0, GetGBufferShaderResource(0)); // Albedo
+	ssr->SetInput(1, GetGBufferShaderResource(1)); // Normal
+	ssr->SetInput(2, GetGBufferShaderResource(2)); // Wpos
+	ssr->SetInput(3, lightpass_output);
+	ssr->SetInput(4, GetGBufferDepth());
+	ssr->SetConstants(ssrBuffer->GetHandle());
+	ssr->Draw();
+
+	// Blur ssr
+
+	blurData.ScreenSize = PackVector(blurx1->GetSize());
+	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
+	ssr_blurx1->SetInput(0, ssr->GetOutput());
+	ssr_blurx1->SetConstants(blurBuffer->GetHandle());
+	ssr_blurx1->Draw();
+
+	ssr_blury1->SetInput(0, ssr_blurx1->GetOutput());
+	ssr_blury1->SetConstants(blurBuffer->GetHandle());
+	ssr_blury1->Draw();
+
+}
+
+static void DoSSGI() {
+
+	ssgiData.proj = *GetCameraProjection();
+	ssgiData.view = *GetCameraView();
+	ssgiData.viewProj = ssgiData.proj * ssgiData.view;
+
+	mat4_inverse(&ssgiData.invProj, ssgiData.proj);
+	mat4_inverse(&ssgiData.invView, ssgiData.view);
+	ssgiData.camera_position.xyz = *GetCameraPosition();
+	ssgiData.camera_position.w = 1;
+
+	ivec2 ssrSize = viewport;
+	ssrSize.x /= 2;
+	ssrSize.y /= 2;
+	ssgiData.screen_size = PackVector(&ssrSize);
+
+	ssgiBuffer->SetData(0, sizeof(SSGIBufferData), &ssgiData);
+	ssgi->SetInput(0, GetGBufferShaderResource(0)); // Albedo
+	ssgi->SetInput(1, GetGBufferShaderResource(1)); // Normal
+	ssgi->SetInput(2, GetGBufferShaderResource(2)); // Wpos
+	ssgi->SetInput(3, blury1->GetOutput());         // !!!!! used blured image form bloom pass !!!!!
+	ssgi->SetInput(4, GetGBufferDepth());
+	ssgi->SetConstants(ssgiBuffer->GetHandle());
+	ssgi->Draw();
+
+}
+
 void DoPostprocess() {
 
 	ID3D11Buffer* vbuffer = quadbuffer->GetHandle();
@@ -485,49 +602,7 @@ void DoPostprocess() {
 	// Skip post effects
 	if (RG_CHECK_FLAG(RGetSetupFlags(), RG_RENDER_NOPOSTPROCESS)) { return; }
 
-	ID3D11ShaderResourceView* lightpass_output = GetLightpassShaderResource();
-
-	// SSR
-
-	ssrData.proj = *GetCameraProjection();
-	ssrData.view = *GetCameraView();
-	ssrData.viewProj = ssrData.proj * ssrData.view;
-
-	mat4_inverse(&ssrData.invProj, ssrData.proj);
-	mat4_inverse(&ssrData.invView, ssrData.view);
-	ssrData.camera_position.xyz = *GetCameraPosition();
-	ssrData.camera_position.w = 1;
-
-	Uint32 screenx = (viewport.x / 4) & 0x0000FFFF;
-	Uint32 screeny = (viewport.y / 4) & 0x0000FFFF;
-	Uint32 shiftx = screenx << 16;
-	ssrData.screen_size = shiftx | screeny;
-
-	ssrBuffer->SetData(0, sizeof(SSRBufferData), &ssrData);
-	ssr->SetInput(0, GetGBufferShaderResource(0)); // Albedo
-	ssr->SetInput(1, GetGBufferShaderResource(1)); // Normal
-	ssr->SetInput(2, GetGBufferShaderResource(2)); // Wpos
-	ssr->SetInput(3, lightpass_output);
-	ssr->SetInput(4, GetGBufferDepth());
-	ssr->SetConstants(ssrBuffer->GetHandle());
-	ssr->Draw();
-
-	// Blur ssr
-
-
-	blurData.ScreenSize = PackVector(blurx1->GetSize());
-	blurBuffer->SetData(0, sizeof(BBufferData), &blurData);
-	ssr_blurx1->SetInput(0, ssr->GetOutput());
-	ssr_blurx1->SetConstants(blurBuffer->GetHandle());
-	ssr_blurx1->Draw();
-
-	ssr_blury1->SetInput(0, ssr_blurx1->GetOutput());
-	ssr_blury1->SetConstants(blurBuffer->GetHandle());
-	ssr_blury1->Draw();
-
-	//ssr_blury1->GetOutput();
-
-
+#if 0
 	// SSAO
 
 	ssaoData.proj = *GetCameraProjection();
@@ -537,35 +612,21 @@ void DoPostprocess() {
 	ssao->SetInput(1, GetGBufferShaderResource(2)); // Wpos
 	ssao->SetConstants(ssaoBuffer->GetHandle());
 	//ssao->Draw();
+#endif
 
-	// Godrays
-
-	godraysData.viewproj = *GetCameraProjection() * *GetCameraView();
-	godraysData.lightpos = *GetSunPosition() * 100;// { -7, 100, 2 };
-
-	godraysBuffer->SetData(0, sizeof(GodRaysBufferData), &godraysData);
-
-	//godrays->SetInput(0, GetShadowDepth());  // Light depth-map
-	//godrays->SetInput(1, GetGBufferDepth()); // G-Buffer depth-map
-
-	godrays->SetInput(0, GetGBufferShaderResource(0)); // Skybox color
-	//godrays->SetInput(1, GetGBufferShaderResource(2)); // Alpha-channel used
-	godrays->SetInput(1, GetGBufferDepth()); // Depth buffer
-
-	godrays->SetConstants(godraysBuffer->GetHandle());
-	godrays->Draw();
-
+	ID3D11ShaderResourceView* lightpass_output = GetLightpassShaderResource();
 	// Bloom
 	ID3D11ShaderResourceView* bloomResult = DoBloom(lightpass_output);
-	//ID3D11ShaderResourceView* bloomResult = DoBloom(ssr->GetOutput());
+
+	DoGodrays();
+	DoSSR();
+	//DoSSGI();
+
 
 	mix_data.camera_position.xyz = *GetCameraPosition();
 	mix_data.camera_position.w = 1;
 
-	screenx = (viewport.x) & 0x0000FFFF;
-	screeny = (viewport.y) & 0x0000FFFF;
-	shiftx = screenx << 16;
-	mix_data.screen_size = shiftx | screeny;
+	mix_data.screen_size = PackVector(&viewport);
 	mixBuffer->SetData(0, sizeof(MixBufferData), &mix_data);
 
 	// Mix
@@ -584,9 +645,11 @@ void DoPostprocess() {
 
 	mix->Draw();
 
+#if 0
 	// Tonemapping
 	tonemapping->SetInput(0, mix->GetOutput());
 	tonemapping->Draw();
+#endif
 
 #if 0
 	aberrationData.offset.r = 0.009;
@@ -619,8 +682,8 @@ ID3D11ShaderResourceView* FXGetOuputTexture() {
 
 	ID3D11ShaderResourceView* views[8];
 	views[0] = mix->GetOutput();
-	views[1] = godrays->GetOutput();
-	//views[2] = ssao->GetOutput();
+	//views[1] = godrays->GetOutput();
+	views[1] = ssgi->GetOutput();
 	views[2] = ssr_blury1->GetOutput();
 	//views[2] = GetParticleShaderResource();
 	views[3] = lightpass->GetOutput();

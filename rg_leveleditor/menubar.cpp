@@ -9,7 +9,7 @@
 #include "dockerglobal.h"
 
 #include <imgui/imgui.h>
-//#include <engine.h>
+#include <engine.h>
 
 void MenubarDraw() {
 	////////////////////////////
@@ -18,7 +18,9 @@ void MenubarDraw() {
 
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("Exit")) { /* Engine::Quit(); */ }
+			if (ImGui::MenuItem("Load")) { /* Engine::Quit(); */ }
+			if (ImGui::MenuItem("Save")) { /* Engine::Quit(); */ }
+			if (ImGui::MenuItem("Exit")) { Engine::RequestShutdown(); }
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Option")) {
@@ -28,12 +30,13 @@ void MenubarDraw() {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Docker")) {
+#if 0
 			// Disabling fullscreen would allow the window to be moved to the front of other windows,
 			// which we can't undo at the moment without finer window depth/z control.
 			ImGui::MenuItem("Fullscreen", NULL, &docker_opt_fullscreen);
 			ImGui::MenuItem("Padding", NULL, &docker_opt_padding);
 			ImGui::Separator();
-
+#endif
 			if (ImGui::MenuItem("Flag: NoSplit", "", (docker_dockspace_flags & ImGuiDockNodeFlags_NoSplit) != 0)) { docker_dockspace_flags ^= ImGuiDockNodeFlags_NoSplit; }
 			if (ImGui::MenuItem("Flag: NoResize", "", (docker_dockspace_flags & ImGuiDockNodeFlags_NoResize) != 0)) { docker_dockspace_flags ^= ImGuiDockNodeFlags_NoResize; }
 			if (ImGui::MenuItem("Flag: NoDockingInCentralNode", "", (docker_dockspace_flags & ImGuiDockNodeFlags_NoDockingInCentralNode) != 0)) { docker_dockspace_flags ^= ImGuiDockNodeFlags_NoDockingInCentralNode; }

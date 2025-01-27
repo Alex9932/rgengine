@@ -35,10 +35,10 @@
 
 #include "rgtypes.h"
 
-#define RG_BUILD         324
+#define RG_BUILD         385
 #define RG_VERSION_MAJ   0
-#define RG_VERSION_MIN   8
-#define RG_VERSION_PATCH 3
+#define RG_VERSION_MIN   9
+#define RG_VERSION_PATCH 0
 
 #define RG_ERROR				Engine::HandleError("");
 #define RG_ERROR_MSG(msg)       Engine::HandleError(msg);
@@ -85,6 +85,7 @@ namespace Engine {
 
     RG_DECLSPEC void Initialize();
     RG_DECLSPEC void Start();
+    RG_DECLSPEC void RequestShutdown();
     RG_DECLSPEC void Quit();
     RG_DECLSPEC void ForceQuit();
     RG_DECLSPEC void HandleError(String message);

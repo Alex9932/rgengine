@@ -90,17 +90,17 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		pmd_material* mat = &pmd->materials[i];
 		if (mat->file_name[0] == '\0') {
-			SDL_snprintf(matsInfo[i].albedo, 128, "platform/toon/toon%02d.png", mat->toon_number);
+			SDL_snprintf(matsInfo[i].texture, 128, "toon%02d", mat->toon_number);
 		} else {
-			SDL_snprintf(matsInfo[i].albedo, 128, "%s/%s", pmd->path, mat->file_name);
+
+			// Remove extension
+			char strbuffer[256];
+			size_t len = SDL_strlen(mat->file_name);
+			SDL_memcpy(strbuffer, mat->file_name, len);
+			strbuffer[len - 4] = 0;
+
+			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
 		}
-
-		SDL_snprintf(matsInfo[i].normal, 128, "platform/textures/def_normal.png");
-		SDL_snprintf(matsInfo[i].pbr, 128, "platform/textures/def_pbr.png");
-
-		matsInfo[i].color.r = mat->colors.r * colorMul;
-		matsInfo[i].color.g = mat->colors.g * colorMul;
-		matsInfo[i].color.b = mat->colors.b * colorMul;
 
 		mmInfo[i].indexCount  = mat->surface_count;
 		mmInfo[i].indexOffset = idx_offset;
@@ -348,21 +348,19 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 		pmx_material* mat = &pmx->materials[i];
 		
 		if (mat->texture_id >= 0xFFFF) {
-			SDL_snprintf(matsInfo[i].albedo, 128, "platform/textures/def_diffuse.png");
+			SDL_snprintf(matsInfo[i].texture, 128, "toon10");
 		} else {
 			pmx_text tex = pmx->textures[mat->texture_id].path;
 			UTF8_FromUTF16((WString)tex.data, tex.len);
-			SDL_snprintf(matsInfo[i].albedo, 128, "%s/%s", pmx->path, UTF8_GetBuffer());
-		}
-		
-		
-		//SDL_snprintf(matsInfo[i].albedo, 128, "platform/textures/def_diffuse.png");
-		SDL_snprintf(matsInfo[i].normal, 128, "platform/textures/def_normal.png");
-		SDL_snprintf(matsInfo[i].pbr, 128, "platform/textures/def_pbr.png");
 
-		matsInfo[i].color.r = mat->diffuse_color.r * colorMul;
-		matsInfo[i].color.g = mat->diffuse_color.g * colorMul;
-		matsInfo[i].color.b = mat->diffuse_color.b * colorMul;
+			// Remove extension
+			char strbuffer[256];
+			size_t len = SDL_strlen(UTF8_GetBuffer());
+			SDL_memcpy(strbuffer, UTF8_GetBuffer(), len);
+			strbuffer[len - 4] = 0;
+
+			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
+		}
 
 		mmInfo[i].indexCount  = mat->surface_count;
 		mmInfo[i].indexOffset = idx_offset;

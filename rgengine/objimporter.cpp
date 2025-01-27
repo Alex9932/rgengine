@@ -518,23 +518,27 @@ namespace Engine {
 
 			if (ai_d_str.length) {
 				FixPath(new_path, ai_d_str.C_Str());
-				SDL_snprintf(materials[i].albedo, 128, "%s/%s", GAMEDATA_PATH, new_path);
+				SDL_snprintf(materials[i].texture, 128, "%s", new_path); // TODO: remove file extension
 			} else {
-				SDL_snprintf(materials[i].albedo, 128, "%s/textures/def_diffuse.png", GetPlatformPath());
+				SDL_snprintf(materials[i].texture, 128, "default");
 			}
+#if 0
 			if (ai_n_str.length != 0) {
 				FixPath(n_new_path, ai_n_str.C_Str());
 				SDL_snprintf(materials[i].normal, 128, "%s/%s", GAMEDATA_PATH, n_new_path);
 			} else {
 				SDL_snprintf(materials[i].normal, 128, "%s/textures/def_normal.png", GetPlatformPath());
 			}
+#endif
 
+#if 0
 			SDL_snprintf(materials[i].pbr, 128, "%s/textures/def_pbr.png", GetPlatformPath());
 			materials[i].color = {1, 1, 1};
 			materials[i].color.r = color.r;
 			materials[i].color.g = color.g;
 			materials[i].color.b = color.b;
 			//materials[i].color.a = color.a;
+#endif
 		}
 
 		R3D_MatMeshInfo* minfo = (R3D_MatMeshInfo*)rg_malloc(scene->mNumMeshes * sizeof(R3D_MatMeshInfo));

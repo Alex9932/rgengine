@@ -186,17 +186,23 @@ typedef struct R3D_LightSource {
 
 // Info structures
 typedef struct R3DCreateMaterialInfo {
+	String texture;
+#if 0
 	String albedo; //
 	String normal; //
 	String pbr;    //
 	vec3   color;
+#endif
 } R3DCreateMaterialInfo;
 
 typedef struct R3D_MaterialInfo {
+	char   texture[128];
+#if 0
 	char   albedo[128];
 	char   normal[128];
 	char   pbr[128];
 	vec3   color;
+#endif
 } R3D_MaterialInfo;
 
 typedef struct R3D_MatMeshInfo {

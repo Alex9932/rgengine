@@ -40,6 +40,7 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 
 	// Texture color
 	float4 tColor = t_unit0.Sample(SampleType, psin.uv);
+	if(tColor.a < 0.6) { discard; }
 	
 	// Normal calculation
 	float3 N = {0, 0, 0};

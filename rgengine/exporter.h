@@ -3,6 +3,7 @@
 
 #include "rgtypes.h"
 #include "rendertypes.h"
+#include "kinematicsmodel.h"
 
 namespace Engine {
 	class ModelExporter {
@@ -18,7 +19,7 @@ namespace Engine {
 			RiggedModelExporter() {}
 			~RiggedModelExporter() {}
 
-			void ExportRiggedModel(String path, R3DRiggedModelInfo* info, mat4* model = NULL) {}
+			void ExportRiggedModel(String path, R3DRiggedModelInfo* info, KinematicsModel* kmdl, mat4* model = NULL) {}
 	};
 }
 

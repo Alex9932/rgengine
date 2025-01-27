@@ -15,7 +15,7 @@
 #include "rgmath.h"
 #include "rendertypes.h"
 
-#define PM2_FLAG_IS_RIGGED        0b00000001 // Additional information (Array of vertex weights and bone IDs, skeleton information)
+#define PM2_FLAG_SKELETON         0b00000001 // Additional information (Array of vertex weights and bone IDs, skeleton information)
 #define PM2_FLAG_EXTENDED_INDICES 0b00000010 // Use 32-bit indices (In pm2 format 16-bit indices used by default)
 
 typedef struct PM2_Header {
@@ -27,6 +27,12 @@ typedef struct PM2_Header {
 	Uint8  version;
 	Uint16 offset; // Mesh count in PM2 v2
 } PM2_Header;
+
+typedef struct PM2_SkeletonHeader {
+	char   sig[4];
+	Uint32 bones;
+	Uint32 ikchains;
+} PM2_SkeletonHeader;
 
 typedef struct PM2_String {
 	Uint32 len;
@@ -59,7 +65,7 @@ typedef struct PM2_V4_Material {
 	// Normal - %gamedata%/textures/@texture@_bump.png
 	// PBR    - %gamedata%/textures/@texture@_pbr.png
 	PM2_String texture;
-	vec4       color;
+	//vec4       color;
 } PM2_V4_Material;
 
 typedef struct PM2_MeshInfo {
@@ -73,5 +79,25 @@ typedef struct PM2_Vertex {
 	vec3 tangent;
 	vec2 uv;
 } PM2_Vertex;
+
+typedef struct PM2_Weight {
+	vec4  weights;
+	ivec4 boneids;
+} PM2_Weight;
+
+typedef struct PM2_Bone {
+	PM2_String name;
+	Sint16     parent;
+	vec3       position;
+} PM2_Bone;
+
+typedef struct PM2_IKChain {
+	Uint16  target;
+	Uint16  effector;
+	Uint16  iterations;
+	Float32 angle_limit;
+	Uint16  bones;
+	Uint16* list;
+} PM2_IKChain;
 
 #endif
