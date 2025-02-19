@@ -24,6 +24,8 @@ namespace Engine {
     void Input_Destroy();
     void UpdateInput();
 
+    void Input_StartConsole();
+
     RG_DECLSPEC Bool IsKeyDown(SDL_Scancode scancode);
     RG_DECLSPEC Bool IsButtonDown(Uint8 btn);
 

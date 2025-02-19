@@ -78,6 +78,7 @@ namespace Engine {
 
 	Bool ThreadDispatch(Task* task) {
 		Task* t = (Task*)t_alloc->Allocate();
+		if (!t) { return false; }
 		SDL_memcpy(t, task, sizeof(Task));
 		t_lock.lock();
 		t_queue.push(t);

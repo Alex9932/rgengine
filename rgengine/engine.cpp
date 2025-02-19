@@ -7,6 +7,8 @@
 
 #define DLL_EXPORT
 
+#define RG_PRINTFPS 0
+
 #include "engine.h"
 #include "rgstring.h"
 #include <stdio.h>
@@ -37,6 +39,13 @@ typedef void (*PFN_MODULE_INITIALIZE)();
 typedef void (*PFN_MODULE_DESTROY)();
 typedef BaseGame* (*PFN_MODULE_GETAPPLICATION)();
 
+typedef struct GameModule {
+    LibraryHandle             hmodule;
+    PFN_MODULE_INITIALIZE     ModuleInitialize;
+    PFN_MODULE_DESTROY        ModuleDestroy;
+    PFN_MODULE_GETAPPLICATION ModuleGetApplication;
+} GameModule;
+
 namespace Engine {
 
     static String        rg_assert_message = NULL;
@@ -60,10 +69,11 @@ namespace Engine {
     static String        fsjson        = NULL;
     static Uint32        num_threads   = 1;
     static Bool          num_tcustom   = false;
-    static String        lib_renderer  = NULL;
 
+    static String        lib_renderer  = NULL;
     static String        lib_game      = NULL;
-    static LibraryHandle game_module   = 0;
+
+    static GameModule    game_module   = {};
 
     static BaseGame*     game_ptr      = NULL;
     static Bool          running       = false;
@@ -136,8 +146,12 @@ namespace Engine {
 #endif
         if (handle == NULL) {
             char err_msg[128];
+#if defined(RG_PLATFORM_WINDOWS)
             DWORD err_code = GetLastError();
             SDL_snprintf(err_msg, 128, "Unable to load library: %s!\nError code: 0x%.8x", name, err_code);
+#elif defined(RG_PLATFORM_LINUX)
+            SDL_snprintf(err_msg, 128, "Unable to load library: %s!", name);
+#endif
             RG_ERROR_MSG(err_msg);
         }
 
@@ -217,7 +231,7 @@ namespace Engine {
 
     static void SignalHandler(int sig) {
         switch (sig) {
-            case SIGINT:   { printf("SIGNAL: Interrupt\n"); break; }
+            case SIGINT:   { printf("SIGNAL: Interrupt\n"); Quit(); break; }
             case SIGILL:   { printf("SIGNAL: Illegal instruction\n"); break; }
             case SIGFPE:   { printf("SIGNAL: Floating point exception\n"); break; }
             case SIGSEGV:  { printf("SIGNAL: Segmentation violation\n"); break; }
@@ -263,26 +277,26 @@ namespace Engine {
     }
 
     static void SetupGameModule() {
-        PFN_MODULE_INITIALIZE     ModuleInitialize     = NULL;
-        PFN_MODULE_GETAPPLICATION ModuleGetApplication = NULL;
-
         rgLogInfo(RG_LOG_SYSTEM, "Loading game module...");
-
-        if (lib_game == NULL) {
-            RG_ERROR_MSG("No game! No life!");
-        }
-
-        game_module = DL_LoadLibrary(lib_game);
-
-        ModuleInitialize     = (PFN_MODULE_INITIALIZE)DL_GetProcAddress(game_module, "Module_Initialize");
-        ModuleGetApplication = (PFN_MODULE_GETAPPLICATION)DL_GetProcAddress(game_module, "Module_GetApplication");
+        if (lib_game == NULL) { RG_ERROR_MSG("No game! No life!"); }
+        
+        game_module.hmodule = DL_LoadLibrary(lib_game);
+        game_module.ModuleInitialize     = (PFN_MODULE_INITIALIZE)DL_GetProcAddress(game_module.hmodule, "Module_Initialize");
+        game_module.ModuleDestroy        = (PFN_MODULE_DESTROY)DL_GetProcAddress(game_module.hmodule, "Module_Destroy");
+        game_module.ModuleGetApplication = (PFN_MODULE_GETAPPLICATION)DL_GetProcAddress(game_module.hmodule, "Module_GetApplication");
 
         rgLogInfo(RG_LOG_SYSTEM, "Initializing game module...");
-        ModuleInitialize();
-        game_ptr = ModuleGetApplication();
+        game_module.ModuleInitialize();
+        game_ptr = game_module.ModuleGetApplication();
 
         if (!game_ptr) { RG_ERROR_MSG("Invalid handle"); }
         rgLogInfo(RG_LOG_SYSTEM, "Game: %s", game_ptr->GetName());
+    }
+
+    static void DestroyGameModule() {
+        rgLogInfo(RG_LOG_SYSTEM, "Unloading game module...");
+        game_module.ModuleDestroy();
+        DL_UnloadLibrary(game_module.hmodule);
     }
 
     void Initialize() {
@@ -338,6 +352,8 @@ namespace Engine {
             }
 
             Window_Initialize(lib_renderer);
+        } else {
+            Input_StartConsole();
         }
 
         Event_Initialize();
@@ -436,14 +452,16 @@ namespace Engine {
             }
 
             core_profiler->StartSection(profiles[8]);
+#if RG_PRINTFPS
             frame++;
-            //			if(timer.GetTime() - last_time >= 5.0) {
-            //				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
+//			if(timer.GetTime() - last_time >= 5.0) {
+//				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
             if (timer.GetTime() - last_time >= 1.0) {
                 rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame);
                 last_time = timer.GetTime();
                 frame = 0;
             }
+#endif
 
         }
 
@@ -460,11 +478,7 @@ namespace Engine {
             Window_Destroy();
         }
 
-
-        rgLogInfo(RG_LOG_SYSTEM, "Unloading game module...");
-        PFN_MODULE_DESTROY ModuleDestroy = (PFN_MODULE_DESTROY)DL_GetProcAddress(game_module, "Module_Destroy");
-        ModuleDestroy();
-        DL_UnloadLibrary(game_module);
+        DestroyGameModule();
 
         Thread_Destroy();
 

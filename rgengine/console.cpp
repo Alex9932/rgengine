@@ -14,6 +14,8 @@
 #include "font.h"
 #include "allocator.h"
 
+#include "command.h"
+
 #define RG_COMMAND_LENGTH 1024
 #define RG_R2D_MAX_VERTICES 16384
 
@@ -111,10 +113,8 @@ namespace Engine {
                 case SDL_SCANCODE_RETURN: { // Execute command
                     utf8_encoder.EncodeString(command_buffer);
                     String result = utf8_encoder.GetResult();
-                    rgLogInfo(RG_LOG_GAME, "@ %s\n", result);
-                    //Command::ExecuteCommand(result);
-
-                    //Engine::ExecuteCommand(result);
+                    
+                    Engine::ExecuteCommand(result);
 
                     SDL_memset(command_buffer, 0, 1024);
                     cursor = 0;

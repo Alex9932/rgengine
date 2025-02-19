@@ -2,6 +2,18 @@
 #include "input.h"
 #include "event.h"
 
+#include "engine.h"
+
+#include <iostream>
+#include <string>
+#include <thread>
+#include <mutex>
+
+#include "command.h"
+
+#define RG_MAX_KEYS 1024
+#define RG_MAX_BTNS 64
+
 namespace Engine {
 
     namespace _Input {
@@ -15,8 +27,22 @@ namespace Engine {
     static Float64 m_tdx = 0.0;
     static Float64 m_tdy = 0.0;
     static Float64 m_tdw = 0.0;
-    static Bool   keys[1024];
-    static Bool   m_btns[64];
+    static Bool   m_keys[RG_MAX_KEYS];
+    static Bool   m_btns[RG_MAX_BTNS];
+
+    static Bool console_started = false;
+
+    // TODO: Test on linux
+
+#ifdef RG_PLATFORM_WINDOWS
+    static HANDLE consoleStopEvent;
+#else
+    static int consoleStopPipe[2];
+#endif
+
+    static std::mutex              console_mtx;
+    static std::condition_variable console_condvar;
+    static std::thread             console_thr;
 
     static bool InputHandler(SDL_Event* event) {
         if (event->type == SDL_MOUSEMOTION) {
@@ -31,11 +57,17 @@ namespace Engine {
         }
 
         if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP) {
-            keys[event->key.keysym.scancode] = (event->type == SDL_KEYUP ? false : true);
+            if (event->key.keysym.scancode >= RG_MAX_KEYS) { return true; }
+            m_keys[event->key.keysym.scancode] = (event->type == SDL_KEYUP ? false : true);
         }
 
         if (event->type == SDL_MOUSEBUTTONDOWN || event->type == SDL_MOUSEBUTTONUP) {
+            if (event->button.button >= RG_MAX_BTNS) { return true; }
             m_btns[event->button.button] = (event->type == SDL_MOUSEBUTTONUP ? false : true);
+        }
+
+        if (event->type == GetUserEventID() && event->user.code == RG_EVENT_STANDBY) {
+            console_condvar.notify_one();
         }
 
         return true;
@@ -43,12 +75,30 @@ namespace Engine {
 
     void Input_Initialize() {
         RegisterEventHandler(InputHandler);
-        SDL_memset(keys, 0, sizeof(keys));
+        SDL_memset(m_keys, 0, sizeof(m_keys));
         SDL_memset(m_btns, 0, sizeof(m_btns));
     }
 
     void Input_Destroy() {
         FreeEventHandler(InputHandler);
+        if (console_started) {
+            console_started = false;
+
+#ifdef RG_PLATFORM_WINDOWS
+            SetEvent(consoleStopEvent);
+#else
+            write(consoleStopPipe[1], "x", 1);
+#endif
+
+            console_thr.join(); // Wait command-line thread
+
+#ifdef RG_PLATFORM_WINDOWS
+            CloseHandle(consoleStopEvent);
+#else
+            close(consoleStopPipe[0]);
+            close(consoleStopPipe[1]);
+#endif
+        }
     }
 
     void UpdateInput() {
@@ -61,11 +111,92 @@ namespace Engine {
     }
 
     bool IsKeyDown(SDL_Scancode scancode) {
-        return keys[scancode];
+        return m_keys[scancode];
     }
 
     bool IsButtonDown(Uint8 btn) {
         return m_btns[btn];
+    }
+
+    //////////////// CONSOLE ////////////////
+
+
+    static Uint32 IsBufferAvailable() {
+        Uint32 status = 0;
+
+#ifdef RG_PLATFORM_WINDOWS
+        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+        HANDLE handles[2] = { hStdin, consoleStopEvent };
+        DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+        if (result == WAIT_OBJECT_0)     { status = 1; }
+        if (result == WAIT_OBJECT_0 + 1) { status = 2; }
+
+#else
+
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+        FD_SET(stopPipe[0], &fds);
+
+        int max_fd = std::max(STDIN_FILENO, stopPipe[0]) + 1;
+        int result = select(max_fd, &fds, nullptr, nullptr, nullptr);
+
+        if (result > 0) {
+            if (FD_ISSET(STDIN_FILENO, &fds)) { status = 1; }
+            if (FD_ISSET(stopPipe[0], &fds))  { status = 2; }
+        }
+#endif
+
+        return status;
+    }
+
+    static void ReadBuffer(char* str, Uint32 len) {
+        std::string input;
+        std::getline(std::cin, input);
+        SDL_strlcpy(str, input.c_str(), len);
+    }
+
+    static RG_INLINE void PrintPromt() {
+        printf("rgengine> ");
+        fflush(stdout);
+    }
+
+    static void ConsoleProc() {
+        rgLogInfo(RG_LOG_SYSTEM, "Starting console thread");
+
+        // Wait cond var
+        std::unique_lock<std::mutex> lock(console_mtx);
+        console_condvar.wait(lock);
+
+        char cmdbuffer[256];
+
+        PrintPromt();
+        while (console_started) {
+            Uint32 status = IsBufferAvailable();
+            if (status == 1) {
+                ReadBuffer(cmdbuffer, 256);
+                ExecuteCommand(cmdbuffer);
+                PrintPromt();
+            } else if (status == 2) {
+                break;
+            }
+        }
+
+        rgLogInfo(RG_LOG_SYSTEM, "Stopped console thread");
+    }
+
+    void Input_StartConsole() {
+        if (console_started) { return; }
+        console_started = true;
+
+#ifdef RG_PLATFORM_WINDOWS
+        consoleStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+#else
+        pipe(consoleStopPipe);
+        fcntl(consoleStopPipe[0], F_SETFL, O_NONBLOCK); // to thread function
+#endif
+
+        console_thr = std::thread(ConsoleProc);
     }
 
 }
