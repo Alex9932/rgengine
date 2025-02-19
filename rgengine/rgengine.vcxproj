@@ -139,6 +139,7 @@
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="animator.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="command.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="engine.cpp" />
@@ -198,6 +199,7 @@
     <ClInclude Include="animation.h" />
     <ClInclude Include="animator.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="command.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="entity.h" />

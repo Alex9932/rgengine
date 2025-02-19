@@ -76,6 +76,12 @@
     <Filter Include="Source Files\thread">
       <UniqueIdentifier>{29981964-27ef-481a-b255-a358e5afbbfd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\command">
+      <UniqueIdentifier>{d6234399-7790-4f35-89a9-e92cfc55c61b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\command">
+      <UniqueIdentifier>{b65cb973-2799-4e64-901e-5820f56cbedd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -248,6 +254,9 @@
     </ClCompile>
     <ClCompile Include="font.cpp">
       <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="command.cpp">
+      <Filter>Source Files\command</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -454,6 +463,9 @@
     </ClInclude>
     <ClInclude Include="font.h">
       <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="command.h">
+      <Filter>Header Files\command</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -531,14 +531,10 @@ namespace Engine {
 			}
 #endif
 
-#if 0
-			SDL_snprintf(materials[i].pbr, 128, "%s/textures/def_pbr.png", GetPlatformPath());
-			materials[i].color = {1, 1, 1};
+			//materials[i].color = {1, 1, 1};
 			materials[i].color.r = color.r;
 			materials[i].color.g = color.g;
 			materials[i].color.b = color.b;
-			//materials[i].color.a = color.a;
-#endif
 		}
 
 		R3D_MatMeshInfo* minfo = (R3D_MatMeshInfo*)rg_malloc(scene->mNumMeshes * sizeof(R3D_MatMeshInfo));

@@ -12,6 +12,7 @@
 
 namespace Engine {
 
+// Deprecated
 #if 0
     static void ReadMaterialsV2(PM2_Header* header, R3D_MaterialInfo* materials, FSReader* reader, String model_root) {
 
@@ -81,7 +82,7 @@ namespace Engine {
 
     static void ReadMaterialsV4(PM2_Header* header, R3D_MaterialInfo* materials, FSReader* reader, String model_root) {
 
-        //vec4 diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+        vec3 diffuse = { 1.0f, 1.0f, 1.0f, };
 
         char albedo[128];
         char normal[128];
@@ -101,10 +102,8 @@ namespace Engine {
             SDL_snprintf(materials[i].normal, 128, "%s/textures/%s_bump.png", GetGamedataPath(), str_buffer);
             SDL_snprintf(materials[i].pbr,    128, "%s/textures/%s_pbr.png",  GetGamedataPath(), str_buffer);
 #endif
-
-            // Not used in v4
-            //reader->Read4F32(diffuse);
-            //materials[i].color = { diffuse.r, diffuse.g, diffuse.b };
+            reader->Read3F32(diffuse);
+            materials[i].color = { diffuse.r, diffuse.g, diffuse.b };
 
         }
 

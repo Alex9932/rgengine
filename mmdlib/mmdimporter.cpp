@@ -102,6 +102,10 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
 		}
 
+		matsInfo[i].color.r = mat->colors.r * colorMul;
+		matsInfo[i].color.g = mat->colors.g * colorMul;
+		matsInfo[i].color.b = mat->colors.b * colorMul;
+
 		mmInfo[i].indexCount  = mat->surface_count;
 		mmInfo[i].indexOffset = idx_offset;
 		mmInfo[i].materialIdx = i;
@@ -361,6 +365,10 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 
 			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
 		}
+
+		matsInfo[i].color.r = mat->diffuse_color.r * colorMul;
+		matsInfo[i].color.g = mat->diffuse_color.g * colorMul;
+		matsInfo[i].color.b = mat->diffuse_color.b * colorMul;
 
 		mmInfo[i].indexCount  = mat->surface_count;
 		mmInfo[i].indexOffset = idx_offset;

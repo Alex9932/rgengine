@@ -37,6 +37,18 @@
     <Filter Include="shaders\fx">
       <UniqueIdentifier>{5d0ea943-b88d-46fa-92d9-104890e1b711}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders\accum">
+      <UniqueIdentifier>{e636dcdb-0744-4c92-b5cd-e7575f310ebf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\compute">
+      <UniqueIdentifier>{03472aef-d084-4131-a92c-27019f1006de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\gbuffer">
+      <UniqueIdentifier>{b83a2319-e16d-4349-839a-954a1d07350e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\fwd">
+      <UniqueIdentifier>{c9e0237e-07f0-47a6-9dcb-88702c55122c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -148,63 +160,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\resources\platform\shadersdx11\accum_common.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\accum_global.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\accum_point.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\bypass2d.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\bypass2d.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\gbuffer_solid.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\gbuffer.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\main.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\main.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\particle.gs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\particle.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\particle.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\r2d.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\r2d.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\shadow.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\shadow.vs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\skeleton.cs">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\skybox.ps">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\resources\platform\shadersdx11\skybox.vs">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\resources\platform\shadersdx11\fx\aberration.ps">
       <Filter>shaders\fx</Filter>
     </None>
@@ -253,11 +208,68 @@
     <None Include="..\resources\platform\shadersdx11\fx\tonemapping.ps">
       <Filter>shaders\fx</Filter>
     </None>
-    <None Include="..\resources\platform\shadersdx11\gbuffer_transparent.ps">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\resources\platform\shadersdx11\fx\ssgi.ps">
       <Filter>shaders\fx</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\accum_common.vs">
+      <Filter>shaders\accum</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\accum_global.ps">
+      <Filter>shaders\accum</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\accum_point.ps">
+      <Filter>shaders\accum</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skeleton.cs">
+      <Filter>shaders\compute</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer.vs">
+      <Filter>shaders\gbuffer</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer_solid.ps">
+      <Filter>shaders\gbuffer</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\gbuffer_transparent.ps">
+      <Filter>shaders\gbuffer</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\bypass2d.ps">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\bypass2d.vs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\main.ps">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\main.vs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.gs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.ps">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\particle.vs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\r2d.ps">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\r2d.vs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\shadow.ps">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\shadow.vs">
+      <Filter>shaders\fwd</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skybox.vs">
+      <Filter>shaders\gbuffer</Filter>
+    </None>
+    <None Include="..\resources\platform\shadersdx11\skybox.ps">
+      <Filter>shaders\gbuffer</Filter>
     </None>
   </ItemGroup>
 </Project>

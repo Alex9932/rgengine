@@ -26,6 +26,7 @@
 // [Materials] v4
 // {
 //  PM2_String texture; ( may be w/o normal map !!! albedo & pbr REQUIRED !!!)
+//  vec3       color;
 // }
 
 // [Mesh info]
@@ -133,6 +134,7 @@ namespace Engine {
 	static void WriteMaterials(FSWriter* writer, Uint32 count, R3D_MaterialInfo* mats) {
 		for (Uint32 i = 0; i < count; i++) {
 			WritePM2String(writer, mats[i].texture);
+			writer->Write(&mats[i].color, sizeof(vec3));
 #if 0
 			WritePM2String(writer, mat->albedo);
 			WritePM2String(writer, mat->normal);

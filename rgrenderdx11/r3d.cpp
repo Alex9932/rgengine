@@ -301,14 +301,21 @@ R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	char pbr[256];
 
 	SDL_snprintf(albedo, 256, "%s/textures/%s.png",      GetGamedataPath(), info->texture);
-	//SDL_snprintf(normal, 256, "%s/textures/%s_norm.png", GetGamedataPath(), info->texture);
-	SDL_snprintf(normal, 256, "platform/textures/def_normal.png", GetGamedataPath(), info->texture);
+	SDL_snprintf(normal, 256, "%s/textures/%s_norm.png", GetGamedataPath(), info->texture);
 	SDL_snprintf(pbr,    256, "%s/textures/%s_pbr.png",  GetGamedataPath(), info->texture);
+	//SDL_snprintf(normal, 256, "platform/textures/def_normal.png");
+	//SDL_snprintf(pbr,    256, "platform/textures/def_pbr.png");
 
 	LoaderPushTexture(albedo, &material->albedo);
 	LoaderPushTexture(normal, &material->normal);
 	LoaderPushTexture(pbr, &material->pbr);
-	material->color = { 1.0f, 1.0f, 1.0f };
+
+	material->color = info->color;
+#if 0
+	material->color.r = 1;
+	material->color.g = 1;
+	material->color.b = 1;
+#endif
 
 	texturesLoaded += 3;
 
@@ -402,6 +409,7 @@ R3D_StaticModel* R3D_CreateStaticModel(R3DStaticModelInfo* info) {
 	for (Uint32 i = 0; i < info->matCount; i++) {
 		R3DCreateMaterialInfo creatematinfo = {};
 		creatematinfo.texture = info->matInfo[i].texture;
+		creatematinfo.color   = info->matInfo[i].color;
 #if 0
 		creatematinfo.albedo = info->matInfo[i].albedo;
 		creatematinfo.normal = info->matInfo[i].normal;
