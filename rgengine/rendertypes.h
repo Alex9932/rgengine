@@ -181,7 +181,8 @@ typedef struct R3D_LightSource {
 
 	// Spotlight
 	vec3      direction;
-	Float32   coneAngle;
+	Float32   innerCone;
+	Float32   outerCone;
 } R3D_LightSource;
 
 // Info structures

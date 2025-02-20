@@ -12,7 +12,7 @@
 typedef struct LightSource {
 	RGUUID uuid;
 	R3D_LightSource source;
-	// Other info (fort future)
+	// Other info (for future)
 } LightSource;
 
 namespace Engine {
@@ -72,8 +72,11 @@ namespace Engine {
 			RG_INLINE void    SetDirection(const vec3& dir) { m_source->source.direction = dir;  }
 			RG_INLINE vec3&   GetDirection()                { return m_source->source.direction; }
 
-			RG_INLINE void    SetCutoff(Float32 factor) { m_source->source.coneAngle = factor; }
-			RG_INLINE Float32 GetCutoff()               { return m_source->source.coneAngle;   }
+			RG_INLINE void    SetInnerCone(Float32 factor) { m_source->source.innerCone = factor; }
+			RG_INLINE Float32 GetInnerCone()               { return m_source->source.innerCone; }
+
+			RG_INLINE void    SetOuterCone(Float32 factor) { m_source->source.outerCone = factor; }
+			RG_INLINE Float32 GetOuterCone()               { return m_source->source.outerCone; }
 
 			//RG_INLINE void    SetOffset(const vec3& off)    { this->m_offset = off;  }
 			//RG_INLINE vec3&   GetOffset()                   { return this->m_offset; }

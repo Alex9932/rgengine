@@ -45,6 +45,18 @@ void LightList::Draw() {
 					}
 				}
 
+				Bool isSpotlight = src->source.type == RG_SPOTLIGHT;
+				if (ImGui::RadioButton("Spotlight", isSpotlight)) {
+					if (isSpotlight) { src->source.type = RG_POINTLIGHT; }
+					else { src->source.type = RG_SPOTLIGHT; }
+				}
+
+				if (isSpotlight) {
+					ImGui::InputFloat3("Direction", src->source.direction.array);
+					ImGui::SliderFloat("Inner", &src->source.innerCone, 0.0f, 1.0f, "%.3f");
+					ImGui::SliderFloat("Outer", &src->source.outerCone, 0.0f, 1.0f, "%.3f");
+				}
+
 				if (ImGui::Button("Remove")) {
 					toRemove = src;
 				}

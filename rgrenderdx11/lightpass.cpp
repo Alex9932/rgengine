@@ -156,13 +156,21 @@ struct ShaderConstants {
 	mat4 model;
 };
 
-struct ShaderLight {
+struct ShaderLight { // Allign vec4 (4*Float32)
     vec3    viewPos;
-    float   offset;
+    Float32 offset;
+
 	vec3    color;
 	Float32 intensity;
+
+    vec3    dir;
+    Uint32  type;
+
+    vec4    cone;
+
 	vec3    pos;
 	Uint32  screenSize;
+
     mat4    lightMatrix;
 };
 
@@ -509,9 +517,15 @@ void DoLightpass(RQueue* lights) {
 
         R3D_LightSource* l = (R3D_LightSource*)lights->Next();
 
+        light.type      = l->type;
 		light.color     = l->color;
 		light.intensity = l->intensity;
 		light.pos       = l->position;
+
+        // Spotlight
+        light.dir       = l->direction;
+        light.cone.x    = SDL_cosf(l->innerCone);
+        light.cone.y    = SDL_cosf(l->outerCone);
 
         Float32 s = light.intensity * 10;
         mat4_model(&constants.model, light.pos, { 0, 0, 0 }, {s, s, s});
