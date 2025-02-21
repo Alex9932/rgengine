@@ -151,7 +151,16 @@ class Application : public BaseGame {
 
 				if (ent) { mat = *ent->GetTransform()->GetMatrix(); }
 				if (obj) { mat = *obj->GetMatrix(); }
-				if (src) { mat4_translate(&mat, src->source.position); }
+				if (src) {
+					vec3 s = { 1, 1, 1 };
+					vec3 r = { 0, 0, 0};
+					vec3 d = src->source.direction;
+					Float32 len = SDL_sqrtf(d.x* d.x + d.y*d.y + d.z*d.z);
+					r.z = SDL_atan2f(d.y, d.x);
+					r.y = SDL_acosf(d.z / len);
+
+					mat4_model(& mat, src->source.position, r, s);
+				}
 
 				// Manipulate
 				viewport->Manipulate(&mat);
@@ -196,7 +205,12 @@ class Application : public BaseGame {
 				if (obj) { SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4)); }
 
 				// Just copy postiton
-				if (src) { mat4_decompose(&src->source.position, NULL, NULL, result.matrix); }
+				if (src) {
+					quat q = {};
+					vec3 v = { 0, 0, 1 };
+					mat4_decompose(&src->source.position, &q, NULL, result.matrix);
+					src->source.direction = vec3_mulquat(v, q);
+				}
 			}
 
 			

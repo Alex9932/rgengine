@@ -11,6 +11,12 @@ cbuffer LightBuffer : register(b0) {
 	float    offset; // TMP ambient
 	float3   color;
 	float    intensity;
+
+	float3 dir;
+    int    light_type;
+
+    float4 cone;
+
 	float3   direction;
 	int      screenSize;
 	row_major float4x4 lightMatrix;

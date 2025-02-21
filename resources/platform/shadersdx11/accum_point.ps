@@ -11,8 +11,16 @@ cbuffer LightBuffer : register(b0) {
 	float  offset;
 	float3 color;
 	float  intensity;
+
+    float3 dir;
+    int    light_type;
+
+    float4 cone;
+
 	float3 position;
 	int    screenSize;
+
+	row_major float4x4 lightMatrix;
 };
 
 Texture2D    t_unit0    : register(t0); // Albedo
@@ -99,6 +107,16 @@ float3 CalculateLight(float3 N, float3 V, float3 Pos, float3 albedo, float metal
 
 }
 
+float CalculateSpotlightCone(int type, float3 lightDir, float3 spotDir, float innerCone, float outerCone) {
+    if(type == 0) { return 1; } // Point light
+
+	float theta = dot(normalize(lightDir), normalize(spotDir));
+    float intensity = smoothstep(outerCone, innerCone, theta);
+
+    return intensity;
+
+}
+
 ////////////////////////////////////////////////////////////////////
 
 PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
@@ -130,8 +148,15 @@ PSOUTPUT pmain(PSINPUT psin, float4 fragCoord : SV_Position) {
 	
 	PSOUTPUT pout;
 
-	pout.color.rgb = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
+	float4 wpos = pColor;
+	float3 DIR = normalize(position - wpos.xyz);
+
+    float3 calculatedLight = CalculateLight(N, V, pColor.xyz, aColor.rgb, metallic, roughness, emissive);
+    float  spotCone = CalculateSpotlightCone(light_type, DIR, dir, cone.x, cone.y);
+
+	pout.color.rgb = calculatedLight * spotCone;
 	pout.color.w = 1;
+
 
 	// Skybox
 	if(emissive < 0) {
