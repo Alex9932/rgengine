@@ -1,0 +1,41 @@
+{
+  "description": {
+    "name": "Test flat level",
+    "editor": "rgEngine leveleditor",
+    "meta": ""
+  },
+  "light": [
+    {
+      "name": "spot",
+      "type": 1,
+      "intensity": 2.12,
+      "position": [ -0.922, 1.477, 0.133 ],
+      "color": [ 1, 1, 1 ],
+      "direction": [ -0.962, 0.253, 0.099 ],
+      "cone": [ 0.958, 1.092 ]
+    },
+    {
+      "name": "staff-thing",
+      "type": 0,
+      "intensity": 0.225,
+      "position": [ -0.403, 1.715, -0.537 ],
+      "color": [ 1, 1, 1 ],
+      "direction": [ 0, 0, 1 ],
+      "cone": [ 0, 0 ]
+    }
+  ],
+  "static": [
+    {
+      "name": "object-0",
+      "model": "flatplane",
+      "matrix": [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+    },
+    {
+      "name": "object-1",
+      "model": "doublesided_cape",
+      "matrix": [ 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1 ]
+    }
+  ],
+  "entity": [
+  ]
+}

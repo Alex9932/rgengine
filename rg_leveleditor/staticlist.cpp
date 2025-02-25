@@ -124,7 +124,7 @@ void StaticList::Draw() {
 
 	if (ImGui::Button("New static")) {
 		char path[256];
-		FD_Filter filters[4] = { {"PM2 Model file", "pm2"}, {"Wavefront model", "obj"}, {"MMD Polygon model", "pmd"}, {"MMD Extended polygon model", "pmx"} };
+		FD_Filter filters[4] = { {"Wavefront model", "obj"}, {"PM2 Model file", "pm2"}, {"MMD Polygon model", "pmd"}, {"MMD Extended polygon model", "pmx"} };
 		if (ShowOpenDialog(path, 256, filters, 4)) {
 			R3DStaticModelInfo model = {};
 			OpenModel(path, &model);

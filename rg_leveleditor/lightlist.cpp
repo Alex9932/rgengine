@@ -27,7 +27,7 @@ void LightList::Draw() {
 		Uint32 len = world->GetLightCount();
 		for (Uint32 i = 0; i < len; i++) {
 			LightSource* src = world->GetLightSource(i);
-			SDL_snprintf(src_name, 128, "%x", src->uuid);
+			SDL_snprintf(src_name, 128, "%lx", src->uuid);
 
 			if (ImGui::TreeNode(src_name)) {
 
@@ -53,8 +53,8 @@ void LightList::Draw() {
 
 				if (isSpotlight) {
 					ImGui::InputFloat3("Direction", src->source.direction.array);
-					ImGui::SliderFloat("Inner", &src->source.innerCone, 0.0f, 1.0f, "%.3f");
-					ImGui::SliderFloat("Outer", &src->source.outerCone, 0.0f, 1.0f, "%.3f");
+					ImGui::SliderFloat("Inner", &src->source.innerCone, 0.0f, 3.1415f, "%.3f");
+					ImGui::SliderFloat("Outer", &src->source.outerCone, 0.0f, 3.1415f, "%.3f");
 				}
 
 				if (ImGui::Button("Remove")) {

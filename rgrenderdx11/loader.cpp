@@ -6,6 +6,8 @@
 #include "texture.h"
 #include "queue.h"
 
+#include <engine.h>
+
 #include <allocator.h>
 #include <rgstb.h>
 
@@ -99,6 +101,8 @@ void DoLoadTextures() {
 
 	int w, h, c;
 	Uint8* data = RG_STB_load_from_file(block->path, &w, &h, &c, 4);
+	RG_ASSERT_MSG(data, "Unable to load texture: RG_STB");
+
 	R2DCreateMemTextureInfo albedoInfo = {};
 	albedoInfo.width    = w;
 	albedoInfo.height   = h;

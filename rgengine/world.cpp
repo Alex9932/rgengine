@@ -32,6 +32,7 @@ namespace Engine {
 	}
 
 	World::~World() {
+		ClearWorld();
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocTransform);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocEntity);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_allocStatic);
@@ -123,6 +124,8 @@ namespace Engine {
 
 		// Remove static
 		for (size_t i = 0; i < m_staticdelqueue.size(); i++) {
+			R3D_StaticModel* hmdl = m_staticdelqueue[i]->GetModelHandle();
+			Render::DestroyStaticModel(hmdl);
 			RemoveStatic(m_allocStatic, m_static, m_staticdelqueue[i]);
 		}
 		m_staticdelqueue.clear();
@@ -215,16 +218,22 @@ namespace Engine {
 
 		for (Uint32 i = 0; i < m_entities.size(); i++) {
 			Entity* ent = m_entities[i];
-			
 			FreeComponents(ent);
-
 			RG_DELETE_CLASS(m_allocEntity, Entity, ent);
 		}
 
+		for (size_t i = 0; i < m_static.size(); i++) {
+			R3D_StaticModel* hmdl = m_static[i]->GetModelHandle();
+			Render::DestroyStaticModel(hmdl);
+			RG_DELETE_CLASS(m_allocStatic, StaticObject, m_static[i]);
+		}
+
 		// WARN: Destructor NOT CALLED !!!
+		m_allocStatic->DeallocateAll();
 		m_allocEntity->DeallocateAll();
 		m_allocTransform->DeallocateAll();
-		m_entities.clear();
+		m_allocLight->DeallocateAll();
+		//m_entities.clear();
 	}
 
 }

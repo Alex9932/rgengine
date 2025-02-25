@@ -292,6 +292,8 @@ namespace Engine {
 
         r_ctx->R2D_DestroyBuffer(buff1);
         r_ctx->R2D_DestroyBuffer(buff2);
+
+        r_ctx->R2D_DestroyTexture(font_tex);
     }
 
     void UpdateConsole() {
