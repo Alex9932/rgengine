@@ -34,6 +34,7 @@
 #include "lightsystem.h"
 
 #include "filedialog.h"
+#include "scriptengine.h"
 
 typedef void (*PFN_MODULE_INITIALIZE)();
 typedef void (*PFN_MODULE_DESTROY)();
@@ -372,6 +373,8 @@ namespace Engine {
         }
         Thread_Initialize(num_threads);
 
+        Script_Initialize();
+
         //Network_Initialize();
 
         if (game_ptr->IsClient()) {
@@ -479,6 +482,8 @@ namespace Engine {
         }
 
         DestroyGameModule();
+
+        Script_Destroy();
 
         Thread_Destroy();
 

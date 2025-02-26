@@ -181,6 +181,8 @@
     <ClCompile Include="rgstring.cpp" />
     <ClCompile Include="rgthread.cpp" />
     <ClCompile Include="rgvector.cpp" />
+    <ClCompile Include="scriptengine.cpp" />
+    <ClCompile Include="scriptruntime.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
@@ -242,6 +244,8 @@
     <ClInclude Include="rgentrypoint.h" />
     <ClInclude Include="rgphysics.h" />
     <ClInclude Include="rgthread.h" />
+    <ClInclude Include="scriptengine.h" />
+    <ClInclude Include="scriptruntime.h" />
     <ClInclude Include="soundbuffer.h" />
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />

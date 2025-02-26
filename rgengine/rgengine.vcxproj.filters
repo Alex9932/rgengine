@@ -82,6 +82,12 @@
     <Filter Include="Header Files\command">
       <UniqueIdentifier>{b65cb973-2799-4e64-901e-5820f56cbedd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\script">
+      <UniqueIdentifier>{67af2d32-5e7e-4153-9074-2ef71e95ed09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\script">
+      <UniqueIdentifier>{b62faab0-6b6e-4d2b-b505-c1ecb50a20d3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp">
@@ -257,6 +263,12 @@
     </ClCompile>
     <ClCompile Include="command.cpp">
       <Filter>Source Files\command</Filter>
+    </ClCompile>
+    <ClCompile Include="scriptengine.cpp">
+      <Filter>Source Files\script</Filter>
+    </ClCompile>
+    <ClCompile Include="scriptruntime.cpp">
+      <Filter>Source Files\script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -466,6 +478,12 @@
     </ClInclude>
     <ClInclude Include="command.h">
       <Filter>Header Files\command</Filter>
+    </ClInclude>
+    <ClInclude Include="scriptengine.h">
+      <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="scriptruntime.h">
+      <Filter>Header Files\script</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
