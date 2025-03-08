@@ -10,6 +10,8 @@ namespace Engine {
 
 	static STDAllocator* alloc;
 
+	static js_Report JS_DefaultReport;
+
 	void Script_Initialize() {
 		alloc = RG_NEW_CLASS(GetDefaultAllocator(), STDAllocator)("ScriptAlloc");
 	}
@@ -18,9 +20,14 @@ namespace Engine {
 		RG_DELETE_CLASS(GetDefaultAllocator(), STDAllocator, alloc);
 	}
 
+	static void ReportProc(js_State* J, const char* message) {
+		rgLogWarn(RG_LOG_SCRIPT, "%s", message);
+	}
+
 	RGScriptState* Script_MakeState() {
 		RGScriptState* state = (RGScriptState*)alloc->Allocate(sizeof(RGScriptState));
 		state->J = js_newstate(NULL, NULL, JS_STRICT);
+		js_setreport(state->J, ReportProc);
 		// TODO: Add custom functions
 		SetupBaseRuntime(state);
 		return state;
@@ -32,27 +39,27 @@ namespace Engine {
 	}
 
 	void Script_LoadCode(RGScriptState* state, String source, String file) {
-		//if (js_ploadstring(state->J, file, source)) {
-		if (js_dostring(state->J, source)) {
-			rgLogError(RG_LOG_SYSTEM, "Script error: %s:%s", file, js_tostring(state->J, -1));
+		if (js_ploadstring(state->J, file, source)) {
+		//if (js_dostring(state->J, source)) {
+			rgLogError(RG_LOG_SCRIPT, "Script error: %s:%s", file, js_tostring(state->J, -1));
 			js_pop(state->J, 1);
 			return;
 		}
 	}
 
 	void Script_CallFunction(RGScriptState* state, String name) {
-		rgLogInfo(RG_LOG_SYSTEM, "Script execute: %s", name);
+		rgLogInfo(RG_LOG_SCRIPT, "Script execute: %s", name);
 		js_getglobal(state->J, name);
 
 		if (!js_iscallable(state->J, -1)) {
-			rgLogError(RG_LOG_SYSTEM, "Script load error: no executable code was found!");
+			rgLogError(RG_LOG_SCRIPT, "Function error(%s is %s): no executable code was found!", name, js_tostring(state->J, -1));
 			js_pop(state->J, 1);
 			return;
 		}
 
 		js_pushundefined(state->J);
 		if (js_pcall(state->J, 0)) {
-			rgLogError(RG_LOG_SYSTEM, "Script runtime error %s:%s", name, js_tostring(state->J, -1));
+			rgLogError(RG_LOG_SCRIPT, "EE Script runtime error %s:%s", name, js_tostring(state->J, -1));
 			js_pop(state->J, 1);
 			return;
 		}

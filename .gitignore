@@ -372,3 +372,4 @@ FodyWeavers.xsd
 /resources/gamedata/models/megumin_obj
 /resources/gamedata/sponzaobj
 /resources/vmd/vmd
+/include/mujs_.h
