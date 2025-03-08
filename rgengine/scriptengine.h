@@ -13,7 +13,7 @@ namespace Engine {
 	RG_DECLSPEC RGScriptState* Script_MakeState();
 	RG_DECLSPEC void Script_FreeState(RGScriptState* state);
 
-	RG_DECLSPEC void Script_Execute(RGScriptState* state, String source);
+	RG_DECLSPEC void Script_LoadCode(RGScriptState* state, String source, String file = "inline");
 	RG_DECLSPEC void Script_ExecuteFile(RGScriptState* state, String file);
 
 }

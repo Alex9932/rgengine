@@ -31,8 +31,32 @@ namespace Engine {
 		alloc->Deallocate(state);
 	}
 
-	void Script_Execute(RGScriptState* state, String source) {
-		js_dostring(state->J, source);
+	void Script_LoadCode(RGScriptState* state, String source, String file) {
+		//if (js_ploadstring(state->J, file, source)) {
+		if (js_dostring(state->J, source)) {
+			rgLogError(RG_LOG_SYSTEM, "Script error: %s:%s", file, js_tostring(state->J, -1));
+			js_pop(state->J, 1);
+			return;
+		}
+	}
+
+	void Script_CallFunction(RGScriptState* state, String name) {
+		rgLogInfo(RG_LOG_SYSTEM, "Script execute: %s", name);
+		js_getglobal(state->J, name);
+
+		if (!js_iscallable(state->J, -1)) {
+			rgLogError(RG_LOG_SYSTEM, "Script load error: no executable code was found!");
+			js_pop(state->J, 1);
+			return;
+		}
+
+		js_pushundefined(state->J);
+		if (js_pcall(state->J, 0)) {
+			rgLogError(RG_LOG_SYSTEM, "Script runtime error %s:%s", name, js_tostring(state->J, -1));
+			js_pop(state->J, 1);
+			return;
+		}
+		js_pop(state->J, 1);
 	}
 
 	void Script_ExecuteFile(RGScriptState* state, String file) {
@@ -40,7 +64,8 @@ namespace Engine {
 		void* data = alloc->Allocate(res->length + 1);
 		SDL_memset(data, 0, res->length + 1);
 		SDL_memcpy(data, res->data, res->length);
-		js_dostring(state->J, (String)data);
+		Script_LoadCode(state, (String)data, file);
+		Script_CallFunction(state, "main");
 		alloc->Deallocate(data);
 		FreeResource(res);
 	}
