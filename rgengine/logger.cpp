@@ -101,7 +101,7 @@ RG_FORCE_INLINE static void printLine(SDL_LogPriority priority, String cat, Stri
     buffer_index--;
 
     if (file_stream) {
-        fprintf(file_stream, "%s[%s] %s\n", p, cat, line);
+        fprintf(file_stream, "%s [%s] %s\n", p, cat, line);
 
         // Force write logs
         if (priority == SDL_LOG_PRIORITY_WARN ||

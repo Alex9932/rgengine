@@ -347,13 +347,14 @@ namespace Engine {
 
         Filesystem_Initialize(fsjson);
 
-        if (game_ptr->IsClient()) {
+        if (game_ptr->IsGraphics()) {
             if (lib_renderer == NULL) {
                 RG_ERROR_MSG("No renderer!");
             }
 
             Window_Initialize(lib_renderer);
-        } else {
+        }
+        if (!game_ptr->IsClient()) {
             Input_StartConsole();
         }
 
@@ -378,12 +379,14 @@ namespace Engine {
         //Network_Initialize();
 
         if (game_ptr->IsClient()) {
-            Window_Show();
             soundsystem = RG_NEW_CLASS(std_allocator, SoundSystem)();
+            RG_NFDInit();
+        }
+
+        if (game_ptr->IsGraphics()) {
+            Window_Show();
             modelSystem = RG_NEW_CLASS(std_allocator, ModelSystem)();
             lightSystem = RG_NEW_CLASS(std_allocator, LightSystem)();
-
-            RG_NFDInit();
         }
 
         game_ptr->Initialize();
@@ -437,6 +440,9 @@ namespace Engine {
             if (game_ptr->IsClient()) {
                 core_profiler->StartSection(profiles[4]);
                 soundsystem->Update(GetDeltaTime());
+            }
+
+            if (game_ptr->IsGraphics()) {
                 modelSystem->UpdateComponents();
                 lightSystem->UpdateComponents();
 
@@ -449,7 +455,7 @@ namespace Engine {
             Thread_Execute();
             Thread_WaitForAll();
 
-            if (game_ptr->IsClient()) {
+            if (game_ptr->IsGraphics()) {
                 core_profiler->StartSection(profiles[7]);
                 Render::Update();
             }
@@ -470,12 +476,14 @@ namespace Engine {
 
         // Quit
         rgLogInfo(RG_LOG_SYSTEM, "Stopping engine...");
-
         game_ptr->Quit();
 
         if (game_ptr->IsClient()) {
             RG_NFDDestroy();
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
+        }
+
+        if (game_ptr->IsGraphics()) {
             RG_DELETE_CLASS(std_allocator, ModelSystem, modelSystem);
             RG_DELETE_CLASS(std_allocator, LightSystem, lightSystem);
             Window_Destroy();
