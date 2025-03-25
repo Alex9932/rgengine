@@ -48,9 +48,9 @@ struct MatrixBuffer {
 };
 
 struct ConstBuffer {
-	vec4   color;
-	vec3   camerapos;
-	Uint32 __offset3;
+	vec4    color;
+	vec3    camerapos;
+	Float32 time;
 };
 
 static Shader* shader;
@@ -804,8 +804,10 @@ static void DrawSkybox() {
 	//Float32 m_turbidity;  -> color
 
 	constBuffer.color.xyz = (*GetSunPosition()).normalize();
+	//rgLogInfo(RG_LOG_RENDER, "SUN: %f %f %f", constBuffer.color.x, constBuffer.color.y, constBuffer.color.z);
 	constBuffer.color.a   = GetAtmosphereTurbidity();
 	constBuffer.camerapos = cam_pos;
+	constBuffer.time      = GetSunTime();
 
 	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
 	ID3D11Buffer* conBuffer = cBuffer->GetHandle();

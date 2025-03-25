@@ -613,6 +613,7 @@ void SetLightDescription(R3D_GlobalLightDescrition* desc) {
     globallight.ambient   = desc->ambient;
 
     globallight.turbidity = desc->turbidity;
+    globallight.time      = desc->time;
 
 }
 
@@ -626,4 +627,8 @@ vec3* GetSunPosition() {
 
 Float32 GetAtmosphereTurbidity() {
     return globallight.turbidity;
+}
+
+Float32 GetSunTime() {
+    return globallight.time;
 }

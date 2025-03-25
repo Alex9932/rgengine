@@ -15,6 +15,7 @@ typedef struct GlobalLight {
 	Float32 ambient;
 	Float32 intensity;
 	Float32 turbidity;
+	Float32 time;
 } GlobalLight;
 
 void CreateLightpass(ivec2* size);
@@ -34,5 +35,6 @@ mat4* GetLightMatrix();
 
 vec3* GetSunPosition();
 Float32 GetAtmosphereTurbidity();
+Float32 GetSunTime();
 
 #endif

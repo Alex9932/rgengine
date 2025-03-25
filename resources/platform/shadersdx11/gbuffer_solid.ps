@@ -50,6 +50,7 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 
 		float4 tNormal = t_unit1.Sample(SampleType, psin.uv);
 		N = normalize(tNormal.xyz * 2.0 - 1.0);
+		//N.y = -N.y;
 		N = normalize(mul(N, TBN));
 
 	#else
