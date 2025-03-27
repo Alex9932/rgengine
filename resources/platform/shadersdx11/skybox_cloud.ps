@@ -1,0 +1,85 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 vpos     : VPOS;
+};
+
+struct PSOUTPUT {
+	float4 albedo : SV_Target0; // Albedo, metallic;
+	float4 normal : SV_Target1; // Normal, roughness;
+	float4 wpos   : SV_Target2; // WPos, emissive;
+};
+
+cbuffer ConstBuffer : register(b0) {
+	float3 sun_dir;
+	float  turbidity;
+	float3 camerapos;
+	float  time;
+};
+
+Texture2D t_unit0 : register(t0);
+Texture2D t_unit1 : register(t1);
+Texture2D t_unit2 : register(t2);
+SamplerState SampleType : register(s0);
+
+float Hash(float2 p) {
+    return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+float Noise(float2 uv) {
+    float2 i = floor(uv);
+    float2 f = frac(uv);
+
+    float a = Hash(i);
+    float b = Hash(i + float2(1.0, 0.0));
+    float c = Hash(i + float2(0.0, 1.0));
+    float d = Hash(i + float2(1.0, 1.0));
+
+    float2 u = f * f * (3.0 - 2.0 * f);
+
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+float Perlin(float2 uv, float T) {
+    return (Noise(uv * 2.5 + T * 0.02)
+		+ 0.75 * Noise(uv * 5.0 + T * 0.025)
+	    //+ 0.5 * Noise(uv * 10.0 + T * 0.03)
+		+ 0.25 * Noise(uv * 20.0 + T * 0.05)
+		+ 0.125 * Noise(uv * 40.0 + T * 0.07)
+		+ 0.0625 * Noise(uv * 80.0 + T * 0.09)
+		);
+}
+
+float CloudShape(float2 uv, float T) {
+    float noise = Perlin(uv, T);
+    noise = smoothstep(0.5, 0.9, noise);
+    return 1 - noise;
+}
+
+PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
+
+	float3 V = normalize(psin.vpos - camerapos);
+	float3 L = normalize(sun_dir);
+	float3 N = normalize(V);
+
+	
+	float PI = 3.14159265359;
+	float T = time * 256;// / (PI * 0.5) + (PI * 2);
+
+	float mult = 0.0025;
+	float2 uv = 0;
+	uv.x = psin.vpos.x * mult;
+	uv.y = psin.vpos.z * mult;
+
+	float cloud = CloudShape(uv, T);
+
+	float4 result = float4(1, 1, 1, cloud);
+
+	PSOUTPUT pout;
+	pout.albedo     = result;    // Albedo
+	pout.normal.xyz = N;         // Normal (!! NOT USED in skybox !!)
+	pout.normal.w   = 1;
+	pout.wpos.xyz   = psin.vpos; // Wpos
+	pout.wpos.w     = -1;
+	return pout;
+
+}

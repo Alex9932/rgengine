@@ -222,6 +222,7 @@
     <None Include="..\resources\platform\shadersdx11\skeleton.cs" />
     <None Include="..\resources\platform\shadersdx11\skybox.ps" />
     <None Include="..\resources\platform\shadersdx11\skybox.vs" />
+    <None Include="..\resources\platform\shadersdx11\skybox_cloud.ps" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

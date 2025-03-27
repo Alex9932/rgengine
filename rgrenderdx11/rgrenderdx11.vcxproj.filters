@@ -271,5 +271,8 @@
     <None Include="..\resources\platform\shadersdx11\skybox.ps">
       <Filter>shaders\gbuffer</Filter>
     </None>
+    <None Include="..\resources\platform\shadersdx11\skybox_cloud.ps">
+      <Filter>shaders\gbuffer</Filter>
+    </None>
   </ItemGroup>
 </Project>

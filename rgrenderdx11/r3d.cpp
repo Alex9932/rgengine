@@ -26,6 +26,8 @@
 
 #define R_MAX_LIGHTS      1024
 
+#define SKYBOX_SCALE 500
+
 using namespace Engine;
 
 static PoolAllocator*   alloc_materials;
@@ -55,9 +57,12 @@ struct ConstBuffer {
 
 static Shader* shader;
 static Shader* skyshader;
+static Shader* cloudshader;
 static Shader* shadowshader;
 static Buffer* mBuffer;
 static Buffer* cBuffer;
+
+static ID3D11BlendState* clouds_bs;
 
 static MatrixBuffer matrixBuffer;
 static ConstBuffer  constBuffer;
@@ -80,42 +85,42 @@ static Uint32 dispatchCalls  = 0;
 
 static Float32 skybox_vertices[] = {
 	// Position          Noraml   Tangent  UV
-	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Back
 	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 
-	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Left
 	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 
-	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Right
 	 1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 
-	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Front
 	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 
-	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Top
 	 1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	-1.0f,  1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 
-	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
+	-1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0, // Bottom
 	-1.0f, -1.0f,  1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
 	 1.0f, -1.0f, -1.0f, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -161,6 +166,10 @@ static void LoadShaders() {
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/skybox.ps");
 	skyshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
 
+	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/skybox.vs");
+	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/skybox_cloud.ps");
+	cloudshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
+
 	Engine::GetPath(gbuff_vs, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.vs");
 	Engine::GetPath(gbuff_ps, 128, RG_PATH_SYSTEM, "shadersdx11/shadow.ps");
 	shadowshader = RG_NEW_CLASS(RGetAllocator(), Shader)(&staticDescription, gbuff_vs, gbuff_ps, false);
@@ -172,6 +181,7 @@ static void FreeShaders() {
 
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shader);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, skyshader);
+	RG_DELETE_CLASS(RGetAllocator(), Shader, cloudshader);
 	RG_DELETE_CLASS(RGetAllocator(), Shader, shadowshader);
 }
 
@@ -191,6 +201,20 @@ void InitializeR3D(ivec2* size) {
 	lightQueue  = RG_NEW_CLASS(RGetAllocator(), RQueue)(R_MAX_LIGHTS);
 
 	LoadShaders();
+
+	// State for clouds
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable                 = false;
+	blendDesc.IndependentBlendEnable                = false;
+	blendDesc.RenderTarget[0].BlendEnable           = true;
+	blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	DX11_GetDevice()->CreateBlendState(&blendDesc, &clouds_bs);
 
 	// Skybox buffers
 	BufferCreateInfo vbufferInfo = {};
@@ -229,6 +253,8 @@ void DestroyR3D() {
 	DestroyFX();
 
 	FreeShaders();
+
+	clouds_bs->Release();
 
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, mBuffer);
 	RG_DELETE_CLASS(RGetAllocator(), Buffer, cBuffer);
@@ -728,8 +754,6 @@ static inline DXGI_FORMAT GetIndexType(IndexType type) {
 	}
 }
 
-#define SKYBOX_SCALE 250
-
 static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial, Bool useOnlyColor) {
 	matrixBuffer.model = *matrix;
 	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
@@ -790,8 +814,22 @@ static void DrawStaticModel(R3D_StaticModel* mdl, mat4* matrix, Bool useMaterial
 	}
 }
 
-static void DrawSkybox() {
-	mat4_model(&matrixBuffer.model, cam_pos, { 0, 0, 0 }, { SKYBOX_SCALE, SKYBOX_SCALE, SKYBOX_SCALE });
+static void CalculateSkyboxCB() {
+
+	//vec3    sun_dir;
+	//Float32 m_turbidity;  -> color
+
+	constBuffer.color.xyz = (*GetSunPosition()).normalize();
+	//rgLogInfo(RG_LOG_RENDER, "SUN: %f %f %f", constBuffer.color.x, constBuffer.color.y, constBuffer.color.z);
+	constBuffer.color.a = GetAtmosphereTurbidity();
+	constBuffer.camerapos = cam_pos;
+	constBuffer.time = GetSunTime();
+
+	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
+}
+
+static void DrawSkybox(Float32 height_multiplier, Uint32 vCount, Uint32 vStart) {
+	mat4_model(&matrixBuffer.model, cam_pos, { 0, 0, 0 }, { SKYBOX_SCALE, SKYBOX_SCALE * height_multiplier, SKYBOX_SCALE });
 	mBuffer->SetData(0, sizeof(MatrixBuffer), &matrixBuffer);
 
 	UINT stride = sizeof(R3D_Vertex);
@@ -800,16 +838,6 @@ static void DrawSkybox() {
 	DX11_GetContext()->IASetVertexBuffers(0, 1, &vbuffer, &stride, &offset);
 	DX11_GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	//vec3    sun_dir;
-	//Float32 m_turbidity;  -> color
-
-	constBuffer.color.xyz = (*GetSunPosition()).normalize();
-	//rgLogInfo(RG_LOG_RENDER, "SUN: %f %f %f", constBuffer.color.x, constBuffer.color.y, constBuffer.color.z);
-	constBuffer.color.a   = GetAtmosphereTurbidity();
-	constBuffer.camerapos = cam_pos;
-	constBuffer.time      = GetSunTime();
-
-	cBuffer->SetData(0, sizeof(ConstBuffer), &constBuffer);
 	ID3D11Buffer* conBuffer = cBuffer->GetHandle();
 	DX11_GetContext()->PSSetConstantBuffers(0, 1, &conBuffer);
 
@@ -817,7 +845,7 @@ static void DrawSkybox() {
 	GetDefaultTexture()->Bind(1);
 	GetDefaultTexture()->Bind(2);
 
-	DX11_GetContext()->Draw(36, 0);
+	DX11_GetContext()->Draw(vCount, vStart);
 	drawCalls++;
 }
 
@@ -853,7 +881,7 @@ static void DoSkeletonCalculation() {
 		ctx->CSSetShaderResources(0, 3, views);
 		ctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
 
-		skeletonShader->Dispatch({ 100000, 1, 1 }); // !!!WARNING!!! MAX 10000 Vertices
+		skeletonShader->Dispatch({ 100000, 1, 1 }); // !!!WARNING!!! MAX 100000 Vertices
 		dispatchCalls++;
 	}
 
@@ -934,10 +962,25 @@ static void DoGBufferPass() {
 	squeue->Reset();
 	rqueue->Reset();
 
+	// Skybox & clouds
+
+	CalculateSkyboxCB();
+
 	skyshader->Bind();
 	ctx->VSSetConstantBuffers(0, 1, &matBuffer);
 
-	DrawSkybox();
+	// Draw full box
+	DrawSkybox(1.0f, 36, 0);
+
+	Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	ctx->OMSetBlendState(clouds_bs, blendFactor, 0xffffffff);
+
+	cloudshader->Bind();
+	ctx->VSSetConstantBuffers(0, 1, &matBuffer);
+
+	// Clouds at half height of skybox's top face
+	// And use only top face
+	DrawSkybox(0.15f, 6, 24);
 }
 
 void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
