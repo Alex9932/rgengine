@@ -37,6 +37,30 @@ void R3D_UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
 
 }
 
+R3D_AtlasHandle* R3D_CreateAtlas(String texture) {
+	return NULL;
+}
+
+void R3D_DestroyAtlas(R3D_AtlasHandle* atlas) {
+
+}
+
+R3D_ParticleBuffer* R3D_CreateParticleBuffer(R3DCreateBufferInfo* info) {
+	return NULL;
+}
+
+void R3D_DestroyParticleBuffer(R3D_ParticleBuffer* hbuff) {
+
+}
+
+void R3D_UpdateParticleBuffer(R3DUpdateBufferInfo* info) {
+
+}
+
+void R3D_PushLightSource(R3D_LightSource* info) {
+
+}
+
 void R3D_PushModel(R3D_PushModelInfo* info) {
 
 }
@@ -45,6 +69,6 @@ void R3D_SetCamera(R3D_CameraInfo* info) {
 
 }
 
-void R3D_StartRenderTask(void* TODO) {
+void R3D_StartRenderTask(R3D_RenderTaskInfo* info) {
 
 }

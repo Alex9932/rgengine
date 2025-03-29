@@ -13,24 +13,48 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\r2d">
+      <UniqueIdentifier>{9de3b65d-8ef9-461e-b760-91f79e6c7223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\r3d">
+      <UniqueIdentifier>{80206743-5b8d-47d2-9995-c944e0229438}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\r2d">
+      <UniqueIdentifier>{b9ee516d-8497-4b1e-9200-b99c15775189}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\r3d">
+      <UniqueIdentifier>{604ed750-6f42-4d41-a177-4475328844de}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rgrendergl.cpp">
+    <ClCompile Include="rgrendervk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="r3d.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="r2d.cpp">
+      <Filter>Source Files\r2d</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="r3d.h">
+    <ClInclude Include="rgrendervk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rgrendergl.h">
+    <ClInclude Include="vk.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="r3d.h">
+      <Filter>Header Files\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r2d.h">
+      <Filter>Header Files\r2d</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
