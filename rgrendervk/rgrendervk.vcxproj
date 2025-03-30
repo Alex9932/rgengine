@@ -147,12 +147,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="imgui_impl_vulkan.cpp" />
     <ClCompile Include="r2d.cpp" />
     <ClCompile Include="r3d.cpp" />
     <ClCompile Include="rgrendervk.cpp" />
     <ClCompile Include="vk.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="imgui_impl_vulkan.h" />
     <ClInclude Include="r2d.h" />
     <ClInclude Include="r3d.h" />
     <ClInclude Include="rgrendervk.h" />

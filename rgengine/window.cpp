@@ -132,7 +132,7 @@ namespace Engine {
         style.GrabRounding = 0.0f;
         style.TabRounding = 0.0f;
         style.TabBorderSize = 0.0f;
-        style.TabMinWidthForCloseButton = 0.0f;
+        //style.TabMinWidthForCloseButton = 0.0f;
         style.ColorButtonPosition = ImGuiDir_Right;
         style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
         style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
@@ -202,13 +202,14 @@ namespace Engine {
 
         // ImGui
         imctx = ImGui::CreateContext();
-        ImGui_ImplSDL2_InitForOther(hwnd);
 
         ImGuiIO& io = ImGui::GetIO();
 
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+        ImGui_ImplSDL2_InitForOther(hwnd);
 
         SetupImGuiStyle();
         //ImGui::StyleColorsDark();

@@ -42,6 +42,9 @@
     <ClCompile Include="r2d.cpp">
       <Filter>Source Files\r2d</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_impl_vulkan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgrendervk.h">
@@ -55,6 +58,9 @@
     </ClInclude>
     <ClInclude Include="r2d.h">
       <Filter>Header Files\r2d</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_vulkan.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -333,7 +333,7 @@ namespace ImGui {
 
 		if (resBG) {
 			if (IsItemHovered()) {
-				SetItemUsingMouseWheel();
+				//SetItemUsingMouseWheel();
 				const float currentScroll = GetIO().MouseWheel;
 
 				context.Zoom = ImClamp(context.Zoom + currentScroll, 1.0f, (float)viewWidth);
