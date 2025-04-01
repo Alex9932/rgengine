@@ -151,6 +151,7 @@
     <ClCompile Include="r2d.cpp" />
     <ClCompile Include="r3d.cpp" />
     <ClCompile Include="rgrendervk.cpp" />
+    <ClCompile Include="swapchain.cpp" />
     <ClCompile Include="vk.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,7 @@
     <ClInclude Include="r2d.h" />
     <ClInclude Include="r3d.h" />
     <ClInclude Include="rgrendervk.h" />
+    <ClInclude Include="swapchain.h" />
     <ClInclude Include="vk.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
