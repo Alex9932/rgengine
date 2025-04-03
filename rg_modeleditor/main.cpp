@@ -1,5 +1,8 @@
 #define GAME_DLL
 #include <rgentrypoint.h>
+#include <event.h>
+#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/imgui.h>
 
 #include "renderer.h"
 
@@ -69,6 +72,53 @@ ret:
 }
 #endif
 
+static Bool CEventHandler(SDL_Event* event) {
+	ImGui_ImplSDL2_ProcessEvent(event);
+	return true;
+}
+
+static char MDL_NAME[512];
+static char MDL_PATH[512];
+
+static void LoadModel(String path) {
+	// Parse path
+	// Save %MODELNAME% in MDL_NAME and %PATH% in MDL_PATH
+	// Path example: /%PATH%/%MODELNAME%.%EXT%
+	// /home/alex9932/rgengine/rawmodels/cube/cube.obj
+	// - %PATH% -> /home/alex9932/rgengine/rawmodels/cube
+	// - %MODELNAME% -> cube
+	// - %EXT% -> obj
+}
+
+static void OpenModel() {
+	// Open filedialog
+}
+
+static void SaveModel() {
+	// Save geometry data
+	// gamedata/models/%MODELNAME%.pm2
+	// 
+	// Save textures (if needed, we can use exist texture)
+	// gamedata/textures/%TEXTURE%.png
+}
+
+static void DrawGUI() {
+	ImGui::Begin("Model");
+
+	if (ImGui::Button("Load")) {
+		OpenModel();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Save")) {
+		SaveModel();
+	}
+
+	ImGui::Text("Loaded model: %s", MDL_NAME);
+	ImGui::Text("Path: %s", MDL_PATH);
+	
+	ImGui::End();
+}
+
 class Application : public BaseGame {
 	public:
 		Application() {
@@ -84,7 +134,8 @@ class Application : public BaseGame {
 		}
 
 		void Initialize() {
-			rstate = InitializeRenderer();
+			rstate = InitializeRenderer(DrawGUI);
+			RegisterEventHandler(CEventHandler);
 
 			//ProcessSFile("E:/.../TRAINS/TRAINSET/rz_VL10-1487/rz_vl10-1487b.s");
 			//ProcessSFile("E:/.../TRAINS/TRAINSET/tsrLoco_VL8-1718/vl8-1718a.s");
@@ -94,6 +145,7 @@ class Application : public BaseGame {
 
 		void Quit() {
 			DestroyRenderer(rstate);
+			FreeEventHandler(CEventHandler);
 		}
 
 	private:

@@ -6,15 +6,19 @@
 //#include <SDL2/SDL_opengl.h>
 #include <engine.h>
 #include <rgstb.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_sdl2.h>
+#include "imgui_impl_opengl3.h"
 
 #include "glad.h"
 
 #define RG_WND_ICON "platform/icon.png"
 
 typedef struct RenderState {
-	SDL_Window*   hwnd;
-	SDL_GLContext glctx;
-	GLuint        shader;
+	SDL_Window*     hwnd;
+	SDL_GLContext   glctx;
+	GLuint          shader;
+	GuiDrawCallback guicb;
 } RenderState;
 
 static RenderState staticstate;
@@ -58,9 +62,10 @@ void APIENTRY openglDebugCallback(GLenum source, GLenum type, GLuint id,
 }
 #endif
 
-RenderState* InitializeRenderer() {
+RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
+	staticstate.guicb = guicb;
 
 	// Load icon
 	int w, h, c;
@@ -87,6 +92,15 @@ RenderState* InitializeRenderer() {
 	}
 
 	gladLoadGL();
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+
+	// ImGUI
+	ImGui_ImplSDL2_InitForOpenGL(staticstate.hwnd, staticstate.glctx);
+	ImGui_ImplOpenGL3_Init("#version 130");
 
 	//glEnable(GL_DEBUG_OUTPUT);
 	//glDebugMessageCallback(openglDebugCallback, nullptr);
@@ -215,6 +229,11 @@ RenderState* InitializeRenderer() {
 }
 
 void DestroyRenderer(RenderState* state) {
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(state->shader);
@@ -253,6 +272,13 @@ void DoRender(RenderState* state) {
 			default:                   rgLogError(RG_LOG_RENDER, "Unknown error!");
 		}
 	}
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
+	ImGui::NewFrame();
+	staticstate.guicb();
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	SDL_GL_SwapWindow(state->hwnd);
 }

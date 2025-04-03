@@ -5,7 +5,9 @@
 
 struct RenderState;
 
-RenderState* InitializeRenderer();
+typedef void (*GuiDrawCallback)(void);
+
+RenderState* InitializeRenderer(GuiDrawCallback guicb);
 void DestroyRenderer(RenderState* state);
 void DoRender(RenderState* state);
 
