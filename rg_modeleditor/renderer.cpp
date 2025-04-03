@@ -37,28 +37,103 @@ static String txt_VertexShader = "#version 330 core\n"
 "layout (location = 1) in vec3 v_norm;\n"
 "layout (location = 2) in vec3 v_tang;\n"
 "layout (location = 3) in vec2 v_uv;\n"
+"out vec3 o_pos;\n"
 "out vec3 o_norm;\n"
 "out vec3 o_tang;\n"
 "out vec2 o_uv;\n"
+"out mat3 o_TBN;\n"
 "uniform mat4 proj;\n"
 "uniform mat4 view;\n"
 "uniform mat4 mdl;\n"
 "void main() {\n"
-"    mat4 mvp = proj * view * mdl;\n"
-"    gl_Position = mvp * vec4(v_pos, 1);\n"
+"    mat4 vp = proj * view;\n"
+"    vec4 pos4 = vec4(v_pos, 1);\n"
+"    vec4 nrm4 = vec4(v_norm, 0);\n"
+"    vec4 tan4 = vec4(v_tang, 0);\n"
+"    vec3 N = (nrm4 * mdl).xyz;\n"
+"    vec3 T = (tan4 * mdl).xyz;\n"
+"    vec3 B = normalize(cross(N, T));\n"
+"    o_TBN  = mat3(T, B, N);\n"
+"    o_pos  = (mdl * pos4).xyz;\n"
 "    o_norm = v_norm;\n"
 "    o_tang = v_tang;\n"
 "    o_uv   = v_uv;\n"
+"    gl_Position = vp * vec4(o_pos, 1);\n"
 "}\n";
 
 static String txt_PixelShader = "#version 330 core\n"
+"in vec3 o_pos;\n"
 "in vec3 o_norm;\n"
 "in vec3 o_tang;\n"
 "in vec2 o_uv;\n"
-"out vec4 color;\n"
+"in mat3 o_TBN;\n"
+"out vec4 p_color;\n"
 "uniform sampler2D t_unit0;\n"
+"uniform sampler2D t_unit1;\n"
+"uniform sampler2D t_unit2;\n"
+"uniform vec3 viewpos;\n"
+"#define PI 3.14159265359\n"
+"float DistributionGGX(vec3 N, vec3 H, float roughness) {\n"
+"    float a = roughness * roughness;\n"
+"    float a2 = a * a;\n"
+"    float NdotH = max(dot(N, H), 0.0);\n"
+"    float NdotH2 = NdotH * NdotH;\n"
+"    float denom = (NdotH2 * (a2 - 1.0) + 1.0);\n"
+"    return a2 / (PI * denom * denom);\n"
+"}\n"
+"float GeometrySchlickGGX(float NdotV, float roughness) {\n"
+"    float r = (roughness + 1.0);\n"
+"    float k = (r * r) / 8.0;\n"
+"    return NdotV / (NdotV * (1.0 - k) + k);\n"
+"}\n"
+"float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {\n"
+"    float NdotV = max(dot(N, V), 0.0);\n"
+"    float NdotL = max(dot(N, L), 0.0);\n"
+"    float ggx2 = GeometrySchlickGGX(NdotV, roughness);\n"
+"    float ggx1 = GeometrySchlickGGX(NdotL, roughness);\n"
+"    return ggx1 * ggx2;\n"
+"}\n"
+"vec3 FresnelSchlick(float cosTheta, vec3 F0) {\n"
+"    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);\n"
+"}\n"
+"\n"
+// N - normal; V - Viewdir; P - World-space position; R - Roughness; M - metallic; A - albedo
+"vec3 CalculateLight(vec3 N, vec3 V, vec3 P, float M, float R, vec3 A) {\n"
+"    vec3 L = normalize(vec3(0, 0.2, 1.8));\n"
+"    vec3 C = vec3(1, 0.9, 0.8) * 1.8;\n"
+"    vec3 Lo = vec3(0.0);\n"
+"    vec3 H = normalize(V + L);\n"
+// Do not calculate attenuation
+"    vec3 radiance = C;\n"
+"    float NDF = DistributionGGX(N, H, R);\n"
+"    float G = GeometrySmith(N, V, L, R);\n"
+"    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), Lo);\n"
+"    vec3 kS = F;\n"
+"    vec3 kD = vec3(1.0) - kS;\n"
+"    kD *= 1.0 - M;\n"
+"    vec3 numerator = NDF * G * F;\n"
+"    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;\n"
+"    vec3 specular = numerator / denominator;\n"
+"    float NdotL = max(dot(N, L), 0.0);\n"
+"    Lo += (kD * A / PI + specular) * radiance * NdotL;\n"
+"    return Lo;\n"
+"}\n"
+"\n"
 "void main() {\n"
-"    color = texture(t_unit0, o_uv);\n"
+"    vec4 alb = texture(t_unit0, o_uv);\n"
+"    vec4 nrm = texture(t_unit1, o_uv);\n"
+"    vec4 pbr = texture(t_unit2, o_uv);\n"
+"    vec3 N;\n"
+"#if 0\n"
+"    N = normalize(nrm.xyz * 2.0 - 1.0);\n"
+"    N = normalize(N * o_TBN);\n"
+"#else\n"
+"    N = normalize(o_norm);\n" // Disable normal mappings
+"#endif\n"
+"    vec3 V = normalize(viewpos - o_pos);\n"
+"    vec3 light = vec3(0.3);\n"
+"    light += CalculateLight(N, V, o_pos, pbr.x, pbr.y, alb.xyz);\n"
+"    p_color = vec4(alb.xyz * light, 1);\n"
 "}\n";
 
 // OpenGL 4.3
@@ -113,7 +188,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	// ImGUI
 	ImGui_ImplSDL2_InitForOpenGL(staticstate.hwnd, staticstate.glctx);
-	ImGui_ImplOpenGL3_Init("#version 130");
+	ImGui_ImplOpenGL3_Init();
 
 	InitializeTextures();
 
@@ -188,14 +263,29 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	mat4 model;
 	mat4_translate(&model, {0, 0, 0});
 
+	vec3 pos = camera->GetTransform()->GetPosition();
+
+	ivec2 size = {};
+	SDL_GetWindowSize(state->hwnd, &size.x, &size.y);
+	glViewport(0, 0, size.x, size.y);
+
 	glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(state->shader);
 
+	// VS uniforms
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "proj"), 1, GL_FALSE, proj.m);
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "view"), 1, GL_FALSE, view.m);
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, model.m);
+
+	// PS uniforms
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit0"), 0); // albedo
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit1"), 1); // normal
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit2"), 2); // pbr
+	glUniform3f(glGetUniformLocation(state->shader, "viewpos"), pos.x, pos.y, pos.z);
+
+	//rgLogInfo(RG_LOG_RENDER, "Camera: %f %f %f", pos.x, pos.y, pos.z);
 
 	DrawBuffer(buffer);
 

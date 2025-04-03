@@ -61,9 +61,15 @@ VertexBuffer* MakeVBuffer(R3DStaticModelInfo* info) {
 	glBindVertexArray(0);
 
 	char alb_path[256];
+	char nrm_path[256];
+	char pbr_path[256];
 	for (Uint32 i = 0; i < info->matCount; i++) {
 		SDL_snprintf(alb_path, 256, "gamedata/textures/%s.png", info->matInfo[i].texture);
-		buffer.textures[i] = GetTexture(alb_path);
+		SDL_snprintf(nrm_path, 256, "gamedata/textures/%s_norm.png", info->matInfo[i].texture);
+		SDL_snprintf(pbr_path, 256, "gamedata/textures/%s_pbr.png", info->matInfo[i].texture);
+		buffer.textures[i * 3]     = GetTexture(alb_path);
+		buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
+		buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
 	}
 
 	return &buffer;
@@ -75,7 +81,11 @@ void FreeVBuffer(VertexBuffer* buffer) {
 	glDeleteBuffers(1, &buffer->ebo);
 	Texture* t;
 	for (Uint32 i = 0; i < buffer->tcount; i++) {
-		t = buffer->textures[i];
+		t = buffer->textures[i * 3];
+		if (t) { FreeTexture(t); }
+		t = buffer->textures[i * 3 + 1];
+		if (t) { FreeTexture(t); }
+		t = buffer->textures[i * 3 + 2];
 		if (t) { FreeTexture(t); }
 	}
 }
@@ -93,7 +103,16 @@ void DrawBuffer(VertexBuffer* ptr) {
 	for (Uint32 i = 0; i < ptr->meshes; i++) {
 
 		Uint32 txidx = ptr->mat[i];
-		if(ptr->textures[txidx]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx]->tex_id); }
+		glActiveTexture(GL_TEXTURE0);
+		if(ptr->textures[txidx * 3]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3]->tex_id); }
+		else { glBindTexture(GL_TEXTURE_2D, 0); }
+
+		glActiveTexture(GL_TEXTURE1);
+		if (ptr->textures[txidx * 3 + 1]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3 + 1]->tex_id); }
+		else { glBindTexture(GL_TEXTURE_2D, 0); }
+
+		glActiveTexture(GL_TEXTURE2);
+		if (ptr->textures[txidx * 3 + 2]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3 + 2]->tex_id); }
 		else { glBindTexture(GL_TEXTURE_2D, 0); }
 
 		glDrawElements(GL_TRIANGLES, ptr->pairs[i].count, vtype, (void*)(ptr->pairs[i].start * ptr->indexsize));
