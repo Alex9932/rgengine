@@ -1,6 +1,6 @@
 ## RESOURCES
 
-The not all files under this directory are NOT under MIT license, but other licenses.
+The all files under this directory are NOT under MIT license, but other licenses.
 If you want to use them in your work, get original archive file, read readme,
 and follow their licenses.
 
@@ -17,7 +17,7 @@ and MUST be deleted in future!
 ### mmd_pack.rfs & vmd directory
 
 mmd_pack.rfs contains Crypton's Vocaloid(Hatsune Miku, Kagamine Rin, and so on) PMD models.
-Use rg_tools(Release/rg_tools) to pack/unpack .rfs files.
+Use rg_tools to pack/unpack .rfs files.
 
 1. Vocaloid stuffs
 
