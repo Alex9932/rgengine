@@ -138,12 +138,16 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="texture.cpp" />
+    <ClCompile Include="vertexbuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="glad.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />
     <ClInclude Include="khrplatform.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="texture.h" />
+    <ClInclude Include="vertexbuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,16 +1,17 @@
 #include "renderer.h"
 
-//#include <window.h>
-
 #include <SDL2/SDL.h>
-//#include <SDL2/SDL_opengl.h>
 #include <engine.h>
 #include <rgstb.h>
+#include "texture.h"
+#include "vertexbuffer.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl2.h>
 #include "imgui_impl_opengl3.h"
 
 #include "glad.h"
+
+#include <objimporter.h>
 
 #define RG_WND_ICON "platform/icon.png"
 
@@ -19,6 +20,7 @@ typedef struct RenderState {
 	SDL_GLContext   glctx;
 	GLuint          shader;
 	GuiDrawCallback guicb;
+
 } RenderState;
 
 static RenderState staticstate;
@@ -26,31 +28,37 @@ static RenderState staticstate;
 static SDL_Surface* icon_surface;
 static Uint8*       icon_data_ptr;
 
-static GLuint VAO;
-static GLuint VBO;
-static GLuint EBO;
-static GLuint texture0;
-static GLuint texture1;
+static Engine::ObjImporter obj_importer;
+
+static VertexBuffer* buffer;
 
 static String txt_VertexShader = "#version 330 core\n"
 "layout (location = 0) in vec3 v_pos;\n"
-"layout (location = 1) in vec3 v_color;\n"
-"layout (location = 2) in vec2 v_uv;\n"
-"out vec3 o_color;\n"
+"layout (location = 1) in vec3 v_norm;\n"
+"layout (location = 2) in vec3 v_tang;\n"
+"layout (location = 3) in vec2 v_uv;\n"
+"out vec3 o_norm;\n"
+"out vec3 o_tang;\n"
 "out vec2 o_uv;\n"
+"uniform mat4 proj;\n"
+"uniform mat4 view;\n"
+"uniform mat4 mdl;\n"
 "void main() {\n"
-"    gl_Position = vec4(v_pos, 1);\n"
-"    o_color     = v_color;\n"
-"    o_uv        = v_uv;\n"
+"    mat4 mvp = proj * view * mdl;\n"
+"    gl_Position = mvp * vec4(v_pos, 1);\n"
+"    o_norm = v_norm;\n"
+"    o_tang = v_tang;\n"
+"    o_uv   = v_uv;\n"
 "}\n";
 
 static String txt_PixelShader = "#version 330 core\n"
-"in vec3 o_color;\n"
+"in vec3 o_norm;\n"
+"in vec3 o_tang;\n"
 "in vec2 o_uv;\n"
 "out vec4 color;\n"
 "uniform sampler2D t_unit0;\n"
 "void main() {\n"
-"    color = texture(t_unit0, o_uv) * vec4(o_color, 1);\n"
+"    color = texture(t_unit0, o_uv);\n"
 "}\n";
 
 // OpenGL 4.3
@@ -84,6 +92,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	}
 
 	SDL_SetWindowIcon(staticstate.hwnd, icon_surface);
+	SDL_SetWindowResizable(staticstate.hwnd, SDL_TRUE);
 
 	// Load GL
 	staticstate.glctx = SDL_GL_CreateContext(staticstate.hwnd);
@@ -92,6 +101,10 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	}
 
 	gladLoadGL();
+	glEnable(GL_DEPTH_TEST);
+
+	//glEnable(GL_DEBUG_OUTPUT);
+	//glDebugMessageCallback(openglDebugCallback, nullptr);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -102,8 +115,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	ImGui_ImplSDL2_InitForOpenGL(staticstate.hwnd, staticstate.glctx);
 	ImGui_ImplOpenGL3_Init("#version 130");
 
-	//glEnable(GL_DEBUG_OUTPUT);
-	//glDebugMessageCallback(openglDebugCallback, nullptr);
+	InitializeTextures();
 
 	//Load shaders
 
@@ -144,86 +156,11 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-
-	float vertices[] = {
-	//  x, y, z              r, g, b           u, v
-		-0.8f,  0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		-0.8f, -0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-		-0.1f, -0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		-0.1f,  0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-
-		 0.1f,  0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		 0.1f, -0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-		 0.8f, -0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		 0.8f,  0.8f, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f
-	};
-
-	unsigned int indices[] = {
-		0, 1, 2,
-		0, 2, 3,
-
-		4, 5, 6,
-		4, 6, 7
-	};
-
-	// Vertex buffer
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// Texture
-	glGenTextures(1, &texture0);
-	glBindTexture(GL_TEXTURE_2D, texture0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
-	Uint8* data = RG_STB_load_from_file("platform/textures/128.png", &width, &height, &nrChannels, 4);
-	if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		rgLogError(RG_LOG_RENDER, "Texture loading error!");
-	}
-	RG_STB_image_free(data);
-
-
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	data = RG_STB_load_from_file("platform/textures/grid.png", &width, &height, &nrChannels, 4);
-	if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		rgLogError(RG_LOG_RENDER, "Texture loading error!");
-	}
-	RG_STB_image_free(data);
+	R3DStaticModelInfo info = {};
+	obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
+	//obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
+	//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
+	buffer = MakeVBuffer(&info);
 
 	return &staticstate;
 }
@@ -234,31 +171,33 @@ void DestroyRenderer(RenderState* state) {
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(state->shader);
 
-	glDeleteTextures(1, &texture0);
-	glDeleteTextures(1, &texture1);
+	FreeVBuffer(buffer);
+
+	DestroyTextures();
 
 	SDL_GL_DeleteContext(state->glctx);
 	SDL_DestroyWindow(state->hwnd);
 }
 
-void DoRender(RenderState* state) {
+void DoRender(RenderState* state, Engine::Camera* camera) {
+
+	mat4 proj = *camera->GetProjection();
+	mat4 view = *camera->GetView();
+	mat4 model;
+	mat4_translate(&model, {0, 0, 0});
+
 	glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(state->shader);
 
-	glBindVertexArray(VAO);
+	glUniformMatrix4fv(glGetUniformLocation(state->shader, "proj"), 1, GL_FALSE, proj.m);
+	glUniformMatrix4fv(glGetUniformLocation(state->shader, "view"), 1, GL_FALSE, view.m);
+	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, model.m);
 
-	glBindTexture(GL_TEXTURE_2D, texture0);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6*sizeof(Uint32)));
-	glBindVertexArray(0);
+	DrawBuffer(buffer);
 
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
