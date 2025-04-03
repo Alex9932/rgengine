@@ -517,7 +517,7 @@ namespace Engine {
 			SDL_memset(n_new_path, 0, 128);
 
 			if (ai_d_str.length) {
-				FixPath(new_path, ai_d_str.C_Str());
+				FS_ReplaceSeparators(new_path, ai_d_str.C_Str());
 				SDL_snprintf(materials[i].texture, 128, "%s", new_path); // TODO: remove file extension
 			} else {
 				SDL_snprintf(materials[i].texture, 128, "default");

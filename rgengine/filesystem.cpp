@@ -112,6 +112,46 @@ namespace Engine {
         dst[i] = 0;
     }
 
+    void FS_ReplaceSeparators(char* dst, String str) {
+        size_t j = 0;
+        Bool firstseparator = true;
+        char c = 0;
+        size_t len = SDL_strlen(str);
+        for (size_t i = 0; i < len; i++) {
+            c = str[i];
+            if (c == '\\') {
+                if (firstseparator) {
+                    firstseparator = false;
+                    dst[j] = '/';
+                    j++;
+                }
+            } else {
+                firstseparator = true;
+                dst[j] = c;
+                j++;
+            }
+        }
+    }
+
+#if 0
+    void FS_ReplaceSeparators(char* dst, String str) {
+        size_t len = SDL_strlen(str);
+        Uint32 j = 0;
+
+        for (size_t k = 0; k < len; k++) {
+            if (k != 0 && str[k - 1] == '\\' && str[k] == '\\') { continue; }
+            if (str[k] == '\\') {
+                dst[j] = '/';
+                j++;
+                continue;
+            }
+            dst[j] = str[k];
+            j++;
+        }
+    }
+#endif
+
+#if 0
     void FS_ReplaceSeparators(char* dst, String src) {
         Uint32 len = (Uint32)SDL_strlen(src);
         for (Uint32 i = 0; i < len; i++) {
@@ -119,6 +159,7 @@ namespace Engine {
             else { dst[i] = '/'; }
         }
     }
+#endif
 
     void Filesystem_Initialize(String fsjson) {
         rgLogInfo(RG_LOG_SYSTEM, "Initializing filesystem...");

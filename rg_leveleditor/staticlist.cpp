@@ -13,6 +13,7 @@
 #include <rgstring.h>
 
 #include <filedialog.h>
+#include <filesystem.h>
 
 #include "viewport.h"
 #include "dockerglobal.h"
@@ -32,24 +33,7 @@ static PMXImporter pmxImporter;
 static void OpenModel(String _path, R3DStaticModelInfo* info) {
 	char path[256];
 	SDL_memset(path, 0, 256);
-	size_t j = 0;
-	Bool firstseparator = false;
-	size_t len = SDL_strlen(_path);
-	for (size_t i = 0; i < len; i++) {
-		char c = _path[i];
-		if (c == '\\') {
-			if (!firstseparator) {
-				firstseparator = true;
-				path[j] = '/';
-				j++;
-			}
-		}
-		else {
-			firstseparator = false;
-			path[j] = c;
-			j++;
-		}
-	}
+	FS_ReplaceSeparators(path, _path);
 
 	rgLogInfo(RG_LOG_SYSTEM, "Model: %s", path);
 	if (rg_strenw(path, "pm2")) {

@@ -47,35 +47,16 @@ namespace Engine {
     // Direntry
     RG_DECLSPEC void FS_MakeDir(String path);
 
-
     // Utility
     RG_DECLSPEC void GetPath(char* dst, size_t maxlen, PathType type, String path);
     RG_DECLSPEC void FS_PathFrom(char* dst, String src, Uint32 len, Bool lastseparator = false);
-    RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src);
+    RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src); // Replace "\" or "\\" to "/"
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
     RG_DECLSPEC String GetSystemPath();
     RG_DECLSPEC String GetGamedataPath();
     RG_DECLSPEC String GetUserdataPath();
     RG_INLINE   String GetPlatformPath() { return GetSystemPath(); }
-
-#if 1
-    static void FixPath(char* dst, String str) {
-        size_t len = SDL_strlen(str);
-        Uint32 j = 0;
-
-        for (size_t k = 0; k < len; k++) {
-            if (k != 0 && str[k - 1] == '\\' && str[k] == '\\') { continue; }
-            if (str[k] == '\\') {
-                dst[j] = '/';
-                j++;
-                continue;
-            }
-            dst[j] = str[k];
-            j++;
-        }
-    }
-#endif
 
     // RFS packages
     RG_DECLSPEC Sint32 Mount(String file);
