@@ -20,7 +20,7 @@ typedef struct RenderState {
 	SDL_GLContext   glctx;
 	GLuint          shader;
 	GuiDrawCallback guicb;
-
+	ivec2           wsize;
 } RenderState;
 
 static RenderState staticstate;
@@ -265,10 +265,6 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	vec3 pos = camera->GetTransform()->GetPosition();
 
-	ivec2 size = {};
-	SDL_GetWindowSize(state->hwnd, &size.x, &size.y);
-	glViewport(0, 0, size.x, size.y);
-
 	glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -310,4 +306,13 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	SDL_GL_SwapWindow(state->hwnd);
+}
+
+void ResizeRender(RenderState* state) {
+	SDL_GetWindowSize(state->hwnd, &state->wsize.x, &state->wsize.y);
+	glViewport(0, 0, state->wsize.x, state->wsize.y);
+}
+
+void GetRenderSize(RenderState* state, ivec2* dst) {
+	*dst = state->wsize;
 }

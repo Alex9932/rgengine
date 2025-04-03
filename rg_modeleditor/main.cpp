@@ -17,8 +17,22 @@ static char MDL_NAME[512];
 static char MDL_PATH[512];
 static char MDL_EXT[32];
 
+static Camera*                 camera     = NULL;
+static LookatCameraController* camcontrol = NULL;
+static RenderState*            rstate     = NULL;
+
 static Bool CEventHandler(SDL_Event* event) {
 	ImGui_ImplSDL2_ProcessEvent(event);
+
+	//rgLogInfo(RG_LOG_RENDER, "Type: %d %d", event->type, event->window.event);
+	if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+		ResizeRender(rstate);
+		ivec2 newsize;
+		GetRenderSize(rstate, &newsize);
+		camera->SetAspect((Float32)newsize.x / (Float32)newsize.y);
+		camera->ReaclculateProjection();
+	}
+
 	return true;
 }
 
@@ -137,10 +151,6 @@ public:
 	}
 
 private:
-	Camera* camera = NULL;
-	LookatCameraController* camcontrol = NULL;
-	RenderState* rstate = NULL;
-
 };
 
 static Application* app;
