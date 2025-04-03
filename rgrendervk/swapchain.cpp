@@ -1,4 +1,4 @@
-#include "swapchain.h"
+﻿#include "swapchain.h"
 
 #include <allocator.h>
 #include <rgvector.h>
@@ -33,7 +33,7 @@ static VkSurfaceFormatKHR ChooseFormat(VkSurfaceFormatKHR* formats, Uint32 count
 }
 
 static VkPresentModeKHR ChoosePresentMode(VkPresentModeKHR* modes, Uint32 count) {
-	// Find MAILBOX for high performace
+	// Find MAILBOX for high performance
 	for (Uint32 i = 0; i < count; i++) {
 		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) { return modes[i]; }
 	}
@@ -43,8 +43,9 @@ static VkPresentModeKHR ChoosePresentMode(VkPresentModeKHR* modes, Uint32 count)
 		if (modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) { return modes[i]; }
 	}
 
-	// Nu vse pizdec nahuy...
-	return VK_PRESENT_MODE_FIFO_KHR; // By default
+	// Kurwa! Nu vse pizdec nahuy...
+	// (╯°□°）╯︵ ┻━┻
+	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 static VkExtent2D ChooseExtent(VkSurfaceCapabilitiesKHR capabilities, SDL_Window* hwnd) {

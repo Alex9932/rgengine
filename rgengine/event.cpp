@@ -30,11 +30,6 @@ namespace Engine {
     void HandleEvents() {
         SDL_Event* event_ptr = &event;
         while (SDL_PollEvent(event_ptr)) {
-
-            //    if(GetGame()->IsClient()) {
-            //        // TODO: Add ImGui
-            //        //ImGui_ImplSDL2_ProcessEvent(event_ptr);
-            //    }
             UpdateHandlers(event_ptr);
         }
     }

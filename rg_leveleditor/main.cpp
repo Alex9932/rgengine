@@ -1,4 +1,4 @@
-#define GAME_DLL
+﻿#define GAME_DLL
 #include <rgentrypoint.h>
 
 #include <event.h>
