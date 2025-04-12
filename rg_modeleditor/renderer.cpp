@@ -11,8 +11,6 @@
 
 #include "glad.h"
 
-#include <objimporter.h>
-
 #define RG_WND_ICON "platform/icon.png"
 
 typedef struct RenderState {
@@ -21,14 +19,13 @@ typedef struct RenderState {
 	GLuint          shader;
 	GuiDrawCallback guicb;
 	ivec2           wsize;
+	Bool            wireframe;
 } RenderState;
 
 static RenderState staticstate;
 
 static SDL_Surface* icon_surface;
 static Uint8*       icon_data_ptr;
-
-static Engine::ObjImporter obj_importer;
 
 static VertexBuffer* buffer;
 
@@ -166,6 +163,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 		RG_ERROR_MSG("Failed to create window!");
 	}
 
+	SDL_GetWindowSize(staticstate.hwnd, &staticstate.wsize.x, &staticstate.wsize.y);
 	SDL_SetWindowIcon(staticstate.hwnd, icon_surface);
 	SDL_SetWindowResizable(staticstate.hwnd, SDL_TRUE);
 
@@ -231,11 +229,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	R3DStaticModelInfo info = {};
-	obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
-	//obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
-	//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
-	buffer = MakeVBuffer(&info);
+	buffer = GetVertexbuffer();
 
 	return &staticstate;
 }
@@ -267,6 +261,12 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if (state->wireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	} else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 	glUseProgram(state->shader);
 
@@ -315,4 +315,8 @@ void ResizeRender(RenderState* state) {
 
 void GetRenderSize(RenderState* state, ivec2* dst) {
 	*dst = state->wsize;
+}
+
+Bool* GetRenderWireframe(RenderState* state) {
+	return &state->wireframe;
 }

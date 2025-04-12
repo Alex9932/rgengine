@@ -8,18 +8,34 @@
 #include <imgui/imgui.h>
 
 #include "renderer.h"
+#include "vertexbuffer.h"
 #include <camera.h>
 #include <lookatcameracontroller.h>
 
+
+#include <objimporter.h>
+
 using namespace Engine;
+
+static ObjImporter obj_importer;
 
 static char MDL_NAME[512];
 static char MDL_PATH[512];
 static char MDL_EXT[32];
 
-static Camera*                 camera     = NULL;
+static Camera* camera = NULL;
 static LookatCameraController* camcontrol = NULL;
-static RenderState*            rstate     = NULL;
+static RenderState* rstate = NULL;
+
+static R3DStaticModelInfo info = {};
+static Bool isModelLoaded = false;
+
+static void RecalculateCameraProjection() {
+	ivec2 newsize;
+	GetRenderSize(rstate, &newsize);
+	camera->SetAspect((Float32)newsize.x / (Float32)newsize.y);
+	camera->ReaclculateProjection();
+}
 
 static Bool CEventHandler(SDL_Event* event) {
 	ImGui_ImplSDL2_ProcessEvent(event);
@@ -27,10 +43,7 @@ static Bool CEventHandler(SDL_Event* event) {
 	//rgLogInfo(RG_LOG_RENDER, "Type: %d %d", event->type, event->window.event);
 	if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
 		ResizeRender(rstate);
-		ivec2 newsize;
-		GetRenderSize(rstate, &newsize);
-		camera->SetAspect((Float32)newsize.x / (Float32)newsize.y);
-		camera->ReaclculateProjection();
+		RecalculateCameraProjection();
 	}
 
 	return true;
@@ -38,13 +51,29 @@ static Bool CEventHandler(SDL_Event* event) {
 
 static void LoadModel() {
 
+	// TODO: Rewrite this
+
+	char file[512];
+	SDL_snprintf(file, 512, "%s/%s.%s", MDL_PATH, MDL_NAME, MDL_EXT);
+
+	//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
+	obj_importer.ImportModel(file, &info);
+	//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
+	MakeVBuffer(&info);
+	isModelLoaded = true;
+
 }
 
 static void OpenModel() {
 	// Open filedialog
 	char raw_path[512] = {};
 	char path[512] = {};
-	FD_Filter filters[4] = { {"Wavefront model", "obj"}, {"PM2 Model file", "pm2"}, {"MMD Polygon model", "pmd"}, {"MMD Extended polygon model", "pmx"} };
+	FD_Filter filters[4] = {
+		{"Wavefront model", "obj"},
+		{"PM2 Model file", "pm2"},
+		{"MMD Polygon model", "pmd"},
+		{"MMD Extended polygon model", "pmx"}
+	};
 	if (ShowOpenDialog(raw_path, 512, filters, 4)) {
 		FS_ReplaceSeparators(path, raw_path);
 		rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
@@ -104,9 +133,70 @@ static void DrawGUI() {
 	if (ImGui::Button("Save")) {
 		SaveModel();
 	}
-
+#if 0
+	if (ImGui::Button("Test model")) {
+		//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
+		obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
+		//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
+		MakeVBuffer(&info);
+		isModelLoaded = true;
+	}
+	ImGui::SameLine();
+#endif
+	if (ImGui::Button("Free")) {
+		FreeVBuffer(GetVertexbuffer());
+		obj_importer.FreeModelData(&info);
+		isModelLoaded = false;
+	}
 	ImGui::Text("Loaded model: %s", MDL_NAME);
 	ImGui::Text("Path: %s", MDL_PATH);
+
+	ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
+
+	if (isModelLoaded) {
+
+		ImGui::Text("Vertices: %d", info.vCount);
+		ImGui::Text("Indices: %d", info.iCount);
+		ImGui::Text("IDX size: %d", info.iType);
+
+		Uint32 uid = 0;
+		// Meshes
+		if (ImGui::TreeNode("Meshes")) {
+			
+			for (Uint32 i = 0; i < info.mCount; i++) {
+				ImGui::PushID(uid);
+				if (ImGui::TreeNode("##xx", "Mesh [%d]", i)) {
+					R3D_MatMeshInfo* mesh = &info.mInfo[i];
+					ImGui::Text("Index: %d (%d)", mesh->indexOffset, mesh->indexCount);
+					ImGui::Text("Material: %d", mesh->materialIdx);
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				uid++;
+			}
+
+			ImGui::TreePop();
+		}
+
+		// Materials
+		if (ImGui::TreeNode("Materials")) {
+
+			for (Uint32 i = 0; i < info.matCount; i++) {
+				ImGui::PushID(uid);
+				if (ImGui::TreeNode("##xx", "Material [%d]", i)) {
+					R3D_MaterialInfo* mat = &info.matInfo[i];
+					ImGui::InputText("Texture", mat->texture, 128);
+					ImGui::ColorEdit3("Color", mat->color.array);
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				uid++;
+			}
+
+			ImGui::TreePop();
+		}
+
+	}
 
 	ImGui::End();
 }
@@ -139,8 +229,7 @@ public:
 
 		rstate = InitializeRenderer(DrawGUI);
 		RegisterEventHandler(CEventHandler);
-
-
+		RecalculateCameraProjection();
 	}
 
 	void Quit() {

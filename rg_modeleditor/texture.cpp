@@ -4,8 +4,10 @@
 #include <rgstb.h>
 #include <map>
 
+#define TEXMAP std::map<Uint64, Texture*>
+
 static Engine::PoolAllocator* talloc;
-static std::map<Uint64, Texture*> textures;
+static TEXMAP textures;
 
 void InitializeTextures() {
 	talloc = new Engine::PoolAllocator("Texture pool", 256, sizeof(Texture));
@@ -60,6 +62,16 @@ void FreeTexture(Texture* tx) {
 	tx->refcount--;
 	if (tx->refcount == 0) {
 		rgLogInfo(RG_LOG_RENDER, "Delete texture %s", tx->tex_name);
+
+		//Delete from map
+		TEXMAP::iterator it = textures.begin();
+		for (; it != textures.end(); it++) {
+			if (it->second == tx) {
+				textures.erase(it);
+				break;
+			}
+		}
+
 		glDeleteTextures(1, &tx->tex_id);
 		talloc->Deallocate(tx);
 	}

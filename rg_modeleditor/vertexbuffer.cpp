@@ -9,6 +9,7 @@ typedef struct IndexPair {
 } IndexPair;
 
 typedef struct VertexBuffer {
+	Bool      isLoaded;
 	GLuint    vbo;
 	GLuint    ebo;
 	GLuint    vao;
@@ -22,7 +23,11 @@ typedef struct VertexBuffer {
 
 static VertexBuffer buffer = {};
 
-VertexBuffer* MakeVBuffer(R3DStaticModelInfo* info) {
+VertexBuffer* GetVertexbuffer() {
+	return &buffer;
+}
+
+void MakeVBuffer(R3DStaticModelInfo* info) {
 
 	glGenVertexArrays(1, &buffer.vao);
 	glBindVertexArray(buffer.vao);
@@ -72,10 +77,15 @@ VertexBuffer* MakeVBuffer(R3DStaticModelInfo* info) {
 		buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
 	}
 
-	return &buffer;
+	buffer.isLoaded = true;
 }
 
 void FreeVBuffer(VertexBuffer* buffer) {
+	if (!buffer->isLoaded) {
+		return;
+	}
+
+	buffer->isLoaded = false;
 	glDeleteVertexArrays(1, &buffer->vao);
 	glDeleteBuffers(1, &buffer->vbo);
 	glDeleteBuffers(1, &buffer->ebo);
@@ -91,6 +101,11 @@ void FreeVBuffer(VertexBuffer* buffer) {
 }
 
 void DrawBuffer(VertexBuffer* ptr) {
+	if (!ptr->isLoaded) {
+		// Do not render (NO MODEL)
+		return;
+	}
+
 	glBindVertexArray(ptr->vao);
 
 	GLenum vtype = GL_UNSIGNED_INT;
