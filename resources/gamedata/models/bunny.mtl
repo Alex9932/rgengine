@@ -1,0 +1,13 @@
+# Blender 3.6.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Material.001
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+map_Kd worn-metal-studs
+map_d worn-metal-studs

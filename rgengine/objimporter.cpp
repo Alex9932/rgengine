@@ -478,6 +478,12 @@ namespace Engine {
 			aiProcess_CalcTangentSpace
 		);
 
+		if (!scene) {
+			String error = importer.GetErrorString();
+			rgLogError(RG_LOG_SYSTEM, "ASSIMP ERROR: %s", error);
+		}
+		
+
 		Uint32 vertex_count = 0;
 		Uint32 index_count = 0;
 		for (Uint32 i = 0; i < scene->mNumMeshes; i++) {
