@@ -12,12 +12,9 @@
 #include <camera.h>
 #include <lookatcameracontroller.h>
 
-
-#include <objimporter.h>
+#include "geom_importer.h"
 
 using namespace Engine;
-
-static ObjImporter obj_importer;
 
 static char MDL_NAME[512];
 static char MDL_PATH[512];
@@ -54,12 +51,17 @@ static void LoadModel() {
 	// TODO: Rewrite this
 
 	char file[512];
-	SDL_snprintf(file, 512, "%s/%s.%s", MDL_PATH, MDL_NAME, MDL_EXT);
+	SDL_snprintf(file, 512, "%s.%s", MDL_NAME, MDL_EXT);
+
+	// Use custom loaders
+	ImportStaticModel(MDL_PATH, file, &info);
+
+	// Copy textures to "tmpdata"
 
 	//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
-	obj_importer.ImportModel(file, &info);
+	//obj_importer.ImportModel(file, &info);
 	//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
-	MakeVBuffer(&info);
+	MakeVBuffer(&info, MDL_PATH);
 	isModelLoaded = true;
 
 }
@@ -68,13 +70,15 @@ static void OpenModel() {
 	// Open filedialog
 	char raw_path[512] = {};
 	char path[512] = {};
-	FD_Filter filters[4] = {
+	FD_Filter filters[6] = {
+		{"Wavefront model", "dae"},
+		{"Wavefront model", "fbx"},
 		{"Wavefront model", "obj"},
 		{"PM2 Model file", "pm2"},
 		{"MMD Polygon model", "pmd"},
 		{"MMD Extended polygon model", "pmx"}
 	};
-	if (ShowOpenDialog(raw_path, 512, filters, 4)) {
+	if (ShowOpenDialog(raw_path, 512, filters, 6)) {
 		FS_ReplaceSeparators(path, raw_path);
 		rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
 
@@ -116,11 +120,13 @@ static void OpenModel() {
 }
 
 static void SaveModel() {
+	// Copy textures (if needed, we can use exist texture)
+	// gamedata/textures/%TEXTURE%.png
+	// gamedata/textures/%TEXTURE%_norm.png
+	// gamedata/textures/%TEXTURE%_pbr.png
+	//
 	// Save geometry data
 	// gamedata/models/%MODELNAME%.pm2
-	// 
-	// Save textures (if needed, we can use exist texture)
-	// gamedata/textures/%TEXTURE%.png
 }
 
 static void DrawGUI() {
@@ -145,7 +151,7 @@ static void DrawGUI() {
 #endif
 	if (ImGui::Button("Free")) {
 		FreeVBuffer(GetVertexbuffer());
-		obj_importer.FreeModelData(&info);
+		//obj_importer.FreeModelData(&info);
 		isModelLoaded = false;
 	}
 	ImGui::Text("Loaded model: %s", MDL_NAME);
@@ -185,8 +191,11 @@ static void DrawGUI() {
 				ImGui::PushID(uid);
 				if (ImGui::TreeNode("##xx", "Material [%d]", i)) {
 					R3D_MaterialInfo* mat = &info.matInfo[i];
+					ImTextureID txidx = (ImTextureID)i;
+					
 					ImGui::InputText("Texture", mat->texture, 128);
 					ImGui::ColorEdit3("Color", mat->color.array);
+					ImGui::Image(txidx, ImVec2(128, 128));
 					ImGui::TreePop();
 				}
 				ImGui::PopID();

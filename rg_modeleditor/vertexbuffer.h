@@ -6,9 +6,11 @@
 
 typedef struct VertexBuffer;
 
+struct RenderState;
+
 VertexBuffer* GetVertexbuffer();
-void MakeVBuffer(R3DStaticModelInfo* info);
+void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath);
 void FreeVBuffer(VertexBuffer* ptr);
-void DrawBuffer(VertexBuffer* ptr);
+void DrawBuffer(RenderState* state, VertexBuffer* ptr);
 
 #endif

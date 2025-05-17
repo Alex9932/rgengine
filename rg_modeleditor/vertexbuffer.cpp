@@ -1,7 +1,8 @@
 #include "vertexbuffer.h"
 #include "glad.h"
+#include "renderer.h"
 
-#define VERTEXBUFFER_MATERIALS 256
+#define VERTEXBUFFER_MATERIALS 512
 
 typedef struct IndexPair {
 	Uint32 start;
@@ -18,7 +19,8 @@ typedef struct VertexBuffer {
 	Uint32    indexsize;
 	Uint32    mat[VERTEXBUFFER_MATERIALS]; // material index
 	IndexPair pairs[VERTEXBUFFER_MATERIALS];
-	Texture*  textures[VERTEXBUFFER_MATERIALS];
+	Texture*  textures[VERTEXBUFFER_MATERIALS*3];
+	vec3      colors[VERTEXBUFFER_MATERIALS];
 } VertexBuffer;
 
 static VertexBuffer buffer = {};
@@ -27,7 +29,7 @@ VertexBuffer* GetVertexbuffer() {
 	return &buffer;
 }
 
-void MakeVBuffer(R3DStaticModelInfo* info) {
+void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath) {
 
 	glGenVertexArrays(1, &buffer.vao);
 	glBindVertexArray(buffer.vao);
@@ -69,12 +71,14 @@ void MakeVBuffer(R3DStaticModelInfo* info) {
 	char nrm_path[256];
 	char pbr_path[256];
 	for (Uint32 i = 0; i < info->matCount; i++) {
-		SDL_snprintf(alb_path, 256, "gamedata/textures/%s.png", info->matInfo[i].texture);
-		SDL_snprintf(nrm_path, 256, "gamedata/textures/%s_norm.png", info->matInfo[i].texture);
-		SDL_snprintf(pbr_path, 256, "gamedata/textures/%s_pbr.png", info->matInfo[i].texture);
+		SDL_snprintf(alb_path, 256, "%s", info->matInfo[i].texture);
+		//SDL_snprintf(alb_path, 256, "gamedata/textures/%s.png", info->matInfo[i].texture);
+		//SDL_snprintf(nrm_path, 256, "gamedata/textures/%s_norm.png", info->matInfo[i].texture);
+		//SDL_snprintf(pbr_path, 256, "gamedata/textures/%s_pbr.png", info->matInfo[i].texture);
 		buffer.textures[i * 3]     = GetTexture(alb_path);
-		buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
-		buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
+		//buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
+		//buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
+		buffer.colors[i] = info->matInfo[i].color;
 	}
 
 	buffer.isLoaded = true;
@@ -100,7 +104,7 @@ void FreeVBuffer(VertexBuffer* buffer) {
 	}
 }
 
-void DrawBuffer(VertexBuffer* ptr) {
+void DrawBuffer(RenderState* state, VertexBuffer* ptr) {
 	if (!ptr->isLoaded) {
 		// Do not render (NO MODEL)
 		return;
@@ -118,6 +122,9 @@ void DrawBuffer(VertexBuffer* ptr) {
 	for (Uint32 i = 0; i < ptr->meshes; i++) {
 
 		Uint32 txidx = ptr->mat[i];
+
+		SetMaterialColor(state, ptr->colors[txidx]);
+
 		glActiveTexture(GL_TEXTURE0);
 		if(ptr->textures[txidx * 3]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3]->tex_id); }
 		else { glBindTexture(GL_TEXTURE_2D, 0); }

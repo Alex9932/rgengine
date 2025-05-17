@@ -20,6 +20,7 @@ typedef struct RenderState {
 	GuiDrawCallback guicb;
 	ivec2           wsize;
 	Bool            wireframe;
+	Bool            showaxis;
 } RenderState;
 
 static RenderState staticstate;
@@ -28,6 +29,28 @@ static SDL_Surface* icon_surface;
 static Uint8*       icon_data_ptr;
 
 static VertexBuffer* buffer;
+
+static mat4 m4_identity;
+
+static GLuint axis_texture;
+static GLuint axis_vao;
+static GLuint axis_vbo;
+static GLuint axis_ebo;
+
+static Uint32 axis_color[] = {0xFF0000FF, 0xFF00FF00, 0xFFFF0000}; // RGBA (0xAABBGGRR)
+
+static R3D_Vertex axis_vtx[] = {
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f},
+	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f},
+
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5f, 0.0f},
+	{0, 1, 0, 0, 0, 0, 0, 0, 0, 0.5f, 0.0f},
+
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0f, 0.0f},
+	{0, 0, 1, 0, 0, 0, 0, 0, 0, 1.0f, 0.0f},
+};
+
+static Uint16 axis_idx[] = {0, 1, 2, 3, 4, 5};
 
 static String txt_VertexShader = "#version 330 core\n"
 "layout (location = 0) in vec3 v_pos;\n"
@@ -69,6 +92,8 @@ static String txt_PixelShader = "#version 330 core\n"
 "uniform sampler2D t_unit1;\n"
 "uniform sampler2D t_unit2;\n"
 "uniform vec3 viewpos;\n"
+"uniform vec3 mat_color;\n"
+"uniform int calclight;\n"
 "#define PI 3.14159265359\n"
 "float DistributionGGX(vec3 N, vec3 H, float roughness) {\n"
 "    float a = roughness * roughness;\n"
@@ -128,9 +153,12 @@ static String txt_PixelShader = "#version 330 core\n"
 "    N = normalize(o_norm);\n" // Disable normal mappings
 "#endif\n"
 "    vec3 V = normalize(viewpos - o_pos);\n"
-"    vec3 light = vec3(0.3);\n"
-"    light += CalculateLight(N, V, o_pos, pbr.x, pbr.y, alb.xyz);\n"
-"    p_color = vec4(alb.xyz * light, 1);\n"
+"    vec3 light = vec3(1);\n"
+"    if(calclight > 0) {\n"
+"        light = vec3(0.3);\n"
+"        light += CalculateLight(N, V, o_pos, pbr.x, pbr.y, alb.xyz);\n"
+"    }\n"
+"    p_color = vec4(alb.xyz * mat_color * light, 1);\n"
 "}\n";
 
 // OpenGL 4.3
@@ -146,6 +174,9 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
 	staticstate.guicb = guicb;
+	staticstate.showaxis = 1;
+
+	m4_identity = MAT4_IDENTITY();
 
 	// Load icon
 	int w, h, c;
@@ -178,6 +209,37 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	//glEnable(GL_DEBUG_OUTPUT);
 	//glDebugMessageCallback(openglDebugCallback, nullptr);
+
+	glGenTextures(1, &axis_texture);
+	glBindTexture(GL_TEXTURE_2D, axis_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 3, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, axis_color);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glGenVertexArrays(1, &axis_vao);
+	glBindVertexArray(axis_vao);
+	glGenBuffers(1, &axis_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, axis_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(axis_vtx), axis_vtx, GL_STATIC_DRAW);
+	glGenBuffers(1, &axis_ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, axis_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(axis_idx), axis_idx, GL_STATIC_DRAW);
+
+	// Position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// Normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// Tangent
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	// UV
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -250,6 +312,13 @@ void DestroyRenderer(RenderState* state) {
 	SDL_DestroyWindow(state->hwnd);
 }
 
+static void DrawAxis() {
+	glBindVertexArray(axis_vao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, axis_texture);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+}
+
 void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	mat4 proj = *camera->GetProjection();
@@ -276,14 +345,24 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, model.m);
 
 	// PS uniforms
-	glUniform1i(glGetUniformLocation(state->shader, "t_unit0"), 0); // albedo
-	glUniform1i(glGetUniformLocation(state->shader, "t_unit1"), 1); // normal
-	glUniform1i(glGetUniformLocation(state->shader, "t_unit2"), 2); // pbr
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit0"), 0);   // albedo
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit1"), 1);   // normal
+	glUniform1i(glGetUniformLocation(state->shader, "t_unit2"), 2);   // pbr
+	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
 	glUniform3f(glGetUniformLocation(state->shader, "viewpos"), pos.x, pos.y, pos.z);
+	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 1); // Do light calculation
 
 	//rgLogInfo(RG_LOG_RENDER, "Camera: %f %f %f", pos.x, pos.y, pos.z);
 
-	DrawBuffer(buffer);
+	DrawBuffer(state, buffer);
+
+	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, m4_identity.m);
+	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
+	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 0);
+
+	if (state->showaxis) {
+		DrawAxis();
+	}
 
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
@@ -319,4 +398,8 @@ void GetRenderSize(RenderState* state, ivec2* dst) {
 
 Bool* GetRenderWireframe(RenderState* state) {
 	return &state->wireframe;
+}
+
+void SetMaterialColor(RenderState* state, const vec3& color) {
+	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), color.r, color.g, color.b);
 }
