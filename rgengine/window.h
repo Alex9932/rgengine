@@ -8,6 +8,9 @@ struct ImGuiContext;
 
 namespace Engine {
 
+    void Window_SetIcon(String p);
+    void Window_SetLogo(String p);
+
     void Window_Initialize(String lib_renderer);
     void Window_Destroy();
     void Window_Show();

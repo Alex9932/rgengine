@@ -94,6 +94,9 @@ class Application : public BaseGame {
 		Application() {
 			this->isClient   = true;
 			this->isGraphics = true;
+
+			//this->wndIcon = "";
+			this->wndLogo = "platform/editor.png";
 			Render::SetRenderFlags(RG_RENDER_USE3D /*| RG_RENDER_NOLIGHT*/ | RG_RENDER_NOPOSTPROCESS);
 		}
 

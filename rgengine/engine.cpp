@@ -9,6 +9,9 @@
 
 #define RG_PRINTFPS 0
 
+#define RG_WND_ICON "platform/icon.png"
+#define RG_WND_LOGO "platform/logo.png"
+
 #include "engine.h"
 #include "rgstring.h"
 #include <stdio.h>
@@ -289,6 +292,14 @@ namespace Engine {
         rgLogInfo(RG_LOG_SYSTEM, "Initializing game module...");
         game_module.ModuleInitialize();
         game_ptr = game_module.ModuleGetApplication();
+
+        String icon = RG_WND_ICON;
+        String logo = RG_WND_LOGO;
+        if (game_ptr->wndIcon) { icon = game_ptr->wndIcon; }
+        if (game_ptr->wndLogo) { logo = game_ptr->wndLogo; }
+
+        Window_SetIcon(icon);
+        Window_SetLogo(logo);
 
         if (!game_ptr) { RG_ERROR_MSG("Invalid handle"); }
         rgLogInfo(RG_LOG_SYSTEM, "Game: %s", game_ptr->GetName());

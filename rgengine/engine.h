@@ -49,8 +49,8 @@
 
 class RG_DECLSPEC BaseGame {
     protected:
-        Bool isClient = false;
-        Bool isGraphics = false;
+        Bool   isClient   = false;
+        Bool   isGraphics = false;
 
     public:
         BaseGame() {}
@@ -61,6 +61,9 @@ class RG_DECLSPEC BaseGame {
         virtual String GetName()    { return "unnamed";  }
         RG_INLINE Bool IsClient()   { return isClient;   }
         RG_INLINE Bool IsGraphics() { return isGraphics; }
+
+        String wndIcon = NULL;
+        String wndLogo = NULL;
 };
 
 namespace Engine {

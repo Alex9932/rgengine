@@ -7,9 +7,6 @@
 
 #include "event.h"
 
-#define RG_WND_ICON "platform/icon.png"
-#define RG_WND_LOGO "platform/logo.png"
-
 #ifdef RG_PLATFORM_WINDOWS
 //#define WINDOWS_ICON
 #endif
@@ -44,6 +41,9 @@ namespace Engine {
     static Bool          w_fullscreen     = false;
 
     static ImGuiContext* imctx            = NULL;
+    
+    static char          WND_ICON[128]    = {};
+    static char          WND_LOGO[128]    = {};
 
     static Surface _LoadSurfaceFromFile(String path) {
         Surface surface;
@@ -63,12 +63,20 @@ namespace Engine {
         return true;
     }
 
+    void Window_SetIcon(String p) {
+        SDL_snprintf(WND_ICON, 128, p);
+    }
+
+    void Window_SetLogo(String p) {
+        SDL_snprintf(WND_LOGO, 128, p);
+    }
+
     void Window_Initialize(String lib_renderer) {
-        icn_surface = _LoadSurfaceFromFile(RG_WND_ICON);
+        icn_surface = _LoadSurfaceFromFile(WND_ICON);
 
         timer.Update();
         if (!IsDebug()) {
-            Surface bmp = _LoadSurfaceFromFile(RG_WND_LOGO);
+            Surface bmp = _LoadSurfaceFromFile(WND_LOGO);
 
             hwnd_init = SDL_CreateWindow("rgEngine - init", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 300, SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
             hwnd = hwnd_init; // Sets error window's icon before calling Window::Show()
