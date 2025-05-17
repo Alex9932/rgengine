@@ -25,7 +25,7 @@ typedef struct PM2_Header {
 	Uint32 indices;
 	Uint8  flags;
 	Uint8  version;
-	Uint16 offset; // Mesh count in PM2 v2
+	Uint16 offset; // Mesh count in PM2 version >=2
 } PM2_Header;
 
 typedef struct PM2_SkeletonHeader {
@@ -39,6 +39,7 @@ typedef struct PM2_String {
 	char* str;
 } PM2_String;
 
+// Deprecated formats
 typedef struct PM2_V1_Material {
 	PM2_String name;
 	Uint32     indices;
@@ -59,13 +60,14 @@ typedef struct PM2_V3_Material {
 	vec4       color;
 } PM2_V3_Material;
 
+// Current format
 // Work in progress
 typedef struct PM2_V4_Material {
 	// Albedo - %gamedata%/textures/@texture@.png
-	// Normal - %gamedata%/textures/@texture@_bump.png
+	// Normal - %gamedata%/textures/@texture@_norm.png
 	// PBR    - %gamedata%/textures/@texture@_pbr.png
 	PM2_String texture;
-	//vec4       color;
+	vec4       color;
 } PM2_V4_Material;
 
 typedef struct PM2_MeshInfo {

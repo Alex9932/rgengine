@@ -135,13 +135,6 @@ namespace Engine {
 		for (Uint32 i = 0; i < count; i++) {
 			WritePM2String(writer, mats[i].texture);
 			writer->Write(&mats[i].color, sizeof(vec3));
-#if 0
-			WritePM2String(writer, mat->albedo);
-			WritePM2String(writer, mat->normal);
-			WritePM2String(writer, mat->pbr);
-			vec4 color = { mat->color.x, mat->color.y, mat->color.z, 1 };
-			writer->Write(&color, sizeof(vec4));
-#endif
 		}
 	}
 
@@ -181,8 +174,8 @@ namespace Engine {
 			dst_vertices[i].uv = vertices[i].uv;
 		}
 
-		writer->Write(vertices, sizeof(PM2_Vertex) * count);
-		rg_free(vertices);
+		writer->Write(dst_vertices, sizeof(PM2_Vertex) * count);
+		rg_free(dst_vertices);
 	}
 
 	static void WriteIndexData(FSWriter* writer, Uint32 count, void* indices, IndexType type) {
@@ -191,13 +184,13 @@ namespace Engine {
 		void* dst_indices = rg_malloc(indexsize * count);
 
 		if (indexsize == 2) {
-			Uint16* indicesptr = (Uint16*)indices;
+			Uint16* indicesptr = (Uint16*)dst_indices;
 			for (Uint32 i = 0; i < count; i++) {
 				indicesptr[i] = GetIndex(type, indices, i);
 			}
 		}
 		else if (indexsize == 4) {
-			Uint32* indicesptr = (Uint32*)indices;
+			Uint32* indicesptr = (Uint32*)dst_indices;
 			for (Uint32 i = 0; i < count; i++) {
 				indicesptr[i] = GetIndex(type, indices, i);
 			}
@@ -231,42 +224,8 @@ namespace Engine {
 		}
 	}
 
-	void PM2Exporter::ExportModel(String p, R3DStaticModelInfo* info, mat4* model) {
-
-		FSWriter* writer = MakeWriter(p);
-
-		Uint8 flags = 0;
-		if (info->vCount > 0xFFFF) {
-			flags |= PM2_FLAG_EXTENDED_INDICES;
-		}
-
-		PM2_Header header = {};
-		header.sig[0] = 'P'; header.sig[1] = 'M'; header.sig[2] = '2'; header.sig[3] = ' ';
-		header.materials = info->matCount;
-		header.vertices  = info->vCount;
-		header.indices   = info->iCount;
-		header.flags     = flags;
-		header.version   = 4;
-		header.offset    = info->mCount;
-		writer->Write(&header, sizeof(PM2_Header));
-
-		WriteMaterials(writer, info->matCount, info->matInfo);
-		WriteMeshes(writer, info->mCount, info->mInfo);
-		WriteVertexData(writer, info->vCount, info->vertices, model);
-		WriteIndexData(writer, info->iCount, info->indices, info->iType);
-
-		delete writer;
-	}
-
-	void PM2Exporter::ExportRiggedModel(String p, R3DRiggedModelInfo* info, KinematicsModel* kmdl, mat4* model) {
-
-		FSWriter* writer = MakeWriter(p);
-
-		Uint8 flags = PM2_FLAG_SKELETON;
-		if (info->vCount > 0xFFFF) {
-			flags |= PM2_FLAG_EXTENDED_INDICES;
-		}
-
+	template<typename T>
+	static void WriteBaseModel(FSWriter* writer, T* info, mat4* model, Uint8 flags) {
 		PM2_Header header = {};
 		header.sig[0]    = 'P'; header.sig[1] = 'M'; header.sig[2] = '2'; header.sig[3] = ' ';
 		header.materials = info->matCount;
@@ -281,6 +240,32 @@ namespace Engine {
 		WriteMeshes(writer, info->mCount, info->mInfo);
 		WriteVertexData(writer, info->vCount, info->vertices, model);
 		WriteIndexData(writer, info->iCount, info->indices, info->iType);
+	}
+
+	void PM2Exporter::ExportModel(String p, R3DStaticModelInfo* info, mat4* model) {
+
+		FSWriter* writer = MakeWriter(p);
+
+		Uint8 flags = 0;
+		if (info->vCount > 0xFFFF) {
+			flags |= PM2_FLAG_EXTENDED_INDICES;
+		}
+
+		WriteBaseModel(writer, info, model, flags);
+
+		delete writer;
+	}
+
+	void PM2Exporter::ExportRiggedModel(String p, R3DRiggedModelInfo* info, KinematicsModel* kmdl, mat4* model) {
+
+		FSWriter* writer = MakeWriter(p);
+
+		Uint8 flags = PM2_FLAG_SKELETON;
+		if (info->vCount > 0xFFFF) {
+			flags |= PM2_FLAG_EXTENDED_INDICES;
+		}
+
+		WriteBaseModel(writer, info, model, flags);
 
 		// Write skeleton info
 		PM2_SkeletonHeader sheader = {};

@@ -614,7 +614,7 @@ namespace Engine {
 				idx += 3;
 			}
 
-			// Calculate nomrlas if needed
+			// Calculate normals if needed
 			//if (!mesh->mNormals) {
 			//	Uint32* ptr = &indices[sidx];
 			//	RecalculateNormals(vertices, ptr, mesh->mNumFaces * 3);
