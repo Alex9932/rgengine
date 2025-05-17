@@ -21,7 +21,19 @@ namespace Engine {
 
 		Transform* camTransform = m_camptr->GetTransform();
 
-		Float32 sens = 0.025f;
+		Float32 sens  = 0.025f;
+		Float32 msens = 1.0f;   // Move speed
+		Float32 wsens = 1.0f;   // Wheel speed
+
+		if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
+			msens = 0.1f;
+			wsens = 0.5f;
+		}
+
+		if (IsKeyDown(SDL_SCANCODE_LCTRL)) {
+			msens = 10.0f;
+			wsens = 15.0f;
+		}
 
 		if (IsButtonDown(3)) {
 			Float64 dx = GetMouseDX();
@@ -54,13 +66,13 @@ namespace Engine {
 			vec3 left = rotated_up.cross(rotated_fwd);
 
 			vec3 delta = {};
-			delta += left       * GetMouseDX() * sens;
-			delta += rotated_up * GetMouseDY() * sens;
+			delta += left       * GetMouseDX() * sens * msens;
+			delta += rotated_up * GetMouseDY() * sens * msens;
 
 			m_center += delta;
 		}
 
-		Float32 mwheel = (Float32)GetMouseDW() * sens;
+		Float32 mwheel = (Float32)GetMouseDW() * sens * wsens;
 		m_length -= mwheel;
 
 		// Recalculate position;
