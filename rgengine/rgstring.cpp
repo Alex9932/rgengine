@@ -30,10 +30,10 @@ namespace Engine {
 	}
 
 	String GetCpuNameStr(int cores) {
-		if (cores <= 0) { return "WTF?";        } // Where are you found this CPU?
-		if (cores == 1) { return "single-core"; } // Why do you use this CPU?
-		if (cores == 2) { return "dual-core";   }
-		if (cores == 3) { return "triple-core"; }
+		if (cores <= 0) { return "unknown";     } // Where are you found this CPU?
+		if (cores == 1) { return "single-core"; } // 
+		if (cores == 2) { return "dual-core";   } // WTF Why do you use this CPUs?
+		if (cores == 3) { return "triple-core"; } // 
 		if (cores == 4) { return "quad-core";   }
 		if (cores == 8) { return "octal-core";  }
 		

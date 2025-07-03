@@ -207,6 +207,8 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	gladLoadGL();
 	glEnable(GL_DEPTH_TEST);
 
+	rgLogInfo(RG_LOG_RENDER, "Renderer: %s", glGetString(GL_RENDERER));
+
 	//glEnable(GL_DEBUG_OUTPUT);
 	//glDebugMessageCallback(openglDebugCallback, nullptr);
 

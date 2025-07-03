@@ -1,1 +1,1 @@
-"../x64/Release/rg_modeleditor.exe" -render rgrenderdx11.dll -fsjson fsgame.json
+"../x64/Release/entrypoint.exe" -game rg_modeleditor.dll -render rgrenderdx11.dll -fsjson fsgame.json

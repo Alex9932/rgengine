@@ -74,6 +74,7 @@ namespace Engine {
 
 		Float32 mwheel = (Float32)GetMouseDW() * sens * wsens;
 		m_length -= mwheel;
+		if (m_length < 0) { m_length = 0; }
 
 		// Recalculate position;
 
