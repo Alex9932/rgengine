@@ -52,6 +52,15 @@ static void GetNodeTransform(const aiNode* node, aiMatrix4x4* t) {
 	*t = transform;
 }
 
+void FreeStaticModel(R3DStaticModelInfo* info) {
+	if (!info) return;
+	rg_free(info->vertices);
+	rg_free(info->indices);
+	rg_free(info->mInfo);
+	rg_free(info->matInfo);
+	SDL_memset(info, 0, sizeof(R3DStaticModelInfo)); // Clear info
+}
+
 void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 
 	char fullpath[512];

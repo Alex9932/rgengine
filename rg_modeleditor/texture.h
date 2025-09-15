@@ -15,5 +15,6 @@ void DestroyTextures();
 
 Texture* GetTexture(String path);
 void FreeTexture(Texture* tx);
+void FreeAllTextures();
 
 #endif

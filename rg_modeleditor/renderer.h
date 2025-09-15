@@ -16,7 +16,11 @@ void GetRenderSize(RenderState* state, ivec2* dst);
 void ResizeRender(RenderState* state);
 Bool* GetRenderWireframe(RenderState* state);
 
-void SetMaterialColor(RenderState* state, const vec3& color);
+vec3* GetRenderMdlposPtr(RenderState* state);
+vec3* GetRenderMdlrotPtr(RenderState* state);
+vec3* GetRenderMdlsizePtr(RenderState* state);
+
+void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat);
 
 VertexBuffer* GetVertexbuffer();
 

@@ -76,3 +76,13 @@ void FreeTexture(Texture* tx) {
 		talloc->Deallocate(tx);
 	}
 }
+
+void FreeAllTextures() {
+	TEXMAP::iterator it = textures.begin();
+	for (; it != textures.end(); it++) {
+		Texture* tx = it->second;
+		glDeleteTextures(1, &tx->tex_id);
+	}
+	talloc->DeallocateAll();
+	textures.clear();
+}

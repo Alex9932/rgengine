@@ -14,6 +14,10 @@
 
 #include "geom_importer.h"
 
+#define ALBEDO_TEXTURE 0
+#define NORMAL_TEXTURE 1
+#define PBR_TEXTURE    2
+
 using namespace Engine;
 
 static char MDL_NAME[512];
@@ -71,12 +75,12 @@ static void OpenModel() {
 	char raw_path[512] = {};
 	char path[512] = {};
 	FD_Filter filters[6] = {
-		{"Wavefront model", "dae"},
-		{"Wavefront model", "fbx"},
+		{"COLLADA dae", "dae"},
+		{"FBX model", "fbx"},
 		{"Wavefront model", "obj"},
 		{"PM2 Model file", "pm2"},
 		{"MMD Polygon model", "pmd"},
-		{"MMD Extended polygon model", "pmx"}
+		{"MMD eXtended polygon model", "pmx"}
 	};
 	if (ShowOpenDialog(raw_path, 512, filters, 6)) {
 		FS_ReplaceSeparators(path, raw_path);
@@ -108,8 +112,8 @@ static void OpenModel() {
 
 		// Copy data
 		SDL_memcpy(MDL_PATH, path, sep); // path w/o filename
-		SDL_memcpy(MDL_NAME, &path[sep + 1], len - sep - (len - ext) - 1); // filename w/o extension
-		SDL_memcpy(MDL_EXT, &path[ext + 1], len - ext - 1); // filename w/o extension
+		SDL_memcpy(MDL_NAME, &path[sep + 1], len - sep - (len - ext) - 1); // only filename
+		SDL_memcpy(MDL_EXT, &path[ext + 1], len - ext - 1); // only extension
 
 		rgLogInfo(RG_LOG_SYSTEM, "-> %s", MDL_PATH);
 		rgLogInfo(RG_LOG_SYSTEM, "-> %s", MDL_NAME);
@@ -127,6 +131,25 @@ static void SaveModel() {
 	//
 	// Save geometry data
 	// gamedata/models/%MODELNAME%.pm2
+}
+
+static void ReplaceTexture(Uint32 matid, Uint32 txidx) {
+	// Open filedialog
+	char raw_path[512] = {};
+	char path[512] = {};
+	FD_Filter filters[1] = {
+		{"PNG image", "png"}
+	};
+	if (ShowOpenDialog(raw_path, 512, filters, 1)) {
+		VertexBuffer* vb = GetVertexbuffer();
+
+		FS_ReplaceSeparators(path, raw_path);
+		rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
+		Texture* tx = GetTexture(path); // New texture
+		FreeTexture(vb->textures[matid * 3 + txidx]); // Free previous texture
+		vb->textures[matid * 3 + txidx] = tx; // Replace albedo texture
+		rgLogInfo(RG_LOG_RENDER, "Replaced material %d with texture %s", matid, tx->tex_name);
+	}
 }
 
 static void DrawGUI() {
@@ -151,15 +174,19 @@ static void DrawGUI() {
 #endif
 	if (ImGui::Button("Free")) {
 		FreeVBuffer(GetVertexbuffer());
+		FreeStaticModel(&info);
 		//obj_importer.FreeModelData(&info);
 		isModelLoaded = false;
 	}
 	ImGui::Text("Loaded model: %s", MDL_NAME);
 	ImGui::Text("Path: %s", MDL_PATH);
 
+	ImGui::InputFloat3("Scale", GetRenderMdlsizePtr(rstate)->array);
+
 	ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
 
 	if (isModelLoaded) {
+		VertexBuffer* buffer = GetVertexbuffer(); // Loaded model
 
 		ImGui::Text("Vertices: %d", info.vCount);
 		ImGui::Text("Indices: %d", info.iCount);
@@ -169,12 +196,12 @@ static void DrawGUI() {
 		// Meshes
 		if (ImGui::TreeNode("Meshes")) {
 			
-			for (Uint32 i = 0; i < info.mCount; i++) {
+			for (Uint32 i = 0; i < buffer->meshes; i++) {
 				ImGui::PushID(uid);
 				if (ImGui::TreeNode("##xx", "Mesh [%d]", i)) {
-					R3D_MatMeshInfo* mesh = &info.mInfo[i];
-					ImGui::Text("Index: %d (%d)", mesh->indexOffset, mesh->indexCount);
-					ImGui::Text("Material: %d", mesh->materialIdx);
+					ImGui::Text("Index: %d (%d)", buffer->pairs[i].start, buffer->pairs[i].count);
+					ImGui::Text("Material: %d", buffer->mat[i]);
+					ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
@@ -187,15 +214,40 @@ static void DrawGUI() {
 		// Materials
 		if (ImGui::TreeNode("Materials")) {
 
-			for (Uint32 i = 0; i < info.matCount; i++) {
+			for (Uint32 i = 0; i < buffer->tcount; i++) {
 				ImGui::PushID(uid);
 				if (ImGui::TreeNode("##xx", "Material [%d]", i)) {
-					R3D_MaterialInfo* mat = &info.matInfo[i];
-					ImTextureID txidx = (ImTextureID)i;
-					
-					ImGui::InputText("Texture", mat->texture, 128);
-					ImGui::ColorEdit3("Color", mat->color.array);
-					ImGui::Image(txidx, ImVec2(128, 128));
+					Texture* tx;
+
+					ImGui::ColorEdit3("Color", buffer->colors[i].array);
+
+					tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+					ImGui::Text("Albedo %s", tx->tex_name);
+					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
+					ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
+					if (ImGui::Button("Replace texture")) {
+						ReplaceTexture(i, ALBEDO_TEXTURE);
+					}
+					ImGui::PopID();
+
+					tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
+					ImGui::Text("Albedo %s", tx->tex_name);
+					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
+					ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
+					if (ImGui::Button("Replace texture")) {
+						ReplaceTexture(i, NORMAL_TEXTURE);
+					}
+					ImGui::PopID();
+
+					tx = buffer->textures[i * 3 + PBR_TEXTURE];
+					ImGui::Text("Albedo %s", tx->tex_name);
+					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
+					ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
+					if (ImGui::Button("Replace texture")) {
+						ReplaceTexture(i, PBR_TEXTURE);
+					}
+					ImGui::PopID();
+
 					ImGui::TreePop();
 				}
 				ImGui::PopID();

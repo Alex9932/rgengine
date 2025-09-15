@@ -21,6 +21,9 @@ typedef struct RenderState {
 	ivec2           wsize;
 	Bool            wireframe;
 	Bool            showaxis;
+	vec3            mdl_pos;
+	vec3            mdl_rot;
+	vec3            mdl_scale;
 } RenderState;
 
 static RenderState staticstate;
@@ -94,6 +97,7 @@ static String txt_PixelShader = "#version 330 core\n"
 "uniform vec3 viewpos;\n"
 "uniform vec3 mat_color;\n"
 "uniform int calclight;\n"
+"uniform int flipuv;\n"
 "#define PI 3.14159265359\n"
 "float DistributionGGX(vec3 N, vec3 H, float roughness) {\n"
 "    float a = roughness * roughness;\n"
@@ -142,9 +146,10 @@ static String txt_PixelShader = "#version 330 core\n"
 "}\n"
 "\n"
 "void main() {\n"
-"    vec4 alb = texture(t_unit0, o_uv);\n"
-"    vec4 nrm = texture(t_unit1, o_uv);\n"
-"    vec4 pbr = texture(t_unit2, o_uv);\n"
+"    vec2 c_uv = o_uv - (2 * o_uv * flipuv);\n"
+"    vec4 alb = texture(t_unit0, c_uv);\n"
+"    vec4 nrm = texture(t_unit1, c_uv);\n"
+"    vec4 pbr = texture(t_unit2, c_uv);\n"
 "    vec3 N;\n"
 "#if 0\n"
 "    N = normalize(nrm.xyz * 2.0 - 1.0);\n"
@@ -175,6 +180,10 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
 	staticstate.guicb = guicb;
 	staticstate.showaxis = 1;
+
+	staticstate.mdl_pos = { 0, 0, 0 };
+	staticstate.mdl_rot = { 0, 0, 0 };
+	staticstate.mdl_scale = { 1, 1, 1 };
 
 	m4_identity = MAT4_IDENTITY();
 
@@ -302,7 +311,7 @@ void DestroyRenderer(RenderState* state) {
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
+	//	ImGui::DestroyContext();
 
 	glDeleteProgram(state->shader);
 
@@ -326,7 +335,8 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	mat4 proj = *camera->GetProjection();
 	mat4 view = *camera->GetView();
 	mat4 model;
-	mat4_translate(&model, {0, 0, 0});
+	mat4_model(&model, state->mdl_pos, state->mdl_rot, state->mdl_scale);
+	//mat4_translate(&model, {0, 0, 0});
 
 	vec3 pos = camera->GetTransform()->GetPosition();
 
@@ -361,6 +371,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, m4_identity.m);
 	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
 	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 0);
+	glUniform1i(glGetUniformLocation(state->shader, "flipuv"), 0);
 
 	if (state->showaxis) {
 		DrawAxis();
@@ -398,10 +409,33 @@ void GetRenderSize(RenderState* state, ivec2* dst) {
 	*dst = state->wsize;
 }
 
+vec3* GetRenderMdlposPtr(RenderState* state) { return &state->mdl_pos; }
+vec3* GetRenderMdlrotPtr(RenderState* state) { return &state->mdl_rot; }
+vec3* GetRenderMdlsizePtr(RenderState* state) { return &state->mdl_scale; }
+
 Bool* GetRenderWireframe(RenderState* state) {
 	return &state->wireframe;
 }
 
-void SetMaterialColor(RenderState* state, const vec3& color) {
+void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat) {
+	vec3 color = vb->colors[mat];
+
+	// Flags
+	glUniform1i(glGetUniformLocation(state->shader, "flipuv"), vb->pairs->flipuv);
+
+	// Set material color
 	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), color.r, color.g, color.b);
+
+	// Bind textures
+	glActiveTexture(GL_TEXTURE0);
+	if (vb->textures[mat * 3]) { glBindTexture(GL_TEXTURE_2D, vb->textures[mat * 3]->tex_id); }
+	else { glBindTexture(GL_TEXTURE_2D, 0); }
+
+	glActiveTexture(GL_TEXTURE1);
+	if (vb->textures[mat * 3 + 1]) { glBindTexture(GL_TEXTURE_2D, vb->textures[mat * 3 + 1]->tex_id); }
+	else { glBindTexture(GL_TEXTURE_2D, 0); }
+
+	glActiveTexture(GL_TEXTURE2);
+	if (vb->textures[mat * 3 + 2]) { glBindTexture(GL_TEXTURE_2D, vb->textures[mat * 3 + 2]->tex_id); }
+	else { glBindTexture(GL_TEXTURE_2D, 0); }
 }

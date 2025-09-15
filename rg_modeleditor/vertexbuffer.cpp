@@ -2,27 +2,6 @@
 #include "glad.h"
 #include "renderer.h"
 
-#define VERTEXBUFFER_MATERIALS 512
-
-typedef struct IndexPair {
-	Uint32 start;
-	Uint32 count;
-} IndexPair;
-
-typedef struct VertexBuffer {
-	Bool      isLoaded;
-	GLuint    vbo;
-	GLuint    ebo;
-	GLuint    vao;
-	Uint32    meshes;
-	Uint32    tcount;
-	Uint32    indexsize;
-	Uint32    mat[VERTEXBUFFER_MATERIALS]; // material index
-	IndexPair pairs[VERTEXBUFFER_MATERIALS];
-	Texture*  textures[VERTEXBUFFER_MATERIALS*3];
-	vec3      colors[VERTEXBUFFER_MATERIALS];
-} VertexBuffer;
-
 static VertexBuffer buffer = {};
 
 VertexBuffer* GetVertexbuffer() {
@@ -70,14 +49,18 @@ void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath) {
 	char alb_path[256];
 	char nrm_path[256];
 	char pbr_path[256];
+
+	SDL_snprintf(nrm_path, 256, "platform/textures/def_normal.png");
+	SDL_snprintf(pbr_path, 256, "platform/textures/def_pbr.png");
+
 	for (Uint32 i = 0; i < info->matCount; i++) {
 		SDL_snprintf(alb_path, 256, "%s", info->matInfo[i].texture);
 		//SDL_snprintf(alb_path, 256, "gamedata/textures/%s.png", info->matInfo[i].texture);
 		//SDL_snprintf(nrm_path, 256, "gamedata/textures/%s_norm.png", info->matInfo[i].texture);
 		//SDL_snprintf(pbr_path, 256, "gamedata/textures/%s_pbr.png", info->matInfo[i].texture);
 		buffer.textures[i * 3]     = GetTexture(alb_path);
-		//buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
-		//buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
+		buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
+		buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
 		buffer.colors[i] = info->matInfo[i].color;
 	}
 
@@ -102,6 +85,8 @@ void FreeVBuffer(VertexBuffer* buffer) {
 		t = buffer->textures[i * 3 + 2];
 		if (t) { FreeTexture(t); }
 	}
+
+	FreeAllTextures();
 }
 
 void DrawBuffer(RenderState* state, VertexBuffer* ptr) {
@@ -121,21 +106,8 @@ void DrawBuffer(RenderState* state, VertexBuffer* ptr) {
 
 	for (Uint32 i = 0; i < ptr->meshes; i++) {
 
-		Uint32 txidx = ptr->mat[i];
-
-		SetMaterialColor(state, ptr->colors[txidx]);
-
-		glActiveTexture(GL_TEXTURE0);
-		if(ptr->textures[txidx * 3]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3]->tex_id); }
-		else { glBindTexture(GL_TEXTURE_2D, 0); }
-
-		glActiveTexture(GL_TEXTURE1);
-		if (ptr->textures[txidx * 3 + 1]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3 + 1]->tex_id); }
-		else { glBindTexture(GL_TEXTURE_2D, 0); }
-
-		glActiveTexture(GL_TEXTURE2);
-		if (ptr->textures[txidx * 3 + 2]) { glBindTexture(GL_TEXTURE_2D, ptr->textures[txidx * 3 + 2]->tex_id); }
-		else { glBindTexture(GL_TEXTURE_2D, 0); }
+		Uint32 mat = ptr->mat[i];
+		SetMaterialState(state, ptr, mat);
 
 		glDrawElements(GL_TRIANGLES, ptr->pairs[i].count, vtype, (void*)(ptr->pairs[i].start * ptr->indexsize));
 	}
