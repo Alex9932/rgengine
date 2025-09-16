@@ -88,46 +88,6 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 
 	rgLogInfo(RG_LOG_SYSTEM, "Model loaded: %s", fullpath);
 
-	// Calculate required space
-	Uint32 totalVertexCount = 0;
-	Uint32 totalIndexCount  = 0;
-	Uint32 indexSize        = 2; // Uint16 by default
-
-	for (Uint32 i = 0; i < scene->mNumMeshes; i++) {
-		aiMesh* mesh = scene->mMeshes[i];
-		totalVertexCount += mesh->mNumVertices;
-		for (uint32_t j = 0; j < mesh->mNumFaces; ++j) {
-			totalIndexCount += mesh->mFaces[j].mNumIndices;
-		}
-	}
-
-	if (totalIndexCount > 0xFFFF) {
-		// Use extended size (Uint32)
-		indexSize = 4;
-	}
-
-	// Allocate memory
-	Uint32 matcount = scene->mNumMaterials;// -1;
-
-	size_t meshinfoSize = scene->mNumMeshes * sizeof(R3D_MatMeshInfo);
-	size_t matinfoSize  = matcount * sizeof(R3D_MaterialInfo);
-	size_t vtxSize      = totalVertexCount * sizeof(R3D_Vertex);
-	size_t idxSize      = totalIndexCount * indexSize;
-
-	info->mInfo    = (R3D_MatMeshInfo*)rg_malloc(meshinfoSize);
-	info->matInfo  = (R3D_MaterialInfo*)rg_malloc(matinfoSize);
-	info->vertices = (R3D_Vertex*)rg_malloc(vtxSize);
-	info->indices  = rg_malloc(idxSize);
-
-	size_t totalMemory = meshinfoSize + matinfoSize + vtxSize + idxSize;
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %ldb", totalMemory);
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%ldb idx:%ldb", vtxSize, idxSize);
-
-	info->matCount = matcount;
-	info->mCount   = scene->mNumMeshes;
-	info->vCount   = totalVertexCount;
-	info->iCount   = totalIndexCount;
-	info->iType    = (IndexType)indexSize;
 
 	// Find transforms
 	rgLogInfo(RG_LOG_SYSTEM, "[geom] Calculating transformations");
@@ -138,9 +98,15 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	for (Uint32 m = 0; m < scene->mNumMeshes; m++) {
 		GetNodeTransform(nodemap[m], &transforms[m]);
 	}
-	
+
+	size_t meshinfoSize = scene->mNumMeshes * sizeof(R3D_MatMeshInfo);
+	info->mInfo = (R3D_MatMeshInfo*)rg_malloc(meshinfoSize);
+	info->mCount = scene->mNumMeshes;
 
 	// Copy vertex data
+	std::vector<R3D_Vertex> vertices;
+	std::vector<Uint32> indices;
+	std::map<size_t, Uint32> vtx_hashtable;
 
 	rgLogInfo(RG_LOG_SYSTEM, "[geom] Copy data");
 	Uint32 cur_vtx = 0;
@@ -180,23 +146,32 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 				v.uv.y = mesh->mTextureCoords[0][i].y;
 			}
 
+#if 0
 			info->vertices[cur_vtx] = v;
+#endif
+
 			cur_vtx++;
+			
+			vertices.push_back(v);
 		}
 
 		Uint32 startidx = cur_idx;
 		for (Uint32 i = 0; i < mesh->mNumFaces; ++i) {
 			aiFace* face = &mesh->mFaces[i];
 			for (Uint32 j = 0; j < face->mNumIndices; ++j) {
+#if 0
 				if (indexSize == 2) {
 					Uint16* idx = (Uint16*)info->indices;
 					idx[cur_idx] = (Uint16)face->mIndices[j] + startvtx;
+
 				} else {
 					Uint32* idx = (Uint32*)info->indices;
 					idx[cur_idx] = face->mIndices[j] + startvtx;
 				}
-
+#endif
 				cur_idx++;
+
+				indices.push_back(face->mIndices[j] + startvtx);
 			}
 		}
 
@@ -206,6 +181,73 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 		info->mInfo[m].indexOffset = startidx;
 		info->mInfo[m].indexCount  = cur_idx - startidx;
 
+	}
+
+	// De-duplicate vertices
+
+	std::vector<R3D_Vertex> new_vertices;
+	std::vector<Uint32> new_indices;
+
+	for (Uint32 i = 0; i < indices.size(); i++) {
+		Uint32 idx = indices[i];
+		R3D_Vertex vtx = vertices[idx];
+		size_t vtx_hash = rgHash(&vtx, sizeof(R3D_Vertex));
+
+		if (vtx_hashtable.count(vtx_hash) == 0) {
+			vtx_hashtable[vtx_hash] = new_vertices.size();
+			new_vertices.push_back(vtx);
+		}
+
+		new_indices.push_back(vtx_hashtable[vtx_hash]);
+	}
+
+	// Calculate required space
+	Uint32 totalVertexCount = new_vertices.size();
+	Uint32 totalIndexCount = new_indices.size();
+	Uint32 indexSize = 2; // Uint16 by default
+
+	if (totalIndexCount > 0xFFFF) {
+		// Use extended size (Uint32)
+		indexSize = 4;
+	}
+
+	// Allocate memory
+	Uint32 matcount = scene->mNumMaterials;// -1;
+
+	size_t matinfoSize = matcount * sizeof(R3D_MaterialInfo);
+	size_t vtxSize = totalVertexCount * sizeof(R3D_Vertex);
+	size_t idxSize = totalIndexCount * indexSize;
+
+	info->matInfo = (R3D_MaterialInfo*)rg_malloc(matinfoSize);
+	info->vertices = (R3D_Vertex*)rg_malloc(vtxSize);
+	info->indices = rg_malloc(idxSize);
+
+	size_t totalMemory = meshinfoSize + matinfoSize + vtxSize + idxSize;
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %ldb", totalMemory);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%ldb idx:%ldb", vtxSize, idxSize);
+
+	info->matCount = matcount;
+	info->vCount = totalVertexCount;
+	info->iCount = totalIndexCount;
+	info->iType = (IndexType)indexSize;
+
+	// Copy de-duplicated vertex data
+
+	for (Uint32 i = 0; i < new_vertices.size(); i++) {
+		info->vertices[i] = new_vertices[i];
+	}
+
+	if (indexSize == 2) {
+		Uint16* idx = (Uint16*)info->indices;
+		for (Uint32 i = 0; i < new_indices.size(); i++) {
+			idx[i] = (Uint16)new_indices[i];
+		}
+
+	} else {
+		Uint32* idx = (Uint32*)info->indices;
+		for (Uint32 i = 0; i < new_indices.size(); i++) {
+			idx[i] = new_indices[i];
+		}
 	}
 
 	// Copy material data
