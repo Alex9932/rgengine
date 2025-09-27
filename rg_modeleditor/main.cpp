@@ -297,14 +297,18 @@ static void DrawGUI() {
 			ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
 
 			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-				ImGui::InputFloat3("Scale##input3", GetRenderMdlsizePtr(rstate)->array);
-				ImGui::SliderFloat3("Scale##slider3", GetRenderMdlsizePtr(rstate)->array, 0, 10);
+
+				vec3* size = GetRenderMdlsizePtr(rstate);
 				vec3* rot = GetRenderMdlrotPtr(rstate);
+				ImGui::InputFloat3("Scale##input3", size->array);
+				ImGui::SliderFloat3("Scale##slider3", size->array, 0, 10);
 				ImGui::SliderAngle("Rotation X##slider", &rot->x);
 				ImGui::SliderAngle("Rotation Y##slider", &rot->y);
 				ImGui::SliderAngle("Rotation Z##slider", &rot->z);
 
 				if (ImGui::Button("Reset Transform")) {
+					rot->x = 0; rot->y = 0; rot->z = 0;
+					size->x = 1; size->y = 1; size->z = 1;
 				}
 			}
 
