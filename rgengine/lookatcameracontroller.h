@@ -11,6 +11,7 @@ namespace Engine {
 			RG_DECLSPEC ~LookatCameraController();
 
 			RG_DECLSPEC void SetLookAtPosition(vec3* pos);
+			RG_DECLSPEC void SetLength(Float32 len);
 
 			RG_DECLSPEC void Update();
 

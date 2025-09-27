@@ -53,6 +53,8 @@ namespace Engine {
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src); // Replace "\" or "\\" to "/"
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
+    RG_DECLSPEC Bool FS_IsExist(String path);
+
     RG_DECLSPEC String GetSystemPath();
     RG_DECLSPEC String GetGamedataPath();
     RG_DECLSPEC String GetUserdataPath();

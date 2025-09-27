@@ -17,6 +17,10 @@ namespace Engine {
 		m_center = *pos;
 	}
 
+	void LookatCameraController::SetLength(Float32 len) {
+		m_length = len;
+	}
+
 	void LookatCameraController::Update() {
 
 		Transform* camTransform = m_camptr->GetTransform();

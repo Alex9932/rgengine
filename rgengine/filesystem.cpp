@@ -3,6 +3,8 @@
 
 #define FS_SAFEMODE
 
+#define RG_FS_MAXRESOURCES 512
+
 #include "filesystem.h"
 
 #include <map>
@@ -43,6 +45,8 @@ struct _file_fs {
 namespace Engine {
 
     static Allocator* allocator;
+    static PoolAllocator* res_pool_alloc;
+    static PoolAllocator* stream_res_pool_alloc;
 
     static char SYSTEM_PATH[128];
     static char GAMEDATA_PATH[128];
@@ -74,11 +78,22 @@ namespace Engine {
         }
     }
 
+    static RG_INLINE Resource* AllocateResource() {
+        return (Resource*)res_pool_alloc->Allocate();
+    }
+
+    static Bool IsExistInFS(String path) {
+        _file_fs ffs;
+        _fs_find(&ffs, path);
+        if (ffs.filesystem != NULL) { return true; }
+        return false;
+    }
+
     static Resource* GetResourceInFS(String file) {
         _file_fs ffs;
         _fs_find(&ffs, file);
         if (ffs.filesystem == NULL) { return NULL; }
-        Resource* res = (Resource*)allocator->Allocate(sizeof(Resource));
+        Resource* res = AllocateResource();
         res->length = ffs.file.length;
         res->data = allocator->Allocate(ffs.file.length);
         fseek(ffs.filesystem->file_stream, ffs.file.offset, SEEK_SET);
@@ -90,7 +105,7 @@ namespace Engine {
         _file_fs ffs;
         _fs_find(&ffs, file);
         if (ffs.filesystem == NULL) { return NULL; }
-        ResourceStream* res = (ResourceStream*)allocator->Allocate(sizeof(ResourceStream));
+        ResourceStream* res = (ResourceStream*)stream_res_pool_alloc->Allocate();
         res->file_length = ffs.file.length;
         res->file_offset = ffs.file.offset;
         res->fs_handle = ffs.filesystem;
@@ -161,6 +176,22 @@ namespace Engine {
     }
 #endif
 
+    Bool FS_IsExist(String path) {
+
+        // Check in mounted filesystems
+        if (IsExistInFS(path)) { return true; }
+
+		// Fallback to OS filesystem
+        FILE* fptr = fopen(path, "rb");
+        Bool exist = false;
+        if (fptr) {
+            exist = true;
+            fclose(fptr);
+        }
+
+        return exist;
+    }
+
     void Filesystem_Initialize(String fsjson) {
         rgLogInfo(RG_LOG_SYSTEM, "Initializing filesystem...");
 
@@ -169,7 +200,9 @@ namespace Engine {
             RG_ERROR_MSG("No fsjson!");
         }
 
-        allocator = new STDAllocator("FS allocator");
+        allocator = new STDAllocator("FS alloc");
+        res_pool_alloc = new PoolAllocator("FS res alloc", RG_FS_MAXRESOURCES, sizeof(Resource));
+        stream_res_pool_alloc = new PoolAllocator("FS stream res alloc", RG_FS_MAXRESOURCES, sizeof(ResourceStream));
         filesystems.clear();
         fs_id = -1;
 
@@ -205,6 +238,9 @@ namespace Engine {
         }
 
         filesystems.clear();
+
+        delete res_pool_alloc;
+        delete stream_res_pool_alloc;
         delete allocator;
     }
 
@@ -305,7 +341,7 @@ namespace Engine {
         }
 #endif
 
-        res = (Resource*)allocator->Allocate(sizeof(Resource));
+        res = AllocateResource();
         fseek(fptr, 0, SEEK_END);
         res->length = ftell(fptr);
         rewind(fptr);
@@ -317,7 +353,7 @@ namespace Engine {
 
     void FreeResource(Resource* res) {
         allocator->Deallocate(res->data);
-        allocator->Deallocate(res);
+        res_pool_alloc->Deallocate(res);
     }
 
     // Resource stream
@@ -329,7 +365,7 @@ namespace Engine {
         sprintf(string_buffer, "FILE NOT FOUND => %s", file);
         RG_ASSERT_MSG(fptr, string_buffer);
 
-        stream = (ResourceStream*)allocator->Allocate(sizeof(ResourceStream));
+        stream = (ResourceStream*)stream_res_pool_alloc->Allocate();
         fseek(fptr, 0, SEEK_END);
         stream->file_length = ftell(fptr);
         rewind(fptr);
@@ -343,7 +379,7 @@ namespace Engine {
 
     void CloseResourceStream(ResourceStream* stream) {
         if (stream->fs_handle == NULL) { fclose(stream->handle); }
-        allocator->Deallocate(stream);
+        stream_res_pool_alloc->Deallocate(stream);
     }
 
     size_t ReadResourceStream(void* ptr, size_t length, ResourceStream* stream) {

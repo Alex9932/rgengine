@@ -332,9 +332,24 @@ R3D_Material* R3D_CreateMaterial(R3DCreateMaterialInfo* info) {
 	//SDL_snprintf(normal, 256, "platform/textures/def_normal.png");
 	//SDL_snprintf(pbr,    256, "platform/textures/def_pbr.png");
 
-	LoaderPushTexture(albedo, &material->albedo);
-	LoaderPushTexture(normal, &material->normal);
-	LoaderPushTexture(pbr, &material->pbr);
+	// If exists, load texture, if not - use default
+	if(FS_IsExist(albedo)) { LoaderPushTexture(albedo, &material->albedo); }
+	else {
+		rgLogWarn(RG_LOG_RENDER, "Albedo texture not found! Using default");
+		LoaderPushTexture("platform/textures/def_diffuse.png", &material->albedo);
+	}
+	
+	if (FS_IsExist(normal)) { LoaderPushTexture(normal, &material->normal); }
+	else {
+		rgLogWarn(RG_LOG_RENDER, "Normal map not found! Using default");
+		LoaderPushTexture("platform/textures/def_normal.png", &material->normal);
+	}
+
+	if (FS_IsExist(pbr)) { LoaderPushTexture(pbr, &material->pbr); }
+	else {
+		rgLogWarn(RG_LOG_RENDER, "PBR texture not found! Using default");
+		LoaderPushTexture("platform/textures/def_pbr.png", &material->pbr);
+	}
 
 	material->color = info->color;
 #if 0
