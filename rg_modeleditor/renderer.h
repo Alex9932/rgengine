@@ -16,6 +16,7 @@ void GetRenderSize(RenderState* state, ivec2* dst);
 void ResizeRender(RenderState* state);
 Bool* GetRenderWireframe(RenderState* state);
 
+void CalculateModelMatrix(RenderState* state, mat4* m);
 vec3* GetRenderMdlposPtr(RenderState* state);
 vec3* GetRenderMdlrotPtr(RenderState* state);
 vec3* GetRenderMdlsizePtr(RenderState* state);

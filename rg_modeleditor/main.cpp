@@ -13,6 +13,8 @@
 #include <lookatcameracontroller.h>
 
 #include "geom_importer.h"
+#include <pm2exporter.h>
+#include <pm2importer.h>
 
 #define ALBEDO_TEXTURE 0
 #define NORMAL_TEXTURE 1
@@ -29,7 +31,13 @@ static LookatCameraController* camcontrol = NULL;
 static RenderState* rstate = NULL;
 
 static R3DStaticModelInfo info = {};
+static ModelExtraData model_extra;
 static Bool isModelLoaded = false;
+
+static Bool skipFirstMat  = false;
+
+static PM2Importer pm2_import;
+static PM2Exporter pm2_export;
 
 static void RecalculateCameraProjection() {
 	ivec2 newsize;
@@ -57,8 +65,29 @@ static void LoadModel() {
 	char file[512];
 	SDL_snprintf(file, 512, "%s.%s", MDL_NAME, MDL_EXT);
 
-	// Use custom loaders
-	ImportStaticModel(MDL_PATH, file, &info);
+
+	if (rg_streql(MDL_EXT, "pm2")) {
+
+
+		char fullpath[512];
+		SDL_snprintf(fullpath, 512, "%s/%s", MDL_PATH, file);
+
+		pm2_import.ImportModel(fullpath, &info);
+		model_extra.mat_names = (NameField*)rg_malloc(sizeof(NameField) * info.matCount);
+		for (Uint32 i = 0; i < info.matCount; i++) {
+			SDL_snprintf(model_extra.mat_names[i].name, 128, "%s", info.matInfo[i].texture);
+		}
+	}
+	else {
+		// Use custom loaders
+		ImportStaticModelInfo importinfo = {};
+		importinfo.path = MDL_PATH;
+		importinfo.file = file;
+		importinfo.info = &info;
+		importinfo.extra = &model_extra;
+		importinfo.skipFirstMat = skipFirstMat;
+		ImportStaticModel(&importinfo);
+	}
 
 	// Copy textures to "tmpdata"
 
@@ -123,14 +152,80 @@ static void OpenModel() {
 	}
 }
 
+static void CopyTexture(String dst, String src) {
+#if 0
+	FILE* fsrc = fopen(src, "rb");
+	if (!fsrc) { rgLogError(RG_LOG_SYSTEM, "Source texture %s open failure!", src); return; }
+
+	FILE* fdst = fopen(src, "wb");
+	if (!fsrc) { rgLogError(RG_LOG_SYSTEM, "Dest texture %s open failure!", src); return; }
+
+	char buffer[1024]; // 1Kb
+	while (feof(fsrc) != 0) {
+		size_t readed = fread(buffer, 1, 1024, fsrc);
+		fwrite(buffer, 1, readed, fdst);
+
+	}
+
+	fclose(fdst);
+	fclose(fsrc);
+#endif
+
+	FSReader fsrc(src);
+	FSWriter fdst(dst);
+
+	rgLogInfo(RG_LOG_RENDER, "Copy texture %s to %s", src, dst);
+
+	char buffer[1024]; // 1Kb
+	while (!fsrc.EndOfStream()) {
+		size_t readed = fsrc.Read(buffer, 1024);
+		fdst.Write(buffer, readed);
+	}
+
+}
+
 static void SaveModel() {
 	// Copy textures (if needed, we can use exist texture)
-	// gamedata/textures/%TEXTURE%.png
-	// gamedata/textures/%TEXTURE%_norm.png
-	// gamedata/textures/%TEXTURE%_pbr.png
+	// gamedata/textures/%material_name%.png
+	// gamedata/textures/%material_name%_norm.png
+	// gamedata/textures/%material_name%_pbr.png
 	//
 	// Save geometry data
 	// gamedata/models/%MODELNAME%.pm2
+
+	if (!isModelLoaded) return;
+
+	char path[256];
+	String gamedata_path = GetGamedataPath();
+	VertexBuffer* buffer = GetVertexbuffer();
+
+	// Copy data
+	R3DStaticModelInfo mdlinfo = info;
+
+	// Make copy of materials array (need for replace full texture path to texture name in gamedata)
+	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
+	SDL_memcpy(mdlinfo.matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
+
+	for (Uint32 i = 0; i < info.matCount; i++) {
+		// Copy texture
+		Texture* tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+
+		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, model_extra.mat_names[i].name);
+		CopyTexture(path, tx->tex_name);
+
+		// Replace path to name
+		SDL_snprintf(mdlinfo.matInfo[i].texture, 128, "%s", model_extra.mat_names[i].name);
+	}
+
+	mat4 mdl_matrix;
+	CalculateModelMatrix(rstate, &mdl_matrix);
+	SDL_snprintf(path, 256, "%s/models/%s.pm2", gamedata_path, MDL_NAME);
+
+
+	pm2_export.ExportModel(path, &mdlinfo, &mdl_matrix);
+
+	// Free array copy
+	rg_free(mdlinfo.matInfo);
 }
 
 static void ReplaceTexture(Uint32 matid, Uint32 txidx) {
@@ -153,54 +248,79 @@ static void ReplaceTexture(Uint32 matid, Uint32 txidx) {
 }
 
 static void DrawGUI() {
-	ImGui::Begin("Model");
+	ImGui::Begin("Model importer");
 
-	if (ImGui::Button("Load")) {
-		OpenModel();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Save")) {
-		SaveModel();
-	}
+	VertexBuffer* buffer = GetVertexbuffer(); // Loaded model
+
+	Uint32 uid = 0;
+
+	if (ImGui::BeginTabBar("##tabs")) {
+		if (ImGui::BeginTabItem("Model")) {
+
+			if (ImGui::Button("Load")) {
+				OpenModel();
+			}
+			ImGui::SameLine();
+
+			if (ImGui::Button("Save")) {
+				SaveModel();
+			}
+			ImGui::SameLine();
 #if 0
-	if (ImGui::Button("Test model")) {
-		//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
-		obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
-		//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
-		MakeVBuffer(&info);
-		isModelLoaded = true;
-	}
-	ImGui::SameLine();
+			if (ImGui::Button("Test model")) {
+				//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
+				obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
+				//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
+				MakeVBuffer(&info);
+				isModelLoaded = true;
+			}
+			ImGui::SameLine();
 #endif
-	if (ImGui::Button("Free")) {
-		FreeVBuffer(GetVertexbuffer());
-		FreeStaticModel(&info);
-		//obj_importer.FreeModelData(&info);
-		isModelLoaded = false;
-	}
-	ImGui::Text("Loaded model: %s", MDL_NAME);
-	ImGui::Text("Path: %s", MDL_PATH);
+			if (ImGui::Button("Free")) {
+				FreeVBuffer(GetVertexbuffer());
+				FreeStaticModel(&info, &model_extra);
+				//obj_importer.FreeModelData(&info);
+				isModelLoaded = false;
+			}
 
-	ImGui::InputFloat3("Scale", GetRenderMdlsizePtr(rstate)->array);
+			ImGui::Checkbox("Skip first material", &skipFirstMat);
 
-	ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
+			ImGui::Separator();
 
-	if (isModelLoaded) {
-		VertexBuffer* buffer = GetVertexbuffer(); // Loaded model
+			ImGui::Text("Loaded model: %s", MDL_NAME);
+			ImGui::Text("Path: %s", MDL_PATH);
 
-		ImGui::Text("Vertices: %d", info.vCount);
-		ImGui::Text("Indices: %d", info.iCount);
-		ImGui::Text("IDX size: %d", info.iType);
+			ImGui::Text("Vertices: %d", info.vCount);
+			ImGui::Text("Indices: %d", info.iCount);
+			ImGui::Text("IDX size: %d", info.iType);
 
-		Uint32 uid = 0;
-		// Meshes
-		if (ImGui::TreeNode("Meshes")) {
-			
+			ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
+
+			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::InputFloat3("Scale##input3", GetRenderMdlsizePtr(rstate)->array);
+				ImGui::SliderFloat3("Scale##slider3", GetRenderMdlsizePtr(rstate)->array, 0, 10);
+				vec3* rot = GetRenderMdlrotPtr(rstate);
+				ImGui::SliderAngle("Rotation X##slider", &rot->x);
+				ImGui::SliderAngle("Rotation Y##slider", &rot->y);
+				ImGui::SliderAngle("Rotation Z##slider", &rot->z);
+
+				if (ImGui::Button("Reset Transform")) {
+				}
+			}
+
+			ImGui::EndTabItem();
+		}
+
+		if (!isModelLoaded) { ImGui::BeginDisabled(); }
+
+		if (ImGui::BeginTabItem("Mesh")) {
+
 			for (Uint32 i = 0; i < buffer->meshes; i++) {
 				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "Mesh [%d]", i)) {
+				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mesh_names[i].name)) {
 					ImGui::Text("Index: %d (%d)", buffer->pairs[i].start, buffer->pairs[i].count);
-					ImGui::Text("Material: %d", buffer->mat[i]);
+					Uint32 midx = buffer->mat[i];
+					ImGui::Text("Material: %d (%s)", midx, model_extra.mat_names[midx].name);
 					ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
 					ImGui::TreePop();
 				}
@@ -208,45 +328,86 @@ static void DrawGUI() {
 				uid++;
 			}
 
-			ImGui::TreePop();
+			ImGui::EndTabItem();
 		}
 
-		// Materials
-		if (ImGui::TreeNode("Materials")) {
+		if (ImGui::BeginTabItem("Materials")) {
+
 
 			for (Uint32 i = 0; i < buffer->tcount; i++) {
 				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "Material [%d]", i)) {
+				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mat_names[i].name)) {
+
 					Texture* tx;
 
-					ImGui::ColorEdit3("Color", buffer->colors[i].array);
+					if (ImGui::BeginTable("MaterialTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0); ImGui::Text("Name");
+						ImGui::TableSetColumnIndex(1); ImGui::InputText("##matName", model_extra.mat_names[i].name, 128);
 
-					tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
-					ImGui::Text("Albedo %s", tx->tex_name);
-					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
-					ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
-					if (ImGui::Button("Replace texture")) {
-						ReplaceTexture(i, ALBEDO_TEXTURE);
-					}
-					ImGui::PopID();
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0); ImGui::Text("Color");
+						ImGui::TableSetColumnIndex(1); ImGui::ColorEdit3("##matColor", buffer->colors[i].array);
 
-					tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
-					ImGui::Text("Albedo %s", tx->tex_name);
-					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
-					ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
-					if (ImGui::Button("Replace texture")) {
-						ReplaceTexture(i, NORMAL_TEXTURE);
-					}
-					ImGui::PopID();
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0);
+						tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+						ImGui::Text("Albedo");
+						ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
+						if (ImGui::Button("Replace texture")) {
+							ReplaceTexture(i, ALBEDO_TEXTURE);
+						}
+						ImGui::PopID();
+						ImGui::TableSetColumnIndex(1);
+						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::BeginTooltip();
+							ImGui::Text("Path: %s", tx->tex_name);
+							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+							ImGui::EndTooltip();
+						}
 
-					tx = buffer->textures[i * 3 + PBR_TEXTURE];
-					ImGui::Text("Albedo %s", tx->tex_name);
-					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(128, 128));
-					ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
-					if (ImGui::Button("Replace texture")) {
-						ReplaceTexture(i, PBR_TEXTURE);
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0);
+						tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
+						ImGui::Text("Normal map");
+						ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
+						if (ImGui::Button("Replace texture")) {
+							ReplaceTexture(i, NORMAL_TEXTURE);
+						}
+						ImGui::PopID();
+						ImGui::TableSetColumnIndex(1);
+						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::BeginTooltip();
+							ImGui::Text("Path: %s", tx->tex_name);
+							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+							ImGui::EndTooltip();
+						}
+
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0);
+						tx = buffer->textures[i * 3 + PBR_TEXTURE];
+						ImGui::Text("PBR");
+						ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
+						if (ImGui::Button("Replace texture")) {
+							ReplaceTexture(i, PBR_TEXTURE);
+						}
+						ImGui::PopID();
+						ImGui::TableSetColumnIndex(1);
+						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::BeginTooltip();
+							ImGui::Text("Path: %s", tx->tex_name);
+							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+							ImGui::EndTooltip();
+						}
+
+						ImGui::EndTable();
 					}
-					ImGui::PopID();
 
 					ImGui::TreePop();
 				}
@@ -254,9 +415,20 @@ static void DrawGUI() {
 				uid++;
 			}
 
-			ImGui::TreePop();
+			ImGui::EndTabItem();
 		}
 
+		if (!isModelLoaded) { ImGui::EndDisabled(); }
+
+		ImGui::BeginDisabled();
+		if (ImGui::BeginTabItem("Animations")) {
+
+			ImGui::EndTabItem();
+		}
+		ImGui::EndDisabled();
+
+
+		ImGui::EndTabBar();
 	}
 
 	ImGui::End();
@@ -286,6 +458,7 @@ public:
 		//camera->GetTransform()->SetPosition({ 0.0, 1.0, 0.0 });
 		//camera->GetTransform()->SetRotation({ 0.0, 0.0, 0.0 });
 		camcontrol = new LookatCameraController(camera);
+		camcontrol->SetLength(3.14f);
 		//camcontrol->SetLookAtPosition();
 
 		rstate = InitializeRenderer(DrawGUI);

@@ -52,19 +52,21 @@ static void GetNodeTransform(const aiNode* node, aiMatrix4x4* t) {
 	*t = transform;
 }
 
-void FreeStaticModel(R3DStaticModelInfo* info) {
+void FreeStaticModel(R3DStaticModelInfo* info, ModelExtraData* extra) {
 	if (!info) return;
 	rg_free(info->vertices);
 	rg_free(info->indices);
 	rg_free(info->mInfo);
 	rg_free(info->matInfo);
+	rg_free(extra->mat_names);
+	rg_free(extra->mesh_names);
 	SDL_memset(info, 0, sizeof(R3DStaticModelInfo)); // Clear info
 }
 
-void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
+void ImportStaticModel(ImportStaticModelInfo* importinfo) {
 
 	char fullpath[512];
-	SDL_snprintf(fullpath, 512, "%s/%s", path, file);
+	SDL_snprintf(fullpath, 512, "%s/%s", importinfo->path, importinfo->file);
 
 	//rg_free(info->vertices);
 	//rg_free(info->indices);
@@ -76,6 +78,8 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	const aiScene* scene = importer.ReadFile(fullpath,
 		aiProcess_Triangulate |
 		aiProcess_FlipUVs |
+		//aiProcess_ForceGenNormals |
+		//aiProcess_GenSmoothNormals |
 		aiProcess_GenNormals |
 		aiProcess_CalcTangentSpace
 	);
@@ -100,8 +104,10 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	}
 
 	size_t meshinfoSize = scene->mNumMeshes * sizeof(R3D_MatMeshInfo);
-	info->mInfo = (R3D_MatMeshInfo*)rg_malloc(meshinfoSize);
-	info->mCount = scene->mNumMeshes;
+	importinfo->info->mInfo = (R3D_MatMeshInfo*)rg_malloc(meshinfoSize);
+	importinfo->info->mCount = scene->mNumMeshes;
+
+	importinfo->extra->mesh_names = (NameField*)rg_malloc(sizeof(NameField) * scene->mNumMeshes);
 
 	// Copy vertex data
 	std::vector<R3D_Vertex> vertices;
@@ -113,6 +119,9 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	Uint32 cur_idx = 0;
 	for (Uint32 m = 0; m < scene->mNumMeshes; m++) {
 		aiMesh* mesh = scene->mMeshes[m];
+
+		rgLogInfo(RG_LOG_SYSTEM, "[geom] Process mesh: %s", mesh->mName.C_Str());
+		SDL_snprintf(importinfo->extra->mesh_names[m].name, 128, "%s", mesh->mName.C_Str());
 
 		aiMatrix4x4 transform = transforms[m];
 		aiMatrix3x3 normalmat(transform);
@@ -131,12 +140,14 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 			v.pos.z = t_vtx.z;
 			if (mesh->HasNormals()) {
 				t_nrm = normalmat * mesh->mNormals[i];
+				t_nrm.Normalize();
 				v.norm.x = t_nrm.x;
 				v.norm.y = t_nrm.y;
 				v.norm.z = t_nrm.z;
 			}
 			if (mesh->HasTangentsAndBitangents()) {
 				t_tan = normalmat * mesh->mTangents[i];
+				t_tan.Normalize();
 				v.tang.x = t_tan.x;
 				v.tang.y = t_tan.y;
 				v.tang.z = t_tan.z;
@@ -151,7 +162,7 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 #endif
 
 			cur_vtx++;
-			
+
 			vertices.push_back(v);
 		}
 
@@ -159,12 +170,14 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 		for (Uint32 i = 0; i < mesh->mNumFaces; ++i) {
 			aiFace* face = &mesh->mFaces[i];
 			for (Uint32 j = 0; j < face->mNumIndices; ++j) {
+			//for (Sint32 j = face->mNumIndices; j >= 0; --j) {
 #if 0
 				if (indexSize == 2) {
 					Uint16* idx = (Uint16*)info->indices;
 					idx[cur_idx] = (Uint16)face->mIndices[j] + startvtx;
 
-				} else {
+				}
+				else {
 					Uint32* idx = (Uint32*)info->indices;
 					idx[cur_idx] = face->mIndices[j] + startvtx;
 				}
@@ -177,9 +190,9 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 
 		startvtx = cur_vtx;
 
-		info->mInfo[m].materialIdx = mesh->mMaterialIndex;
-		info->mInfo[m].indexOffset = startidx;
-		info->mInfo[m].indexCount  = cur_idx - startidx;
+		importinfo->info->mInfo[m].materialIdx = mesh->mMaterialIndex;
+		importinfo->info->mInfo[m].indexOffset = startidx;
+		importinfo->info->mInfo[m].indexCount = cur_idx - startidx;
 
 	}
 
@@ -212,39 +225,31 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	}
 
 	// Allocate memory
-	Uint32 matcount = scene->mNumMaterials;// -1;
 
-	size_t matinfoSize = matcount * sizeof(R3D_MaterialInfo);
 	size_t vtxSize = totalVertexCount * sizeof(R3D_Vertex);
 	size_t idxSize = totalIndexCount * indexSize;
 
-	info->matInfo = (R3D_MaterialInfo*)rg_malloc(matinfoSize);
-	info->vertices = (R3D_Vertex*)rg_malloc(vtxSize);
-	info->indices = rg_malloc(idxSize);
-
-	size_t totalMemory = meshinfoSize + matinfoSize + vtxSize + idxSize;
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %ldb", totalMemory);
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%ldb idx:%ldb", vtxSize, idxSize);
-
-	info->matCount = matcount;
-	info->vCount = totalVertexCount;
-	info->iCount = totalIndexCount;
-	info->iType = (IndexType)indexSize;
+	importinfo->info->vertices = (R3D_Vertex*)rg_malloc(vtxSize);
+	importinfo->info->indices = rg_malloc(idxSize);
+	importinfo->info->vCount = totalVertexCount;
+	importinfo->info->iCount = totalIndexCount;
+	importinfo->info->iType = (IndexType)indexSize;
 
 	// Copy de-duplicated vertex data
 
 	for (Uint32 i = 0; i < new_vertices.size(); i++) {
-		info->vertices[i] = new_vertices[i];
+		importinfo->info->vertices[i] = new_vertices[i];
 	}
 
 	if (indexSize == 2) {
-		Uint16* idx = (Uint16*)info->indices;
+		Uint16* idx = (Uint16*)importinfo->info->indices;
 		for (Uint32 i = 0; i < new_indices.size(); i++) {
 			idx[i] = (Uint16)new_indices[i];
 		}
 
-	} else {
-		Uint32* idx = (Uint32*)info->indices;
+	}
+	else {
+		Uint32* idx = (Uint32*)importinfo->info->indices;
 		for (Uint32 i = 0; i < new_indices.size(); i++) {
 			idx[i] = new_indices[i];
 		}
@@ -253,9 +258,23 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 	// Copy material data
 	//info->matInfo
 
-	for (Uint32 i = 0; i < scene->mNumMaterials; ++i) {
-		aiMaterial* material = scene->mMaterials[i];
-		R3D_MaterialInfo* minfo = &info->matInfo[i];
+	R3D_MaterialInfo* mtl_array = (R3D_MaterialInfo*)rg_malloc(scene->mNumMaterials * sizeof(R3D_MaterialInfo));
+
+	NameField* matnames_all = (NameField*)rg_malloc(sizeof(NameField) * scene->mNumMaterials);
+	std::vector<R3D_MaterialInfo*> mtls;
+	std::map<size_t, Uint32> mtl_hashtable;
+
+	// Skip default material
+	Uint32 matidx = 0;
+	if (importinfo->skipFirstMat) {
+		matidx = 1;
+	}
+	
+	for (; matidx < scene->mNumMaterials; ++matidx) {
+		aiMaterial* material = scene->mMaterials[matidx];
+
+		//R3D_MaterialInfo* minfo = &info->matInfo[i];
+		R3D_MaterialInfo* minfo = &mtl_array[matidx];
 
 #if 1
 		// Color
@@ -266,16 +285,30 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 		minfo->color.g = diffuse.g;
 		minfo->color.b = diffuse.b;
 
+		SDL_snprintf(matnames_all[matidx].name, 128, "material_%d", matidx);
+
 		aiString name;
 		if (material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
-			rgLogInfo(RG_LOG_SYSTEM, "Material %d: %s\n", i, name.C_Str());
+			rgLogInfo(RG_LOG_SYSTEM, "Material %d: %s\n", matidx, name.C_Str());
+			SDL_snprintf(matnames_all[matidx].name, 128, "%s", name.C_Str());
 		}
-		
+
 		aiString texPath;
+		SDL_memset(minfo->texture, 0, 128);
 		if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
 			rgLogInfo(RG_LOG_SYSTEM, "Diffuse texture: %s\n", texPath.C_Str());
-			SDL_snprintf(minfo->texture, 128, "%s/%s", path, texPath.C_Str());
+			SDL_snprintf(minfo->texture, 128, "%s/%s", importinfo->path, texPath.C_Str());
 		}
+
+
+		size_t mtl_hash = rgHash(minfo, sizeof(R3D_MaterialInfo));
+
+		if (mtl_hashtable.count(mtl_hash) == 0) {
+			mtl_hashtable[mtl_hash] = mtls.size();
+			mtls.push_back(minfo);
+		}
+
+		rgLogInfo(RG_LOG_SYSTEM, "Material [%lx]: %f %f %f %s", mtl_hash, diffuse.r, diffuse.g, diffuse.b, minfo->texture);
 
 #endif
 #if 0
@@ -291,6 +324,52 @@ void ImportStaticModel(String path, String file, R3DStaticModelInfo* info) {
 #endif
 	}
 
+
+
+	Uint32 matcount = mtls.size();
+	importinfo->info->matCount = matcount;
+
+	size_t matinfoSize = matcount * sizeof(R3D_MaterialInfo);
+	importinfo->info->matInfo = (R3D_MaterialInfo*)rg_malloc(matinfoSize);
+
+	importinfo->extra->mat_names = (NameField*)rg_malloc(sizeof(NameField) * matcount);
+
+	for (Uint32 i = 0; i < scene->mNumMaterials; i++) {
+		size_t mtl_hash = rgHash(&mtl_array[i], sizeof(R3D_MaterialInfo));
+		Uint32 actual_idx = mtl_hashtable[mtl_hash];
+		SDL_snprintf(importinfo->extra->mat_names[actual_idx].name, 128, "%s", matnames_all[i].name);
+	}
+
+	for (Uint32 i = 0; i < matcount; i++) {
+		SDL_memcpy(&importinfo->info->matInfo[i], mtls[i], sizeof(R3D_MaterialInfo));
+	}
+
+	// and replace material index in meshes
+
+	for (Uint32 i = 0; i < importinfo->info->mCount; i++) {
+		Uint32 midx = importinfo->info->mInfo[i].materialIdx;
+
+		size_t mtl_hash = rgHash(&mtl_array[midx], sizeof(R3D_MaterialInfo));
+		Uint32 actual_idx = mtl_hashtable[mtl_hash];
+
+		importinfo->info->mInfo[i].materialIdx = actual_idx;
+	}
+
+
+	size_t totalMemory = meshinfoSize + matinfoSize + vtxSize + idxSize;
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %ldb", totalMemory);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%ldb idx:%ldb", vtxSize, idxSize);
+
+	rg_free(mtl_array);
+	rg_free(matnames_all);
 	rg_free(transforms);
+
+}
+
+void FreeRiggedModel(R3DRiggedModelInfo* info, ModelExtraData* extra) {
+	 
+}
+
+void ImportRiggedModel(ImportRiggedModelInfo* info) {
 
 }

@@ -40,7 +40,7 @@ static GLuint axis_vao;
 static GLuint axis_vbo;
 static GLuint axis_ebo;
 
-static Uint32 axis_color[] = {0xFF0000FF, 0xFF00FF00, 0xFFFF0000, 0xFFAAAAAA}; // RGBA (0xAABBGGRR)
+static Uint32 axis_color[] = { 0xFF0000FF, 0xFF00FF00, 0xFFFF0000, 0xFFAAAAAA }; // RGBA (0xAABBGGRR)
 
 static R3D_Vertex axis_vtx[] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f},// 0
@@ -169,8 +169,8 @@ static String txt_VertexShader = "#version 330 core\n"
 "    vec3 B = normalize(cross(N, T));\n"
 "    o_TBN  = mat3(T, B, N);\n"
 "    o_pos  = (mdl * pos4).xyz;\n"
-"    o_norm = v_norm;\n"
-"    o_tang = v_tang;\n"
+"    o_norm = N;\n"
+"    o_tang = T;\n"
 "    o_uv   = v_uv;\n"
 "    gl_Position = vp * vec4(o_pos, 1);\n"
 "}\n";
@@ -248,6 +248,7 @@ static String txt_PixelShader = "#version 330 core\n"
 "#else\n"
 "    N = normalize(o_norm);\n" // Disable normal mappings
 "#endif\n"
+"    N.x = -N.x;\n"
 "    vec3 V = normalize(viewpos - o_pos);\n"
 "    vec3 light = vec3(1);\n"
 "    if(calclight > 0) {\n"
@@ -255,6 +256,9 @@ static String txt_PixelShader = "#version 330 core\n"
 "        light += CalculateLight(N, V, o_pos, pbr.x, pbr.y, alb.xyz);\n"
 "    }\n"
 "    p_color = vec4(alb.xyz * mat_color * light, 1);\n"
+"    float gamma = 1.9;\n"
+"    p_color.rgb = pow(p_color.rgb, vec3(1.0 / gamma));\n"
+"    //p_color = vec4(N.xyz, 1);\n"
 "}\n";
 
 // OpenGL 4.3
@@ -272,8 +276,8 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	staticstate.guicb = guicb;
 	staticstate.showaxis = 1;
 
-	staticstate.mdl_pos = { 0, 0, 0 };
-	staticstate.mdl_rot = { 0, 0, 0 };
+	staticstate.mdl_pos   = { 0, 0, 0 };
+	staticstate.mdl_rot   = { 0, 0, 0 };
 	staticstate.mdl_scale = { 1, 1, 1 };
 
 	m4_identity = MAT4_IDENTITY();
@@ -421,12 +425,17 @@ static void DrawAxis() {
 	glDrawElements(GL_LINES, 90, GL_UNSIGNED_SHORT, 0);
 }
 
+void CalculateModelMatrix(RenderState* state, mat4* m) {
+	mat4_model(m, state->mdl_pos, state->mdl_rot, state->mdl_scale);
+}
+
 void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	mat4 proj = *camera->GetProjection();
 	mat4 view = *camera->GetView();
 	mat4 model;
-	mat4_model(&model, state->mdl_pos, state->mdl_rot, state->mdl_scale);
+	CalculateModelMatrix(state, &model);
+	//mat4_model(&model, state->mdl_pos, state->mdl_rot, state->mdl_scale);
 	//mat4_translate(&model, {0, 0, 0});
 
 	vec3 pos = camera->GetTransform()->GetPosition();
