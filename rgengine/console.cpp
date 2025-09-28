@@ -105,11 +105,11 @@ namespace Engine {
     static Bool Input(SDL_Event* event) {
         if (!is_shown) { return true; }
 
-        if (event->type == SDL_TEXTINPUT) {
+        if (event->type == SDL_EVENT_TEXT_INPUT) {
             cursor += Append(cursor, event->text.text);
-        } else if (event->type == SDL_KEYDOWN) {
+        } else if (event->type == SDL_EVENT_KEY_DOWN) {
 
-            switch (event->key.keysym.scancode) {
+            switch (event->key.scancode) {
                 case SDL_SCANCODE_RETURN: { // Execute command
                     utf8_encoder.EncodeString(command_buffer);
                     String result = utf8_encoder.GetResult();

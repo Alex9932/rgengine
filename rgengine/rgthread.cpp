@@ -88,7 +88,7 @@ namespace Engine {
 	}
 
 	void Thread_Initialize(Uint32 tcount) {
-		cores = SDL_GetCPUCount();
+		cores = SDL_GetNumLogicalCPUCores();
 
 		t_alloc = RG_NEW(PoolAllocator)("Task allocator", RG_MAX_TASKS, sizeof(Task));
 

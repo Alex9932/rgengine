@@ -4,7 +4,7 @@
 #include <rgstring.h>
 #include <filedialog.h>
 #include <filesystem.h>
-#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/imgui_impl_sdl3.h>
 #include <imgui/imgui.h>
 
 #include "renderer.h"
@@ -47,15 +47,15 @@ static void RecalculateCameraProjection() {
 }
 
 static Bool CEventHandler(SDL_Event* event) {
-	ImGui_ImplSDL2_ProcessEvent(event);
+	ImGui_ImplSDL3_ProcessEvent(event);
 
 	//rgLogInfo(RG_LOG_RENDER, "Type: %d %d", event->type, event->window.event);
-	if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+	if (event->type  == SDL_EVENT_WINDOW_RESIZED) {
 		ResizeRender(rstate);
 		RecalculateCameraProjection();
 	}
 
-	if (event->type == SDL_DROPFILE) {
+	if (event->type == SDL_EVENT_DROP_FILE) {
 		rgLogInfo(RG_LOG_SYSTEM, "Drag'n'drop event: %d", event->type);
 	}
 

@@ -4,7 +4,7 @@
 #include <rgvector.h>
 #include <engine.h>
 
-#include <SDL2/SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "vk.h"
 
@@ -66,7 +66,7 @@ static void MakeSwapchain() {
 	VkDevice         dev = VK_GetDevice();
 
 	// Create surface
-	SDL_Vulkan_CreateSurface(vk_hwnd, VK_GetInstance(), &vk_surface);
+	SDL_Vulkan_CreateSurface(vk_hwnd, VK_GetInstance(), NULL, &vk_surface);
 
 	VkSurfaceCapabilitiesKHR capabilities = {};
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pdev, vk_surface, &capabilities);

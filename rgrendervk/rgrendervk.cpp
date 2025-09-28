@@ -45,7 +45,10 @@ Engine::Allocator* RGetAllocator() {
 // PUBLIC API
 
 SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
-	return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_VULKAN);
+	//return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_VULKAN);
+	SDL_Window* sdl_hwnd = SDL_CreateWindow("rgEngine", w, h, SDL_WINDOW_VULKAN);
+	SDL_SetWindowPosition(sdl_hwnd, 5, 5);
+	return sdl_hwnd;
 }
 
 void R_Setup(RenderSetupInfo* info) {

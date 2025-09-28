@@ -79,8 +79,8 @@ static bool EHandler(SDL_Event* event) {
 	}
 #endif
 
-	if (event->type == SDL_KEYDOWN) {
-		switch (event->key.keysym.scancode) {
+	if (event->type == SDL_EVENT_KEY_DOWN) {
+		switch (event->key.scancode) {
 			case SDL_SCANCODE_P: {
 				ph_enabled = !ph_enabled;
 				if (ph_enabled) { Engine::GetPhysics()->Enable(); }

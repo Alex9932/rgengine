@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include <vector>
 
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
 
 typedef int ImGuiNeoSequencerFlags;
 typedef int ImGuiNeoSequencerCol;

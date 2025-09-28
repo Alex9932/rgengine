@@ -60,8 +60,8 @@ static bool _EventHandler(SDL_Event* event) {
 
 	}
 
-	if (event->type == SDL_KEYDOWN) {
-		switch (event->key.keysym.scancode) {
+	if (event->type == SDL_EVENT_KEY_DOWN) {
+		switch (event->key.scancode) {
 			case SDL_SCANCODE_R: {
 				if (Engine::IsKeyDown(SDL_SCANCODE_LSHIFT) && Engine::IsKeyDown(SDL_SCANCODE_LALT)) {
 					isShadersReloadRequired = true;
@@ -108,7 +108,11 @@ static Buffer* vBuffer = NULL;
 SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 	wndSize.x = w;
 	wndSize.y = h;
-	return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_SHOWN);
+	//return SDL_CreateWindow("rgEngine", 5, 5, w, h, SDL_WINDOW_SHOWN);
+	
+	SDL_Window* sdl_hwnd = SDL_CreateWindow("rgEngine", w, h, 0);
+	SDL_SetWindowPosition(sdl_hwnd, 5, 5);
+	return sdl_hwnd;
 }
 
 void R_Setup(RenderSetupInfo* info) {

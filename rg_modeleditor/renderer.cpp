@@ -1,12 +1,12 @@
 #include "renderer.h"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <engine.h>
 #include <rgstb.h>
 #include "texture.h"
 #include "vertexbuffer.h"
 #include <imgui/imgui.h>
-#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/imgui_impl_sdl3.h>
 #include "imgui_impl_opengl3.h"
 
 #include "glad.h"
@@ -288,7 +288,8 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	// Load icon
 	int w, h, c;
 	icon_data_ptr = RG_STB_load_from_file(RG_WND_ICON, &w, &h, &c, 4);
-	icon_surface = SDL_CreateRGBSurfaceFrom(icon_data_ptr, w, h, 32, 4 * w, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+	//icon_surface = SDL_CreateRGBSurfaceFrom(icon_data_ptr, w, h, 32, 4 * w, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+	icon_surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_ABGR8888, icon_data_ptr, w * 4);
 
 	// Setup OpenGL attribs
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -296,14 +297,16 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	// Window
-	staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	//staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", 800, 600, SDL_WINDOW_OPENGL);
+	SDL_SetWindowPosition(staticstate.hwnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	if (!staticstate.hwnd) {
 		RG_ERROR_MSG("Failed to create window!");
 	}
 
 	SDL_GetWindowSize(staticstate.hwnd, &staticstate.wsize.x, &staticstate.wsize.y);
 	SDL_SetWindowIcon(staticstate.hwnd, icon_surface);
-	SDL_SetWindowResizable(staticstate.hwnd, SDL_TRUE);
+	SDL_SetWindowResizable(staticstate.hwnd, true);
 
 	// Load GL
 	staticstate.glctx = SDL_GL_CreateContext(staticstate.hwnd);
@@ -356,7 +359,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	ImGui::StyleColorsDark();
 
 	// ImGUI
-	ImGui_ImplSDL2_InitForOpenGL(staticstate.hwnd, staticstate.glctx);
+	ImGui_ImplSDL3_InitForOpenGL(staticstate.hwnd, staticstate.glctx);
 	ImGui_ImplOpenGL3_Init();
 
 	InitializeTextures();
@@ -408,7 +411,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 void DestroyRenderer(RenderState* state) {
 
 	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
 	//	ImGui::DestroyContext();
 
 	glDeleteProgram(state->shader);
@@ -417,7 +420,7 @@ void DestroyRenderer(RenderState* state) {
 
 	DestroyTextures();
 
-	SDL_GL_DeleteContext(state->glctx);
+	SDL_GL_DestroyContext(state->glctx);
 	SDL_DestroyWindow(state->hwnd);
 }
 
@@ -494,7 +497,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	}
 
 	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
+	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 	staticstate.guicb();
 	ImGui::Render();

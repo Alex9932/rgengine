@@ -174,9 +174,6 @@
     <ClCompile Include="imgui\imgui_draw.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_impl_sdl2.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="imgui\imgui_neo_internal.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
@@ -269,6 +266,9 @@
     </ClCompile>
     <ClCompile Include="scriptruntime.cpp">
       <Filter>Source Files\script</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_impl_sdl3.cpp">
+      <Filter>Source Files\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -369,9 +369,6 @@
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_sdl2.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_neo_internal.h">
@@ -484,6 +481,9 @@
     </ClInclude>
     <ClInclude Include="scriptruntime.h">
       <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_impl_sdl3.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,6 @@
 #include "dx11.h"
 
-#include <SDL2/SDL_syswm.h>
+//#include <SDL2/SDL_syswm.h>
 #include <engine.h>
 #include <rgvector.h>
 
@@ -27,11 +27,17 @@ static void _MakeRendertarget() {
 
 void DX11_Initialize(SDL_Window* hwnd) {
     // Get HWND
+
+    // SDL3 migration
+#if 0
     SDL_SysWMinfo wminfo = {};
     SDL_VERSION(&wminfo.version);
     SDL_GetWindowWMInfo(hwnd, &wminfo);
     HWND win_hwnd = (HWND)wminfo.info.win.window;
+#endif
 
+    SDL_PropertiesID props = SDL_GetWindowProperties(hwnd);
+    HWND win_hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     int w = 0, h = 0;
     SDL_GetWindowSize(hwnd, &w, &h);
 

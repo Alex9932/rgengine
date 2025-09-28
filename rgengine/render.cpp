@@ -56,9 +56,10 @@ namespace Engine {
             }
 #endif
 
-            if (event->type == SDL_WINDOWEVENT) {
-                switch (event->window.event) {
-                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
+            // SDL3 migration
+            if (event->type == SDL_EVENT_WINDOW_RESIZED) {
+                //switch (event->window.type) {
+                    //case SDL_WINDOWEVENT_SIZE_CHANGED: {
 
                         GetWindowSize(&wndSize);
 
@@ -68,10 +69,10 @@ namespace Engine {
 
                         //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
                         PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
-                        break;
-                    }
-                    default: { break; }
-                }
+                        //break;
+                    //}
+                    //default: { break; }
+                //}
             }
 
             return true;

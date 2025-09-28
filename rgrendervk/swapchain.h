@@ -1,7 +1,7 @@
 #ifndef _SWAPCHAIN_H
 #define _SWAPCHAIN_H
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <vulkan/vulkan.h>
 
 void CreateSwapchain(SDL_Window* hwnd);

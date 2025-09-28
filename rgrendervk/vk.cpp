@@ -4,8 +4,8 @@
 #include <allocator.h>
 
 #include <vulkan/vulkan.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "swapchain.h"
 
@@ -38,10 +38,16 @@ void VK_Initialize(SDL_Window* hwnd) {
     }
     rg_free(layers);
 
+    // SDL3 migration
+
+    //Uint32 sdlExtensionCount = 0;
+    //SDL_Vulkan_GetInstanceExtensions(nullptr, &sdlExtensionCount, nullptr);
+    //String* sdlExtensions = (String*)rg_malloc(sizeof(String) * sdlExtensionCount);
+    //SDL_Vulkan_GetInstanceExtensions(nullptr, &sdlExtensionCount, sdlExtensions);
+
     Uint32 sdlExtensionCount = 0;
-    SDL_Vulkan_GetInstanceExtensions(nullptr, &sdlExtensionCount, nullptr);
-    String* sdlExtensions = (String*)rg_malloc(sizeof(String) * sdlExtensionCount);
-    SDL_Vulkan_GetInstanceExtensions(nullptr, &sdlExtensionCount, sdlExtensions);
+    //String* sdlExtensions = (String*)rg_malloc(sizeof(String) * sdlExtensionCount);
+    String* sdlExtensions = (String*)SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -61,7 +67,7 @@ void VK_Initialize(SDL_Window* hwnd) {
         RG_ERROR_MSG("Vulkan instance error!");
     }
 
-    rg_free(sdlExtensions);
+    //rg_free(sdlExtensions);
 
     /////////////////////////////////////////////
     // Physical device

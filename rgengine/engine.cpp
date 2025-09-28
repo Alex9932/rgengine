@@ -60,7 +60,7 @@ namespace Engine {
         SDL_INIT_VIDEO |
         SDL_INIT_JOYSTICK |
         SDL_INIT_HAPTIC |
-        SDL_INIT_GAMECONTROLLER |
+        SDL_INIT_GAMEPAD |
         SDL_INIT_SENSOR;
 
     static char          version_str[64];
@@ -115,11 +115,11 @@ namespace Engine {
     }
 
     static bool _EventHandler(SDL_Event* event) {
-        if (event->type == SDL_QUIT) {
+        if (event->type == SDL_EVENT_QUIT) {
             Quit();
         }
 
-        if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_F11) {
+        if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode== SDL_SCANCODE_F11) {
             ToggleFullscreen();
         }
 
@@ -128,14 +128,16 @@ namespace Engine {
             running = false;
         }
 
-        if (event->type == SDL_WINDOWEVENT) {
-            switch (event->window.event) {
+		// Temporary disabled (SDL3 migration)
+#if 0
+        if (event->type == SDL_EVENT_WINDOW) {
+            switch (event->type) {
             case SDL_WINDOWEVENT_LEAVE: { SetFpsLimit(-1); break; }
             case SDL_WINDOWEVENT_ENTER: { SetFpsLimit(-1); break; }
             default: { break; }
             }
         }
-
+#endif
         return true;
     }
 
@@ -314,7 +316,7 @@ namespace Engine {
     void Initialize() {
         running = true;
 
-        SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS);
+        SDL_Init(SDL_INIT_EVENTS);
         SetupSignalHandler();
 
 
@@ -326,11 +328,10 @@ namespace Engine {
         rgLogInfo(RG_LOG_SYSTEM, "Initializing engine...");
         SDL_SetAssertionHandler(AssertionHandler, NULL);
 
-        SDL_version ver;
-        SDL_GetVersion(&ver);
+        int ver = SDL_GetVersion();
 
         rgLogInfo(RG_LOG_SYSTEM, "Engine version: %d.%d.%d, Build: %d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH, RG_BUILD);
-        rgLogInfo(RG_LOG_SYSTEM, "SDL version: %d.%d.%d", ver.major, ver.minor, ver.patch);
+        rgLogInfo(RG_LOG_SYSTEM, "SDL version: %d.%d.%d", SDL_VERSIONNUM_MAJOR(ver), SDL_VERSIONNUM_MINOR(ver), SDL_VERSIONNUM_MICRO(ver));
 
         char CPUBrandString[64] = {};
         rgCPUID(CPUBrandString);
@@ -338,7 +339,7 @@ namespace Engine {
         rgLogInfo(RG_LOG_SYSTEM, "Platform: %s, %s %s CPU, line %d, %d Mb ram.",
             SDL_GetPlatform(),
             CPUBrandString,
-            GetCpuNameStr(SDL_GetCPUCount()),
+            GetCpuNameStr(SDL_GetNumLogicalCPUCores()), //SDL_GetCPUCount()
             SDL_GetCPUCacheLineSize(),
             SDL_GetSystemRAM());
         rgLogInfo(RG_LOG_SYSTEM, "Using log path: %s", Logger_GetLogPath());
@@ -381,7 +382,7 @@ namespace Engine {
         //Cvars_Initialize();
 
         if (!num_tcustom) {
-            num_threads = SDL_GetCPUCount();
+            num_threads = SDL_GetNumLogicalCPUCores();
         }
         Thread_Initialize(num_threads);
 
@@ -527,10 +528,10 @@ namespace Engine {
         SDL_MessageBoxColorScheme boxcolor = {};
         SDL_MessageBoxData boxdata = {};
 
-        boxbtns[0].buttonid = 1;
+        boxbtns[0].buttonID = 1;
         boxbtns[0].flags = 0;
         boxbtns[0].text = "Yes";
-        boxbtns[1].buttonid = 2;
+        boxbtns[1].buttonID = 2;
         boxbtns[1].flags = SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
         boxbtns[1].text = "No";
 

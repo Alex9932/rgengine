@@ -8,7 +8,7 @@
 #ifndef _RGTYPES_H
 #define _RGTYPES_H
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #define RG_INLINE inline
 

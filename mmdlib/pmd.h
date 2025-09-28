@@ -15,7 +15,7 @@
 
 //#define STD_PMD
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <rgvector.h>
 
 #define PMD_MAX_BONES 1024

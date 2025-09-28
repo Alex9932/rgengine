@@ -45,25 +45,25 @@ namespace Engine {
     static std::thread             console_thr;
 
     static bool InputHandler(SDL_Event* event) {
-        if (event->type == SDL_MOUSEMOTION) {
+        if (event->type == SDL_EVENT_MOUSE_MOTION) {
             m_tdx += ((double)event->motion.x - _Input::m_x) * _Input::m_sens;
             m_tdy += ((double)event->motion.y - _Input::m_y) * _Input::m_sens;
             _Input::m_x = (double)event->motion.x;
             _Input::m_y = (double)event->motion.y;
         }
 
-        if (event->type == SDL_MOUSEWHEEL) {
+        if (event->type == SDL_EVENT_MOUSE_WHEEL) {
             m_tdw += event->wheel.y;
         }
 
-        if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP) {
-            if (event->key.keysym.scancode >= RG_MAX_KEYS) { return true; }
-            m_keys[event->key.keysym.scancode] = (event->type == SDL_KEYUP ? false : true);
+        if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+            if (event->key.scancode >= RG_MAX_KEYS) { return true; }
+            m_keys[event->key.scancode] = (event->type == SDL_EVENT_KEY_UP ? false : true);
         }
 
-        if (event->type == SDL_MOUSEBUTTONDOWN || event->type == SDL_MOUSEBUTTONUP) {
+        if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
             if (event->button.button >= RG_MAX_BTNS) { return true; }
-            m_btns[event->button.button] = (event->type == SDL_MOUSEBUTTONUP ? false : true);
+            m_btns[event->button.button] = (event->type == SDL_EVENT_MOUSE_BUTTON_UP ? false : true);
         }
 
         if (event->type == GetUserEventID() && event->user.code == RG_EVENT_STANDBY) {

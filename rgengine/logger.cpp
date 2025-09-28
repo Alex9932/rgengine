@@ -36,7 +36,7 @@ static char LINES_BUFFER[LOGGER_LINES][LOGGER_BUFFER_LENGTH];
 static SDL_LogPriority PRIORITY_BUFFER[LOGGER_LINES];
 static Sint32 buffer_index = LOGGER_LINES - 1;
 
-static SDL_mutex* mutex;
+static SDL_Mutex* mutex;
 
 #ifdef RG_PLATFORM_LINUX
 RG_FORCE_INLINE static String getColor(SDL_LogPriority priority) {
@@ -172,8 +172,8 @@ namespace Engine {
         SDL_snprintf(LOG_PATH, 128, "logs/%d-%d-%d %d%d%d.log", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
         file_stream = fopen(LOG_PATH, "w");
 
-        SDL_LogSetAllPriority(SDL_LOG_PRIORITY_INFO);
-        SDL_LogSetOutputFunction(logger, NULL);
+        SDL_SetLogPriorities(SDL_LOG_PRIORITY_INFO);
+        SDL_SetLogOutputFunction(logger, NULL);
 
         mutex = SDL_CreateMutex();
     }

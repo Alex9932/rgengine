@@ -50,9 +50,9 @@ static Bool EHandler(SDL_Event* event) {
 
 	switch (event->type) {
 
-		case SDL_KEYDOWN: {
+		case SDL_EVENT_KEY_DOWN: {
 
-			if (event->key.keysym.scancode == SDL_SCANCODE_TAB) {
+			if (event->key.scancode == SDL_SCANCODE_TAB) {
 				if (IsKeyDown(SDL_SCANCODE_LSHIFT)) {
 					gizmo_mode++;
 					gizmo_mode = gizmo_mode % 2;
@@ -64,7 +64,7 @@ static Bool EHandler(SDL_Event* event) {
 				}
 			}
 
-			if (event->key.keysym.scancode == SDL_SCANCODE_GRAVE) {
+			if (event->key.scancode == SDL_SCANCODE_GRAVE) {
 				rgLogInfo(RG_LOG_GAME, "Toggled console");
 				ToggleConsole();
 			}
