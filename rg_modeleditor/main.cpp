@@ -55,6 +55,10 @@ static Bool CEventHandler(SDL_Event* event) {
 		RecalculateCameraProjection();
 	}
 
+	if (event->type == SDL_DROPFILE) {
+		rgLogInfo(RG_LOG_SYSTEM, "Drag'n'drop event: %d", event->type);
+	}
+
 	return true;
 }
 
@@ -104,9 +108,9 @@ static void OpenModel() {
 	char raw_path[512] = {};
 	char path[512] = {};
 	FD_Filter filters[6] = {
+		{"Wavefront model", "obj"},
 		{"COLLADA dae", "dae"},
 		{"FBX model", "fbx"},
-		{"Wavefront model", "obj"},
 		{"PM2 Model file", "pm2"},
 		{"MMD Polygon model", "pmd"},
 		{"MMD eXtended polygon model", "pmx"}
@@ -284,6 +288,12 @@ static void DrawGUI() {
 			}
 
 			ImGui::Checkbox("Skip first material", &skipFirstMat);
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::Text("Use for skip first \"Default Material\" in some models");
+				ImGui::EndTooltip();
+			}
 
 			ImGui::Separator();
 
@@ -336,7 +346,6 @@ static void DrawGUI() {
 		}
 
 		if (ImGui::BeginTabItem("Materials")) {
-
 
 			for (Uint32 i = 0; i < buffer->tcount; i++) {
 				ImGui::PushID(uid);
@@ -418,6 +427,11 @@ static void DrawGUI() {
 				ImGui::PopID();
 				uid++;
 			}
+
+			ImGui::EndTabItem();
+		}
+
+		if (ImGui::BeginTabItem("Skeleton")) {
 
 			ImGui::EndTabItem();
 		}

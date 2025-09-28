@@ -63,17 +63,11 @@ void FreeStaticModel(R3DStaticModelInfo* info, ModelExtraData* extra) {
 	SDL_memset(info, 0, sizeof(R3DStaticModelInfo)); // Clear info
 }
 
-void ImportStaticModel(ImportStaticModelInfo* importinfo) {
+static Assimp::Importer importer;
 
+static const aiScene* LoadScene(String path, String file) {
 	char fullpath[512];
-	SDL_snprintf(fullpath, 512, "%s/%s", importinfo->path, importinfo->file);
-
-	//rg_free(info->vertices);
-	//rg_free(info->indices);
-	//rg_free(info->mInfo);
-	//rg_free(info->matInfo);
-
-	Assimp::Importer importer;
+	SDL_snprintf(fullpath, 512, "%s/%s", path, file);
 
 	const aiScene* scene = importer.ReadFile(fullpath,
 		aiProcess_Triangulate |
@@ -87,10 +81,34 @@ void ImportStaticModel(ImportStaticModelInfo* importinfo) {
 	if (!scene) {
 		String error = importer.GetErrorString();
 		rgLogError(RG_LOG_SYSTEM, "ASSIMP ERROR: %s", error);
-		return;
+		return NULL;
 	}
 
 	rgLogInfo(RG_LOG_SYSTEM, "Model loaded: %s", fullpath);
+
+	return scene;
+}
+#if 0
+static void LoadBoneWeights(const aiScene* scene, aiMesh* mesh, R3D_Weight* weights) {
+	for (Uint32 boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
+		Sint16 bidx = -1;
+
+		aiString name = mesh->mBones[boneIndex]->mName;
+
+		Sint16 f_bone = FindBone(name.C_Str());
+		if (f_bone == -1) {
+			
+		}
+		else {
+			bidx = f_bone;
+		}
+	}
+}
+#endif
+void ImportStaticModel(ImportStaticModelInfo* importinfo) {
+
+	const aiScene* scene = LoadScene(importinfo->path, importinfo->file);
+	if (!scene) { return; }
 
 
 	// Find transforms

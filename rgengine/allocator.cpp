@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define RG_ALLOC_FREE_ON_DESTROY 0
-#define RG_ALLOCATOR_DEBUG 0
+#define RG_ALLOCATOR_DEBUG 1
 
 void* rg_alloca(size_t size) {
     void* ptr = NULL;
@@ -30,19 +30,35 @@ void* rg_alloca(size_t size) {
     return NULL;
 }
 
+//static size_t allocated_memory = 0;
+
 void* rg_malloc(size_t size) {
     if (size > 0x7FFFFFFF) {
         RG_ERROR_MSG("OUT OF MEMORY!");
         return NULL;
     }
 
+    //Uint32* ptr = (Uint32*)malloc(size + 8);
     void* ptr = malloc(size);
-    if (ptr) { return ptr; }
+    if (ptr) {
+//      ptr[0] = 0x1234CDEF;  // Mark as custom allocation
+//      ptr[1] = size;        // Save size
+//      allocated_memory += size;
+//      return (void*)&ptr[2];
+        return ptr;
+    }
     RG_ERROR_MSG("OUT OF MEMORY!");
     return NULL;
 }
 
 void rg_free(void* ptr) {
+    //Uint32* ptr32 = (Uint32*)((size_t)ptr - 8);
+    //if (ptr32[0] != 0x1234CDEF) {
+	//	RG_ERROR_MSG("Invalid pointer!");
+    //    return;
+    //}
+    //allocated_memory -= ptr32[1];
+    //free(ptr32);
     free(ptr);
 }
 
@@ -108,10 +124,17 @@ namespace Engine {
 #else
         if (blocks.size() != 0) {
             rgLogError(RG_LOG_MEMORY, "%s => Validation failed: Free all allocated blocks by calling 'Deallocate' function!", name);
-//            for (Uint32 i = 0; i < blocks.size(); i++) {
-//                rgLogError(RG_LOG_MEMORY, "%s => Allocated block[%db] at: 0x%x", name, blocks[i].len, blocks[i].ptr);
-//            }
+#if RG_ALLOCATOR_DEBUG
+            for (Uint32 i = 0; i < blocks.size(); i++) {
+                rgLogError(RG_LOG_MEMORY, "%s => Allocated block[%ldb] at: 0x%p", GetName(), blocks[i].len, blocks[i].ptr);
+            }
+#endif
         }
+#if RG_ALLOCATOR_DEBUG
+        else {
+            rgLogWarn(RG_LOG_MEMORY, "No memory allocated in %s [%p]", GetName(), this);
+        }
+#endif
 
 #if RG_ALLOCATOR_DEBUG
         STDBlock* b;
