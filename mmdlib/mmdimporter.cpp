@@ -77,7 +77,7 @@ static void LoadPMD(String p, pmd_file** pmd_ptr, R3D_Vertex** vtx, Uint16** idx
 
 }
 
-static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
+static void LoadPMDMaterials(pmd_file* pmd, String path, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
 
 	// Load materials (rewrite this)
 	R3D_MaterialInfo* matsInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * pmd->material_count);
@@ -93,6 +93,8 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 			SDL_snprintf(matsInfo[i].texture, 128, "toon%02d", mat->toon_number);
 		} else {
 
+			SDL_snprintf(matsInfo[i].texture, 128, "%s/%s", path, mat->file_name);
+#if 0
 			// Remove extension
 			char strbuffer[256];
 			size_t len = SDL_strlen(mat->file_name);
@@ -100,6 +102,7 @@ static void LoadPMDMaterials(pmd_file* pmd, R3D_MaterialInfo** info, R3D_MatMesh
 			strbuffer[len - 4] = 0;
 
 			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
+#endif
 		}
 
 		matsInfo[i].color.r = mat->colors.r * colorMul;
@@ -134,44 +137,71 @@ static void LoadPMDWeights(pmd_file* pmd, R3D_Weight** w) {
 	*w = weights;
 }
 
-void PMDImporter::ImportModel(String path, R3DStaticModelInfo* info) {
+static void WritePMDExtraData(pmd_file* pmd, ModelExtraData* extra) {
+	extra->mesh_names = (NameField*)rg_malloc(sizeof(NameField) * pmd->material_count);
+	extra->mat_names  = (NameField*)rg_malloc(sizeof(NameField) * pmd->material_count);
+	extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * pmd->bones_count);
+
+	for (Uint32 i = 0; i < pmd->material_count; i++) {
+		SDL_snprintf(extra->mesh_names[i].name, 128, "[%d] (%s)", i, pmd->materials[i].file_name);
+		SDL_snprintf(extra->mat_names[i].name,  128, "[%d] (%s)", i, pmd->materials[i].file_name);
+	}
+
+	for (Uint32 i = 0; i < pmd->bones_count; i++) {
+		SDL_strlcpy(extra->bone_names[i].name, pmd->bones[i].name, 128);
+	}
+}
+
+void PMDImporter::ImportModel(ImportModelInfo* info) {
+	char fullpath[512];
+	SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
+
 	pmd_file*         pmd;
 	R3D_Vertex*       vertices;
 	Uint16*           indices;
 	R3D_MaterialInfo* materialInfo;
 	R3D_MatMeshInfo*  meshInfo;
 
-	LoadPMD(path, &pmd, &vertices, &indices);
-	LoadPMDMaterials(pmd, &materialInfo , &meshInfo);
+	LoadPMD(fullpath, &pmd, &vertices, &indices);
+	LoadPMDMaterials(pmd, info->path, &materialInfo , &meshInfo);
 
+	WritePMDExtraData(pmd, info->extra);
+
+	info->userdata = pmd;
 
 	// Materials
-	info->matInfo  = materialInfo;
-	info->matCount = pmd->material_count;
+	info->info.as_rigged->matInfo  = materialInfo;
+	info->info.as_rigged->matCount = pmd->material_count;
 
 	// Meshes
-	info->mInfo    = meshInfo;
-	info->mCount   = pmd->material_count;
+	info->info.as_rigged->mInfo    = meshInfo;
+	info->info.as_rigged->mCount   = pmd->material_count;
 
 	// Data
-	info->vertices = vertices;
-	info->vCount   = pmd->vertex_count;
-	info->indices  = indices;
-	info->iCount   = pmd->index_count;
-	info->iType    = RG_INDEX_U16;
-
-	pmd_free(pmd);
+	info->info.as_rigged->vertices = vertices;
+	info->info.as_rigged->vCount   = pmd->vertex_count;
+	info->info.as_rigged->indices  = indices;
+	info->info.as_rigged->iCount   = pmd->index_count;
+	info->info.as_rigged->iType    = RG_INDEX_U16;
 
 }
 
-void PMDImporter::FreeModelData(R3DStaticModelInfo* info) {
-	rg_free(info->vertices);
-	rg_free(info->indices);
-	rg_free(info->matInfo);
-	rg_free(info->mInfo);
+void PMDImporter::FreeModelData(FreeModelInfo* data) {
+	rg_free(data->info.as_static->vertices);
+	rg_free(data->info.as_static->indices);
+	rg_free(data->info.as_static->matInfo);
+	rg_free(data->info.as_static->mInfo);
+	rg_free(data->extra->bone_names);
+	rg_free(data->extra->mat_names);
+	rg_free(data->extra->mesh_names);
+
+	pmd_free((pmd_file*)data->userdata);
 }
 
-void PMDImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
+void PMDImporter::ImportRiggedModel(ImportModelInfo* info) {
+	char fullpath[512];
+	SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
+
 	pmd_file*         pmd;
 	R3D_Vertex*       vertices;
 	R3D_Weight*       weights;
@@ -179,41 +209,47 @@ void PMDImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
 	R3D_MaterialInfo* materialInfo;
 	R3D_MatMeshInfo*  meshInfo;
 
-	LoadPMD(path, &pmd, &vertices, &indices);
-	LoadPMDMaterials(pmd, &materialInfo, &meshInfo);
+	LoadPMD(fullpath, &pmd, &vertices, &indices);
+	LoadPMDMaterials(pmd, info->path, &materialInfo, &meshInfo);
 	LoadPMDWeights(pmd, &weights);
 
+	WritePMDExtraData(pmd, info->extra);
+
+	info->userdata = pmd;
+
 	// Materials
-	info->matInfo  = materialInfo;
-	info->matCount = pmd->material_count;
+	info->info.as_rigged->matInfo  = materialInfo;
+	info->info.as_rigged->matCount = pmd->material_count;
 
 	// Meshes
-	info->mInfo    = meshInfo;
-	info->mCount   = pmd->material_count;
+	info->info.as_rigged->mInfo    = meshInfo;
+	info->info.as_rigged->mCount   = pmd->material_count;
 
 	// Data
-	info->vertices = vertices;
-	info->weights  = weights;
-	info->vCount   = pmd->vertex_count;
-	info->indices  = indices;
-	info->iCount   = pmd->index_count;
-	info->iType    = RG_INDEX_U16;
-
-	pmd_free(pmd);
+	info->info.as_rigged->vertices = vertices;
+	info->info.as_rigged->weights  = weights;
+	info->info.as_rigged->vCount   = pmd->vertex_count;
+	info->info.as_rigged->indices  = indices;
+	info->info.as_rigged->iCount   = pmd->index_count;
+	info->info.as_rigged->iType    = RG_INDEX_U16;
 
 }
 
-void PMDImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
-	rg_free(info->vertices);
-	rg_free(info->indices);
-	rg_free(info->weights);
-	rg_free(info->matInfo);
-	rg_free(info->mInfo);
+void PMDImporter::FreeRiggedModelData(FreeModelInfo* data) {
+	rg_free(data->info.as_rigged->vertices);
+	rg_free(data->info.as_rigged->indices);
+	rg_free(data->info.as_rigged->weights);
+	rg_free(data->info.as_rigged->matInfo);
+	rg_free(data->info.as_rigged->mInfo);
+	rg_free(data->extra->bone_names);
+	rg_free(data->extra->mat_names);
+	rg_free(data->extra->mesh_names);
+	pmd_free((pmd_file*)data->userdata);
 }
 
 // TODO: Rewrite this
-KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
-	pmd_file* pmd = pmd_load(file);
+KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
+	pmd_file* pmd = (pmd_file*)iminfo->userdata; //pmd_load(file);
 
 //	BoneInfo bones_info[1024];
 //	mat4 bone_matrices[1024];
@@ -294,7 +330,6 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(String file) {
 	rg_free(bone_matrices);
 
 	rg_free(ik_links);
-	pmd_free(pmd);
 
 	return kmodel;
 }
@@ -338,7 +373,7 @@ static void LoadPMX(String p, pmx_file** pmx_ptr, R3D_Vertex** vtx, void** idx) 
 
 }
 
-static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
+static void LoadPMXMaterials(pmx_file* pmx, String path, R3D_MaterialInfo** info, R3D_MatMeshInfo** meshinfo) {
 
 	// Load materials (rewrite this)
 	R3D_MaterialInfo* matsInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * pmx->material_count);
@@ -356,7 +391,8 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 		} else {
 			pmx_text tex = pmx->textures[mat->texture_id].path;
 			UTF8_FromUTF16((WString)tex.data, tex.len);
-
+			SDL_snprintf(matsInfo[i].texture, 128, "%s/%s", path, UTF8_GetBuffer());
+#if 0
 			// Remove extension
 			char strbuffer[256];
 			size_t len = SDL_strlen(UTF8_GetBuffer());
@@ -364,6 +400,7 @@ static void LoadPMXMaterials(pmx_file* pmx, R3D_MaterialInfo** info, R3D_MatMesh
 			strbuffer[len - 4] = 0;
 
 			SDL_snprintf(matsInfo[i].texture, 128, "%s", strbuffer);
+#endif
 		}
 
 		matsInfo[i].color.r = mat->diffuse_color.r * colorMul;
@@ -398,43 +435,77 @@ static void LoadPMXWeights(pmx_file* pmx, R3D_Weight** w) {
 	*w = weights;
 }
 
-void PMXImporter::ImportModel(String path, R3DStaticModelInfo* info) {
+static void WritePMXExtraData(pmx_file* pmx, ModelExtraData* extra) {
+	extra->mesh_names = (NameField*)rg_malloc(sizeof(NameField) * pmx->material_count);
+	extra->mat_names = (NameField*)rg_malloc(sizeof(NameField) * pmx->material_count);
+	extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * pmx->bone_count);
+
+	for (Uint32 i = 0; i < pmx->material_count; i++) {
+
+		pmx_text text = pmx->materials[i].name;
+		UTF8_FromUTF16((WString)text.data, text.len);
+
+		SDL_snprintf(extra->mesh_names[i].name, 128, "[%d] (%s)", i, UTF8_GetBuffer());
+		SDL_snprintf(extra->mat_names[i].name, 128, "[%d] (%s)", i, UTF8_GetBuffer());
+	}
+
+	for (Uint32 i = 0; i < pmx->bone_count; i++) {
+		pmx_text text = pmx->bones[i].name;
+		UTF8_FromUTF16((WString)text.data, text.len);
+
+		SDL_strlcpy(extra->bone_names[i].name, UTF8_GetBuffer(), 128);
+	}
+}
+
+void PMXImporter::ImportModel(ImportModelInfo* info) {
+	char fullpath[512];
+	SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
+
 	pmx_file* pmx;
 	R3D_Vertex* vertices;
 	void* indices;
 	R3D_MaterialInfo* materialInfo;
 	R3D_MatMeshInfo* meshInfo;
 
-	LoadPMX(path, &pmx, &vertices, &indices);
-	LoadPMXMaterials(pmx, &materialInfo, &meshInfo);
+	LoadPMX(fullpath, &pmx, &vertices, &indices);
+	LoadPMXMaterials(pmx, info->path, &materialInfo, &meshInfo);
+
+	WritePMXExtraData(pmx, info->extra);
+
+	info->userdata = pmx;
 
 	// Materials
-	info->matInfo = materialInfo;
-	info->matCount = pmx->material_count;
+	info->info.as_rigged->matInfo = materialInfo;
+	info->info.as_rigged->matCount = pmx->material_count;
 
 	// Meshes
-	info->mInfo = meshInfo;
-	info->mCount = pmx->material_count;
+	info->info.as_rigged->mInfo = meshInfo;
+	info->info.as_rigged->mCount = pmx->material_count;
 
 	// Data
-	info->vertices = vertices;
-	info->vCount = pmx->vertex_count;
-	info->indices = indices;
-	info->iCount = pmx->index_count;
+	info->info.as_rigged->vertices = vertices;
+	info->info.as_rigged->vCount = pmx->vertex_count;
+	info->info.as_rigged->indices = indices;
+	info->info.as_rigged->iCount = pmx->index_count;
 
-	info->iType = (IndexType)pmx->header.g_vertex_index_size;
-
-	pmx_free(pmx);
+	info->info.as_rigged->iType = (IndexType)pmx->header.g_vertex_index_size;
 }
 
-void PMXImporter::FreeModelData(R3DStaticModelInfo* info) {
-	rg_free(info->vertices);
-	rg_free(info->indices);
-	rg_free(info->matInfo);
-	rg_free(info->mInfo);
+void PMXImporter::FreeModelData(FreeModelInfo* data) {
+	rg_free(data->info.as_static->vertices);
+	rg_free(data->info.as_static->indices);
+	rg_free(data->info.as_static->matInfo);
+	rg_free(data->info.as_static->mInfo);
+	rg_free(data->extra->bone_names);
+	rg_free(data->extra->mat_names);
+	rg_free(data->extra->mesh_names);
+	pmx_free((pmx_file*)data->userdata);
 }
 
-void PMXImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
+void PMXImporter::ImportRiggedModel(ImportModelInfo* info) {
+	char fullpath[512];
+	SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
+
 	pmx_file* pmx;
 	R3D_Vertex* vertices;
 	R3D_Weight* weights;
@@ -442,41 +513,48 @@ void PMXImporter::ImportRiggedModel(String path, R3DRiggedModelInfo* info) {
 	R3D_MaterialInfo* materialInfo;
 	R3D_MatMeshInfo* meshInfo;
 
-	LoadPMX(path, &pmx, &vertices, &indices);
-	LoadPMXMaterials(pmx, &materialInfo, &meshInfo);
+	LoadPMX(fullpath, &pmx, &vertices, &indices);
+	LoadPMXMaterials(pmx, info->path, &materialInfo, &meshInfo);
 	LoadPMXWeights(pmx, &weights);
 
+	WritePMXExtraData(pmx, info->extra);
+
+	info->userdata = pmx;
+
 	// Materials
-	info->matInfo = materialInfo;
-	info->matCount = pmx->material_count;
+	info->info.as_rigged->matInfo = materialInfo;
+	info->info.as_rigged->matCount = pmx->material_count;
 
 	// Meshes
-	info->mInfo = meshInfo;
-	info->mCount = pmx->material_count;
+	info->info.as_rigged->mInfo = meshInfo;
+	info->info.as_rigged->mCount = pmx->material_count;
 
 	// Data
-	info->vertices = vertices;
-	info->weights = weights;
-	info->vCount = pmx->vertex_count;
-	info->indices = indices;
-	info->iCount = pmx->index_count;
+	info->info.as_rigged->vertices = vertices;
+	info->info.as_rigged->weights = weights;
+	info->info.as_rigged->vCount = pmx->vertex_count;
+	info->info.as_rigged->indices = indices;
+	info->info.as_rigged->iCount = pmx->index_count;
 
 	// TODO
-	info->iType = (IndexType)pmx->header.g_vertex_index_size;
+	info->info.as_rigged->iType = (IndexType)pmx->header.g_vertex_index_size;
 
-	pmx_free(pmx);
 }
 
-void PMXImporter::FreeRiggedModelData(R3DRiggedModelInfo* info) {
-	rg_free(info->vertices);
-	rg_free(info->indices);
-	rg_free(info->weights);
-	rg_free(info->matInfo);
-	rg_free(info->mInfo);
+void PMXImporter::FreeRiggedModelData(FreeModelInfo* data) {
+	rg_free(data->info.as_rigged->vertices);
+	rg_free(data->info.as_rigged->indices);
+	rg_free(data->info.as_rigged->weights);
+	rg_free(data->info.as_rigged->matInfo);
+	rg_free(data->info.as_rigged->mInfo);
+	rg_free(data->extra->bone_names);
+	rg_free(data->extra->mat_names);
+	rg_free(data->extra->mesh_names);
+	pmx_free((pmx_file*)data->userdata);
 }
 
-Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(String path) {
-	pmx_file* pmx = pmx_load(path);
+Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
+	pmx_file* pmx = (pmx_file*)iminfo->userdata;// pmx_load(path);
 
 //	BoneInfo bones_info[1024];
 //	mat4 bone_matrices[1024];
@@ -574,7 +652,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 	vmd_file* vmd = vmd_load(path);
 
-	Animation* animation = new Animation();
+	Animation* animation = new Animation(vmd->name);
 	Uint32 last = 0;
 	for (Sint32 i = 0; i < vmd->motion_count; i++) {
 		vmd_motion* motion = &vmd->motions[i];

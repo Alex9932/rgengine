@@ -50,9 +50,10 @@ namespace Engine {
             double anim_speed = 1;
             Uint32 lastframe  = 0;
             Bool   repeat     = false;
+            char   m_name[64];
 
         public:
-            RG_DECLSPEC Animation();
+            RG_DECLSPEC Animation(String name);
             RG_DECLSPEC ~Animation();
 
             RG_DECLSPEC void Update(double dt);
@@ -75,6 +76,8 @@ namespace Engine {
             RG_INLINE double GetFramerate() { return this->anim_fps; }
             RG_INLINE double GetSpeed() { return this->anim_speed; }
             RG_INLINE void SetRepeat(Bool r) { this->repeat = r; }
+
+            RG_INLINE String GetName() { return this->m_name; }
     };
 
 }

@@ -13,8 +13,11 @@
 #include <lookatcameracontroller.h>
 
 #include "geom_importer.h"
+#include "anim_importer.h"
 #include <pm2exporter.h>
 #include <pm2importer.h>
+
+#include <mmdimporter.h>
 
 #define ALBEDO_TEXTURE 0
 #define NORMAL_TEXTURE 1
@@ -30,14 +33,33 @@ static Camera* camera = NULL;
 static LookatCameraController* camcontrol = NULL;
 static RenderState* rstate = NULL;
 
-static R3DStaticModelInfo info = {};
+static R3DRiggedModelInfo info = {};
 static ModelExtraData model_extra;
 static Bool isModelLoaded = false;
 
 static Bool skipFirstMat  = false;
 
+static Engine::KinematicsModel* kmodel = NULL;
+static Engine::Animation* anims[128] = {};
+static Uint32 animcount = 0;
+static Float32 animationSpeed = 1;
+
 static PM2Importer pm2_import;
 static PM2Exporter pm2_export;
+
+static GeomImporter geom_importer;
+static PMDImporter pmd_importer;
+static PMXImporter pmx_importer;
+
+static Engine::RiggedModelImporter* loader = NULL;
+
+#define DROP_NONE 0
+#define DROP_COORD 1
+#define DROP_FILE 2
+
+static ivec2 dropCoord = {};
+static char dropPath[256] = {};
+static Uint32 dropEvent = DROP_NONE;
 
 static void RecalculateCameraProjection() {
 	ivec2 newsize;
@@ -55,8 +77,22 @@ static Bool CEventHandler(SDL_Event* event) {
 		RecalculateCameraProjection();
 	}
 
+	//if (event->type == SDL_EVENT_DROP_COMPLETE) {
+	//	dropEvent = DROP_NONE;
+	//}
+
+	if (event->type == SDL_EVENT_DROP_POSITION) {
+		dropCoord.x = event->drop.x;
+		dropCoord.y = event->drop.y;
+		dropEvent = DROP_COORD;
+	}
+
 	if (event->type == SDL_EVENT_DROP_FILE) {
-		rgLogInfo(RG_LOG_SYSTEM, "Drag'n'drop event: %d", event->type);
+		//rgLogInfo(RG_LOG_SYSTEM, "Drag'n'drop event: %d", event->type);
+		dropCoord.x = event->drop.x;
+		dropCoord.y = event->drop.y;
+		SDL_snprintf(dropPath, 256, "%s", event->drop.data);
+		dropEvent = DROP_FILE;
 	}
 
 	return true;
@@ -67,30 +103,70 @@ static void LoadModel() {
 	// TODO: Rewrite this
 
 	char file[512];
+	char fullpath[512];
 	SDL_snprintf(file, 512, "%s.%s", MDL_NAME, MDL_EXT);
-
+	SDL_snprintf(fullpath, 512, "%s/%s", MDL_PATH, file);
 
 	if (rg_streql(MDL_EXT, "pm2")) {
 
 
-		char fullpath[512];
-		SDL_snprintf(fullpath, 512, "%s/%s", MDL_PATH, file);
-
-		pm2_import.ImportModel(fullpath, &info);
+		// TODO
+		//pm2_import.ImportModel(fullpath, &info);
 		model_extra.mat_names = (NameField*)rg_malloc(sizeof(NameField) * info.matCount);
 		for (Uint32 i = 0; i < info.matCount; i++) {
 			SDL_snprintf(model_extra.mat_names[i].name, 128, "%s", info.matInfo[i].texture);
 		}
 	}
-	else {
-		// Use custom loaders
-		ImportStaticModelInfo importinfo = {};
+	else if (rg_streql(MDL_EXT, "pmd")) {
+		ImportModelInfo importinfo = {};
 		importinfo.path = MDL_PATH;
 		importinfo.file = file;
-		importinfo.info = &info;
+		importinfo.info.as_rigged = &info;
 		importinfo.extra = &model_extra;
 		importinfo.skipFirstMat = skipFirstMat;
-		ImportStaticModel(&importinfo);
+
+		pmd_importer.ImportRiggedModel(&importinfo);
+		kmodel = pmd_importer.ImportKinematicsModel(&importinfo);
+		loader = (Engine::RiggedModelImporter*)&pmd_importer;
+	}
+	else if (rg_streql(MDL_EXT, "pmx")) {
+		ImportModelInfo importinfo = {};
+		importinfo.path = MDL_PATH;
+		importinfo.file = file;
+		importinfo.info.as_rigged = &info;
+		importinfo.extra = &model_extra;
+		importinfo.skipFirstMat = skipFirstMat;
+
+		pmx_importer.ImportRiggedModel(&importinfo);
+		kmodel = pmx_importer.ImportKinematicsModel(&importinfo);
+		loader = (Engine::RiggedModelImporter*)&pmx_importer;
+	}
+	else {
+		// Use custom loaders
+		ImportModelInfo importinfo = {};
+		importinfo.path = MDL_PATH;
+		importinfo.file = file;
+		importinfo.info.as_rigged = &info;
+		importinfo.extra = &model_extra;
+		importinfo.skipFirstMat = skipFirstMat;
+		//importinfo.userdata = LoadScene(MDL_PATH, file);
+		geom_importer.ImportRiggedModel(&importinfo);
+
+		LoadSkeletonInfo skelinfo = {};
+		skelinfo.scene = (const aiScene*)importinfo.userdata;
+		kmodel = LoadSkeleton(&skelinfo);
+
+		SetRenderKModel(rstate, kmodel);
+
+		animcount = ((const aiScene*)importinfo.userdata)->mNumAnimations;
+		for (Uint32 i = 0; i < animcount; i++) {
+			LoadAnimationInfo animinfo = {};
+			animinfo.scene = (const aiScene*)importinfo.userdata;
+			animinfo.anim_idx = i;
+			anims[i] = LoadAnimation(&animinfo);
+		}
+
+		loader = (Engine::RiggedModelImporter*)&geom_importer;
 	}
 
 	// Copy textures to "tmpdata"
@@ -108,9 +184,9 @@ static void OpenModel() {
 	char raw_path[512] = {};
 	char path[512] = {};
 	FD_Filter filters[6] = {
+		{"FBX model", "fbx"},
 		{"Wavefront model", "obj"},
 		{"COLLADA dae", "dae"},
-		{"FBX model", "fbx"},
 		{"PM2 Model file", "pm2"},
 		{"MMD Polygon model", "pmd"},
 		{"MMD eXtended polygon model", "pmx"}
@@ -204,7 +280,7 @@ static void SaveModel() {
 	VertexBuffer* buffer = GetVertexbuffer();
 
 	// Copy data
-	R3DStaticModelInfo mdlinfo = info;
+	R3DRiggedModelInfo mdlinfo = info;
 
 	// Make copy of materials array (need for replace full texture path to texture name in gamedata)
 	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
@@ -226,13 +302,24 @@ static void SaveModel() {
 	SDL_snprintf(path, 256, "%s/models/%s.pm2", gamedata_path, MDL_NAME);
 
 
-	pm2_export.ExportModel(path, &mdlinfo, &mdl_matrix);
+	// TODO
+	//pm2_export.ExportModel(path, &mdlinfo, &mdl_matrix);
 
 	// Free array copy
 	rg_free(mdlinfo.matInfo);
 }
 
-static void ReplaceTexture(Uint32 matid, Uint32 txidx) {
+static void ReplaceTexture(String path, Uint32 matid, Uint32 txidx) {
+	VertexBuffer* vb = GetVertexbuffer();
+
+	rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
+	Texture* tx = GetTexture(path); // New texture
+	FreeTexture(vb->textures[matid * 3 + txidx]); // Free previous texture
+	vb->textures[matid * 3 + txidx] = tx; // Replace albedo texture
+	rgLogInfo(RG_LOG_RENDER, "Replaced material %d with texture %s", matid, tx->tex_name);
+}
+
+static void ReplaceTextureFD(Uint32 matid, Uint32 txidx) {
 	// Open filedialog
 	char raw_path[512] = {};
 	char path[512] = {};
@@ -240,15 +327,29 @@ static void ReplaceTexture(Uint32 matid, Uint32 txidx) {
 		{"PNG image", "png"}
 	};
 	if (ShowOpenDialog(raw_path, 512, filters, 1)) {
-		VertexBuffer* vb = GetVertexbuffer();
-
 		FS_ReplaceSeparators(path, raw_path);
-		rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
-		Texture* tx = GetTexture(path); // New texture
-		FreeTexture(vb->textures[matid * 3 + txidx]); // Free previous texture
-		vb->textures[matid * 3 + txidx] = tx; // Replace albedo texture
-		rgLogInfo(RG_LOG_RENDER, "Replaced material %d with texture %s", matid, tx->tex_name);
+		ReplaceTexture(path, matid, txidx);
 	}
+}
+
+static void FreeLoadedModel() {
+	FreeVBuffer(GetVertexbuffer());
+	for (Uint32 i = 0; i < animcount; i++) {
+		RG_DELETE(Animation, anims[i]);
+	}
+
+	RG_DELETE(KinematicsModel, kmodel);
+
+	FreeModelInfo fminfo = {};
+	fminfo.extra = &model_extra;
+	//fminfo.userdata = 
+	fminfo.info.as_rigged = &info;
+
+	loader->FreeRiggedModelData(&fminfo);
+	//obj_importer.FreeModelData(&info);
+	isModelLoaded = false;
+
+	
 }
 
 static void DrawGUI() {
@@ -281,10 +382,7 @@ static void DrawGUI() {
 			ImGui::SameLine();
 #endif
 			if (ImGui::Button("Free")) {
-				FreeVBuffer(GetVertexbuffer());
-				FreeStaticModel(&info, &model_extra);
-				//obj_importer.FreeModelData(&info);
-				isModelLoaded = false;
+				FreeLoadedModel();
 			}
 
 			ImGui::Checkbox("Skip first material", &skipFirstMat);
@@ -303,8 +401,6 @@ static void DrawGUI() {
 			ImGui::Text("Vertices: %d", info.vCount);
 			ImGui::Text("Indices: %d", info.iCount);
 			ImGui::Text("IDX size: %d", info.iType);
-
-			ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
 
 			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
 
@@ -328,6 +424,9 @@ static void DrawGUI() {
 		if (!isModelLoaded) { ImGui::BeginDisabled(); }
 
 		if (ImGui::BeginTabItem("Mesh")) {
+
+			ImGui::Checkbox("Draw mesh", GetRenderShowmesh(rstate));
+			ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
 
 			for (Uint32 i = 0; i < buffer->meshes; i++) {
 				ImGui::PushID(uid);
@@ -368,7 +467,7 @@ static void DrawGUI() {
 						ImGui::Text("Albedo");
 						ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
 						if (ImGui::Button("Replace texture")) {
-							ReplaceTexture(i, ALBEDO_TEXTURE);
+							ReplaceTextureFD(i, ALBEDO_TEXTURE);
 						}
 						ImGui::PopID();
 						ImGui::TableSetColumnIndex(1);
@@ -376,8 +475,17 @@ static void DrawGUI() {
 						if (ImGui::IsItemHovered())
 						{
 							ImGui::BeginTooltip();
-							ImGui::Text("Path: %s", tx->tex_name);
-							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+							if (dropEvent == DROP_COORD) {
+								ImGui::Text("Drop here to replace texture");
+							}
+							else if (dropEvent == DROP_FILE) {
+								ReplaceTexture(dropPath, i, ALBEDO_TEXTURE);
+								dropEvent = DROP_NONE;
+							}
+							else {
+								ImGui::Text("Path: %s", tx->tex_name);
+								ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+							}
 							ImGui::EndTooltip();
 						}
 
@@ -387,7 +495,7 @@ static void DrawGUI() {
 						ImGui::Text("Normal map");
 						ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
 						if (ImGui::Button("Replace texture")) {
-							ReplaceTexture(i, NORMAL_TEXTURE);
+							ReplaceTextureFD(i, NORMAL_TEXTURE);
 						}
 						ImGui::PopID();
 						ImGui::TableSetColumnIndex(1);
@@ -406,7 +514,7 @@ static void DrawGUI() {
 						ImGui::Text("PBR");
 						ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
 						if (ImGui::Button("Replace texture")) {
-							ReplaceTexture(i, PBR_TEXTURE);
+							ReplaceTextureFD(i, PBR_TEXTURE);
 						}
 						ImGui::PopID();
 						ImGui::TableSetColumnIndex(1);
@@ -433,17 +541,56 @@ static void DrawGUI() {
 
 		if (ImGui::BeginTabItem("Skeleton")) {
 
+
+			ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
+
+			// TODO: Set actual bone count
+			for (Uint32 i = 0; i < 1024; i++) {
+				ImGui::PushID(uid);
+				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.bone_names[i].name)) {
+
+					// TODO: Add bone information
+
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				uid++;
+			}
 			ImGui::EndTabItem();
 		}
 
 		if (!isModelLoaded) { ImGui::EndDisabled(); }
 
-		ImGui::BeginDisabled();
+		if (animcount == 0) { ImGui::BeginDisabled(); }
 		if (ImGui::BeginTabItem("Animations")) {
+
+			ImGui::SliderFloat("Speed", &animationSpeed, 0.0f, 10.0f);
+
+			if (ImGui::Button("Stop")) {
+				kmodel->GetAnimator()->PlayAnimation(NULL);
+			}
+
+			for (Uint32 i = 0; i < animcount; i++) {
+				Animation* anim = anims[i];
+				String name = anim->GetName();
+
+				ImGui::PushID(uid);
+				if (ImGui::TreeNode("##xx", "[%d] %s", i, name)) {
+
+					if (ImGui::Button("Play")) {
+						anim->SetSpeed(animationSpeed);
+						kmodel->GetAnimator()->PlayAnimation(anim);
+					}
+
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				uid++;
+			}
 
 			ImGui::EndTabItem();
 		}
-		ImGui::EndDisabled();
+		if (animcount == 0) { ImGui::EndDisabled(); }
 
 
 		ImGui::EndTabBar();
@@ -466,7 +613,21 @@ public:
 		camcontrol->Update();
 		camera->Update(GetDeltaTime());
 
+		//static Engine::KinematicsModel* kmodel = NULL;
+		//static Engine::Animation* anim = NULL;
+		if (kmodel && anims[0]) {
+			kmodel->GetAnimator()->Update(GetDeltaTime());
+			kmodel->RebuildSkeleton();
+			kmodel->SolveCCDIK();
+			kmodel->RecalculateTransform();
+
+			mat4* mptr = GetRenderBoneMatPtr(rstate);
+			SDL_memcpy(mptr, kmodel->GetTransforms(), sizeof(mat4*) * kmodel->GetBoneCount());
+
+		}
+
 		DoRender(rstate, camera);
+
 	}
 
 	void Initialize() {
@@ -485,6 +646,9 @@ public:
 	}
 
 	void Quit() {
+
+		FreeLoadedModel();
+
 		delete camcontrol;
 		delete camera;
 		DestroyRenderer(rstate);

@@ -3,6 +3,8 @@
  Date: 10.12.23
 */
 
+#if 0 // DISABLE OBJIMPORTER
+
 #ifndef _OBJIMPORTER_H
 #define _OBJIMPORTER_H
 
@@ -14,10 +16,12 @@ namespace Engine {
 		public:
 			ObjImporter()  {}
 			~ObjImporter() {}
-			RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
-			RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
+			RG_DECLSPEC void ImportModel(ImportModelInfo* info);
+			RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info, ModelExtraData* data);
 	};
 
 }
+
+#endif
 
 #endif

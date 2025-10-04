@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="anim_importer.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="imgui_impl_opengl3.cpp" />
     <ClCompile Include="geom_importer.cpp" />
@@ -143,6 +144,7 @@
     <ClCompile Include="vertexbuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="anim_importer.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />
     <ClInclude Include="geom_importer.h" />
@@ -150,6 +152,7 @@
     <ClInclude Include="renderer.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="vertexbuffer.h" />
+    <ClInclude Include="_glshader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

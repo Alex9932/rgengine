@@ -58,12 +58,14 @@ namespace Engine {
 
         if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
             if (event->key.scancode >= RG_MAX_KEYS) { return true; }
-            m_keys[event->key.scancode] = (event->type == SDL_EVENT_KEY_UP ? false : true);
+            //m_keys[event->key.scancode] = (event->type == SDL_EVENT_KEY_UP ? false : true);
+            m_keys[event->key.scancode] = event->type != SDL_EVENT_KEY_UP;
         }
 
         if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
             if (event->button.button >= RG_MAX_BTNS) { return true; }
-            m_btns[event->button.button] = (event->type == SDL_EVENT_MOUSE_BUTTON_UP ? false : true);
+            //m_btns[event->button.button] = (event->type == SDL_EVENT_MOUSE_BUTTON_UP ? false : true);
+            m_btns[event->button.button] = event->type != SDL_EVENT_MOUSE_BUTTON_UP;
         }
 
         if (event->type == GetUserEventID() && event->user.code == RG_EVENT_STANDBY) {

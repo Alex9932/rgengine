@@ -15,6 +15,7 @@ typedef struct IndexPair {
 typedef struct VertexBuffer {
 	Bool      isLoaded;
 	GLuint    vbo;
+	GLuint    vbo_w;
 	GLuint    ebo;
 	GLuint    vao;
 	Uint32    meshes;
@@ -29,7 +30,7 @@ typedef struct VertexBuffer {
 struct RenderState;
 
 VertexBuffer* GetVertexbuffer();
-void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath);
+void MakeVBuffer(R3DRiggedModelInfo* info, String mdlpath);
 void FreeVBuffer(VertexBuffer* ptr);
 void DrawBuffer(RenderState* state, VertexBuffer* ptr);
 

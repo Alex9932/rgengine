@@ -1,3 +1,5 @@
+#if 0 // DISABLE OBJIMPORTER
+
 #define DLL_EXPORT
 #include "objimporter.h"
 
@@ -460,7 +462,7 @@ namespace Engine {
 #endif
 #if 1
 
-	void ObjImporter::ImportModel(String p, R3DStaticModelInfo* info) {
+	void ObjImporter::ImportModel(ImportModelInfo* iminfo) {
 
 		char path[256];
 		SDL_memset(path, 0, 256);
@@ -664,3 +666,5 @@ namespace Engine {
 
 #endif
 }
+
+#endif

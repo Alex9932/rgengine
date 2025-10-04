@@ -10,21 +10,59 @@
 #include "imgui_impl_opengl3.h"
 
 #include "glad.h"
+#include <kinematicsmodel.h>
+
+#include "_glshader.h"
 
 #define RG_WND_ICON "platform/icon.png"
 
+#define RG_MAX_BONES 1024
+
+using namespace Engine;
+
 typedef struct RenderState {
-	SDL_Window*     hwnd;
-	SDL_GLContext   glctx;
-	GLuint          shader;
-	GuiDrawCallback guicb;
-	ivec2           wsize;
-	Bool            wireframe;
-	Bool            showaxis;
-	vec3            mdl_pos;
-	vec3            mdl_rot;
-	vec3            mdl_scale;
+	SDL_Window*      hwnd;
+	SDL_GLContext    glctx;
+	GLuint           shader;
+	GLuint           matrices_ubo;
+	GuiDrawCallback  guicb;
+	ivec2            wsize;
+	Bool             wireframe;
+	Bool             skeleton;
+	Bool             showaxis;
+	Bool             showmesh;
+	vec3             mdl_pos;
+	vec3             mdl_rot;
+	vec3             mdl_scale;
+	mat4             shader_matrices[RG_MAX_BONES];
+	KinematicsModel* kmodel;
 } RenderState;
+
+struct VBuffer {
+	R3D_Vertex* vertices;
+	Uint16*     indices;
+	GLuint vao;
+	GLuint vbo;
+	GLuint ebo;
+};
+
+struct RMakeVBufferInfo {
+	VBuffer*    buffer;
+	R3D_Vertex* vertices;
+	Uint16*     indices;
+	size_t      v_len;
+	size_t      i_len;
+};
+
+struct RUpdateVBufferInfo {
+	VBuffer*    buffer;
+	R3D_Vertex* v_data;
+	size_t      v_start;
+	size_t      v_len;
+	Uint16*     i_data;
+	size_t      i_start;
+	size_t      i_len;
+};
 
 static RenderState staticstate;
 
@@ -36,10 +74,6 @@ static VertexBuffer* buffer;
 static mat4 m4_identity;
 
 static GLuint axis_texture;
-static GLuint axis_vao;
-static GLuint axis_vbo;
-static GLuint axis_ebo;
-
 static Uint32 axis_color[] = { 0xFF0000FF, 0xFF00FF00, 0xFFFF0000, 0xFFAAAAAA }; // RGBA (0xAABBGGRR)
 
 static R3D_Vertex axis_vtx[] = {
@@ -139,130 +173,16 @@ static R3D_Vertex axis_vtx[] = {
 	{ 10, 0,  10, 0, 0, 0, 0, 0, 0, 1.0f, 0.0f}
 
 };
-
-static Uint16 axis_idx[] = {
+static Uint16     axis_idx[] = {
 	0, 1, 2, 3, 4, 5,
 	6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
 	48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89
 };
+static VBuffer    axis_buffer;
 
-static String txt_VertexShader = "#version 330 core\n"
-"layout (location = 0) in vec3 v_pos;\n"
-"layout (location = 1) in vec3 v_norm;\n"
-"layout (location = 2) in vec3 v_tang;\n"
-"layout (location = 3) in vec2 v_uv;\n"
-"out vec3 o_pos;\n"
-"out vec3 o_norm;\n"
-"out vec3 o_tang;\n"
-"out vec2 o_uv;\n"
-"out mat3 o_TBN;\n"
-"uniform mat4 proj;\n"
-"uniform mat4 view;\n"
-"uniform mat4 mdl;\n"
-"void main() {\n"
-"    mat4 vp = proj * view;\n"
-"    vec4 pos4 = vec4(v_pos, 1);\n"
-"    vec4 nrm4 = vec4(v_norm, 0);\n"
-"    vec4 tan4 = vec4(v_tang, 0);\n"
-"    vec3 N = (nrm4 * mdl).xyz;\n"
-"    vec3 T = (tan4 * mdl).xyz;\n"
-"    vec3 B = normalize(cross(N, T));\n"
-"    o_TBN  = mat3(T, B, N);\n"
-"    o_pos  = (mdl * pos4).xyz;\n"
-"    o_norm = N;\n"
-"    o_tang = T;\n"
-"    o_uv   = v_uv;\n"
-"    gl_Position = vp * vec4(o_pos, 1);\n"
-"}\n";
-
-static String txt_PixelShader = "#version 330 core\n"
-"in vec3 o_pos;\n"
-"in vec3 o_norm;\n"
-"in vec3 o_tang;\n"
-"in vec2 o_uv;\n"
-"in mat3 o_TBN;\n"
-"out vec4 p_color;\n"
-"uniform sampler2D t_unit0;\n"
-"uniform sampler2D t_unit1;\n"
-"uniform sampler2D t_unit2;\n"
-"uniform vec3 viewpos;\n"
-"uniform vec3 mat_color;\n"
-"uniform int calclight;\n"
-"uniform int flipuv;\n"
-"#define PI 3.14159265359\n"
-"float DistributionGGX(vec3 N, vec3 H, float roughness) {\n"
-"    float a = roughness * roughness;\n"
-"    float a2 = a * a;\n"
-"    float NdotH = max(dot(N, H), 0.0);\n"
-"    float NdotH2 = NdotH * NdotH;\n"
-"    float denom = (NdotH2 * (a2 - 1.0) + 1.0);\n"
-"    return a2 / (PI * denom * denom);\n"
-"}\n"
-"float GeometrySchlickGGX(float NdotV, float roughness) {\n"
-"    float r = (roughness + 1.0);\n"
-"    float k = (r * r) / 8.0;\n"
-"    return NdotV / (NdotV * (1.0 - k) + k);\n"
-"}\n"
-"float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {\n"
-"    float NdotV = max(dot(N, V), 0.0);\n"
-"    float NdotL = max(dot(N, L), 0.0);\n"
-"    float ggx2 = GeometrySchlickGGX(NdotV, roughness);\n"
-"    float ggx1 = GeometrySchlickGGX(NdotL, roughness);\n"
-"    return ggx1 * ggx2;\n"
-"}\n"
-"vec3 FresnelSchlick(float cosTheta, vec3 F0) {\n"
-"    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);\n"
-"}\n"
-"\n"
-// N - normal; V - Viewdir; P - World-space position; R - Roughness; M - metallic; A - albedo
-"vec3 CalculateLight(vec3 N, vec3 V, vec3 P, float M, float R, vec3 A) {\n"
-"    vec3 ambient = vec3(0.03) * A * (1.0 - M);\n"
-"    vec3 L = normalize(vec3(0, 0.2, 1.8));\n"
-"    vec3 C = vec3(1, 0.9, 0.8) * 1.8;\n"
-"    vec3 Lo = vec3(0.0);\n"
-"    vec3 H = normalize(V + L);\n"
-// Do not calculate attenuation
-"    vec3 radiance = C;\n"
-"    float NDF = DistributionGGX(N, H, R);\n"
-"    float G = GeometrySmith(N, V, L, R);\n"
-"    vec3 F0 = mix(vec3(0.04), A, M);\n"
-"    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);\n"
-"    vec3 kS = F;\n"
-//"    vec3 kD = vec3(1.0) - kS;\n"
-//"    kD *= 1.0 - M;\n"
-"    vec3 kD = (vec3(1.0) - kS) * (1.0 - M);"
-"    vec3 numerator = NDF * G * F;\n"
-"    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;\n"
-"    vec3 specular = numerator / denominator;\n"
-"    float NdotL = max(dot(N, L), 0.0);\n"
-"    Lo += (kD * A / PI + specular) * radiance * NdotL;\n"
-"    return ambient + Lo;\n"
-"}\n"
-"\n"
-"void main() {\n"
-"    vec2 c_uv = o_uv - (2 * o_uv * flipuv);\n"
-"    vec4 alb = texture(t_unit0, c_uv);\n"
-"    vec4 nrm = texture(t_unit1, c_uv);\n"
-"    vec4 pbr = texture(t_unit2, c_uv);\n"
-"    vec3 N;\n"
-"#if 0\n"
-"    N = normalize(nrm.xyz * 2.0 - 1.0);\n"
-"    N = normalize(N * o_TBN);\n"
-"#else\n"
-"    N = normalize(o_norm);\n" // Disable normal mappings
-"#endif\n"
-//"    N.z = -N.z;\n"
-"    vec3 V = normalize(viewpos - o_pos);\n"
-"    vec3 light = vec3(1);\n"
-"    if(calclight > 0) {\n"
-"        light = vec3(0.0);\n"
-"        light += CalculateLight(N, V, o_pos, pbr.x, pbr.y, alb.xyz);\n"
-"    }\n"
-"    p_color = vec4(alb.xyz * mat_color * light, 1);\n"
-"    float gamma = 2.2;\n"
-"    p_color.rgb = pow(p_color.rgb, vec3(1.0 / gamma));\n"
-"    //p_color = vec4(N.xyz, 1);\n"
-"}\n";
+static R3D_Vertex skel_vtx[4096] = {};
+static Uint16     skel_idx[4096] = {};
+static VBuffer    skel_buffer;
 
 // OpenGL 4.3
 #if 0
@@ -273,11 +193,52 @@ void APIENTRY openglDebugCallback(GLenum source, GLenum type, GLuint id,
 }
 #endif
 
+
+static void RMakeVBuffer(RMakeVBufferInfo* info) {
+	glGenVertexArrays(1, &info->buffer->vao);
+	glBindVertexArray(info->buffer->vao);
+	glGenBuffers(1, &info->buffer->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, info->buffer->vbo);
+	glBufferData(GL_ARRAY_BUFFER, info->v_len, info->vertices, GL_STREAM_DRAW);
+	glGenBuffers(1, &info->buffer->ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, info->buffer->ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, info->i_len, info->indices, GL_STREAM_DRAW);
+
+	// Position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// Normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// Tangent
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	// UV
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+}
+
+static void RDeleteBuffer(VBuffer* buffer) {
+	glDeleteVertexArrays(1, &buffer->vao);
+	glDeleteBuffers(1, &buffer->vbo);
+	glDeleteBuffers(1, &buffer->ebo);
+}
+
+static void RUpdateVBuffer(RUpdateVBufferInfo* info) {
+	glBindBuffer(GL_ARRAY_BUFFER, info->buffer->vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, info->v_start, info->v_len, info->v_data);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, info->buffer->ebo);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, info->i_start, info->i_len, info->i_data);
+}
+
 RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
 	staticstate.guicb = guicb;
+
 	staticstate.showaxis = 1;
+	staticstate.skeleton = 1;
+	staticstate.showmesh = 1;
 
 	staticstate.mdl_pos   = { 0, 0, 0 };
 	staticstate.mdl_rot   = { 0, 0, 0 };
@@ -331,27 +292,33 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, axis_color);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	glGenVertexArrays(1, &axis_vao);
-	glBindVertexArray(axis_vao);
-	glGenBuffers(1, &axis_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, axis_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(axis_vtx), axis_vtx, GL_STATIC_DRAW);
-	glGenBuffers(1, &axis_ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, axis_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(axis_idx), axis_idx, GL_STATIC_DRAW);
+	RMakeVBufferInfo mkvbuffinfo = {};
+	mkvbuffinfo.buffer   = &axis_buffer;
+	mkvbuffinfo.vertices = axis_vtx;
+	mkvbuffinfo.indices  = axis_idx;
+	mkvbuffinfo.v_len    = sizeof(axis_vtx);
+	mkvbuffinfo.i_len    = sizeof(axis_idx);
+	RMakeVBuffer(&mkvbuffinfo);
 
-	// Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// Normal
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	// Tangent
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-	// UV
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
-	glEnableVertexAttribArray(3);
+	mkvbuffinfo.buffer   = &skel_buffer;
+	mkvbuffinfo.vertices = skel_vtx;
+	mkvbuffinfo.indices  = skel_idx;
+	mkvbuffinfo.v_len    = sizeof(skel_vtx);
+	mkvbuffinfo.i_len    = sizeof(skel_idx);
+	RMakeVBuffer(&mkvbuffinfo);
+
+	glGenBuffers(1, &staticstate.matrices_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, staticstate.matrices_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4) * RG_MAX_BONES, NULL, GL_STREAM_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, staticstate.matrices_ubo);
+
+
+	for (Uint32 i = 0; i < RG_MAX_BONES; i++) {
+		staticstate.shader_matrices[i] = MAT4_IDENTITY();
+	}
+
+	glBindBuffer(GL_UNIFORM_BUFFER, staticstate.matrices_ubo);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4) * RG_MAX_BONES, staticstate.shader_matrices);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -414,6 +381,11 @@ void DestroyRenderer(RenderState* state) {
 	ImGui_ImplSDL3_Shutdown();
 	//	ImGui::DestroyContext();
 
+	glDeleteTextures(1, &axis_texture);
+	glDeleteBuffers(1, &staticstate.matrices_ubo);
+	RDeleteBuffer(&axis_buffer);
+	RDeleteBuffer(&skel_buffer);
+
 	glDeleteProgram(state->shader);
 
 	FreeVBuffer(buffer);
@@ -425,10 +397,108 @@ void DestroyRenderer(RenderState* state) {
 }
 
 static void DrawAxis() {
-	glBindVertexArray(axis_vao);
+	glBindVertexArray(axis_buffer.vao);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, axis_texture);
 	glDrawElements(GL_LINES, 90, GL_UNSIGNED_SHORT, 0);
+}
+
+static mat4 bone_mats[1024];
+
+static void DrawSkeleton(RenderState* state) {
+	if (!state->kmodel) return;
+
+	//if (buffer->skeleton->bone_count == 0) return;
+	Uint32 idx = 0;
+
+	KinematicsModel* mdl = state->kmodel;
+
+
+	for (Uint32 i = 0; i < mdl->GetBoneCount(); i++) {
+		Bone* b = mdl->GetBone(i);
+
+		mat4 parent_t = MAT4_IDENTITY();
+		mat4 parent_o = MAT4_IDENTITY();
+
+		mat4 local_t = b->transform;
+		mat4 local_o = b->offset;
+
+		if (b->parent != -1) {
+			Bone* pb = mdl->GetBone(b->parent);
+			parent_t = pb->transform;
+			parent_o = pb->offset;
+		}
+
+		vec4 pos1 = { 0, 0, -1, 1 };
+		
+		vec4 bpos = parent_t * pos1;
+		vec4 ppos = local_t  * pos1;
+
+		//if (b->parent != -1) {
+		//	Bone* pb = mdl->GetBone(b->parent);
+		//	bpos = pb->position;
+		//}
+
+		//ppos = bpos + b->position;
+
+		skel_vtx[idx * 2 + 0] = {};
+		skel_vtx[idx * 2 + 1] = {};
+		skel_vtx[idx * 2 + 0].pos.x = ppos.x;
+		skel_vtx[idx * 2 + 0].pos.y = ppos.y;
+		skel_vtx[idx * 2 + 0].pos.z = ppos.z;
+		skel_vtx[idx * 2 + 0].uv.x = 1.0f;
+		skel_vtx[idx * 2 + 0].uv.y = 0.0f;
+		skel_vtx[idx * 2 + 1].pos.x = bpos.x;
+		skel_vtx[idx * 2 + 1].pos.y = bpos.y;
+		skel_vtx[idx * 2 + 1].pos.z = bpos.z;
+		skel_vtx[idx * 2 + 1].uv.x = 1.0f;
+		skel_vtx[idx * 2 + 1].uv.y = 0.0f;
+		idx++;
+		if (idx >= 2048) break;
+
+	}
+#if 0
+	for (Uint32 i = 0; i < buffer->skeleton->bone_count; i++) {
+		R3D_Bone* bone = &buffer->skeleton->bones[i];
+		if (bone->parent_index == -1) continue;
+		R3D_Bone* parent = &buffer->skeleton->bones[bone->parent_index];
+		vec4 bpos = { 0, 0, 0, 1 };
+		vec4 ppos = { 0, 0, 0, 1 };
+		mat4 bmat = state->shader_matrices[i];
+		mat4 pmat = state->shader_matrices[bone->parent_index];
+		bpos = m4_mul_vec4(&bmat, bpos);
+		ppos = m4_mul_vec4(&pmat, ppos);
+		skel_vtx[idx * 2 + 0].x = ppos.x;
+		skel_vtx[idx * 2 + 0].y = ppos.y;
+		skel_vtx[idx * 2 + 0].z = ppos.z;
+		skel_vtx[idx * 2 + 1].x = bpos.x;
+		skel_vtx[idx * 2 + 1].y = bpos.y;
+		skel_vtx[idx * 2 + 1].z = bpos.z;
+		idx++;
+		if (idx >= 2048) break;
+	}
+#endif
+
+	for (Uint16 i = 0; i < idx * 2; i++) {
+		skel_idx[i] = i;
+	}
+
+	RUpdateVBufferInfo updbuffinfo = {};
+	updbuffinfo.buffer  = &skel_buffer;
+	updbuffinfo.v_data  = skel_vtx;
+	updbuffinfo.v_start = 0;
+	updbuffinfo.v_len   = sizeof(R3D_Vertex) * idx * 2;
+	updbuffinfo.i_data  = skel_idx;
+	updbuffinfo.i_start = 0;
+	updbuffinfo.i_len = sizeof(Uint16) * idx * 2;
+	RUpdateVBuffer(&updbuffinfo);
+
+
+	glBindVertexArray(skel_buffer.vao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, axis_texture);
+	glDrawElements(GL_LINES, idx * 2, GL_UNSIGNED_SHORT, 0);
+
 }
 
 void CalculateModelMatrix(RenderState* state, mat4* m) {
@@ -471,8 +541,15 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 1); // Do light calculation
 
 	//rgLogInfo(RG_LOG_RENDER, "Camera: %f %f %f", pos.x, pos.y, pos.z);
+	
+	glUniformBlockBinding(state->shader, glGetUniformBlockIndex(state->shader, "BoneMatrices"), 0);
 
-	DrawBuffer(state, buffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, state->matrices_ubo);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4) * RG_MAX_BONES, state->shader_matrices);
+
+	if (state->showmesh) {
+		DrawBuffer(state, buffer);
+	}
 
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, m4_identity.m);
 	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
@@ -481,6 +558,10 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	if (state->showaxis) {
 		DrawAxis();
+	}
+
+	if (state->skeleton) {
+		DrawSkeleton(state);
 	}
 
 	GLenum err;
@@ -519,9 +600,13 @@ vec3* GetRenderMdlposPtr(RenderState* state) { return &state->mdl_pos; }
 vec3* GetRenderMdlrotPtr(RenderState* state) { return &state->mdl_rot; }
 vec3* GetRenderMdlsizePtr(RenderState* state) { return &state->mdl_scale; }
 
-Bool* GetRenderWireframe(RenderState* state) {
-	return &state->wireframe;
-}
+mat4* GetRenderBoneMatPtr(RenderState* state) { return state->shader_matrices; }
+
+Bool* GetRenderWireframe(RenderState* state) { return &state->wireframe; }
+Bool* GetRenderSkeleton(RenderState* state)  { return &state->skeleton; }
+Bool* GetRenderShowmesh(RenderState* state) { return &state->showmesh; }
+
+void SetRenderKModel(RenderState* state, KinematicsModel* mdl) { state->kmodel = mdl; }
 
 void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat) {
 	vec3 color = vb->colors[mat];

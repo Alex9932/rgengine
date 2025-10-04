@@ -1,6 +1,7 @@
 #define DLL_EXPORT
 #include "animation.h"
 #include "rgstring.h"
+#include "allocator.h"
 
 #include <algorithm>
 
@@ -17,8 +18,16 @@ namespace Engine {
     }
 
 
-    Animation::Animation() { }
-    Animation::~Animation() { }
+    Animation::Animation(String name) {
+        SDL_strlcpy(m_name, name, 64);
+    }
+
+    Animation::~Animation() {
+		for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
+			RG_DELETE(AnimationTrack, this->bone_tracks[i]);
+		}
+		this->bone_tracks.clear();
+    }
 
     AnimationTrack* Animation::GetBoneAnimationTrack(Uint32 crc_hash) {
         for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {

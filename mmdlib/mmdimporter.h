@@ -14,13 +14,13 @@ class PMDImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
 		RG_INLINE PMDImporter()  {}
 		RG_INLINE ~PMDImporter() {}
 
-		RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
-		RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
+		RG_DECLSPEC void ImportModel(ImportModelInfo* info);
+		RG_DECLSPEC void FreeModelData(FreeModelInfo* data);
 
-		RG_DECLSPEC void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
-		RG_DECLSPEC void FreeRiggedModelData(R3DRiggedModelInfo* info);
+		RG_DECLSPEC void ImportRiggedModel(ImportModelInfo* info);
+		RG_DECLSPEC void FreeRiggedModelData(FreeModelInfo* data);
 
-		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(String path);
+		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(ImportModelInfo* path);
 
 };
 
@@ -29,13 +29,13 @@ class PMXImporter : public Engine::ModelImporter, Engine::RiggedModelImporter {
 		RG_INLINE PMXImporter() {}
 		RG_INLINE ~PMXImporter() {}
 
-		RG_DECLSPEC void ImportModel(String path, R3DStaticModelInfo* info);
-		RG_DECLSPEC void FreeModelData(R3DStaticModelInfo* info);
+		RG_DECLSPEC void ImportModel(ImportModelInfo* info);
+		RG_DECLSPEC void FreeModelData(FreeModelInfo* data);
 
-		RG_DECLSPEC void ImportRiggedModel(String path, R3DRiggedModelInfo* info);
-		RG_DECLSPEC void FreeRiggedModelData(R3DRiggedModelInfo* info);
+		RG_DECLSPEC void ImportRiggedModel(ImportModelInfo* info);
+		RG_DECLSPEC void FreeRiggedModelData(FreeModelInfo* data);
 
-		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(String path);
+		RG_DECLSPEC Engine::KinematicsModel* ImportKinematicsModel(ImportModelInfo* path);
 };
 
 class VMDImporter {

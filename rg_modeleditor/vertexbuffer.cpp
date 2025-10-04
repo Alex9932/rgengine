@@ -8,7 +8,7 @@ VertexBuffer* GetVertexbuffer() {
 	return &buffer;
 }
 
-void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath) {
+void MakeVBuffer(R3DRiggedModelInfo* info, String mdlpath) {
 
 	glGenVertexArrays(1, &buffer.vao);
 	glBindVertexArray(buffer.vao);
@@ -16,10 +16,6 @@ void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath) {
 	glGenBuffers(1, &buffer.vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(R3D_Vertex) * info->vCount, info->vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &buffer.ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, info->iType * info->iCount, info->indices, GL_STATIC_DRAW);
 
 	// Position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
@@ -33,6 +29,22 @@ void MakeVBuffer(R3DStaticModelInfo* info, String mdlpath) {
 	// UV
 	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
 	glEnableVertexAttribArray(3);
+
+
+	glGenBuffers(1, &buffer.vbo_w);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo_w);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(R3D_Weight) * info->vCount, info->weights, GL_STATIC_DRAW);
+
+	// vec4 bweight
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0));
+	glEnableVertexAttribArray(4);
+	// ivec4 bidx
+	glVertexAttribIPointer(5, 4, GL_INT, 8 * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(5);
+
+	glGenBuffers(1, &buffer.ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, info->iType * info->iCount, info->indices, GL_STATIC_DRAW);
 
 	buffer.indexsize = info->iType;
 	buffer.meshes = info->mCount;
@@ -75,6 +87,7 @@ void FreeVBuffer(VertexBuffer* buffer) {
 	buffer->isLoaded = false;
 	glDeleteVertexArrays(1, &buffer->vao);
 	glDeleteBuffers(1, &buffer->vbo);
+	glDeleteBuffers(1, &buffer->vbo_w);
 	glDeleteBuffers(1, &buffer->ebo);
 	Texture* t;
 	for (Uint32 i = 0; i < buffer->tcount; i++) {

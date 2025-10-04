@@ -3,38 +3,19 @@
 
 #include <rgtypes.h>
 #include <rendertypes.h>
+#include <importer.h>
 
-typedef struct NameField {
-	char name[128];
-	// For future use
-} NameField;
+#include <assimp/scene.h>
 
-typedef struct ModelExtraData {
-	NameField* mesh_names;
-	NameField* mat_names;
-} ModelExtraData;
+const aiScene* LoadScene(String path, String file);
 
-typedef struct ImportStaticModelInfo {
-	String path;
-	String file;
-	R3DStaticModelInfo* info;
-	ModelExtraData* extra; // For saving extra model data (for example: material and mesh names)
-	Bool skipFirstMat; // Need for skipping unused default material in some models
-} ImportStaticModelInfo;
+class GeomImporter {
+	public:
+		GeomImporter() {}
+		~GeomImporter() {}
 
-typedef struct ImportRiggedModelInfo {
-	String path;
-	String file;
-	R3DRiggedModelInfo* info;
-	ModelExtraData* extra;
-	Bool skipFirstMat;
-
-} ImportRiggedModelInfo;
-
-void FreeStaticModel(R3DStaticModelInfo* info, ModelExtraData* extra);
-void ImportStaticModel(ImportStaticModelInfo* info);
-
-void FreeRiggedModel(R3DRiggedModelInfo* info, ModelExtraData* extra);
-void ImportRiggedModel(ImportRiggedModelInfo* info);
+		void ImportRiggedModel(ImportModelInfo* info);
+		void FreeRiggedModelData(FreeModelInfo* data);
+};
 
 #endif
