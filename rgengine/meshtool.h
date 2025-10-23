@@ -12,9 +12,18 @@ namespace Engine {
 		Uint32 startidx;
 		Uint32 iCount;
 		Uint32* indices;
+		Uint32 idxtype;
 	} TangentCalculateInfo;
 
-	void RecalculateTangetns(TangentCalculateInfo* info);
+	typedef struct NormalCalculateInfo {
+		R3D_Vertex* vertices;
+		void* indices;
+		size_t idx_count;
+		Uint32 idxtype;
+	} NormalCalculateInfo;
+
+	RG_DECLSPEC void RecalculateNormals(NormalCalculateInfo* info);
+	RG_DECLSPEC void RecalculateTangetns(TangentCalculateInfo* info);
 
 }
 

@@ -50,6 +50,7 @@ namespace Engine {
     // Utility
     RG_DECLSPEC void GetPath(char* dst, size_t maxlen, PathType type, String path);
     RG_DECLSPEC void FS_PathFrom(char* dst, String src, Uint32 len, Bool lastseparator = false);
+    RG_DECLSPEC void FS_SeparatePathFile(char* path_dst, size_t p_maxlen, char* file_dst, size_t f_maxlen, String src);
     RG_DECLSPEC void FS_ReplaceSeparators(char* dst, String src); // Replace "\" or "\\" to "/"
     RG_INLINE void FS_ReplaceSeparators(char* dst) { FS_ReplaceSeparators(dst, dst); }
 
@@ -108,6 +109,7 @@ namespace Engine {
             FSOutputStream() {}
             virtual ~FSOutputStream() {}
             virtual void Write(void* ptr, size_t len) {}
+            virtual void Flush() {}
             RG_FORCE_INLINE void WriteU8(Uint8 a) { Write(&a, sizeof(Uint8)); }
             RG_FORCE_INLINE void WriteS8(Sint8 a) { Write(&a, sizeof(Sint8)); }
             RG_FORCE_INLINE void WriteU16(Uint16 a) { Write(&a, sizeof(Uint16)); }
@@ -134,6 +136,7 @@ namespace Engine {
             RG_DECLSPEC virtual ~FSReader();
             RG_DECLSPEC virtual size_t Read(void* ptr, size_t len);
 
+            RG_FORCE_INLINE Bool IsStreamAvailable() { return m_stream != NULL; }
             RG_FORCE_INLINE size_t GetOffset() { return m_stream->offset; }
             RG_FORCE_INLINE ResourceStream* GetStream() { return m_stream; }
             RG_FORCE_INLINE size_t GetReadedBlocks() { return m_readed_blocks; }
@@ -151,6 +154,7 @@ namespace Engine {
             RG_DECLSPEC FSWriter(String file);
             RG_DECLSPEC virtual ~FSWriter();
             RG_DECLSPEC virtual void Write(const void* ptr, size_t len);
+            RG_DECLSPEC virtual void Flush();
             RG_FORCE_INLINE size_t GetOffset() { return m_offset; }
             RG_FORCE_INLINE FILE* GetHandle() { return m_handle; }
     };

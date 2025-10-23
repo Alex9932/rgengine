@@ -127,6 +127,25 @@ namespace Engine {
         dst[i] = 0;
     }
 
+    void FS_SeparatePathFile(char* path_dst, size_t p_maxlen, char* file_dst, size_t f_maxlen, String src) {
+        Sint32 sep = rg_strcharate(src, '/'); // separator
+        Uint32 len = SDL_strlen(src);
+
+        // Clear buffers
+        char path[512] = {};
+        char name[512] = {};
+
+        // Copy data
+        SDL_memcpy(path, src, sep); // path w/o filename
+        SDL_memcpy(name, &src[sep + 1], len - sep - 1); // only filename
+
+		SDL_strlcpy(path_dst, path, p_maxlen);
+        SDL_strlcpy(file_dst, name, f_maxlen);
+
+        rgLogInfo(RG_LOG_SYSTEM, "[FS] -> %s", path);
+        rgLogInfo(RG_LOG_SYSTEM, "[FS] -> %s", name);
+    }
+
     void FS_ReplaceSeparators(char* dst, String str) {
         size_t j = 0;
         Bool firstseparator = true;
@@ -362,8 +381,9 @@ namespace Engine {
         if (stream != NULL) { return stream; }
 
         FILE* fptr = fopen(file, "rb");
-        sprintf(string_buffer, "FILE NOT FOUND => %s", file);
-        RG_ASSERT_MSG(fptr, string_buffer);
+        //sprintf(string_buffer, "FILE NOT FOUND => %s", file);
+        //RG_ASSERT_MSG(fptr, string_buffer);
+        if (!fptr) { return NULL; }
 
         stream = (ResourceStream*)stream_res_pool_alloc->Allocate();
         fseek(fptr, 0, SEEK_END);
@@ -404,7 +424,7 @@ namespace Engine {
 
     FSReader::FSReader(String file) : FSInputStream() { this->m_stream = OpenResourceStream(file); }
     FSReader::FSReader(ResourceStream* stream) { this->m_stream = stream; }
-    FSReader::~FSReader() { CloseResourceStream(this->m_stream); }
+    FSReader::~FSReader() { if (m_stream) { CloseResourceStream(this->m_stream); } }
     size_t FSReader::Read(void* ptr, size_t len) {
         this->m_readed_blocks = ReadResourceStream(ptr, len, this->m_stream);
         return this->m_readed_blocks;
@@ -413,6 +433,7 @@ namespace Engine {
     FSWriter::FSWriter(String file) : FSOutputStream() { this->m_handle = fopen(file, "wb"); }
     FSWriter::~FSWriter() { fclose(this->m_handle); }
     void FSWriter::Write(const void* ptr, size_t len) { fwrite(ptr, len, 1, this->m_handle); this->m_offset += len; }
+    void FSWriter::Flush() { fflush(this->m_handle); }
 
     FSMemoryInputStream::FSMemoryInputStream(void* ptr, size_t len) {
         this->m_ptr = ptr;

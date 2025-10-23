@@ -1,13 +1,73 @@
+#define DLL_EXPORT
 #include "meshtool.h"
 
 namespace Engine {
 
+	static RG_INLINE void FetchTriangle(NormalCalculateInfo* info, Uint32 i, R3D_Vertex** v0, R3D_Vertex** v1, R3D_Vertex** v2) {
+		Uint32 v0idx = 0;
+		Uint32 v1idx = 0;
+		Uint32 v2idx = 0;
+
+		if (info->idxtype == 2) {
+			Uint16* i16 = (Uint16*)info->indices;
+			v0idx = i16[i * 3 + 0];
+			v1idx = i16[i * 3 + 1];
+			v2idx = i16[i * 3 + 2];
+		}
+		else if (info->idxtype == 4 || info->idxtype == 0) { // type 0 is for compatibility
+			Uint32* i32 = (Uint32*)info->indices;
+			v0idx = i32[i * 3 + 0];
+			v1idx = i32[i * 3 + 1];
+			v2idx = i32[i * 3 + 2];
+		}
+
+		*v0 = &info->vertices[v0idx];
+		*v1 = &info->vertices[v1idx];
+		*v2 = &info->vertices[v2idx];
+	}
+
+	void RecalculateNormals(NormalCalculateInfo* info) {
+	//void RecalculateNormals(R3D_Vertex* vertices, Uint32* indices, size_t idx_count) {
+		for (Uint32 i = 0; i < info->idx_count / 3; i++) {
+			R3D_Vertex* v0, * v1, * v2;
+			FetchTriangle(info, i, &v0, &v1, &v2);
+
+			vec3 v_0 = v1->pos - v0->pos;
+			vec3 v_1 = v2->pos - v0->pos;
+
+			vec3 N = v_0.cross(v_1).normalize();
+
+			v0->norm = N;
+			v1->norm = N;
+			v2->norm = N;
+
+		}
+	}
+
 	void RecalculateTangetns(TangentCalculateInfo* info) {
 		// Calculate tangents
 		for (Uint32 i = 0; i < info->iCount / 3; i += 3) {
+#if 1
+			Uint32 v0idx = 0;
+			Uint32 v1idx = 0;
+			Uint32 v2idx = 0;
+			if (info->idxtype == 2) {
+				Uint16* i16 = (Uint16*)info->indices;
+				v0idx = i16[info->startidx + i + 0];
+				v1idx = i16[info->startidx + i + 1];
+				v2idx = i16[info->startidx + i + 2];
+			}
+			else if (info->idxtype == 4 || info->idxtype == 0) { // type 0 is for compatibility
+				Uint32* i32 = (Uint32*)info->indices;
+				v0idx = i32[info->startidx + i + 0];
+				v1idx = i32[info->startidx + i + 1];
+				v2idx = i32[info->startidx + i + 2];
+			}
+#elif
 			Uint32 v0idx = info->indices[info->startidx + i + 0];
 			Uint32 v1idx = info->indices[info->startidx + i + 1];
 			Uint32 v2idx = info->indices[info->startidx + i + 2];
+#endif
 			R3D_Vertex* v0 = &info->vertices[v0idx];
 			R3D_Vertex* v1 = &info->vertices[v1idx];
 			R3D_Vertex* v2 = &info->vertices[v2idx];

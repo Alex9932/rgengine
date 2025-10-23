@@ -6,6 +6,7 @@
 #include "render.h"
 
 #include "event.h"
+#include "filesystem.h"
 
 #ifdef RG_PLATFORM_WINDOWS
 //#define WINDOWS_ICON
@@ -106,6 +107,16 @@ namespace Engine {
         Render::UnloadRenderer();
 
         FreeEventHandler(_EventHandler);
+
+        // Save ImGui state
+        char imcfgpath[512];
+        GetPath(imcfgpath, 512, RG_PATH_USERDATA, GetGame()->imguiIni);
+        size_t imini_len = 0;
+        String imini = ImGui::SaveIniSettingsToMemory(&imini_len);
+        FSWriter writer(imcfgpath);
+		writer.Write(imini, imini_len);
+        writer.Flush();
+        
 
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext(imctx);
@@ -226,6 +237,15 @@ namespace Engine {
         SetupImGuiStyle();
         //ImGui::StyleColorsDark();
         
+        // Load ImGui config
+        char imcfgpath[512];
+        GetPath(imcfgpath, 512, RG_PATH_USERDATA, GetGame()->imguiIni);
+        Resource* res = GetResource(imcfgpath);
+        if (res) {
+            ImGui::LoadIniSettingsFromMemory((String)res->data, res->length);
+            FreeResource(res);
+        }
+
         RegisterEventHandler(_EventHandler);
 
         ImGui_ImplSDL3_NewFrame();

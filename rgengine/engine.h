@@ -62,8 +62,9 @@ class RG_DECLSPEC BaseGame {
         RG_INLINE Bool IsClient()   { return isClient;   }
         RG_INLINE Bool IsGraphics() { return isGraphics; }
 
-        String wndIcon = NULL;
-        String wndLogo = NULL;
+        String wndIcon  = NULL;
+        String wndLogo  = NULL;
+        String imguiIni = "imgui.ini";
 };
 
 namespace Engine {
