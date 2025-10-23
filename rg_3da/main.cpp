@@ -341,7 +341,7 @@ class Application : public BaseGame {
 			pmdImporter.FreeModelData(&pmdinfo);
 #else
 			PM2Importer pm2Importer;
-			ObjImporter objImporter;
+			//ObjImporter objImporter;
 			R3DStaticModelInfo objinfo = {};
 			//objImporter.ImportModel("gamedata/models/skybox/untitled.obj", &objinfo);
 
@@ -590,10 +590,13 @@ class Application : public BaseGame {
 #if 1
 			R3DRiggedModelInfo pmdinfo = {};
 
-
-			pmdImporter.ImportRiggedModel(modelname0, &pmdinfo);
+			ImportModelInfo i = {};
+			i.path = "";
+			i.file = modelname0;
+			i.info.as_rigged = &pmdinfo;
+			pmdImporter.ImportRiggedModel(&i);
 			R3D_RiggedModel* mdl_handle5 = Render::CreateRiggedModel(&pmdinfo);
-			kmodel = pmdImporter.ImportKinematicsModel(modelname0);
+			kmodel = pmdImporter.ImportKinematicsModel(&i);
 			Entity* ent5 = world->NewEntity();
 			ent5->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle5, kmodel));
 			ent5->SetAABB(&pmdinfo.aabb);
@@ -601,12 +604,19 @@ class Application : public BaseGame {
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent5->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent5->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			pmdImporter.FreeRiggedModelData(&pmdinfo);
+
+			FreeModelInfo fi = {};
+			fi.extra = i.extra;
+			fi.info.as_rigged = &pmdinfo;
+			fi.userdata = i.userdata;
+			pmdImporter.FreeRiggedModelData(&fi);
 
 
-			pmdImporter.ImportRiggedModel(modelname1, &pmdinfo);
+			i.file = modelname1;
+			i.info.as_rigged = &pmdinfo;
+			pmdImporter.ImportRiggedModel(&i);
 			R3D_RiggedModel* mdl_handle6 = Render::CreateRiggedModel(&pmdinfo);
-			kmodel2 = pmdImporter.ImportKinematicsModel(modelname1);
+			kmodel2 = pmdImporter.ImportKinematicsModel(&i);
 			Entity* ent6 = world->NewEntity();
 			ent6->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle6, kmodel2));
 			ent5->SetAABB(&pmdinfo.aabb);
@@ -614,11 +624,18 @@ class Application : public BaseGame {
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent6->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent6->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			pmdImporter.FreeRiggedModelData(&pmdinfo);
 
-			pmxImporter.ImportRiggedModel(modelname2, &pmdinfo);
+
+			fi.extra = i.extra;
+			fi.info.as_rigged = &pmdinfo;
+			fi.userdata = i.userdata;
+			pmdImporter.FreeRiggedModelData(&fi);
+
+			i.file = modelname2;
+			i.info.as_rigged = &pmdinfo;
+			pmxImporter.ImportRiggedModel(&i);
 			R3D_RiggedModel* mdl_handle7 = Render::CreateRiggedModel(&pmdinfo);
-			kmodel3 = pmxImporter.ImportKinematicsModel(modelname2);
+			kmodel3 = pmxImporter.ImportKinematicsModel(&i);
 			Entity* ent7 = world->NewEntity();
 			ent7->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle7, kmodel3));
 			ent5->SetAABB(&pmdinfo.aabb);
@@ -626,7 +643,12 @@ class Application : public BaseGame {
 			//ent2->GetTransform()->SetPosition({ 9, -10, -0.4f });
 			ent7->GetTransform()->SetRotation({ 0, 1.6f, 0 });
 			ent7->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			pmxImporter.FreeRiggedModelData(&pmdinfo);
+
+
+			fi.extra = i.extra;
+			fi.info.as_rigged = &pmdinfo;
+			fi.userdata = i.userdata;
+			pmxImporter.FreeRiggedModelData(&fi);
 
 
 			anim0 = vmdImporter.ImportAnimation("vmd/zero_allstar.vmd", kmodel);

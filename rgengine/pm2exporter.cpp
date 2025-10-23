@@ -256,6 +256,20 @@ namespace Engine {
 		delete writer;
 	}
 
+	void PM2Exporter::ExportModel(String p, R3DRiggedModelInfo* info, mat4* model) {
+
+		FSWriter* writer = MakeWriter(p);
+
+		Uint8 flags = 0;
+		if (info->vCount > 0xFFFF) {
+			flags |= PM2_FLAG_EXTENDED_INDICES;
+		}
+
+		WriteBaseModel(writer, info, model, flags);
+
+		delete writer;
+	}
+
 	void PM2Exporter::ExportRiggedModel(String p, R3DRiggedModelInfo* info, KinematicsModel* kmdl, mat4* model) {
 
 		FSWriter* writer = MakeWriter(p);

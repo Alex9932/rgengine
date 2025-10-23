@@ -14,6 +14,7 @@ typedef struct Bone {
     Uint32 hash;
     mat4   transform;
     mat4   offset;
+    quat   offset_rot;
     vec3   offset_pos;
     Sint32 parent;
     vec3   position;
@@ -37,6 +38,7 @@ typedef struct IKList {
 typedef struct BoneInfo {
     mat4   offset;
     Sint32 parent;
+    quat   offset_rot;
     vec3   offset_pos;
     bool   has_limit;
     vec3   limitation;
@@ -49,6 +51,7 @@ typedef struct KinematicsModelCreateInfo {
     BoneInfo*       bones_info;
     IKList*         ik_info;
     R3D_BoneBuffer* buffer_handle;
+    mat4            globalInv;
 } KinematicsModelCreateInfo;
 
 namespace Engine {
@@ -59,6 +62,7 @@ namespace Engine {
             Animator* animator;
             Uint32 bone_count;
             Uint32 iklist_count;
+            mat4 globalInv;
             mat4 bone_transform[RG_MAX_BONE_COUNT];
             Bone bones[RG_MAX_BONE_COUNT];
             IKList iklist[RG_MAX_IKLIST_COUNT];
@@ -79,6 +83,7 @@ namespace Engine {
             RG_INLINE Uint32 GetBoneCount() { return this->bone_count; }
             RG_INLINE Bone* GetBones()      { return this->bones; }
             RG_INLINE mat4* GetTransforms() { return this->bone_transform; }
+            RG_INLINE mat4* GetGlovalInv()  { return &this->globalInv; }
 
             RG_INLINE R3D_BoneBuffer* GetBufferHandle() { return this->handle; }
 

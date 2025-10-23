@@ -1,152 +1,23 @@
+#define NOMINMAX
 #include "anim_importer.h"
 #include <allocator.h>
 #include <vector>
+#include <set>
+#include <kinematicsmodel.h>
+
+#include "assimputil.h"
 
 using namespace Engine;
 
-struct LoadSkeletonState {
-	BoneInfo bones[1024];
-	const aiNode* nodes[1024]; // nodes by bone id
-	aiMatrix4x4 transforms[1024];
-	Uint32 bone_counter = 0;
-};
+static void PrintMatrix(mat4* m) {
+	rgLogInfo(RG_LOG_SYSTEM, "%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
+		m->m00, m->m01, m->m02, m->m03,
+		m->m10, m->m11, m->m12, m->m13,
+		m->m20, m->m21, m->m22, m->m23,
+		m->m30, m->m31, m->m32, m->m33
+	);
+}
 #if 0
-static void ReadSkeletonHierarchy(LoadSkeletonState* state, const aiNode* node, Sint32 parent) {
-
-	BoneInfo info = {};
-	SDL_snprintf(info.name, 32, "%s", node->mName.C_Str());
-	info.has_limit = false;
-	info.parent = parent;
-
-	aiMatrix4x4 t = node->mTransformation;
-	aiVector3D t_scale;
-	aiVector3D t_rot;
-	aiVector3D t_pos;
-	t.Decompose(t_scale, t_rot, t_pos);
-	state->transforms[parent + 1] = t; // save current matrix
-
-	mat4 parent_m = MAT4_IDENTITY();
-	vec3 pos = *(vec3*)&t_pos[0];
-	if (parent != -1) {
-
-		t = state->transforms[parent] * node->mTransformation;
-	}
-	state->transforms[parent + 1] = t;
-
-
-	info.offset_pos = *(vec3*)&pos[0];
-	//mat4 m = MAT4_IDENTITY();
-	//mat4_translate(&m, info.offset_pos);
-	//mat4_inverse(&info.offset, m);
-
-	mat4_inverse(&info.offset, *(mat4*)t[0]);
-	//info.offset = *(mat4*)t[0];
-
-	state->bones[state->bone_counter] = info;
-
-	state->bone_counter++;
-	parent++;
-
-	for (Uint32 i = 0; i < node->mNumChildren; i++) {
-		ReadSkeletonHierarchy(state, node->mChildren[i], parent);
-	}
-}
-#endif
-
-static inline void CopyVector(vec3* dst, const aiVector3D& src) {
-	dst->x = src.x;
-	dst->y = src.y;
-	dst->z = src.z;
-}
-
-static inline void CopyMatrix(mat4* dst, const aiMatrix4x4& src) {
-	dst->m00 = src.a1; dst->m01 = src.a2; dst->m02 = src.a3; dst->m03 = src.a4;
-	dst->m10 = src.b1; dst->m11 = src.b2; dst->m12 = src.b3; dst->m13 = src.b4;
-	dst->m20 = src.c1; dst->m21 = src.c2; dst->m22 = src.c3; dst->m23 = src.c4;
-	dst->m30 = src.d1; dst->m31 = src.d2; dst->m32 = src.d3; dst->m33 = src.d4;
-}
-
-static void ReadSkeletonHierarchy(LoadSkeletonState* state, const aiNode* node) {
-	state->nodes[state->bone_counter] = node;
-	state->bone_counter++;
-	for (Uint32 i = 0; i < node->mNumChildren; i++) {
-		ReadSkeletonHierarchy(state, node->mChildren[i]);
-	}
-}
-
-static Sint32 FindBone(const aiNode** nodes, const aiNode* node, Uint32 max_bones) {
-	if (!node) { return -1; }
-	for (Uint32 i = 0; i < max_bones; i++) {
-		if (nodes[i] == node) { return i; }
-	}
-	return -1;
-}
-
-KinematicsModel* LoadSkeleton(LoadSkeletonInfo* info) {
-	LoadSkeletonState state = {};
-
-	ReadSkeletonHierarchy(&state, info->scene->mRootNode);
-
-	for (Uint32 i = 0; i < state.bone_counter; i++) {
-		const aiNode* bone = state.nodes[i];
-
-		aiMatrix4x4 local = bone->mTransformation;
-		aiVector3D l_scale;
-		aiVector3D l_rot;
-		aiVector3D l_pos;
-		local.Decompose(l_scale, l_rot, l_pos);
-
-		aiVector3D pos = l_pos;
-
-		aiMatrix4x4 parent(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-		if (bone->mParent) {
-			const aiNode* pbone = bone->mParent;
-			Sint32 pidx = FindBone(state.nodes, pbone, state.bone_counter);
-			parent = state.transforms[pidx];
-
-			aiVector3D p_scale;
-			aiVector3D p_rot;
-			aiVector3D p_pos;
-			parent.Decompose(p_scale, p_rot, p_pos);
-
-			pos = l_pos - p_pos;
-
-		}
-
-		state.transforms[i] = parent * local;
-
-		mat4 offset;
-		//mat4 offset = *(mat4*)state.transforms[i][0];
-		CopyMatrix(&offset, state.transforms[i]);
-
-
-		BoneInfo info = {};
-		rgLogInfo(RG_LOG_SYSTEM, "[%d] Bone: %s", i, info.name);
-
-		SDL_snprintf(info.name, 32, "%s", bone->mName.C_Str());
-		info.has_limit = false;
-		info.parent = FindBone(state.nodes, bone->mParent, state.bone_counter);
-
-		//info.offset_pos = *(vec3*)&pos[0];
-		CopyVector(&info.offset_pos, pos);
-		mat4_inverse(&info.offset, offset);
-
-		state.bones[i] = info;
-	}
-
-
-	KinematicsModelCreateInfo mk_info = {};
-
-	mk_info.bone_count = state.bone_counter;
-	mk_info.bones_info = state.bones;
-
-	mk_info.ik_count = 0;
-	mk_info.ik_info  = NULL;
-	mk_info.buffer_handle = NULL;
-
-	return RG_NEW(KinematicsModel)(&mk_info);
-}
-
 Animation* LoadAnimation(LoadAnimationInfo* info) {
 	if (info->anim_idx >= info->scene->mNumAnimations) {
 		rgLogError(RG_LOG_SYSTEM, "Animation index out of range!");
@@ -154,10 +25,11 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 	}
 
 	aiAnimation* animation = info->scene->mAnimations[info->anim_idx];
-	//Float64 duration = animation->mDuration;
 
-	Animation* anim = RG_NEW(Animation)(animation->mName.C_Str());
+	AnimationTrack* tracks = (AnimationTrack*)GetDefaultAllocator()->Allocate(sizeof(AnimationTrack) * animation->mNumChannels);
+	Animation* anim = RG_NEW(Animation)(animation->mName.C_Str(), tracks);
 	anim->SetFramerate(animation->mTicksPerSecond);
+	
 
 	Uint32 lastframe = 0;
 
@@ -166,30 +38,30 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 		String name = node->mNodeName.C_Str();
 		Uint32 hash = rgCRC32(name, (Uint32)SDL_strlen(name));
 
-		AnimationTrack* track = RG_NEW(AnimationTrack)(name);
+		//AnimationTrack* track = RG_NEW(AnimationTrack)(name);
+		// Do not call allocate procedure just use preallocated array
+		AnimationTrack* track = new(&tracks[i]) AnimationTrack(name);
 		anim->AddBoneAnimationTrack(track);
 
 		// Add interpolation between different keyframes types
 
+		Bone* bone = info->km->GetBoneByCRCHash(hash);
+		if (!bone) { continue; } // Skip animation for this bone
 		
 		for (Uint32 j = 0; j < node->mNumRotationKeys; j++) {
 			aiQuatKey* qframe = &node->mRotationKeys[j];
-			aiVectorKey* vframe = &node->mPositionKeys[j];
+			//aiVectorKey* vframe = &node->mPositionKeys[j];
 			
 			BoneKeyFrame keyframe = {};
 
 			keyframe.scale.x = 1;
 			keyframe.scale.y = 1;
 			keyframe.scale.z = 1;
-			//keyframe.translation = {0, 0, 0};
-			//keyframe.translation.x = vframe->mValue.x;
-			//keyframe.translation.y = vframe->mValue.y;
-			//keyframe.translation.z = vframe->mValue.z;
-			keyframe.rotation.x  = qframe->mValue.x;
-			keyframe.rotation.y  = qframe->mValue.y;
-			keyframe.rotation.z  = qframe->mValue.z;
-			keyframe.rotation.w  = qframe->mValue.w;
-			keyframe.timestamp   = qframe->mTime * animation->mTicksPerSecond;
+			CopyVector(&keyframe.rotation, qframe->mValue);
+			//CopyVector(&keyframe.translation, vframe->mValue);
+			//keyframe.translation = keyframe.translation - bone->offset_pos;
+
+			keyframe.timestamp   = qframe->mTime;
 
 
 			keyframe.interp_x.x = 0.5f;
@@ -207,7 +79,134 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 		}
 	}
 	
-	//anim->Finish(lastframe);
+	anim->Finish(lastframe);
+
+	return anim;
+}
+
+#endif
+
+static aiVector3D InterpolatePosition(aiNodeAnim* node, Float64 time) {
+	if (node->mNumPositionKeys == 0) return aiVector3D(0, 0, 0);
+	if (node->mNumPositionKeys == 1) return node->mPositionKeys[0].mValue;
+
+	// Find surrounding keys
+	for (Uint32 i = 0; i < node->mNumPositionKeys - 1; i++) {
+		Float64 t0 = node->mPositionKeys[i].mTime;
+		Float64 t1 = node->mPositionKeys[i + 1].mTime;
+		if (time < t1) {
+			Float64 factor = (time - t0) / (t1 - t0);
+			return node->mPositionKeys[i].mValue + (node->mPositionKeys[i + 1].mValue - node->mPositionKeys[i].mValue) * (Float32)factor;
+		}
+	}
+
+	return node->mPositionKeys[node->mNumPositionKeys - 1].mValue;
+}
+
+static aiQuaternion InterpolateRotation(aiNodeAnim* node, Float64 time) {
+	if (node->mNumRotationKeys == 0) return aiQuaternion(1, 0, 0, 0);
+	if (node->mNumRotationKeys == 1) return node->mRotationKeys[0].mValue;
+
+	// Find surrounding keys
+	for (Uint32 i = 0; i < node->mNumRotationKeys - 1; i++) {
+		Float64 t0 = node->mRotationKeys[i].mTime;
+		Float64 t1 = node->mRotationKeys[i + 1].mTime;
+		if (time < t1) {
+			Float64 factor = (time - t0) / (t1 - t0);
+			aiQuaternion q;
+			aiQuaternion::Interpolate(q, node->mRotationKeys[i].mValue, node->mRotationKeys[i + 1].mValue, factor);
+			q.Normalize();
+			return q;
+			//return node->mRotationKeys[i].mValue + (node->mRotationKeys[i + 1].mValue - node->mRotationKeys[i].mValue) * (Float32)factor;
+		}
+	}
+
+	return node->mRotationKeys[node->mNumRotationKeys - 1].mValue;
+}
+
+static aiVector3D InterpolateScaling(aiNodeAnim* node, Float64 time) {
+	if (node->mNumScalingKeys == 0) return aiVector3D(0, 0, 0);
+	if (node->mNumScalingKeys == 1) return node->mScalingKeys[0].mValue;
+
+	// Find surrounding keys
+	for (Uint32 i = 0; i < node->mNumScalingKeys - 1; i++) {
+		Float64 t0 = node->mScalingKeys[i].mTime;
+		Float64 t1 = node->mScalingKeys[i + 1].mTime;
+		if (time < t1) {
+			Float64 factor = (time - t0) / (t1 - t0);
+			return node->mScalingKeys[i].mValue + (node->mScalingKeys[i + 1].mValue - node->mScalingKeys[i].mValue) * (Float32)factor;
+		}
+	}
+
+	return node->mScalingKeys[node->mNumScalingKeys - 1].mValue;
+}
+
+Animation* LoadAnimation(LoadAnimationInfo* info) {
+	if (info->anim_idx >= info->scene->mNumAnimations) {
+		rgLogError(RG_LOG_SYSTEM, "Animation index out of range!");
+		return NULL;
+	}
+
+	aiAnimation* animation = info->scene->mAnimations[info->anim_idx];
+
+	AnimationTrack* tracks = (AnimationTrack*)GetDefaultAllocator()->Allocate(sizeof(AnimationTrack) * animation->mNumChannels);
+	Animation* anim = RG_NEW(Animation)(animation->mName.C_Str(), tracks);
+
+	// Use 30 fps by default
+	Float64 ticks_per_second = animation->mTicksPerSecond != 0.0 ? animation->mTicksPerSecond : 30.0;
+	anim->SetFramerate(ticks_per_second);
+
+	Float32 lastframe = 0;
+
+
+	for (Uint32 i = 0; i < animation->mNumChannels; i++) {
+		aiNodeAnim* node = animation->mChannels[i];
+		String name = node->mNodeName.C_Str();
+		Uint32 hash = rgCRC32(name, (Uint32)SDL_strlen(name));
+
+		// Do not call allocate procedure just use preallocated array
+		AnimationTrack* track = new(&tracks[i]) AnimationTrack(name);
+		anim->AddBoneAnimationTrack(track);
+
+		Bone* bone = info->km->GetBoneByCRCHash(hash);
+		if (!bone) { continue; } // Skip animation for this bone
+
+		std::set<Float64> keyframe_times;
+		for (Uint32 j = 0; j < node->mNumPositionKeys; j++) {
+			keyframe_times.insert(node->mPositionKeys[j].mTime);
+		}
+		for (Uint32 j = 0; j < node->mNumRotationKeys; j++) {
+			keyframe_times.insert(node->mRotationKeys[j].mTime);
+		}
+		for (Uint32 j = 0; j < node->mNumScalingKeys; j++) {
+			keyframe_times.insert(node->mScalingKeys[j].mTime);
+		}
+
+		for (Float64 time : keyframe_times) {
+
+			BoneKeyFrame keyframe = {};
+			CopyVector(&keyframe.translation, InterpolatePosition(node, time));
+			CopyVector(&keyframe.rotation, InterpolateRotation(node, time));
+			CopyVector(&keyframe.scale, InterpolateScaling(node, time));
+
+			keyframe.translation = keyframe.translation - bone->offset_pos; // if needed
+
+			keyframe.timestamp = (Float32)time;
+			keyframe.interp_x  = { 0.5f, 0.5f, 0.5f, 0.5f };
+			keyframe.interp_y  = keyframe.interp_x;
+			keyframe.interp_z  = keyframe.interp_x;
+			keyframe.interp_r  = keyframe.interp_x;
+
+			track->AddKeyFrame(&keyframe);
+			if (lastframe < time) {
+				lastframe = time;
+			}
+
+		}
+
+	}
+
+	anim->Finish(lastframe);
 
 	return anim;
 }

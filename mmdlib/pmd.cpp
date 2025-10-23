@@ -188,6 +188,7 @@ pmd_file* pmd_load(String file) {
 			rgLogInfo(RG_LOG_SYSTEM, "PMD: Comment: %s\n", pmd->e_comment);
 		}
 
+		// TODO: Rewrite memalloc
 		pmd->e_bones = (char**)rg_malloc(sizeof(char*) * pmd->bones_count);
 		pmd->e_faces = (char**)rg_malloc(sizeof(char*) * pmd->morph_count);
 		pmd->e_bone_group = (char**)rg_malloc(sizeof(char*) * pmd->bone_groups);

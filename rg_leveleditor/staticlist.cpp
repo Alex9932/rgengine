@@ -25,7 +25,7 @@
 
 using namespace Engine;
 
-static ObjImporter objImporter;
+//static ObjImporter objImporter;
 static PM2Importer pm2Importer;
 static PMDImporter pmdImporter;
 static PMXImporter pmxImporter;
@@ -39,14 +39,22 @@ static void OpenModel(String _path, R3DStaticModelInfo* info) {
 	if (rg_strenw(path, "pm2")) {
 		pm2Importer.ImportModel(path, info);
 	}
-	else if (rg_strenw(path, "obj")) {
-		objImporter.ImportModel(path, info);
-	}
+	//else if (rg_strenw(path, "obj")) {
+	//	objImporter.ImportModel(path, info);
+	//}
 	else if (rg_strenw(path, "pmd")) {
-		pmdImporter.ImportModel(path, info);
+		ImportModelInfo i = {};
+		i.path = "";
+		i.file = path;
+		i.info.as_static = info;
+		pmdImporter.ImportModel(&i);
 	}
 	else if (rg_strenw(path, "pmx")) {
-		pmxImporter.ImportModel(path, info);
+		ImportModelInfo i = {};
+		i.path = "";
+		i.file = path;
+		i.info.as_static = info;
+		pmxImporter.ImportModel(&i);
 	}
 }
 

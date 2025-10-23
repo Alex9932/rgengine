@@ -13,25 +13,23 @@
 #include <render.h>
 #include <modelsystem.h>
 
-#include <objimporter.h>
+//#include <objimporter.h>
 #include <pm2importer.h>
 #include <mmdimporter.h>
 
 #include <rgstring.h>
 
+#include <filesystem.h>
 #include <filedialog.h>
 
 #include "viewport.h"
 
 using namespace Engine;
 
-static ObjImporter objImporter;
+//static ObjImporter objImporter;
 static PM2Importer pm2Importer;
 static PMDImporter pmdImporter;
 static PMXImporter pmxImporter;
-
-
-
 
 
 static void ImportPM2(String path, Entity* ent) {
@@ -42,7 +40,7 @@ static void ImportPM2(String path, Entity* ent) {
 	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
 }
-
+#if 0
 static void ImportOBJ(String path, Entity* ent) {
 	R3DStaticModelInfo info = {};
 	objImporter.ImportModel(path, &info);
@@ -51,23 +49,66 @@ static void ImportOBJ(String path, Entity* ent) {
 	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
 }
+#endif
 
 static void ImportPMD(String path, Entity* ent) {
+
+	char _path[512] = {};
+	char _file[512] = {};
+
+	FS_SeparatePathFile(_path, 512, _file, 512, path);
+
 	R3DRiggedModelInfo info = {};
-	pmdImporter.ImportRiggedModel(path, &info);
+
+	ImportModelInfo iminfo = {};
+	ModelExtraData extra = {};
+	iminfo.extra = &extra;
+	iminfo.path = _path;
+	iminfo.file = _file;
+	iminfo.info.as_rigged = &info;
+	iminfo.skipFirstMat = false;
+
+	pmdImporter.ImportRiggedModel(&iminfo);
 	R3D_RiggedModel* hmdl = Render::CreateRiggedModel(&info);
-	pmdImporter.FreeRiggedModelData(&info);
-	KinematicsModel* kmdl = pmdImporter.ImportKinematicsModel(path);
+	KinematicsModel* kmdl = pmdImporter.ImportKinematicsModel(&iminfo);
+
+	FreeModelInfo fminfo = {};
+	fminfo.extra = &extra;
+	fminfo.userdata = iminfo.userdata;
+	fminfo.info.as_rigged = iminfo.info.as_rigged;
+
+	pmdImporter.FreeRiggedModelData(&fminfo);
 	ent->AttachComponent(GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
 	ent->SetAABB(&info.aabb);
 }
 
 static void ImportPMX(String path, Entity* ent) {
+
+	char _path[512] = {};
+	char _file[512] = {};
+
+	FS_SeparatePathFile(_path, 512, _file, 512, path);
+
 	R3DRiggedModelInfo info = {};
-	pmxImporter.ImportRiggedModel(path, &info);
+
+	ImportModelInfo iminfo = {};
+	ModelExtraData extra = {};
+	iminfo.extra = &extra;
+	iminfo.path = _path;
+	iminfo.file = _file;
+	iminfo.info.as_rigged = &info;
+	iminfo.skipFirstMat = false;
+
+	pmxImporter.ImportRiggedModel(&iminfo);
 	R3D_RiggedModel* hmdl = Render::CreateRiggedModel(&info);
-	pmxImporter.FreeRiggedModelData(&info);
-	KinematicsModel* kmdl = pmxImporter.ImportKinematicsModel(path);
+	KinematicsModel* kmdl = pmxImporter.ImportKinematicsModel(&iminfo);
+
+	FreeModelInfo fminfo = {};
+	fminfo.extra = &extra;
+	fminfo.userdata = iminfo.userdata;
+	fminfo.info.as_rigged = iminfo.info.as_rigged;
+
+	pmxImporter.FreeRiggedModelData(&fminfo);
 	ent->AttachComponent(GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
 	ent->SetAABB(&info.aabb);
 }
@@ -98,9 +139,9 @@ static void OpenModel(String _path, Entity* ent) {
 	if (rg_strenw(path, "pm2")) {
 		ImportPM2(path, ent);
 	}
-	else if (rg_strenw(path, "obj")) {
-		ImportOBJ(path, ent);
-	}
+	//else if (rg_strenw(path, "obj")) {
+	//	ImportOBJ(path, ent);
+	//}
 	else if (rg_strenw(path, "pmd")) {
 		ImportPMD(path, ent);
 	}

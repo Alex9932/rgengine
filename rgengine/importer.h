@@ -13,6 +13,11 @@ typedef struct ModelExtraData {
 	NameField* mesh_names;
 	NameField* mat_names;
 	NameField* bone_names;
+	NameField* custom0;
+	NameField* custom1;
+	NameField* custom2;
+	NameField* custom3;
+	NameField* custom4;
 } ModelExtraData;
 
 typedef struct ImportModelInfo {

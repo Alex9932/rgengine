@@ -142,6 +142,10 @@ static void WritePMDExtraData(pmd_file* pmd, ModelExtraData* extra) {
 	extra->mat_names  = (NameField*)rg_malloc(sizeof(NameField) * pmd->material_count);
 	extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * pmd->bones_count);
 
+	SDL_memset(extra->mesh_names, 0, sizeof(NameField) * pmd->material_count);
+	SDL_memset(extra->mat_names,  0, sizeof(NameField) * pmd->material_count);
+	SDL_memset(extra->bone_names, 0, sizeof(NameField) * pmd->bones_count);
+
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		SDL_snprintf(extra->mesh_names[i].name, 128, "[%d] (%s)", i, pmd->materials[i].file_name);
 		SDL_snprintf(extra->mat_names[i].name,  128, "[%d] (%s)", i, pmd->materials[i].file_name);
@@ -268,10 +272,11 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
 			parent = bone_matrices[bone->parent];
 		}
 
+		quat rot = { 0, 0, 0, 1 };
+		bones_info[i].offset_rot = rot;
 		bones_info[i].offset_pos = pos;
 
 
-		quat rot = { 0, 0, 0, 1 };
 		mat4 translation;
 		mat4 rotation;
 		mat4_fromquat(&rotation, rot);
@@ -440,6 +445,10 @@ static void WritePMXExtraData(pmx_file* pmx, ModelExtraData* extra) {
 	extra->mat_names = (NameField*)rg_malloc(sizeof(NameField) * pmx->material_count);
 	extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * pmx->bone_count);
 
+	SDL_memset(extra->mesh_names, 0, sizeof(NameField) * pmx->material_count);
+	SDL_memset(extra->mat_names,  0, sizeof(NameField) * pmx->material_count);
+	SDL_memset(extra->bone_names, 0, sizeof(NameField) * pmx->bone_count);
+
 	for (Uint32 i = 0; i < pmx->material_count; i++) {
 
 		pmx_text text = pmx->materials[i].name;
@@ -576,9 +585,10 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* imi
 			parent = bone_matrices[bone->parent_id];
 		}
 
-		bones_info[i].offset_pos = pos;
-
 		quat rot = { 0, 0, 0, 1 };
+		bones_info[i].offset_pos = pos;
+		bones_info[i].offset_rot = rot;
+
 		mat4 translation;
 		mat4 rotation;
 		mat4_fromquat(&rotation, rot);
@@ -652,7 +662,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 	vmd_file* vmd = vmd_load(path);
 
-	Animation* animation = new Animation(vmd->name);
+	Animation* animation = RG_NEW(Animation)(vmd->name, NULL);
 	Uint32 last = 0;
 	for (Sint32 i = 0; i < vmd->motion_count; i++) {
 		vmd_motion* motion = &vmd->motions[i];
@@ -666,7 +676,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 		AnimationTrack* track = animation->GetBoneAnimationTrack(hash);
 		if (track == NULL) {
-			track = new AnimationTrack(motion->bone_name);
+			track = RG_NEW(AnimationTrack)(motion->bone_name);
 			animation->AddBoneAnimationTrack(track);
 			//rgLogInfo(RG_LOG_SYSTEM, "Adding: %s - CRC: %d", motion->bone_name, hash);
 		}
@@ -701,7 +711,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 			last = motion->frame;
 		}
 	}
-	animation->Finish(last);
+	animation->Finish((Float32)last);
 
 	return animation;
 

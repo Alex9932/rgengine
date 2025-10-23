@@ -7,6 +7,7 @@ namespace Engine {
     KinematicsModel::KinematicsModel(KinematicsModelCreateInfo* info) {
         this->bone_count = info->bone_count;
         this->iklist_count = info->ik_count;
+        this->globalInv = info->globalInv;
         for (Uint32 i = 0; i < this->bone_count; i++) {
             Bone* bone = &this->bones[i];
             BoneInfo* binfo = &info->bones_info[i];
@@ -23,6 +24,7 @@ namespace Engine {
             bone->rotation.w = 1;
             bone->offset     = binfo->offset;
             bone->offset_pos = binfo->offset_pos;
+            bone->offset_rot = binfo->offset_rot;
             bone->has_limit  = binfo->has_limit;
             bone->limitation = binfo->limitation;
             bone->transform  = MAT4_IDENTITY();
@@ -45,7 +47,7 @@ namespace Engine {
         for (Uint32 i = 0; i < this->bone_count; i++) {
             Bone* bone = &this->bones[i];
             mat4 parent_transform = MAT4_IDENTITY();
-            if (bone->parent != -1) {
+            if (bone->parent > -1) {
                 parent_transform = this->bones[bone->parent].transform;
             }
 
@@ -62,7 +64,7 @@ namespace Engine {
     void KinematicsModel::RecalculateTransform() {
         //rgLogInfo(RG_LOG_SYSTEM, " ~ ~ ~ ~ ~ ~ ~");
         for (Uint32 i = 0; i < this->bone_count; i++) {
-            this->bone_transform[i] = this->bones[i].transform * this->bones[i].offset;
+            this->bone_transform[i] = this->globalInv * this->bones[i].transform * this->bones[i].offset;
             //rgLogInfo(RG_LOG_SYSTEM, "Bone: %d %s", i, this->bones[i].name);
             //PM(this->bone_transform[i]);
             //PM(this->bones[i].transform);

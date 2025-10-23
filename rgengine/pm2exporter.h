@@ -10,6 +10,7 @@ namespace Engine {
 			~PM2Exporter() {}
 
 			RG_DECLSPEC void ExportModel(String path, R3DStaticModelInfo* info, mat4* model = NULL);
+			RG_DECLSPEC void ExportModel(String path, R3DRiggedModelInfo* info, mat4* model = NULL);  // Export rigged model as static
 			RG_DECLSPEC void ExportRiggedModel(String path, R3DRiggedModelInfo* info, KinematicsModel* kmdl, mat4* model = NULL);
 	};
 }
