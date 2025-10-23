@@ -61,9 +61,10 @@ static bool _EventHandler(SDL_Event* event) {
 	}
 
 	if (event->type == SDL_EVENT_KEY_DOWN) {
+		//rgLogInfo(RG_LOG_RENDER, "KEY SCANCODE: %d %d", event->key.scancode, Engine::IsKeyDown(SDL_SCANCODE_LSHIFT));
 		switch (event->key.scancode) {
 			case SDL_SCANCODE_R: {
-				if (Engine::IsKeyDown(SDL_SCANCODE_LSHIFT) && Engine::IsKeyDown(SDL_SCANCODE_LALT)) {
+				if (Engine::IsKeyDown(SDL_SCANCODE_LSHIFT)){// && Engine::IsKeyDown(SDL_SCANCODE_LALT)) {
 					isShadersReloadRequired = true;
 				}
 				break;
