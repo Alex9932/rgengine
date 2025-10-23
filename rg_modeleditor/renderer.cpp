@@ -1,6 +1,9 @@
 #include "renderer.h"
 
+#include "glad.h"
+
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_opengl_glext.h>
 #include <engine.h>
 #include <rgstb.h>
 #include "texture.h"
@@ -9,7 +12,6 @@
 #include <imgui/imgui_impl_sdl3.h>
 #include "imgui_impl_opengl3.h"
 
-#include "glad.h"
 #include <kinematicsmodel.h>
 
 #include "_glshader.h"
@@ -20,6 +22,12 @@
 
 using namespace Engine;
 
+#define FLAG_WIREFRAME   0x00000001
+#define FLAG_SKELETON    0x00000002
+#define FLAG_SHOWAXIS    0x00000004
+#define FLAG_SHOWMESH    0x00000008
+#define FLAG_ANIMDISABLE 0x00000010
+
 typedef struct RenderState {
 	SDL_Window*      hwnd;
 	SDL_GLContext    glctx;
@@ -27,10 +35,14 @@ typedef struct RenderState {
 	GLuint           matrices_ubo;
 	GuiDrawCallback  guicb;
 	ivec2            wsize;
-	Bool             wireframe;
-	Bool             skeleton;
-	Bool             showaxis;
-	Bool             showmesh;
+	Uint32           flags;
+//	Bool             wireframe;
+//	Bool             skeleton;
+//	Bool             showaxis;
+//	Bool             showmesh;
+//	Bool             animDisable;
+	Sint32           meshhilight;
+	Sint32           cullmode;
 	vec3             mdl_pos;
 	vec3             mdl_rot;
 	vec3             mdl_scale;
@@ -231,14 +243,30 @@ static void RUpdateVBuffer(RUpdateVBufferInfo* info) {
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, info->i_start, info->i_len, info->i_data);
 }
 
+static void CheckOpenGL() {
+	//rgLogInfo(RG_LOG_RENDER, "OpenGL %s", glGetString(GL_VERSION));
+	//rgLogInfo(RG_LOG_RENDER, "GLSL %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	int major, minor, profile;
+	SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
+	SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
+	SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile);
+	rgLogInfo(RG_LOG_RENDER, "Created OpenGL context: %d.%d, Profile: %s",
+		major, minor,
+		(profile == SDL_GL_CONTEXT_PROFILE_CORE) ? "Core" : "Compatibility");
+}
+
 RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
 	staticstate.guicb = guicb;
 
-	staticstate.showaxis = 1;
-	staticstate.skeleton = 1;
-	staticstate.showmesh = 1;
+	staticstate.flags = FLAG_SHOWAXIS | FLAG_SKELETON | FLAG_SHOWMESH;
+
+	//staticstate.showaxis = 1;
+	//staticstate.skeleton = 1;
+	//staticstate.showmesh = 1;
+
+	staticstate.meshhilight = -1;
 
 	staticstate.mdl_pos   = { 0, 0, 0 };
 	staticstate.mdl_rot   = { 0, 0, 0 };
@@ -252,30 +280,51 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	//icon_surface = SDL_CreateRGBSurfaceFrom(icon_data_ptr, w, h, 32, 4 * w, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
 	icon_surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_ABGR8888, icon_data_ptr, w * 4);
 
+	SDL_Init(SDL_INIT_VIDEO);
 	// Setup OpenGL attribs
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
+#if 1
+
 	// Window
 	//staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", 800, 600, SDL_WINDOW_OPENGL);
-	SDL_SetWindowPosition(staticstate.hwnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	if (!staticstate.hwnd) {
 		RG_ERROR_MSG("Failed to create window!");
 	}
+#else
+	SDL_PropertiesID props = SDL_CreateProperties();
+	SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "rgEngine - OpenGL");
+	SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, 800);
+	SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, 600);
+	SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN, true);
+	SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
 
-	SDL_GetWindowSize(staticstate.hwnd, &staticstate.wsize.x, &staticstate.wsize.y);
-	SDL_SetWindowIcon(staticstate.hwnd, icon_surface);
-	SDL_SetWindowResizable(staticstate.hwnd, true);
+	staticstate.hwnd = SDL_CreateWindowWithProperties(props);
+	if (!staticstate.hwnd) {
+		RG_ERROR_MSG("Failed to create window!");
+	}
+#endif
 
 	// Load GL
 	staticstate.glctx = SDL_GL_CreateContext(staticstate.hwnd);
 	if (!staticstate.glctx) {
 		RG_ERROR_MSG("Failed to create OpenGL context!");
 	}
+	SDL_GL_MakeCurrent(staticstate.hwnd, staticstate.glctx);
+
+	SDL_SetWindowPosition(staticstate.hwnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	SDL_GetWindowSize(staticstate.hwnd, &staticstate.wsize.x, &staticstate.wsize.y);
+	SDL_SetWindowIcon(staticstate.hwnd, icon_surface);
+	SDL_SetWindowResizable(staticstate.hwnd, true);
 
 	gladLoadGL();
+
+	// Check OpenGL Context
+	CheckOpenGL();
+
 	glEnable(GL_DEPTH_TEST);
 
 	rgLogInfo(RG_LOG_RENDER, "Renderer: %s", glGetString(GL_RENDERER));
@@ -429,7 +478,7 @@ static void DrawSkeleton(RenderState* state) {
 			parent_o = pb->offset;
 		}
 
-		vec4 pos1 = { 0, 0, -1, 1 };
+		vec4 pos1 = { 0, 0, 0, 1 };
 		
 		vec4 bpos = parent_t * pos1;
 		vec4 ppos = local_t  * pos1;
@@ -516,13 +565,30 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	vec3 pos = camera->GetTransform()->GetPosition();
 
-	glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+	glClearColor(0.015f, 0.015f, 0.015f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (state->wireframe) {
+	//if (state->wireframe) {
+	if (RG_CHECK_FLAG(state->flags, FLAG_WIREFRAME)) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	} else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+	switch (state->cullmode) {
+		case 0: // None
+			glDisable(GL_CULL_FACE);
+			break;
+		case 1: // Back
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+			break;
+		case 2: // Front
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+			break;
+		default:
+			break;
 	}
 
 	glUseProgram(state->shader);
@@ -531,6 +597,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "proj"), 1, GL_FALSE, proj.m);
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "view"), 1, GL_FALSE, view.m);
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, model.m);
+	glUniform1i(glGetUniformLocation(state->shader, "animDisable"), RG_CHECK_FLAG(state->flags, FLAG_ANIMDISABLE));
 
 	// PS uniforms
 	glUniform1i(glGetUniformLocation(state->shader, "t_unit0"), 0);   // albedo
@@ -547,20 +614,21 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glBindBuffer(GL_UNIFORM_BUFFER, state->matrices_ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4) * RG_MAX_BONES, state->shader_matrices);
 
-	if (state->showmesh) {
+	if (RG_CHECK_FLAG(state->flags, FLAG_SHOWMESH)) {
 		DrawBuffer(state, buffer);
 	}
 
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, m4_identity.m);
+	glUniform1i(glGetUniformLocation(state->shader, "animDisable"), 1);
 	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
 	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 0);
 	glUniform1i(glGetUniformLocation(state->shader, "flipuv"), 0);
 
-	if (state->showaxis) {
+	if (RG_CHECK_FLAG(state->flags, FLAG_SHOWAXIS)) {
 		DrawAxis();
 	}
 
-	if (state->skeleton) {
+	if (RG_CHECK_FLAG(state->flags, FLAG_SKELETON)) {
 		DrawSkeleton(state);
 	}
 
@@ -596,19 +664,43 @@ void GetRenderSize(RenderState* state, ivec2* dst) {
 	*dst = state->wsize;
 }
 
-vec3* GetRenderMdlposPtr(RenderState* state) { return &state->mdl_pos; }
-vec3* GetRenderMdlrotPtr(RenderState* state) { return &state->mdl_rot; }
-vec3* GetRenderMdlsizePtr(RenderState* state) { return &state->mdl_scale; }
+vec3* GetRenderMdlposPtr(RenderState* state)   { return &state->mdl_pos;        }
+vec3* GetRenderMdlrotPtr(RenderState* state)   { return &state->mdl_rot;        }
+vec3* GetRenderMdlsizePtr(RenderState* state)  { return &state->mdl_scale;      }
 
-mat4* GetRenderBoneMatPtr(RenderState* state) { return state->shader_matrices; }
+mat4* GetRenderBoneMatPtr(RenderState* state)  { return state->shader_matrices; }
 
-Bool* GetRenderWireframe(RenderState* state) { return &state->wireframe; }
-Bool* GetRenderSkeleton(RenderState* state)  { return &state->skeleton; }
-Bool* GetRenderShowmesh(RenderState* state) { return &state->showmesh; }
+Bool GetRenderWireframe(RenderState* state)   { return RG_CHECK_FLAG(state->flags, FLAG_WIREFRAME);  }
+Bool GetRenderSkeleton(RenderState* state)    { return RG_CHECK_FLAG(state->flags, FLAG_SKELETON);   }
+Bool GetRenderShowmesh(RenderState* state)    { return RG_CHECK_FLAG(state->flags, FLAG_SHOWMESH);   }
+Bool GetRenderAnimDisable(RenderState* state) { return RG_CHECK_FLAG(state->flags, FLAG_ANIMDISABLE);}
+
+void SetRenderWireframe(RenderState* state, Bool b) {
+	if (b) { state->flags |= FLAG_WIREFRAME; }
+	else   { state->flags &= ~FLAG_WIREFRAME; }
+}
+
+void SetRenderSkeleton(RenderState* state, Bool b) {
+	if (b) { state->flags |= FLAG_SKELETON; }
+	else   { state->flags &= ~FLAG_SKELETON; }
+}
+
+void SetRenderShowmesh(RenderState* state, Bool b) {
+	if (b) { state->flags |= FLAG_SHOWMESH; }
+	else   { state->flags &= ~FLAG_SHOWMESH; }
+}
+
+void SetRenderAnimDisable(RenderState* state, Bool b) {
+	if (b) { state->flags |= FLAG_ANIMDISABLE; }
+	else   { state->flags &= ~FLAG_ANIMDISABLE; }
+}
 
 void SetRenderKModel(RenderState* state, KinematicsModel* mdl) { state->kmodel = mdl; }
 
-void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat) {
+void SetRenderMeshHilight(RenderState* state, Sint32 meshid) { state->meshhilight = meshid; }
+void SetRenderCullMode(RenderState* state, Sint32 mode) { state->cullmode = mode; }
+
+void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat, Uint32 meshid) {
 	vec3 color = vb->colors[mat];
 
 	// Flags
@@ -616,6 +708,10 @@ void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat) {
 
 	// Set material color
 	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), color.r, color.g, color.b);
+
+	if (state->meshhilight == meshid) {
+		glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 2.8, 2.4, 0.4);
+	}
 
 	// Bind textures
 	glActiveTexture(GL_TEXTURE0);

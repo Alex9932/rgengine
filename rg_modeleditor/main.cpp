@@ -35,9 +35,15 @@ static RenderState* rstate = NULL;
 
 static R3DRiggedModelInfo info = {};
 static ModelExtraData model_extra;
-static Bool isModelLoaded = false;
+static Bool isModelLoaded   = false;
+static Bool isLoadingFailed = false;
 
-static Bool skipFirstMat  = false;
+static String errorStr = "";
+
+static Bool skipFirstMat    = false;
+static Bool repeatAnim      = false;
+
+static Sint32 meshSelected = -1;
 
 static Engine::KinematicsModel* kmodel = NULL;
 static Engine::Animation* anims[128] = {};
@@ -50,6 +56,10 @@ static PM2Exporter pm2_export;
 static GeomImporter geom_importer;
 static PMDImporter pmd_importer;
 static PMXImporter pmx_importer;
+
+static VMDImporter vmd_importer;
+
+static const void* loaderdata = NULL;
 
 static Engine::RiggedModelImporter* loader = NULL;
 
@@ -107,6 +117,13 @@ static void LoadModel() {
 	SDL_snprintf(file, 512, "%s.%s", MDL_NAME, MDL_EXT);
 	SDL_snprintf(fullpath, 512, "%s/%s", MDL_PATH, file);
 
+	ImportModelInfo importinfo = {};
+	importinfo.path = MDL_PATH;
+	importinfo.file = file;
+	importinfo.info.as_rigged = &info;
+	importinfo.extra = &model_extra;
+	importinfo.skipFirstMat = skipFirstMat;
+
 	if (rg_streql(MDL_EXT, "pm2")) {
 
 
@@ -118,50 +135,47 @@ static void LoadModel() {
 		}
 	}
 	else if (rg_streql(MDL_EXT, "pmd")) {
-		ImportModelInfo importinfo = {};
-		importinfo.path = MDL_PATH;
-		importinfo.file = file;
-		importinfo.info.as_rigged = &info;
-		importinfo.extra = &model_extra;
-		importinfo.skipFirstMat = skipFirstMat;
 
 		pmd_importer.ImportRiggedModel(&importinfo);
 		kmodel = pmd_importer.ImportKinematicsModel(&importinfo);
+		loaderdata = importinfo.userdata;
+		SetRenderKModel(rstate, kmodel);
+
 		loader = (Engine::RiggedModelImporter*)&pmd_importer;
 	}
 	else if (rg_streql(MDL_EXT, "pmx")) {
-		ImportModelInfo importinfo = {};
-		importinfo.path = MDL_PATH;
-		importinfo.file = file;
-		importinfo.info.as_rigged = &info;
-		importinfo.extra = &model_extra;
-		importinfo.skipFirstMat = skipFirstMat;
 
 		pmx_importer.ImportRiggedModel(&importinfo);
 		kmodel = pmx_importer.ImportKinematicsModel(&importinfo);
+		loaderdata = importinfo.userdata;
+		SetRenderKModel(rstate, kmodel);
+
 		loader = (Engine::RiggedModelImporter*)&pmx_importer;
 	}
 	else {
 		// Use custom loaders
-		ImportModelInfo importinfo = {};
-		importinfo.path = MDL_PATH;
-		importinfo.file = file;
-		importinfo.info.as_rigged = &info;
-		importinfo.extra = &model_extra;
-		importinfo.skipFirstMat = skipFirstMat;
-		//importinfo.userdata = LoadScene(MDL_PATH, file);
+
 		geom_importer.ImportRiggedModel(&importinfo);
+		const aiScene* scene = geom_importer.GetAIScene(&importinfo);
 
-		LoadSkeletonInfo skelinfo = {};
-		skelinfo.scene = (const aiScene*)importinfo.userdata;
-		kmodel = LoadSkeleton(&skelinfo);
+		if (!scene) {
+			errorStr = geom_importer.GetErrorString();
+			isLoadingFailed = true;
+			return;
+		}
 
+		kmodel = geom_importer.LoadSkeleton(&importinfo);
+		loaderdata = importinfo.userdata;
 		SetRenderKModel(rstate, kmodel);
 
-		animcount = ((const aiScene*)importinfo.userdata)->mNumAnimations;
+
+		animcount = scene->mNumAnimations;
+		LoadAnimationInfo animinfo = {};
 		for (Uint32 i = 0; i < animcount; i++) {
-			LoadAnimationInfo animinfo = {};
-			animinfo.scene = (const aiScene*)importinfo.userdata;
+
+			animinfo.scene = scene;
+			animinfo.km = kmodel;
+
 			animinfo.anim_idx = i;
 			anims[i] = LoadAnimation(&animinfo);
 		}
@@ -174,8 +188,9 @@ static void LoadModel() {
 	//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
 	//obj_importer.ImportModel(file, &info);
 	//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
-	MakeVBuffer(&info, MDL_PATH);
+	MakeVBuffer(&info, importinfo.extra, MDL_PATH);
 	isModelLoaded = true;
+	isLoadingFailed = false;
 
 }
 
@@ -205,6 +220,9 @@ static void OpenModel() {
 
 		// /blah-blah-blah/cube.obj
 		//             sep^ ext^
+
+		// TODO: Rewrite this (use FS_SeparatePathFile)
+
 		Sint32 sep = rg_strcharate(path, '/'); // separator
 		Sint32 ext = rg_strcharate(path, '.'); // extension
 		Uint32 len = SDL_strlen(path);
@@ -254,6 +272,10 @@ static void CopyTexture(String dst, String src) {
 	FSReader fsrc(src);
 	FSWriter fdst(dst);
 
+	if (!fsrc.IsStreamAvailable()) {
+		return; // No texture
+	}
+
 	rgLogInfo(RG_LOG_RENDER, "Copy texture %s to %s", src, dst);
 
 	char buffer[1024]; // 1Kb
@@ -264,15 +286,38 @@ static void CopyTexture(String dst, String src) {
 
 }
 
-static void SaveModel() {
-	// Copy textures (if needed, we can use exist texture)
-	// gamedata/textures/%material_name%.png
-	// gamedata/textures/%material_name%_norm.png
-	// gamedata/textures/%material_name%_pbr.png
-	//
-	// Save geometry data
-	// gamedata/models/%MODELNAME%.pm2
+// Copy textures (if needed, we can use exist texture)
+// gamedata/textures/%material_name%.png
+// gamedata/textures/%material_name%_norm.png
+// gamedata/textures/%material_name%_pbr.png
+//
+// Save geometry data
+// gamedata/models/%MODELNAME%.pm2
 
+static void CopyTextures(R3DRiggedModelInfo* mdlinfo, VertexBuffer* buffer, String gamedata_path) {
+
+	// Make copy of materials array (need for replace full texture path to texture name in gamedata)
+	SDL_memcpy(mdlinfo->matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * mdlinfo->matCount);
+
+	char path[256];
+	for (Uint32 i = 0; i < info.matCount; i++) {
+		// Copy texture
+		Texture* tx      = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+		Texture* tx_nrm  = buffer->textures[i * 3 + NORMAL_TEXTURE];
+		String   matname = model_extra.mat_names[i].name;
+
+		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, matname);
+		CopyTexture(path, tx->tex_name);
+
+		SDL_snprintf(path, 256, "%s/textures/%s_norm.png", gamedata_path, matname);
+		CopyTexture(path, tx_nrm->tex_name);
+
+		// Replace path to name
+		SDL_snprintf(mdlinfo->matInfo[i].texture, 128, "%s", matname);
+	}
+}
+
+static void SaveModelStatic() {
 	if (!isModelLoaded) return;
 
 	char path[256];
@@ -281,29 +326,37 @@ static void SaveModel() {
 
 	// Copy data
 	R3DRiggedModelInfo mdlinfo = info;
-
-	// Make copy of materials array (need for replace full texture path to texture name in gamedata)
 	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
-	SDL_memcpy(mdlinfo.matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
+	CopyTextures(&mdlinfo, buffer, gamedata_path);
 
-	for (Uint32 i = 0; i < info.matCount; i++) {
-		// Copy texture
-		Texture* tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
-
-		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, model_extra.mat_names[i].name);
-		CopyTexture(path, tx->tex_name);
-
-		// Replace path to name
-		SDL_snprintf(mdlinfo.matInfo[i].texture, 128, "%s", model_extra.mat_names[i].name);
-	}
 
 	mat4 mdl_matrix;
 	CalculateModelMatrix(rstate, &mdl_matrix);
 	SDL_snprintf(path, 256, "%s/models/%s.pm2", gamedata_path, MDL_NAME);
 
+	pm2_export.ExportModel(path, &mdlinfo, &mdl_matrix);
 
-	// TODO
-	//pm2_export.ExportModel(path, &mdlinfo, &mdl_matrix);
+	// Free array copy
+	rg_free(mdlinfo.matInfo);
+}
+
+static void SaveModelRigged() {
+	if (!isModelLoaded) return;
+
+	char path[256];
+	String gamedata_path = GetGamedataPath();
+	VertexBuffer* buffer = GetVertexbuffer();
+
+	// Copy data
+	R3DRiggedModelInfo mdlinfo = info;
+	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
+	CopyTextures(&mdlinfo, buffer, gamedata_path);
+
+	mat4 mdl_matrix;
+	CalculateModelMatrix(rstate, &mdl_matrix);
+	SDL_snprintf(path, 256, "%s/models/%s.pm2", gamedata_path, MDL_NAME);
+
+	pm2_export.ExportRiggedModel(path, &mdlinfo, kmodel, &mdl_matrix);
 
 	// Free array copy
 	rg_free(mdlinfo.matInfo);
@@ -333,12 +386,14 @@ static void ReplaceTextureFD(Uint32 matid, Uint32 txidx) {
 }
 
 static void FreeLoadedModel() {
+	SetRenderSkeleton(rstate, false);
 	FreeVBuffer(GetVertexbuffer());
 	for (Uint32 i = 0; i < animcount; i++) {
 		RG_DELETE(Animation, anims[i]);
 	}
 
 	RG_DELETE(KinematicsModel, kmodel);
+	kmodel = NULL;
 
 	FreeModelInfo fminfo = {};
 	fminfo.extra = &model_extra;
@@ -349,10 +404,21 @@ static void FreeLoadedModel() {
 	//obj_importer.FreeModelData(&info);
 	isModelLoaded = false;
 
-	
+
 }
 
 static void DrawGUI() {
+	static Bool isErrorWndOpened = true;
+	if (isLoadingFailed) {
+		ImGui::Begin("Error", &isErrorWndOpened, ImGuiWindowFlags_NoResize);
+		ImGui::Text("Unable to load model!");
+		ImGui::Text("%s", errorStr);
+		ImGui::End();
+		if (!isErrorWndOpened) {
+			isLoadingFailed = false;
+		}
+	}
+
 	ImGui::Begin("Model importer");
 
 	VertexBuffer* buffer = GetVertexbuffer(); // Loaded model
@@ -367,8 +433,11 @@ static void DrawGUI() {
 			}
 			ImGui::SameLine();
 
-			if (ImGui::Button("Save")) {
-				SaveModel();
+			if (ImGui::Button("Export as static")) {
+				SaveModelStatic();
+			}
+			if (ImGui::Button("Export as rigged")) {
+				SaveModelRigged();
 			}
 			ImGui::SameLine();
 #if 0
@@ -424,9 +493,17 @@ static void DrawGUI() {
 		if (!isModelLoaded) { ImGui::BeginDisabled(); }
 
 		if (ImGui::BeginTabItem("Mesh")) {
-
-			ImGui::Checkbox("Draw mesh", GetRenderShowmesh(rstate));
-			ImGui::Checkbox("Wireframe", GetRenderWireframe(rstate));
+			static String cullMode[] = { "None", "Back", "Front" };
+			static Sint32 currentCullMode = 0;
+			if (ImGui::Combo("Cull mode", &currentCullMode, cullMode, 3)) {
+				SetRenderCullMode(rstate, currentCullMode);
+			}
+			Bool showmesh = GetRenderShowmesh(rstate);
+			Bool wireframe = GetRenderWireframe(rstate);
+			ImGui::Checkbox("Draw mesh", &showmesh);
+			ImGui::Checkbox("Wireframe", &wireframe);
+			SetRenderShowmesh(rstate, showmesh);
+			SetRenderWireframe(rstate, wireframe);
 
 			for (Uint32 i = 0; i < buffer->meshes; i++) {
 				ImGui::PushID(uid);
@@ -435,6 +512,12 @@ static void DrawGUI() {
 					Uint32 midx = buffer->mat[i];
 					ImGui::Text("Material: %d (%s)", midx, model_extra.mat_names[midx].name);
 					ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
+					if (ImGui::RadioButton("Select", meshSelected == i)) {
+						if (meshSelected == i) { meshSelected = -1; } // Remove selection
+						else { meshSelected = i; } // Set current
+						SetRenderMeshHilight(rstate, meshSelected);
+					}
+
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
@@ -542,10 +625,12 @@ static void DrawGUI() {
 		if (ImGui::BeginTabItem("Skeleton")) {
 
 
-			ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
+			Bool skeleton = GetRenderSkeleton(rstate);
+			ImGui::Checkbox("Show skeleton", &skeleton);
+			SetRenderSkeleton(rstate, skeleton);
+			//ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
 
-			// TODO: Set actual bone count
-			for (Uint32 i = 0; i < 1024; i++) {
+			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
 				ImGui::PushID(uid);
 				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.bone_names[i].name)) {
 
@@ -559,15 +644,37 @@ static void DrawGUI() {
 			ImGui::EndTabItem();
 		}
 
-		if (!isModelLoaded) { ImGui::EndDisabled(); }
+		//if (!isModelLoaded) { ImGui::EndDisabled(); }
 
-		if (animcount == 0) { ImGui::BeginDisabled(); }
+		//if (animcount == 0) { ImGui::BeginDisabled(); }
 		if (ImGui::BeginTabItem("Animations")) {
 
 			ImGui::SliderFloat("Speed", &animationSpeed, 0.0f, 10.0f);
 
 			if (ImGui::Button("Stop")) {
 				kmodel->GetAnimator()->PlayAnimation(NULL);
+			}
+
+			Bool animdisable = GetRenderAnimDisable(rstate);
+			ImGui::Checkbox("Disable animation", &animdisable);
+			SetRenderAnimDisable(rstate, animdisable);
+			//ImGui::Checkbox("Disable animation", GetRenderAnimDisable(rstate));
+
+			ImGui::Checkbox("Repeat", &repeatAnim);
+
+			if (ImGui::Button("Load")) {
+				char raw_path[512] = {};
+				char path[512] = {};
+				FD_Filter filters[1] = {
+					{"MMD motion data", "VMD"}
+				};
+				if (ShowOpenDialog(raw_path, 512, filters, 1)) {
+					FS_ReplaceSeparators(path, raw_path);
+					rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
+					Animation* anim = vmd_importer.ImportAnimation(path, kmodel);
+					anims[animcount] = anim;
+					animcount++;
+				}
 			}
 
 			for (Uint32 i = 0; i < animcount; i++) {
@@ -579,6 +686,8 @@ static void DrawGUI() {
 
 					if (ImGui::Button("Play")) {
 						anim->SetSpeed(animationSpeed);
+						anim->SetRepeat(repeatAnim);
+
 						kmodel->GetAnimator()->PlayAnimation(anim);
 					}
 
@@ -590,7 +699,8 @@ static void DrawGUI() {
 
 			ImGui::EndTabItem();
 		}
-		if (animcount == 0) { ImGui::EndDisabled(); }
+		//if (animcount == 0) { ImGui::EndDisabled(); }
+		if (!isModelLoaded) { ImGui::EndDisabled(); }
 
 
 		ImGui::EndTabBar();
@@ -604,6 +714,7 @@ public:
 	Application() {
 		this->isClient = true;
 		this->isGraphics = false;
+		this->imguiIni = "im_modeleditor.ini"; //TODO: Write custom state saver (Engine do not save imgui state if isGraphics flag is false)
 	}
 	~Application() {}
 
@@ -615,14 +726,14 @@ public:
 
 		//static Engine::KinematicsModel* kmodel = NULL;
 		//static Engine::Animation* anim = NULL;
-		if (kmodel && anims[0]) {
+		if (kmodel && isModelLoaded) {
 			kmodel->GetAnimator()->Update(GetDeltaTime());
 			kmodel->RebuildSkeleton();
 			kmodel->SolveCCDIK();
 			kmodel->RecalculateTransform();
 
 			mat4* mptr = GetRenderBoneMatPtr(rstate);
-			SDL_memcpy(mptr, kmodel->GetTransforms(), sizeof(mat4*) * kmodel->GetBoneCount());
+			SDL_memcpy(mptr, kmodel->GetTransforms(), sizeof(mat4) * kmodel->GetBoneCount());
 
 		}
 
@@ -631,6 +742,7 @@ public:
 	}
 
 	void Initialize() {
+
 		World* world = GetWorld();
 
 		camera = new Camera(world, 0.1f, 1000, rgToRadians(75), 1.777f);
@@ -647,7 +759,9 @@ public:
 
 	void Quit() {
 
-		FreeLoadedModel();
+		if (isModelLoaded) {
+			FreeLoadedModel();
+		}
 
 		delete camcontrol;
 		delete camera;

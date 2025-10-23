@@ -145,6 +145,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="anim_importer.h" />
+    <ClInclude Include="assimputil.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />
     <ClInclude Include="geom_importer.h" />

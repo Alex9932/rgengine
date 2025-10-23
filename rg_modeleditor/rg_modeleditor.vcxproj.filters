@@ -71,5 +71,8 @@
     <ClInclude Include="_glshader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="assimputil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

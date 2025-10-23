@@ -28,9 +28,10 @@ typedef struct VertexBuffer {
 } VertexBuffer;
 
 struct RenderState;
+struct ModelExtraData;
 
 VertexBuffer* GetVertexbuffer();
-void MakeVBuffer(R3DRiggedModelInfo* info, String mdlpath);
+void MakeVBuffer(R3DRiggedModelInfo* info, ModelExtraData* extra, String mdlpath);
 void FreeVBuffer(VertexBuffer* ptr);
 void DrawBuffer(RenderState* state, VertexBuffer* ptr);
 
