@@ -154,7 +154,27 @@ namespace Engine {
             char err_msg[128];
 #if defined(RG_PLATFORM_WINDOWS)
             DWORD err_code = GetLastError();
-            SDL_snprintf(err_msg, 128, "Unable to load library: %s!\nError code: 0x%.8x", name, err_code);
+            char errbuf[256];
+            DWORD size = FormatMessageA(
+                FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                err_code,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                errbuf,
+                sizeof(errbuf),
+                NULL
+            );
+            if (size > 0) {
+				// remove trailing new line characters
+                if (size >= 2 && errbuf[size - 2] == '\r') {
+                    errbuf[size - 2] = '\0';
+				}
+                if (size >= 1 && errbuf[size - 1] == '\n') {
+                    errbuf[size - 1] = '\0';
+                }
+            }
+            SDL_snprintf(err_msg, 128, "Unable to load library: %s!\n%s (0x%.8x)", name, errbuf, err_code);
 #elif defined(RG_PLATFORM_LINUX)
             SDL_snprintf(err_msg, 128, "Unable to load library: %s!", name);
 #endif
