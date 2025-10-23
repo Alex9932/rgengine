@@ -18,14 +18,19 @@ namespace Engine {
     }
 
 
-    Animation::Animation(String name) {
+    Animation::Animation(String name, AnimationTrack* tracksBasePointer) {
         SDL_strlcpy(m_name, name, 64);
+		this->base_pointer = tracksBasePointer;
     }
 
     Animation::~Animation() {
-		for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
-			RG_DELETE(AnimationTrack, this->bone_tracks[i]);
-		}
+        if(this->base_pointer) {
+			GetDefaultAllocator()->Deallocate(this->base_pointer);
+        } else {
+		    for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
+			    RG_DELETE(AnimationTrack, this->bone_tracks[i]);
+		    }
+        }
 		this->bone_tracks.clear();
     }
 
@@ -62,12 +67,12 @@ namespace Engine {
         }
     }
 
-    void Animation::Finish(Uint32 frame) {
+    void Animation::Finish(Float32 frame) {
         this->lastframe = frame;
         // Sort keyframes by timestamp
-        for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
-            this->bone_tracks[i]->SortByTimestamp();
-        }
+        //for (Uint32 i = 0; i < this->bone_tracks.size(); i++) {
+        //    this->bone_tracks[i]->SortByTimestamp();
+        //}
     }
 
     void Animation::Reset() {

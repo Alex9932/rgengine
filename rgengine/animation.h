@@ -6,14 +6,14 @@
 #include <vector>
 
 typedef struct BoneKeyFrame {
-    Uint32 timestamp;
-    vec3   scale;
-    quat   rotation;
-    vec3   translation;
-    vec4   interp_x;
-    vec4   interp_y;
-    vec4   interp_z;
-    vec4   interp_r;
+    Float32 timestamp;
+    vec3    scale;
+    quat    rotation;
+    vec3    translation;
+    vec4    interp_x;
+    vec4    interp_y;
+    vec4    interp_z;
+    vec4    interp_r;
 } BoneKeyFrame;
 
 namespace Engine {
@@ -44,16 +44,17 @@ namespace Engine {
 
     class Animation {
         private:
+            AnimationTrack* base_pointer = NULL;
             std::vector<AnimationTrack*> bone_tracks;
-            double anim_time  = 0;
-            double anim_fps   = 30; // VMD animations in 30 fps
-            double anim_speed = 1;
-            Uint32 lastframe  = 0;
-            Bool   repeat     = false;
-            char   m_name[64];
+            double  anim_time  = 0;
+            double  anim_fps   = 30; // VMD animations in 30 fps
+            double  anim_speed = 1;
+            Float32 lastframe  = 0;
+            Bool    repeat     = false;
+            char    m_name[64];
 
         public:
-            RG_DECLSPEC Animation(String name);
+            RG_DECLSPEC Animation(String name, AnimationTrack* tracksBasePointer);
             RG_DECLSPEC ~Animation();
 
             RG_DECLSPEC void Update(double dt);
@@ -66,7 +67,7 @@ namespace Engine {
 
             RG_INLINE Uint32 GetAnimationTrackCount() { return (Uint32)this->bone_tracks.size(); }
 
-            RG_DECLSPEC void Finish(Uint32 frame);
+            RG_DECLSPEC void Finish(Float32 frame);
 
             RG_INLINE void SetTime(double time) { this->anim_time = time; }
             RG_INLINE void SetFramerate(double fps) { this->anim_fps = fps; }

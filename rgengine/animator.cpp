@@ -21,7 +21,7 @@ namespace Engine {
         GetDefaultAllocator()->Deallocate(this->bones_state);
     }
 
-    static void FindBoneKeyFrames(Uint32 cur_frame, AnimationTrack* track, Uint32* f1, Uint32* f2) {
+    static void FindBoneKeyFrames(Float32 cur_frame, AnimationTrack* track, Uint32* f1, Uint32* f2) {
         Uint32 first = 0;
         Uint32 second = track->GetKeyframeCount() - 1;
         for (Uint32 i = 0; i < track->GetKeyframeCount(); i++) {
@@ -36,20 +36,25 @@ namespace Engine {
         *f2 = second;
     }
 
-    static Float64 Bezier(vec4* points, Float64 dt) {
-        float t = 0.5f;
-        float s = 0.5f;
-        for (int i = 0; i < 15; i++) {
-            float zero = (3 * s * s * t * points->x) + (3 * s * t * t * points->z) + (t * t * t) - dt;
-            if (SDL_fabsf(zero) < 0.00001f) { break; }
-            if (zero > 0) { t -= 1 / (4 * SDL_powf(2, i)); }
-            else { t += 1 / (4 * SDL_powf(2, i)); }
+    // TODO: Add LUT
+    static Float32 Bezier(vec4* points, Float64 dt) {
+        Float64 t = 0.5f;
+        Float64 s = 0.5f;
+        Float64 z = 0; // zero
+        Float64 q = 0;
+        for (Uint32 i = 0; i < 15; i++) {
+            z = (3 * s * s * t * points->x) + (3 * s * t * t * points->z) + (t * t * t) - dt;
+            if (SDL_fabs(z) < 0.00001f) { break; }
+            //q = 1 / (4 * SDL_pow(2, i));
+            q = 1 / (4 << i);
+            if (z > 0) { t -= q; }
+            else { t += q; }
             s = 1 - t;
         }
-        return (3 * s * s * t * points->y) + (3 * s * t * t * points->w) + (t * t * t);
+        return (Float32)((3 * s * s * t * points->y) + (3 * s * t * t * points->w) + (t * t * t));
     }
 
-    void Animator::Update(double dt) {
+    void Animator::Update(Float64 dt) {
         Uint32 bone_count = this->model->GetBoneCount();
 
         // No animation
@@ -58,10 +63,7 @@ namespace Engine {
             for (Uint32 i = 0; i < bone_count; i++) {
                 Bone* bone = this->model->GetBone(i);
                 bone->position = bone->offset_pos;
-                bone->rotation.x = 0;
-                bone->rotation.y = 0;
-                bone->rotation.z = 0;
-                bone->rotation.w = 1;
+                bone->rotation = bone->offset_rot;
             }
             return;
         }
@@ -79,10 +81,7 @@ namespace Engine {
             AnimationTrack* track = this->current_animation->GetBoneAnimationTrack(bone->hash);
             if (track == NULL) { // AnimationTrack is doen't exist for this bone
                 bone->position = bone->offset_pos;
-                bone->rotation.x = 0;
-                bone->rotation.y = 0;
-                bone->rotation.z = 0;
-                bone->rotation.w = 1;
+                bone->rotation = bone->offset_rot;
                 continue;
             }
 
@@ -97,20 +96,21 @@ namespace Engine {
                 continue;
             }
 
-            Uint32 delta = frame2->timestamp - frame1->timestamp;
-            double Df = this->current_animation->GetTime() - frame1->timestamp;
-            double anim_dt = 0;
+            Float32 delta = frame2->timestamp - frame1->timestamp;
+            Float64 Df = this->current_animation->GetTime() - frame1->timestamp;
+            Float64 anim_dt = 0;
             if (delta != 0) {
-                anim_dt = (Df) / (double)delta;
+                anim_dt = (Df) / (Float64)delta;
             }
 
-            Float64 x = Bezier(&frame1->interp_x, anim_dt);
-            Float64 y = Bezier(&frame1->interp_y, anim_dt);
-            Float64 z = Bezier(&frame1->interp_z, anim_dt);
-            Float64 r = Bezier(&frame1->interp_r, anim_dt);
+            Float32 x = Bezier(&frame1->interp_x, anim_dt);
+            Float32 y = Bezier(&frame1->interp_y, anim_dt);
+            Float32 z = Bezier(&frame1->interp_z, anim_dt);
+            Float32 r = Bezier(&frame1->interp_r, anim_dt);
 
             vec3 anim_pos = bone->offset_pos + frame1->translation.lerp(frame2->translation, (float)anim_dt);
-            quat anim_rot = frame1->rotation.slerp(frame2->rotation, (float)r);
+            //vec3 anim_pos = frame1->translation.lerp(frame2->translation, (float)anim_dt);
+            quat anim_rot = frame1->rotation.slerp(frame2->rotation, r);
 
             // Reset flag
             if (animationChanged && GetUptime() >= timestamp + transition_time) {
