@@ -1,4 +1,5 @@
-﻿# rgengine
+﻿![](https://raw.githubusercontent.com/Alex9932/rgengine/master/resources/platform/rgengine%20logo.png)
+# rgengine
 
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg?style=for-the-badge)
 ![DirectX 11](https://img.shields.io/badge/DirectX-11-0078D7.svg?style=for-the-badge)
