@@ -119,7 +119,7 @@ static String txt_PixelShader = "#version 330 core\n"
 "\n"
 // N - normal; V - Viewdir; P - World-space position; R - Roughness; M - metallic; A - albedo
 "vec3 CalculateLight(vec3 N, vec3 V, vec3 P, float M, float R, vec3 A) {\n"
-"    vec3 ambient = vec3(0.03) * A * (1.0 - M);\n"
+"    vec3 ambient = vec3(0.3) * A * (1.0 - M);\n"
 "    vec3 L = normalize(vec3(0, 0.2, 1.8));\n"
 "    vec3 C = vec3(1, 0.9, 0.8) * 1.8;\n"
 "    vec3 Lo = vec3(0.0);\n"

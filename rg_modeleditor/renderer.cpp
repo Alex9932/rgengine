@@ -290,7 +290,8 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	// Window
 	//staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-	staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", 800, 600, SDL_WINDOW_OPENGL);
+	//staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", 800, 600, SDL_WINDOW_OPENGL); // Zaebalo 800x600
+	staticstate.hwnd = SDL_CreateWindow("rgEngine - OpenGL", 1280, 720, SDL_WINDOW_OPENGL);
 	if (!staticstate.hwnd) {
 		RG_ERROR_MSG("Failed to create window!");
 	}

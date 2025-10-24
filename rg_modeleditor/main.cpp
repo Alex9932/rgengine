@@ -410,7 +410,7 @@ static void FreeLoadedModel() {
 static void DrawGUI() {
 	static Bool isErrorWndOpened = true;
 	if (isLoadingFailed) {
-		ImGui::Begin("Error", &isErrorWndOpened, ImGuiWindowFlags_NoResize);
+		ImGui::Begin("Error", &isErrorWndOpened, ImGuiWindowFlags_Modal);
 		ImGui::Text("Unable to load model!");
 		ImGui::Text("%s", errorStr);
 		ImGui::End();
