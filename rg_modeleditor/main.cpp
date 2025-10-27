@@ -407,6 +407,39 @@ static void FreeLoadedModel() {
 
 }
 
+struct MBone {
+	Sint32 index;
+	String name;
+
+	mat4   offset;
+	quat   offset_rot;
+	vec3   offset_pos;
+
+	std::vector<Sint32> childs;
+};
+
+static MBone mbones[1024];
+
+static void BuildSkeletonTree(Sint32 idx, Uint32 uid) {
+
+	ImGui::PushID(uid + idx);
+	if (ImGui::TreeNode("##xx", "[%d] %s", idx, model_extra.bone_names[idx].name)) {
+
+		// TODO: Add bone information
+
+		ImGui::InputFloat3("Offset pos", mbones[idx].offset_pos.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
+		ImGui::InputFloat4("Offset rot", mbones[idx].offset_rot.v4.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
+		//ImGui::InputFloat3("Offset pos", mbones[idx].offset_pos.array, "%.3f", ImGuiInputTextFlags_ReadOnly);
+
+		for (Uint32 i = 0; i < mbones[idx].childs.size(); i++) {
+			BuildSkeletonTree(mbones[idx].childs[i], uid);
+		}
+
+		ImGui::TreePop();
+	}
+	ImGui::PopID();
+}
+
 static void DrawGUI() {
 	static Bool isErrorWndOpened = true;
 	if (isLoadingFailed) {
@@ -436,6 +469,7 @@ static void DrawGUI() {
 			if (ImGui::Button("Export as static")) {
 				SaveModelStatic();
 			}
+			ImGui::SameLine();
 			if (ImGui::Button("Export as rigged")) {
 				SaveModelRigged();
 			}
@@ -625,11 +659,44 @@ static void DrawGUI() {
 		if (ImGui::BeginTabItem("Skeleton")) {
 
 
+
 			Bool skeleton = GetRenderSkeleton(rstate);
 			ImGui::Checkbox("Show skeleton", &skeleton);
 			SetRenderSkeleton(rstate, skeleton);
 			//ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
 
+			// Build structure
+			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+				mbones[i].childs.clear();
+			}
+
+			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+				Bone* b = kmodel->GetBone(i);
+				mbones[i].index = b->id;
+				mbones[i].name  = b->name;
+
+				mbones[i].offset     = b->offset;
+				mbones[i].offset_rot = b->offset_rot;
+				mbones[i].offset_pos = b->offset_pos;
+
+				if (b->parent != -1) {
+					mbones[b->parent].childs.push_back(b->id);
+				}
+			}
+
+			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+				if (mbones[i].index == 0) {
+					//ImGui::PushID(uid);
+					Uint32 _uid = uid + kmodel->GetBoneCount();
+					BuildSkeletonTree(i, _uid);
+
+					//ImGui::PopID();
+					//uid++;
+					break;
+				}
+			}
+
+#if 0
 			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
 				ImGui::PushID(uid);
 				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.bone_names[i].name)) {
@@ -641,6 +708,7 @@ static void DrawGUI() {
 				ImGui::PopID();
 				uid++;
 			}
+#endif
 			ImGui::EndTabItem();
 		}
 

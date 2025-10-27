@@ -458,6 +458,9 @@ static mat4 bone_mats[1024];
 static void DrawSkeleton(RenderState* state) {
 	if (!state->kmodel) return;
 
+	mat4 model;
+	CalculateModelMatrix(state, &model);
+
 	//if (buffer->skeleton->bone_count == 0) return;
 	Uint32 idx = 0;
 
@@ -481,8 +484,8 @@ static void DrawSkeleton(RenderState* state) {
 
 		vec4 pos1 = { 0, 0, 0, 1 };
 		
-		vec4 bpos = parent_t * pos1;
-		vec4 ppos = local_t  * pos1;
+		vec4 bpos = model * parent_t * pos1;
+		vec4 ppos = model * local_t  * pos1;
 
 		//if (b->parent != -1) {
 		//	Bone* pb = mdl->GetBone(b->parent);
