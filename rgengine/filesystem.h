@@ -174,6 +174,15 @@ namespace Engine {
             RG_FORCE_INLINE Bool EndOfStream() { return m_offset >= m_len; }
             RG_FORCE_INLINE size_t Tell() { return m_offset; }
 
+			RG_FORCE_INLINE void Seek(Uint32 a, Uint32 flag) {
+				switch (flag) {
+				case RG_FS_SEEK_SET: { m_offset = a; break; }
+				case RG_FS_SEEK_CUR: { m_offset += a; break; }
+				case RG_FS_SEEK_END: { m_offset = m_len; break; }
+				default: { break; }
+				}
+			}
+
             //RG_FORCE_INLINE size_t GetOffset() { return stream->offset; }
             //RG_FORCE_INLINE ResourceStream* GetStream() { return stream; }
             //RG_FORCE_INLINE size_t GetReadedBlocks() { return readed_blocks; }
