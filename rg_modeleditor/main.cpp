@@ -423,7 +423,7 @@ static MBone mbones[1024];
 static void BuildSkeletonTree(Sint32 idx, Uint32 uid) {
 
 	ImGui::PushID(uid + idx);
-	if (ImGui::TreeNode("##xx", "[%d] %s", idx, model_extra.bone_names[idx].name)) {
+	if (ImGui::TreeNode("##xx", "[%d] %s", idx, mbones[idx].name)) {
 
 		// TODO: Add bone information
 
@@ -440,6 +440,321 @@ static void BuildSkeletonTree(Sint32 idx, Uint32 uid) {
 	ImGui::PopID();
 }
 
+static void DrawModelTab(Uint32* uid) {
+	if (ImGui::Button("Load")) {
+		OpenModel();
+	}
+	ImGui::SameLine();
+
+	if (ImGui::Button("Export as static")) {
+		SaveModelStatic();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Export as rigged")) {
+		SaveModelRigged();
+	}
+	ImGui::SameLine();
+#if 0
+	if (ImGui::Button("Test model")) {
+		//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
+		obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
+		//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
+		MakeVBuffer(&info);
+		isModelLoaded = true;
+	}
+	ImGui::SameLine();
+#endif
+	if (ImGui::Button("Free")) {
+		FreeLoadedModel();
+	}
+
+	ImGui::Checkbox("Skip first material", &skipFirstMat);
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::Text("Use for skip first \"Default Material\" in some models");
+		ImGui::EndTooltip();
+	}
+
+	ImGui::Separator();
+
+	ImGui::Text("Loaded model: %s", MDL_NAME);
+	ImGui::Text("Path: %s", MDL_PATH);
+
+	ImGui::Text("Vertices: %d", info.vCount);
+	ImGui::Text("Indices: %d", info.iCount);
+	ImGui::Text("IDX size: %d", info.iType);
+
+	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+		vec3* size = GetRenderMdlsizePtr(rstate);
+		vec3* rot = GetRenderMdlrotPtr(rstate);
+		ImGui::InputFloat3("Scale##input3", size->array);
+		ImGui::SliderFloat3("Scale##slider3", size->array, 0, 10);
+		ImGui::SliderAngle("Rotation X##slider", &rot->x);
+		ImGui::SliderAngle("Rotation Y##slider", &rot->y);
+		ImGui::SliderAngle("Rotation Z##slider", &rot->z);
+
+		if (ImGui::Button("Reset Transform")) {
+			rot->x = 0; rot->y = 0; rot->z = 0;
+			size->x = 1; size->y = 1; size->z = 1;
+		}
+	}
+}
+
+static void DrawMeshTab(Uint32* uid) {
+	VertexBuffer* buffer = GetVertexbuffer();
+
+	static String cullMode[] = { "None", "Back", "Front" };
+	static Sint32 currentCullMode = 0;
+	if (ImGui::Combo("Cull mode", &currentCullMode, cullMode, 3)) {
+		SetRenderCullMode(rstate, currentCullMode);
+	}
+	Bool showmesh = GetRenderShowmesh(rstate);
+	Bool wireframe = GetRenderWireframe(rstate);
+	ImGui::Checkbox("Draw mesh", &showmesh);
+	ImGui::Checkbox("Wireframe", &wireframe);
+	SetRenderShowmesh(rstate, showmesh);
+	SetRenderWireframe(rstate, wireframe);
+
+	for (Uint32 i = 0; i < buffer->meshes; i++) {
+		ImGui::PushID(*uid);
+		if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mesh_names[i].name)) {
+			ImGui::Text("Index: %d (%d)", buffer->pairs[i].start, buffer->pairs[i].count);
+			Uint32 midx = buffer->mat[i];
+			ImGui::Text("Material: %d (%s)", midx, model_extra.mat_names[midx].name);
+			ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
+			if (ImGui::RadioButton("Select", meshSelected == i)) {
+				if (meshSelected == i) { meshSelected = -1; } // Remove selection
+				else { meshSelected = i; } // Set current
+				SetRenderMeshHilight(rstate, meshSelected);
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+		(*uid)++;
+	}
+}
+
+static void DrawMaterialsTab(Uint32* uid) {
+	VertexBuffer* buffer = GetVertexbuffer();
+
+	for (Uint32 i = 0; i < buffer->tcount; i++) {
+		ImGui::PushID(*uid);
+		if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mat_names[i].name)) {
+
+			Texture* tx;
+
+			if (ImGui::BeginTable("MaterialTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0); ImGui::Text("Name");
+				ImGui::TableSetColumnIndex(1); ImGui::InputText("##matName", model_extra.mat_names[i].name, 128);
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0); ImGui::Text("Color");
+				ImGui::TableSetColumnIndex(1); ImGui::ColorEdit3("##matColor", buffer->colors[i].array);
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+				ImGui::Text("Albedo");
+				ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
+				if (ImGui::Button("Replace texture")) {
+					ReplaceTextureFD(i, ALBEDO_TEXTURE);
+				}
+				ImGui::PopID();
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					if (dropEvent == DROP_COORD) {
+						ImGui::Text("Drop here to replace texture");
+					}
+					else if (dropEvent == DROP_FILE) {
+						ReplaceTexture(dropPath, i, ALBEDO_TEXTURE);
+						dropEvent = DROP_NONE;
+					}
+					else {
+						ImGui::Text("Path: %s", tx->tex_name);
+						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+					}
+					ImGui::EndTooltip();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
+				ImGui::Text("Normal map");
+				ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
+				if (ImGui::Button("Replace texture")) {
+					ReplaceTextureFD(i, NORMAL_TEXTURE);
+				}
+				ImGui::PopID();
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::Text("Path: %s", tx->tex_name);
+					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+					ImGui::EndTooltip();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				tx = buffer->textures[i * 3 + PBR_TEXTURE];
+				ImGui::Text("PBR");
+				ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
+				if (ImGui::Button("Replace texture")) {
+					ReplaceTextureFD(i, PBR_TEXTURE);
+				}
+				ImGui::PopID();
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::Text("Path: %s", tx->tex_name);
+					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+					ImGui::EndTooltip();
+				}
+
+				ImGui::EndTable();
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+		(*uid)++;
+	}
+}
+
+static void DrawSkeletonTab(Uint32* uid) {
+
+
+	Bool skeleton = GetRenderSkeleton(rstate);
+	ImGui::Checkbox("Show skeleton", &skeleton);
+	SetRenderSkeleton(rstate, skeleton);
+	//ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
+
+	// Build structure
+	for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+		mbones[i].childs.clear();
+	}
+
+	for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+		Bone* b = kmodel->GetBone(i);
+		mbones[i].index = b->id;
+		mbones[i].name = b->name;
+
+		mbones[i].offset = b->offset;
+		mbones[i].offset_rot = b->offset_rot;
+		mbones[i].offset_pos = b->offset_pos;
+
+		if (b->parent != -1) {
+			mbones[b->parent].childs.push_back(b->id);
+		}
+	}
+
+	for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+		if (mbones[i].index == 0) {
+			//ImGui::PushID(uid);
+			Uint32 _uid = *uid + kmodel->GetBoneCount();
+			BuildSkeletonTree(i, _uid);
+
+			//ImGui::PopID();
+			//uid++;
+			break;
+		}
+	}
+
+#if 0
+	for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
+		ImGui::PushID(uid);
+		if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.bone_names[i].name)) {
+
+			// TODO: Add bone information
+
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+		uid++;
+	}
+#endif
+}
+
+static void DrawAnimationTab(Uint32* uid) {
+	ImGui::SliderFloat("Speed", &animationSpeed, 0.0f, 10.0f);
+
+	if (ImGui::Button("Stop")) {
+		kmodel->GetAnimator()->PlayAnimation(NULL);
+	}
+
+	Bool animdisable = GetRenderAnimDisable(rstate);
+	ImGui::Checkbox("Disable animation", &animdisable);
+	SetRenderAnimDisable(rstate, animdisable);
+	//ImGui::Checkbox("Disable animation", GetRenderAnimDisable(rstate));
+
+	ImGui::Checkbox("Repeat", &repeatAnim);
+
+	if (ImGui::Button("Load")) {
+		char path[512] = {};
+		char p[512] = {};
+		char f[512] = {};
+		FD_Filter filters[2] = {
+			{"MMD motion data", "VMD"},
+			{"FBX animation only", "FBX"}
+		};
+		if (ShowOpenDialog(p, 512, filters, 2)) { // use "p" as rawpath
+			FS_ReplaceSeparators(path, p);
+			FS_SeparatePathFile(p, 256, f, 256, path); // and reuse it as file path
+			rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
+			if (rg_strenw(path, "vmd")) {
+				Animation* anim = vmd_importer.ImportAnimation(path, kmodel, true);
+				anims[animcount] = anim;
+				animcount++;
+			}
+			else {
+				LoadAnimationInfo animinfo = {};
+				char errmsg[256] = {};
+				ImportSceneData* importerstate = NULL;
+				const aiScene* scene = LoadScene(p, f, errmsg, 256, &importerstate);
+				for (Uint32 i = 0; i < scene->mNumAnimations; i++) {
+					animinfo.scene = scene;
+					animinfo.km = kmodel;
+					animinfo.anim_idx = i;
+					anims[animcount] = LoadAnimation(&animinfo);
+					animcount++;
+				}
+				FreeScene(importerstate);
+			}
+
+		}
+	}
+
+	for (Uint32 i = 0; i < animcount; i++) {
+		Animation* anim = anims[i];
+		String name = anim->GetName();
+
+		ImGui::PushID(*uid);
+		if (ImGui::TreeNode("##xx", "[%d] %s", i, name)) {
+
+			if (ImGui::Button("Play")) {
+				anim->SetSpeed(animationSpeed);
+				anim->SetRepeat(repeatAnim);
+
+				kmodel->GetAnimator()->PlayAnimation(anim);
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+		(*uid)++;
+	}
+}
+
 static void DrawGUI() {
 	static Bool isErrorWndOpened = true;
 	if (isLoadingFailed) {
@@ -454,261 +769,28 @@ static void DrawGUI() {
 
 	ImGui::Begin("Model importer");
 
-	VertexBuffer* buffer = GetVertexbuffer(); // Loaded model
-
 	Uint32 uid = 0;
 
 	if (ImGui::BeginTabBar("##tabs")) {
 		if (ImGui::BeginTabItem("Model")) {
-
-			if (ImGui::Button("Load")) {
-				OpenModel();
-			}
-			ImGui::SameLine();
-
-			if (ImGui::Button("Export as static")) {
-				SaveModelStatic();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Export as rigged")) {
-				SaveModelRigged();
-			}
-			ImGui::SameLine();
-#if 0
-			if (ImGui::Button("Test model")) {
-				//obj_importer.ImportModel("gamedata/models/untitled2.obj", &info);
-				obj_importer.ImportModel("gamedata/models/doublesided_cape.obj", &info);
-				//rgLogInfo(RG_LOG_RENDER, "Loaded model: %d %d %d %d", info.vCount, info.iCount, info.mCount, info.iType);
-				MakeVBuffer(&info);
-				isModelLoaded = true;
-			}
-			ImGui::SameLine();
-#endif
-			if (ImGui::Button("Free")) {
-				FreeLoadedModel();
-			}
-
-			ImGui::Checkbox("Skip first material", &skipFirstMat);
-			if (ImGui::IsItemHovered())
-			{
-				ImGui::BeginTooltip();
-				ImGui::Text("Use for skip first \"Default Material\" in some models");
-				ImGui::EndTooltip();
-			}
-
-			ImGui::Separator();
-
-			ImGui::Text("Loaded model: %s", MDL_NAME);
-			ImGui::Text("Path: %s", MDL_PATH);
-
-			ImGui::Text("Vertices: %d", info.vCount);
-			ImGui::Text("Indices: %d", info.iCount);
-			ImGui::Text("IDX size: %d", info.iType);
-
-			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-
-				vec3* size = GetRenderMdlsizePtr(rstate);
-				vec3* rot = GetRenderMdlrotPtr(rstate);
-				ImGui::InputFloat3("Scale##input3", size->array);
-				ImGui::SliderFloat3("Scale##slider3", size->array, 0, 10);
-				ImGui::SliderAngle("Rotation X##slider", &rot->x);
-				ImGui::SliderAngle("Rotation Y##slider", &rot->y);
-				ImGui::SliderAngle("Rotation Z##slider", &rot->z);
-
-				if (ImGui::Button("Reset Transform")) {
-					rot->x = 0; rot->y = 0; rot->z = 0;
-					size->x = 1; size->y = 1; size->z = 1;
-				}
-			}
-
+			DrawModelTab(&uid);
 			ImGui::EndTabItem();
 		}
 
 		if (!isModelLoaded) { ImGui::BeginDisabled(); }
 
 		if (ImGui::BeginTabItem("Mesh")) {
-			static String cullMode[] = { "None", "Back", "Front" };
-			static Sint32 currentCullMode = 0;
-			if (ImGui::Combo("Cull mode", &currentCullMode, cullMode, 3)) {
-				SetRenderCullMode(rstate, currentCullMode);
-			}
-			Bool showmesh = GetRenderShowmesh(rstate);
-			Bool wireframe = GetRenderWireframe(rstate);
-			ImGui::Checkbox("Draw mesh", &showmesh);
-			ImGui::Checkbox("Wireframe", &wireframe);
-			SetRenderShowmesh(rstate, showmesh);
-			SetRenderWireframe(rstate, wireframe);
-
-			for (Uint32 i = 0; i < buffer->meshes; i++) {
-				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mesh_names[i].name)) {
-					ImGui::Text("Index: %d (%d)", buffer->pairs[i].start, buffer->pairs[i].count);
-					Uint32 midx = buffer->mat[i];
-					ImGui::Text("Material: %d (%s)", midx, model_extra.mat_names[midx].name);
-					ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
-					if (ImGui::RadioButton("Select", meshSelected == i)) {
-						if (meshSelected == i) { meshSelected = -1; } // Remove selection
-						else { meshSelected = i; } // Set current
-						SetRenderMeshHilight(rstate, meshSelected);
-					}
-
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-				uid++;
-			}
-
+			DrawMeshTab(&uid);
 			ImGui::EndTabItem();
 		}
 
 		if (ImGui::BeginTabItem("Materials")) {
-
-			for (Uint32 i = 0; i < buffer->tcount; i++) {
-				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mat_names[i].name)) {
-
-					Texture* tx;
-
-					if (ImGui::BeginTable("MaterialTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-						ImGui::TableNextRow();
-						ImGui::TableSetColumnIndex(0); ImGui::Text("Name");
-						ImGui::TableSetColumnIndex(1); ImGui::InputText("##matName", model_extra.mat_names[i].name, 128);
-
-						ImGui::TableNextRow();
-						ImGui::TableSetColumnIndex(0); ImGui::Text("Color");
-						ImGui::TableSetColumnIndex(1); ImGui::ColorEdit3("##matColor", buffer->colors[i].array);
-
-						ImGui::TableNextRow();
-						ImGui::TableSetColumnIndex(0);
-						tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
-						ImGui::Text("Albedo");
-						ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
-						if (ImGui::Button("Replace texture")) {
-							ReplaceTextureFD(i, ALBEDO_TEXTURE);
-						}
-						ImGui::PopID();
-						ImGui::TableSetColumnIndex(1);
-						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							if (dropEvent == DROP_COORD) {
-								ImGui::Text("Drop here to replace texture");
-							}
-							else if (dropEvent == DROP_FILE) {
-								ReplaceTexture(dropPath, i, ALBEDO_TEXTURE);
-								dropEvent = DROP_NONE;
-							}
-							else {
-								ImGui::Text("Path: %s", tx->tex_name);
-								ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
-							}
-							ImGui::EndTooltip();
-						}
-
-						ImGui::TableNextRow();
-						ImGui::TableSetColumnIndex(0);
-						tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
-						ImGui::Text("Normal map");
-						ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
-						if (ImGui::Button("Replace texture")) {
-							ReplaceTextureFD(i, NORMAL_TEXTURE);
-						}
-						ImGui::PopID();
-						ImGui::TableSetColumnIndex(1);
-						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text("Path: %s", tx->tex_name);
-							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
-							ImGui::EndTooltip();
-						}
-
-						ImGui::TableNextRow();
-						ImGui::TableSetColumnIndex(0);
-						tx = buffer->textures[i * 3 + PBR_TEXTURE];
-						ImGui::Text("PBR");
-						ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
-						if (ImGui::Button("Replace texture")) {
-							ReplaceTextureFD(i, PBR_TEXTURE);
-						}
-						ImGui::PopID();
-						ImGui::TableSetColumnIndex(1);
-						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text("Path: %s", tx->tex_name);
-							ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
-							ImGui::EndTooltip();
-						}
-
-						ImGui::EndTable();
-					}
-
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-				uid++;
-			}
-
+			DrawMaterialsTab(&uid);
 			ImGui::EndTabItem();
 		}
 
 		if (ImGui::BeginTabItem("Skeleton")) {
-
-
-
-			Bool skeleton = GetRenderSkeleton(rstate);
-			ImGui::Checkbox("Show skeleton", &skeleton);
-			SetRenderSkeleton(rstate, skeleton);
-			//ImGui::Checkbox("Show skeleton", GetRenderSkeleton(rstate));
-
-			// Build structure
-			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
-				mbones[i].childs.clear();
-			}
-
-			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
-				Bone* b = kmodel->GetBone(i);
-				mbones[i].index = b->id;
-				mbones[i].name  = b->name;
-
-				mbones[i].offset     = b->offset;
-				mbones[i].offset_rot = b->offset_rot;
-				mbones[i].offset_pos = b->offset_pos;
-
-				if (b->parent != -1) {
-					mbones[b->parent].childs.push_back(b->id);
-				}
-			}
-
-			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
-				if (mbones[i].index == 0) {
-					//ImGui::PushID(uid);
-					Uint32 _uid = uid + kmodel->GetBoneCount();
-					BuildSkeletonTree(i, _uid);
-
-					//ImGui::PopID();
-					//uid++;
-					break;
-				}
-			}
-
-#if 0
-			for (Uint32 i = 0; i < kmodel->GetBoneCount(); i++) {
-				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.bone_names[i].name)) {
-
-					// TODO: Add bone information
-
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-				uid++;
-			}
-#endif
+			DrawSkeletonTab(&uid);
 			ImGui::EndTabItem();
 		}
 
@@ -716,55 +798,7 @@ static void DrawGUI() {
 
 		//if (animcount == 0) { ImGui::BeginDisabled(); }
 		if (ImGui::BeginTabItem("Animations")) {
-
-			ImGui::SliderFloat("Speed", &animationSpeed, 0.0f, 10.0f);
-
-			if (ImGui::Button("Stop")) {
-				kmodel->GetAnimator()->PlayAnimation(NULL);
-			}
-
-			Bool animdisable = GetRenderAnimDisable(rstate);
-			ImGui::Checkbox("Disable animation", &animdisable);
-			SetRenderAnimDisable(rstate, animdisable);
-			//ImGui::Checkbox("Disable animation", GetRenderAnimDisable(rstate));
-
-			ImGui::Checkbox("Repeat", &repeatAnim);
-
-			if (ImGui::Button("Load")) {
-				char raw_path[512] = {};
-				char path[512] = {};
-				FD_Filter filters[1] = {
-					{"MMD motion data", "VMD"}
-				};
-				if (ShowOpenDialog(raw_path, 512, filters, 1)) {
-					FS_ReplaceSeparators(path, raw_path);
-					rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
-					Animation* anim = vmd_importer.ImportAnimation(path, kmodel);
-					anims[animcount] = anim;
-					animcount++;
-				}
-			}
-
-			for (Uint32 i = 0; i < animcount; i++) {
-				Animation* anim = anims[i];
-				String name = anim->GetName();
-
-				ImGui::PushID(uid);
-				if (ImGui::TreeNode("##xx", "[%d] %s", i, name)) {
-
-					if (ImGui::Button("Play")) {
-						anim->SetSpeed(animationSpeed);
-						anim->SetRepeat(repeatAnim);
-
-						kmodel->GetAnimator()->PlayAnimation(anim);
-					}
-
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-				uid++;
-			}
-
+			DrawAnimationTab(&uid);
 			ImGui::EndTabItem();
 		}
 		//if (animcount == 0) { ImGui::EndDisabled(); }
