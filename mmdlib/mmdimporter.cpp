@@ -1,4 +1,6 @@
 ﻿#define DLL_EXPORT
+#pragma execution_character_set("utf-8")
+
 #include "mmdimporter.h"
 
 // Not Implemented yet
@@ -14,6 +16,7 @@
 #include <render.h>
 #include <filesystem.h>
 #include <meshtool.h>
+#include <rgstring.h>
 
 #include <utf8.h>
 
@@ -328,6 +331,7 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
 	info.ik_count      = ik;
 	info.ik_info       = ik_links;
 	info.buffer_handle = bone_buffer;
+	info.globalInv     = MAT4_IDENTITY();
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);
 
@@ -368,10 +372,6 @@ static void LoadPMX(String p, pmx_file** pmx_ptr, R3D_Vertex** vtx, void** idx) 
 		vertices[i].uv.x = pmx->vertices[i].uv.x;
 		vertices[i].uv.y = pmx->vertices[i].uv.y;
 	}
-
-#if RG_PMX_RECALCULATE_TANGENTS
-	
-#endif
 
 	*vtx = vertices;
 	*idx = indices;
@@ -638,11 +638,12 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* imi
 
 	// Kinematics model
 	KinematicsModelCreateInfo info = {};
-	info.bone_count = pmx->bone_count;
-	info.bones_info = bones_info;
-	info.ik_count = ik;
-	info.ik_info = ik_links;
+	info.bone_count    = pmx->bone_count;
+	info.bones_info    = bones_info;
+	info.ik_count      = ik;
+	info.ik_info       = ik_links;
 	info.buffer_handle = bone_buffer;
+	info.globalInv     = MAT4_IDENTITY();
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);
 
@@ -650,15 +651,159 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* imi
 	rg_free(bone_matrices);
 
 	rg_free(ik_links);
-	pmx_free(pmx);
+	//pmx_free(pmx);
 
 	return kmodel;
 }
 
 ///////////////////////////////////////////
 // VMD Animation
+#include <unordered_map>
+static std::unordered_map<String, String> vmd_to_vrm_bone_map = {
+	// --- Root / Body Core ---
+	{ "全ての親", "root" },
+	{ "センター", "hips" },
+	{ "上半身", "spine" },
+	{ "上半身2", "chest" },
+	{ "下半身", "pelvis" },
+	{ "首", "neck" },
+	{ "頭", "head" },
+	{ "グルーブ", "groove" },
+	{ "腰", "waist" },
 
-Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
+	// --- Shoulders / Arms ---
+	{ "左肩", "leftShoulder" },
+	{ "右肩", "rightShoulder" },
+	{ "左腕", "leftUpperArm" },
+	{ "右腕", "rightUpperArm" },
+	{ "左ひじ", "leftLowerArm" },
+	{ "右ひじ", "rightLowerArm" },
+	{ "左手首", "leftHand" },
+	{ "右手首", "rightHand" },
+
+	// --- Legs ---
+	{ "左足", "leftUpperLeg" },
+	{ "右足", "rightUpperLeg" },
+	{ "左ひざ", "leftLowerLeg" },
+	{ "右ひざ", "rightLowerLeg" },
+	{ "左足首", "leftFoot" },
+	{ "右足首", "rightFoot" },
+	{ "左つま先", "leftToes" },
+	{ "右つま先", "rightToes" },
+
+	// --- Eyes ---
+	{ "左目", "leftEye" },
+	{ "右目", "rightEye" },
+	{ "両目", "eyes" },
+
+	// --- Face (approximate standard VRM equivalents) ---
+	{ "あご", "jaw" },
+	{ "口", "mouth" },
+	{ "上まゆ", "leftEyebrow" },
+	{ "下まゆ", "rightEyebrow" },
+	{ "頬", "cheek" },
+	{ "舌", "tongue" },
+
+	// --- Fingers: Left Hand ---
+	{ "左親指０", "leftThumbProximal" },
+	{ "左親指１", "leftThumbIntermediate" },
+	{ "左親指２", "leftThumbDistal" },
+	{ "左人指１", "leftIndexProximal" },
+	{ "左人指２", "leftIndexIntermediate" },
+	{ "左人指３", "leftIndexDistal" },
+	{ "左中指１", "leftMiddleProximal" },
+	{ "左中指２", "leftMiddleIntermediate" },
+	{ "左中指３", "leftMiddleDistal" },
+	{ "左薬指１", "leftRingProximal" },
+	{ "左薬指２", "leftRingIntermediate" },
+	{ "左薬指３", "leftRingDistal" },
+	{ "左小指１", "leftLittleProximal" },
+	{ "左小指２", "leftLittleIntermediate" },
+	{ "左小指３", "leftLittleDistal" },
+
+	// --- Fingers: Right Hand ---
+	{ "右親指０", "rightThumbProximal" },
+	{ "右親指１", "rightThumbIntermediate" },
+	{ "右親指２", "rightThumbDistal" },
+	{ "右人指１", "rightIndexProximal" },
+	{ "右人指２", "rightIndexIntermediate" },
+	{ "右人指３", "rightIndexDistal" },
+	{ "右中指１", "rightMiddleProximal" },
+	{ "右中指２", "rightMiddleIntermediate" },
+	{ "右中指３", "rightMiddleDistal" },
+	{ "右薬指１", "rightRingProximal" },
+	{ "右薬指２", "rightRingIntermediate" },
+	{ "右薬指３", "rightRingDistal" },
+	{ "右小指１", "rightLittleProximal" },
+	{ "右小指２", "rightLittleIntermediate" },
+	{ "右小指３", "rightLittleDistal" },
+
+	// --- Hair / Accessories (optional common MMD names) ---
+	{ "髪", "hair" },
+	{ "前髪", "frontHair" },
+	{ "後髪", "backHair" },
+	{ "横髪", "sideHair" },
+	{ "スカート", "skirt" },
+	{ "リボン", "ribbon" },
+	{ "帽子", "hat" },
+	{ "羽", "wings" },
+	{ "アクセサリ", "accessory" },
+
+	// --- Spine auxiliary bones sometimes found in rigs ---
+	{ "胸", "upperChest" },
+	{ "背中", "back" },
+	{ "肩P", "shoulderParent" },
+	{ "左肩P", "leftShoulderParent" },
+	{ "右肩P", "rightShoulderParent" },
+
+	// --- Facial / Detail (optional extra) ---
+	{ "眉毛", "eyebrow" },
+	{ "まゆ", "brow" },
+	{ "まつげ", "eyelash" },
+	{ "目", "eye" },
+	{ "目まわり", "eyeArea" },
+	{ "鼻", "nose" },
+	{ "歯", "teeth" },
+	{ "舌先", "tongueTip" }
+
+	// No IK bone yet
+};
+
+void DebugBoneMap() {
+	rgLogInfo(RG_LOG_SYSTEM, "Actual map size: %d", vmd_to_vrm_bone_map.size());
+
+	for (const auto& pair : vmd_to_vrm_bone_map) {
+		rgLogInfo(RG_LOG_SYSTEM, "Key: '%s' -> Value: '%s'", pair.first, pair.second);
+
+		for (Uint32 i = 0; i < SDL_strlen(pair.first); i++) {
+			char c = pair.first[i];
+			rgLogInfo(RG_LOG_SYSTEM, " -> '%d' '%c'", c, c);
+
+		}
+	}
+}
+
+static String MapBoneName(String name) {
+#if 0
+	std::unordered_map<String, String>::iterator it = vmd_to_vrm_bone_map.find(name);
+	if (it != vmd_to_vrm_bone_map.end()) {
+		return it->second;
+	}
+#endif
+	std::unordered_map<String, String>::iterator it = vmd_to_vrm_bone_map.begin();
+	for (; it != vmd_to_vrm_bone_map.end(); it++) {
+		if (rg_streql(name, it->first)) {
+			return it->second;
+		}
+	}
+
+	//DebugBoneMap();
+
+	// Return original name if no mapping found
+	return name;
+}
+
+Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model, Bool mapBoneNames) {
 
 	vmd_file* vmd = vmd_load(path);
 
@@ -666,7 +811,14 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 	Uint32 last = 0;
 	for (Sint32 i = 0; i < vmd->motion_count; i++) {
 		vmd_motion* motion = &vmd->motions[i];
-		Uint32 hash = rgCRC32(motion->bone_name, (Uint32)SDL_strlen(motion->bone_name));
+
+		String bone_name = motion->bone_name;
+
+		if (mapBoneNames) {
+			bone_name = MapBoneName(motion->bone_name);
+		}
+
+		Uint32 hash = rgCRC32(bone_name, (Uint32)SDL_strlen(bone_name));
 
 		// Do not add animation track if in model "motion->bone_name" bone not exist.
 		if (model != NULL && model->GetBoneByCRCHash(hash) == NULL) {
@@ -676,7 +828,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 
 		AnimationTrack* track = animation->GetBoneAnimationTrack(hash);
 		if (track == NULL) {
-			track = RG_NEW(AnimationTrack)(motion->bone_name);
+			track = RG_NEW(AnimationTrack)(bone_name);
 			animation->AddBoneAnimationTrack(track);
 			//rgLogInfo(RG_LOG_SYSTEM, "Adding: %s - CRC: %d", motion->bone_name, hash);
 		}
@@ -687,7 +839,7 @@ Animation* VMDImporter::ImportAnimation(String path, KinematicsModel* model) {
 		keyframe.scale.z     = 1;
 		keyframe.translation = motion->position;
 		keyframe.rotation    = motion->rotation;
-		keyframe.timestamp   = motion->frame;
+		keyframe.timestamp   = (Float32)motion->frame;
 
 		keyframe.interp_x.x = motion->interpolation[0]  / 127.0f;
 		keyframe.interp_x.y = motion->interpolation[4]  / 127.0f;

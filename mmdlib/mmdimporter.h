@@ -44,7 +44,7 @@ class VMDImporter {
 		RG_INLINE ~VMDImporter() {}
 
 		// TODO: Import animation from vmd file
-		RG_DECLSPEC Engine::Animation* ImportAnimation(String path, Engine::KinematicsModel* model);
+		RG_DECLSPEC Engine::Animation* ImportAnimation(String path, Engine::KinematicsModel* model, Bool mapBoneNames = false);
 };
 
 #endif
