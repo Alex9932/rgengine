@@ -313,6 +313,17 @@ union vec3 {
         return r;
     }
 
+    RG_INLINE vec3 lerp(const vec3& v, const vec3& t) {
+        float mtx = 1.0f - t.x;
+        float mty = 1.0f - t.y;
+        float mtz = 1.0f - t.z;
+        vec3 r;
+        r.x = x * mtx + v.x * t.x;
+        r.y = y * mty + v.y * t.y;
+        r.z = z * mtz + v.z * t.z;
+        return r;
+    }
+
     RG_INLINE Bool operator!=(const vec3& v) {
         return x != v.x || y != v.y || z != v.z;
     }

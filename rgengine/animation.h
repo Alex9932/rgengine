@@ -72,7 +72,7 @@ namespace Engine {
             RG_INLINE void SetTime(double time) { this->anim_time = time; }
             RG_INLINE void SetFramerate(double fps) { this->anim_fps = fps; }
             RG_INLINE void SetSpeed(double speed) { this->anim_speed = speed; }
-            RG_INLINE Uint32 GetLastFrame() { return this->lastframe; }
+            RG_INLINE Float32 GetLastFrame() { return this->lastframe; }
             RG_INLINE double GetTime() { return this->anim_time; }
             RG_INLINE double GetFramerate() { return this->anim_fps; }
             RG_INLINE double GetSpeed() { return this->anim_speed; }

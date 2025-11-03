@@ -5,6 +5,8 @@
 
 #include "engine.h"
 
+#define RG_ANIMATION_FORCE_LINEAR_INTERPOLATION 0
+
 namespace Engine {
 
     Animator::Animator(KinematicsModel* model) {
@@ -37,21 +39,21 @@ namespace Engine {
     }
 
     // TODO: Add LUT
-    static Float32 Bezier(vec4* points, Float64 dt) {
+    static Float64 Bezier(vec4* points, Float64 dt) {
         Float64 t = 0.5f;
         Float64 s = 0.5f;
         Float64 z = 0; // zero
         Float64 q = 0;
         for (Uint32 i = 0; i < 15; i++) {
             z = (3 * s * s * t * points->x) + (3 * s * t * t * points->z) + (t * t * t) - dt;
-            if (SDL_fabs(z) < 0.00001f) { break; }
+            if (SDL_fabs(z) < 0.00001) { break; }
             //q = 1 / (4 * SDL_pow(2, i));
-            q = 1 / (4 << i);
+            q = 1.0 / (Float64)(4 << i);
             if (z > 0) { t -= q; }
             else { t += q; }
             s = 1 - t;
         }
-        return (Float32)((3 * s * s * t * points->y) + (3 * s * t * t * points->w) + (t * t * t));
+        return ((3 * s * s * t * points->y) + (3 * s * t * t * points->w) + (t * t * t));
     }
 
     void Animator::Update(Float64 dt) {
@@ -85,7 +87,7 @@ namespace Engine {
                 continue;
             }
 
-            FindBoneKeyFrames(this->current_animation->GetTime(), track, &f1_id, &f2_id);
+            FindBoneKeyFrames((Float32)this->current_animation->GetTime(), track, &f1_id, &f2_id);
 
             frame1 = track->GetKeyFrame(f1_id);
             frame2 = track->GetKeyFrame(f2_id);
@@ -96,21 +98,28 @@ namespace Engine {
                 continue;
             }
 
-            Float32 delta = frame2->timestamp - frame1->timestamp;
+            Float64 delta = frame2->timestamp - frame1->timestamp;
             Float64 Df = this->current_animation->GetTime() - frame1->timestamp;
             Float64 anim_dt = 0;
             if (delta != 0) {
-                anim_dt = (Df) / (Float64)delta;
+                anim_dt = Df / delta;
             }
 
-            Float32 x = Bezier(&frame1->interp_x, anim_dt);
-            Float32 y = Bezier(&frame1->interp_y, anim_dt);
-            Float32 z = Bezier(&frame1->interp_z, anim_dt);
-            Float32 r = Bezier(&frame1->interp_r, anim_dt);
-
+#if RG_FORCE_LINEAR_INTERPOLATION
             vec3 anim_pos = bone->offset_pos + frame1->translation.lerp(frame2->translation, (float)anim_dt);
             //vec3 anim_pos = frame1->translation.lerp(frame2->translation, (float)anim_dt);
+            quat anim_rot = frame1->rotation.slerp(frame2->rotation, anim_dt);
+#else
+            // TODO: FIX THIS (not smooth animation)
+            Float64 x = Bezier(&frame1->interp_x, anim_dt);
+            Float64 y = Bezier(&frame1->interp_y, anim_dt);
+            Float64 z = Bezier(&frame1->interp_z, anim_dt);
+            Float64 r = Bezier(&frame1->interp_r, anim_dt);
+            vec3 anim_pos = bone->offset_pos + frame1->translation.lerp(frame2->translation, { (Float32)x, (Float32)y, (Float32)z });
+            //vec3 anim_pos = frame1->translation.lerp(frame2->translation, (float)anim_dt);
             quat anim_rot = frame1->rotation.slerp(frame2->rotation, r);
+#endif
+
 
             // Reset flag
             if (animationChanged && GetUptime() >= timestamp + transition_time) {
@@ -119,7 +128,7 @@ namespace Engine {
 
             // Interpolate with prew state if needed
             if (animationChanged) {
-                Float32 mix_dt = 1.0 - (Float32)(GetUptime() - timestamp) / transition_time;
+                Float32 mix_dt = 1.0f - (Float32)(GetUptime() - timestamp) / transition_time;
                 anim_pos = anim_pos.lerp(this->bones_state[i].position, mix_dt);
                 anim_rot = anim_rot.slerp(this->bones_state[i].rotation, mix_dt);
             }
