@@ -24,4 +24,14 @@ static inline void CopyMatrix(mat4* dst, const aiMatrix4x4& src) {
 	dst->m30 = src.d1; dst->m31 = src.d2; dst->m32 = src.d3; dst->m33 = src.d4;
 }
 
+static inline Bool IsIdentity(const aiMatrix4x4& mat) {
+	if (mat.a1 == 1 && mat.a2 == 0 && mat.a3 == 0 && mat.a4 == 0 &&
+		mat.b1 == 0 && mat.b2 == 1 && mat.b3 == 0 && mat.b4 == 0 &&
+		mat.c1 == 0 && mat.c2 == 0 && mat.c3 == 1 && mat.c4 == 0 &&
+		mat.d1 == 0 && mat.d2 == 0 && mat.d3 == 0 && mat.d4 == 1) {
+		return true;
+	}
+	return false;
+}
+
 #endif

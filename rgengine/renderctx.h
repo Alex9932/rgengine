@@ -10,14 +10,68 @@
 
 #include "rendertypes.h"
 
+// TODO: Make new render backend API
 
- // Render core
+/*
+
+Structs:
+ RenderDevice*  // Render backend state
+ Pipeline*      // Rendering pipeline
+ CommandQueue*  // GPU command buffer
+ MemoryBuffer*  // Data buffer
+ ResouceView*   // Buffer access in shaders
+
+ RenderSetupInfo // Render backend setup parameters
+ CommandQueueSubmitInfo // Command queue submission parameters
+
+ *CreateInfo     // Resource creation parameters
+
+Backend proc (marked as backend functions):
+ R_CreateDevice(RenderSetupInfo*) -> RenderDevice*
+ R_DestroyDevice(RenderDevice*)
+ R_CreatePipeline(RenderDevice*, PipelineCreateInfo*) -> Pipeline*
+ R_DestroyPipeline(Pipeline*)
+ R_CreateCommandQueue(RenderDevice*, CommandQueueCreateInfo*) -> CommandQueue*
+ R_DestroyCommandQueue(CommandQueue*)
+ R_CreateMemoryBuffer(RenderDevice*, MemoryBufferCreateInfo*) -> MemoryBuffer*
+ R_DestroyMemoryBuffer(MemoryBuffer*)
+ R_CreateResourceView(RenderDevice*, ResourceViewCreateInfo*) -> ResourceView*
+ R_DestroyResourceView(ResourceView*)
+ R_SubmitCommandQueue(CommandQueueSubmitInfo*)
+ R_WaitIdle(RenderDevice*)    ?
+ R_SwapBuffers(RenderDevice*) ?
+
+ R_CMD_Begin(CommandQueue*)
+ R_CMD_End(CommandQueue*)
+ R_CMD_SetPipeline(CommandQueue*, Pipeline*)
+ R_CMD_Draw(CommandQueue*, Uint32 vertexCount, Uint32 instanceCount, Uint32 firstVertex, Uint32 firstInstance)
+ R_CMD_Dispatch(CommandQueue*, Uint32 groupCountX, Uint32 groupCountY, Uint32 groupCountZ)
+ R_CMD_CopyBuffer(CommandQueue*, MemoryBuffer* src, MemoryBuffer* dst, Uint64 size, Uint64 srcOffset, Uint64 dstOffset)
+?R_CMD_UpdateBuffer(CommandQueue*, MemoryBuffer* dst, const void* data, Uint64 size, Uint64 dstOffset)
+ R_CMD_ClearRenderTarget(CommandQueue*, RenderTarget*, Float32 r, Float32 g, Float32 b, Float32 a)
+ R_CMD_ClearDepthStencil(CommandQueue*, DepthStencil*, Float32 depth, Uint8 stencil)
+ R_CMD_BeginRenderPass(CommandQueue*, RenderPassBeginInfo*)
+ R_CMD_EndRenderPass(CommandQueue*)
+?R_CMD_SetViewport(CommandQueue*, Uint32 x, Uint32 y, Uint32 width, Uint32 height)
+ R_CMD_PushConstants(CommandQueue*, const void* data, Uint32 size, Uint32 offset)
+ R_CMD_BindRenderTargets(CommandQueue*, RenderTarget**, Uint32 rt_count, DepthStencil*)
+?R_CMD_BindComputeResources(CommandQueue*, ResourceView**, Uint32 res_count, Uint32 start_slot)
+?R_CMD_BindGraphicsResources(CommandQueue*, ResourceView**, Uint32 res_count, Uint32 start_slot)
+
+*/
+
+
+
+// Render core
 typedef SDL_Window*  (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
 typedef void         (*PFN_R_SETUP)(RenderSetupInfo*);
 typedef void         (*PFN_R_INITIALIZE)(SDL_Window*);
 typedef void         (*PFN_R_DESTROY)();
 typedef void         (*PFN_R_SWAPBUFFERS)();
 typedef void         (*PFN_R_GETINFO)(RenderInfo*);
+
+
+// TODO: Make it deprecated
 
 // R2D
 typedef R2D_Buffer*  (*PFN_R2D_CREATEBUFFER)(R2DCreateBufferInfo*);

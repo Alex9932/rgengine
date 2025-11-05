@@ -25,8 +25,8 @@ namespace Engine {
 			Float64 dx = GetMouseDX();
 			Float64 dy = GetMouseDY();
 
-			m_angles.x += dy * sens;
-			m_angles.y += dx * sens;
+			m_angles.x += (Float32)(dy * sens);
+			m_angles.y += (Float32)(dx * sens);
 
 			m_camptr->GetTransform()->SetRotation(m_angles);
 #if 0

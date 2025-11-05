@@ -9,15 +9,17 @@
 
 #include <assimp/scene.h>
 
+struct ImportSceneData;
 
-const aiScene* LoadScene(String path, String file);
+const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data);
+void FreeScene(ImportSceneData* ptr);
 
 class GeomImporter {
 	private:
 		char m_errorstr[1024];
 
 	public:
-		GeomImporter() {}
+		GeomImporter() { SDL_memset(m_errorstr, 0, 1024); }
 		~GeomImporter() {}
 
 		void ImportRiggedModel(ImportModelInfo* info);

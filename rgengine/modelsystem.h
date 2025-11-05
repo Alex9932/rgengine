@@ -54,8 +54,8 @@ namespace Engine {
 			RG_INLINE ModelComponent* GetModelComponent(Uint32 idx) { return m_modelComponents[idx]; }
 			RG_INLINE RiggedModelComponent* GetRiggedModelComponent(Uint32 idx) { return m_rmodelComponents[idx]; }
 
-			RG_INLINE Uint32 GetModelCount() { return m_modelComponents.size(); }
-			RG_INLINE Uint32 GetRiggedModelCount() { return m_rmodelComponents.size(); }
+			RG_INLINE Uint32 GetModelCount() { return (Uint32)m_modelComponents.size(); }
+			RG_INLINE Uint32 GetRiggedModelCount() { return (Uint32)m_rmodelComponents.size(); }
 
 		private:
 

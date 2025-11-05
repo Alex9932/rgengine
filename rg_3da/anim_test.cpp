@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 #define GAME_DLL
 #include <rgentrypoint.h>
@@ -134,7 +134,7 @@ class Application : public BaseGame {
 			binfo.data   = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
-			Render::R3D_UpdateBoneBuffer(&binfo);
+			Render::UpdateBoneBuffer(&binfo);
 
 			//vec3 camera_offset = { 0, 1.67f, 0 };
 			//vec3 camera_pos = player->GetTransform()->GetWorldPosition() + camera_offset;
@@ -167,10 +167,26 @@ class Application : public BaseGame {
 #endif
 
 			R3DRiggedModelInfo info = {};
-			pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
-			R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&info);
-			pmdImporter.FreeRiggedModelData(&info);
-			kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
+
+			ImportModelInfo iminfo = {};
+			ModelExtraData  extra  = {};
+			iminfo.path  = "mmd_models";
+			iminfo.file  = "Miku_Hatsune.pmd";
+			iminfo.extra = &extra;
+			iminfo.info.as_rigged = &info;
+
+			//pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
+			pmdImporter.ImportRiggedModel(&iminfo);
+			R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&info);
+			//kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
+			kmodel = pmdImporter.ImportKinematicsModel(&iminfo);
+
+			//pmdImporter.FreeRiggedModelData(&info);
+			FreeModelInfo finfo = {};
+			finfo.extra = &extra;
+			finfo.userdata = iminfo.userdata;
+			finfo.info.as_rigged = &info;
+			pmdImporter.FreeRiggedModelData(&finfo);
 
 			// Load animations
 			anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);
@@ -192,23 +208,24 @@ class Application : public BaseGame {
 			// Create player entity
 			player = world->NewEntity();
 			player->SetAABB(&info.aabb);
-			player->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
+			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
 			// Scale visual
 			player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 
-			// Level
-
+#if 0
+			// Level ground
 			ObjImporter objImporter;
 			R3DStaticModelInfo l_info = {};
 			objImporter.ImportModel("gamedata/flatplane/untitled.obj", &l_info);
-			R3D_StaticModel* level_mdl_handle = Render::R3D_CreateStaticModel(&l_info);
+			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&l_info);
 			objImporter.FreeModelData(&l_info);
 
 
 			Entity* level = world->NewEntity();
 			level->SetAABB(&l_info.aabb);
-			level->AttachComponent(Render::GetModelSystem()->NewModelComponent(level_mdl_handle));
+			level->AttachComponent(GetModelSystem()->NewModelComponent(level_mdl_handle));
+#endif
 
 		}
 
