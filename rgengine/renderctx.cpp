@@ -10,6 +10,36 @@
 
 namespace Engine {
 
+    void LoadRendererContext(RenderBackend* ctx, LibraryHandle handle) {
+        // Core
+        ctx->ShowWindow    = (PFN_R_SHOWWINDOW)Engine::DL_GetProcAddress(handle, "R_ShowWindow");
+        ctx->Setup         = (PFN_R_SETUP)Engine::DL_GetProcAddress(handle, "R_Setup");
+        ctx->CreateDevice  = (PFN_R_CREATEDEVICE)Engine::DL_GetProcAddress(handle, "R_CreateDevice");
+        ctx->DestroyDevice = (PFN_R_DESTROYDEVICE)Engine::DL_GetProcAddress(handle, "R_DestroyDevice");
+        ctx->SwapBuffers   = (PFN_R_SWAPBUFFERS)Engine::DL_GetProcAddress(handle, "R_SwapBuffers");
+        ctx->GetInfo       = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
+
+        // Buffer
+		ctx->CreateBuffer  = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");
+		ctx->DestroyBuffer = (PFN_R_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyBuffer");
+
+		// Image
+		ctx->CreateImage   = (PFN_R_CREATEIMAGE)Engine::DL_GetProcAddress(handle, "R_CreateImage");
+		ctx->DestroyImage  = (PFN_R_DESTROYIMAGE)Engine::DL_GetProcAddress(handle, "R_DestroyImage");
+
+		// Command Queue
+		ctx->CreateCommandQueue  = (PFN_R_CREATECOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_CreateCommandQueue");
+		ctx->DestroyCommandQueue = (PFN_R_DESTROYCOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_DestroyCommandQueue");
+		ctx->SubmitCommandQueue  = (PFN_R_SUBMITCOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_SubmitCommandQueue");
+
+    }
+
+    void ClearRendererContext(RenderBackend* ctx) {
+        SDL_memset(ctx, 0, sizeof(RenderBackend));
+    }
+
+#if 0
+
 	void LoadRendererContext(Renderer* ctx, LibraryHandle handle) {
 
         // Core
@@ -67,5 +97,7 @@ namespace Engine {
     void ClearRendererContext(Renderer* ctx) {
         SDL_memset(ctx, 0, sizeof(Renderer));
     }
+
+#endif
 
 }

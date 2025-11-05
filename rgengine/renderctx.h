@@ -12,13 +12,15 @@
 
 // TODO: Make new render backend API
 
+
 /*
 
 Structs:
  RenderDevice*  // Render backend state
  Pipeline*      // Rendering pipeline
  CommandQueue*  // GPU command buffer
- MemoryBuffer*  // Data buffer
+ Buffer*        // Data buffer
+ Image*         // Image buffer
  ResouceView*   // Buffer access in shaders
 
  RenderSetupInfo // Render backend setup parameters
@@ -35,6 +37,8 @@ Backend proc (marked as backend functions):
  R_DestroyCommandQueue(CommandQueue*)
  R_CreateMemoryBuffer(RenderDevice*, MemoryBufferCreateInfo*) -> MemoryBuffer*
  R_DestroyMemoryBuffer(MemoryBuffer*)
+ R_CreateImage(RenderDevice*, ImageCreateInfo*) -> Image*
+ R_DestroyImage(Image*)
  R_CreateResourceView(RenderDevice*, ResourceViewCreateInfo*) -> ResourceView*
  R_DestroyResourceView(ResourceView*)
  R_SubmitCommandQueue(CommandQueueSubmitInfo*)
@@ -60,7 +64,70 @@ Backend proc (marked as backend functions):
 
 */
 
+struct RRenderDevice;
+struct RBuffer;
+struct RImage;
+struct RCommandQueue;
 
+struct RRenderSetupInfo;
+struct RImageCreateInfo;
+struct RBufferCreateInfo;
+struct RCommandQueueSubmitInfo;
+struct RCommandQueueCreateInfo;
+
+
+typedef SDL_Window* (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
+typedef void         (*PFN_R_SETUP)(RenderSetupInfo*);
+typedef void         (*PFN_R_SWAPBUFFERS)();
+
+typedef RRenderDevice* (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
+typedef void           (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
+typedef void           (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
+
+typedef RBuffer*       (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
+typedef void           (*PFN_R_DESTROYBUFFER)(RBuffer*);
+typedef RImage*        (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
+typedef void           (*PFN_R_DESTROYIMAGE)(RImage*);
+typedef RCommandQueue* (*PFN_R_CREATECOMMANDQUEUE)(RRenderDevice*, RCommandQueueCreateInfo*);
+typedef void           (*PFN_R_DESTROYCOMMANDQUEUE)(RCommandQueue*);
+
+typedef void           (*PFN_R_SUBMITCOMMANDQUEUE)(RCommandQueueSubmitInfo*);
+typedef void           (*PFN_R_SWAPBUFFERS)(RRenderDevice*);
+
+namespace Engine {
+	typedef struct RenderBackend {
+
+		// Core
+		PFN_R_SHOWWINDOW              ShowWindow;
+		PFN_R_SETUP                   Setup;
+		PFN_R_CREATEDEVICE            CreateDevice;
+		PFN_R_DESTROYDEVICE           DestroyDevice;
+		PFN_R_SWAPBUFFERS             SwapBuffers;
+		PFN_R_GETINFO                 GetInfo;
+
+		// Buffer
+		PFN_R_CREATEBUFFER            CreateBuffer;
+		PFN_R_DESTROYBUFFER           DestroyBuffer;
+
+		// Image
+		PFN_R_CREATEIMAGE			  CreateImage;
+		PFN_R_DESTROYIMAGE            DestroyImage;
+
+		// Command Queue
+		PFN_R_CREATECOMMANDQUEUE      CreateCommandQueue;
+		PFN_R_DESTROYCOMMANDQUEUE     DestroyCommandQueue;
+		PFN_R_SUBMITCOMMANDQUEUE      SubmitCommandQueue;
+
+	} RenderBackend;
+
+	void LoadRendererContext(RenderBackend* ctx, LibraryHandle handle);
+	void ClearRendererContext(RenderBackend* ctx);
+
+}
+
+#if 0
+
+// TODO: Make it deprecated
 
 // Render core
 typedef SDL_Window*  (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
@@ -71,7 +138,6 @@ typedef void         (*PFN_R_SWAPBUFFERS)();
 typedef void         (*PFN_R_GETINFO)(RenderInfo*);
 
 
-// TODO: Make it deprecated
 
 // R2D
 typedef R2D_Buffer*  (*PFN_R2D_CREATEBUFFER)(R2DCreateBufferInfo*);
@@ -179,5 +245,6 @@ namespace Engine {
 	void ClearRendererContext(Renderer* ctx);
 
 }
+#endif
 
 #endif
