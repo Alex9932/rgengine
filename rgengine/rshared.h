@@ -8,6 +8,29 @@
 extern "C" {
 #endif
 
+	extern RG_DECLSPEC SDL_Window*    R_ShowWindow(Uint32 w, Uint32 h);
+	extern RG_DECLSPEC void           R_Setup(RenderSetupInfo* info);
+	//extern RG_DECLSPEC void        R_Initialize(SDL_Window* hwnd);
+	extern RG_DECLSPEC RRenderDevice* R_CreateDevice(RRenderSetupInfo* info);
+	//extern RG_DECLSPEC void        R_Destroy();
+	extern RG_DECLSPEC void           R_DestroyDevice(RRenderDevice* device);
+	extern RG_DECLSPEC void           R_SwapBuffers();
+	//extern RG_DECLSPEC void        R_GetInfo(RenderInfo* info);
+	extern RG_DECLSPEC void           R_GetInfo(RRenderDevice* dev, RenderInfo* info);
+
+	extern RG_DECLSPEC RBuffer*       R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
+	extern RG_DECLSPEC void           R_DestroyBuffer(RBuffer* buffer);
+	extern RG_DECLSPEC RImage*        R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info);
+	extern RG_DECLSPEC void           R_DestroyImage(RImage* image);
+	extern RG_DECLSPEC RCommandQueue* R_CreateCommandQueue(RRenderDevice* dev, RCommandQueueCreateInfo* info);
+	extern RG_DECLSPEC void           R_DestroyCommandQueue(RCommandQueue* queue);
+	extern RG_DECLSPEC void           R_SubmitCommandQueue(RCommandQueueSubmitInfo* info);
+
+
+
+
+	// All of this is DEPRECATED!
+#if 0
 	extern RG_DECLSPEC SDL_Window* R_ShowWindow(Uint32 w, Uint32 h);
 	extern RG_DECLSPEC void        R_Setup(RenderSetupInfo* info);
 	extern RG_DECLSPEC void        R_Initialize(SDL_Window* hwnd);
@@ -64,6 +87,7 @@ extern "C" {
 	extern RG_DECLSPEC void				   R3D_SetCamera(R3D_CameraInfo* info);
 
 	extern RG_DECLSPEC void				   R3D_StartRenderTask(R3D_RenderTaskInfo* info);
+#endif
 
 #ifdef __cplusplus
 }

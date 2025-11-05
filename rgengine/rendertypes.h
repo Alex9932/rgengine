@@ -28,12 +28,51 @@ enum TextureType {
 	RG_TEXTURE_F32_RGBA   = 4
 };
 
+#define RFormat TextureType
+
 #define RG_RENDER_FULLSCREEN    1
 #define RG_RENDER_USE3D         2
 #define RG_RENDER_NOPOSTPROCESS 4
 #define RG_RENDER_NOLIGHT       8
 
 // Backend handles
+
+typedef struct RRenderDevice RRenderDevice;
+typedef struct RBuffer RBuffer;
+typedef struct RImage RImage;
+typedef struct RCommandQueue RCommandQueue;
+
+////////////
+
+typedef struct RRenderSetupInfo {
+
+	Uint32 flags;
+
+} RRenderSetupInfo;
+
+typedef struct RImageCreateInfo {
+	RFormat format;
+	Uint32  width;
+	Uint32  height;
+} RImageCreateInfo;
+
+typedef struct RBufferCreateInfo {
+	RFormat format;
+	Uint32  length; // in bytes
+} RBufferCreateInfo;
+
+typedef struct RCommandQueueSubmitInfo {
+	RCommandQueue* queue;
+} RCommandQueueSubmitInfo;
+
+typedef struct RCommandQueueCreateInfo {
+	// nope
+} RCommandQueueCreateInfo;
+
+
+
+
+////////////////////////////////////////////////////////////////////
 
 typedef struct R2D_Texture R2D_Texture;
 typedef struct R2D_Buffer R2D_Buffer;

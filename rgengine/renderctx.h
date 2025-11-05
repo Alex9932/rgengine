@@ -64,21 +64,9 @@ Backend proc (marked as backend functions):
 
 */
 
-struct RRenderDevice;
-struct RBuffer;
-struct RImage;
-struct RCommandQueue;
-
-struct RRenderSetupInfo;
-struct RImageCreateInfo;
-struct RBufferCreateInfo;
-struct RCommandQueueSubmitInfo;
-struct RCommandQueueCreateInfo;
-
-
-typedef SDL_Window* (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
-typedef void         (*PFN_R_SETUP)(RenderSetupInfo*);
-typedef void         (*PFN_R_SWAPBUFFERS)();
+typedef SDL_Window*    (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
+typedef void           (*PFN_R_SETUP)(RenderSetupInfo*);
+typedef void           (*PFN_R_SWAPBUFFERS)();
 
 typedef RRenderDevice* (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
 typedef void           (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
