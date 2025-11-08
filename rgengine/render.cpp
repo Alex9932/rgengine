@@ -28,7 +28,8 @@
 namespace Engine {
     namespace Render {
 
-        static Renderer             renderctx              = {};
+        static RenderBackend        renderctx              = {};
+        static RRenderDevice*       rdev                   = NULL;
 
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
@@ -97,7 +98,7 @@ namespace Engine {
 
             isRendererLoaded = true;
 
-            renderctx.Setup(&setupParams);
+            renderctx.Setup();
 
         }
 
@@ -127,7 +128,7 @@ namespace Engine {
         void InitSubSystem() {
             GetWindowSize(&wndSize);
 
-
+#if 0
             R2D_Vertex r2d_vertices[] = {
                 /*
                 { -0.5f, -0.5f, 0.0f, 1.0f, 1, 0, 0, 1 },
@@ -153,7 +154,7 @@ namespace Engine {
 
             createtextureinfo.path = "platform/textures/loading_bg.png";
             r2d_texture_bg = renderctx.R2D_CreateTexture(&createtextureinfo);
-
+#endif
 
 #if 0
             rgLogInfo(RG_LOG_SYSTEM, "R3D Test");
@@ -171,19 +172,20 @@ namespace Engine {
             rgLogInfo(RG_LOG_SYSTEM, "~ ~ ~ ~ ~ ~ ~");
 #endif
 
-            InitializeConsole();
+            //InitializeConsole();
 
         }
 
         void DestroySubSystem() {
 
-            DestroyConsole();
+            //DestroyConsole();
 
-            renderctx.R2D_DestroyBuffer(r2d_buffer);
-            renderctx.R2D_DestroyTexture(r2d_texture);
-            renderctx.R2D_DestroyTexture(r2d_texture_bg);
+            //renderctx.R2D_DestroyBuffer(r2d_buffer);
+            //renderctx.R2D_DestroyTexture(r2d_texture);
+            //renderctx.R2D_DestroyTexture(r2d_texture_bg);
 
-            renderctx.Destroy();
+            renderctx.DestroyDevice(rdev);
+            //renderctx.Destroy();
         }
 
         SDL_Window* ShowWindow(Uint32 w, Uint32 h) {
@@ -191,14 +193,24 @@ namespace Engine {
         }
 
         void InitializeContext(SDL_Window* hwnd) {
-            renderctx.Initialize(hwnd);
+			RRenderSetupInfo setupinfo = {};
+            setupinfo.flags = setupParams.flags;
+            setupinfo.hwnd  = hwnd;
+            rdev = renderctx.CreateDevice(&setupinfo);
+
+            renderctx.ImGui_Init(rdev);
+            renderctx.ImGui_NewFrame(rdev);
         }
 
         void SwapBuffers() {
-            renderctx.SwapBuffers();
+
+            renderctx.ImGui_RenderDrawData(rdev, ImGui::GetDrawData());
+            renderctx.ImGui_NewFrame(rdev);
+            
+            renderctx.SwapBuffers(rdev);
         }
 
-        Renderer* GetRenderContext() {
+        RenderBackend* GetRenderContext() {
             return &renderctx;
         }
 
@@ -217,7 +229,7 @@ namespace Engine {
 
         void DrawRendererStats() {
             RenderInfo renderer_info = {};
-            renderctx.GetInfo(&renderer_info);
+            //renderctx.GetInfo(&renderer_info);
 
             ImGui::Begin("Renderer stats");
 
@@ -290,7 +302,7 @@ namespace Engine {
 
             ImGui::End();
         }
-
+#if 0
         RG_FORCE_INLINE static void DrawEntity(R3D_PushModelInfo* info, Entity* ent) {
             ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
             RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
@@ -369,6 +381,7 @@ namespace Engine {
                 renderctx.R3D_PushLightSource(&src->source);
             }
         }
+#endif
 
         void SetCamera(R3D_CameraInfo* info) {
 
@@ -381,7 +394,7 @@ namespace Engine {
             finfo.view   = &camera_view;
             CreateFrustum(&finfo);
 
-            renderctx.R3D_SetCamera(info);
+            //renderctx.R3D_SetCamera(info);
         }
 
         void UpdateSystems() {
@@ -390,6 +403,8 @@ namespace Engine {
 
         void Update() {
 
+
+#if 0
             RenderWorld(Engine::GetWorld());
 
             renderctx.R3D_StartRenderTask(&renderTaskInfo);
@@ -488,6 +503,8 @@ namespace Engine {
             R2D_Draw(&drawinfo);
             */
 
+#endif
+
             Window_Update();
         }
 
@@ -496,7 +513,7 @@ namespace Engine {
         }
 
         void GetInfo(RenderInfo* info) {
-            renderctx.GetInfo(info);
+            //renderctx.GetInfo(info);
         }
 
         ParticleSystem* GetParticleSystem() {
@@ -506,62 +523,67 @@ namespace Engine {
 
         R3D_StaticModel* CreateStaticModel(R3DStaticModelInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            return renderctx.R3D_CreateStaticModel(info);
+            //return renderctx.R3D_CreateStaticModel(info);
+            return NULL;
         }
 
         void DestroyStaticModel(R3D_StaticModel* mdl) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_DestroyStaticModel(mdl);
+            //renderctx.R3D_DestroyStaticModel(mdl);
         }
 
         R3D_RiggedModel* CreateRiggedModel(R3DRiggedModelInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            return renderctx.R3D_CreateRiggedModel(info);
+            //return renderctx.R3D_CreateRiggedModel(info);
+            return NULL;
         }
 
         void DestroyRiggedModel(R3D_RiggedModel* mdl) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_DestroyRiggedModel(mdl);
+            //renderctx.R3D_DestroyRiggedModel(mdl);
         }
 
         R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBufferInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            return renderctx.R3D_CreateBoneBuffer(info);
+            //return renderctx.R3D_CreateBoneBuffer(info);
+            return NULL;
         }
 
         void DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_DestroyBoneBuffer(hbuff);
+            //renderctx.R3D_DestroyBoneBuffer(hbuff);
         }
 
         void UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_UpdateBoneBuffer(info);
+            //renderctx.R3D_UpdateBoneBuffer(info);
         }
 
         R3D_AtlasHandle* CreateAtlas(String texture) {
             if (!isRendererLoaded) { return NULL; }
-            return renderctx.R3D_CreateAtlas(texture);
+            //return renderctx.R3D_CreateAtlas(texture);
+            return NULL;
         }
 
         void DestroyAtlas(R3D_AtlasHandle* atlas) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_DestroyAtlas(atlas);
+            //renderctx.R3D_DestroyAtlas(atlas);
         }
 
         R3D_ParticleBuffer* CreateParticleBuffer(R3DCreateBufferInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            return renderctx.R3D_CreateParticleBuffer(info);
+            //return renderctx.R3D_CreateParticleBuffer(info);
+            return NULL;
         }
 
         void DestroyParticleBuffer(R3D_ParticleBuffer* hbuff) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_DestroyParticleBuffer(hbuff);
+            //renderctx.R3D_DestroyParticleBuffer(hbuff);
         }
 
         void UpdateParticleBuffer(R3DUpdateBufferInfo* info) {
             if (!isRendererLoaded) { return; }
-            renderctx.R3D_UpdateParticleBuffer(info);
+            //renderctx.R3D_UpdateParticleBuffer(info);
         }
 
         RenderSetupInfo* GetSetupParams() {

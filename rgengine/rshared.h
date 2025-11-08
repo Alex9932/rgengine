@@ -1,30 +1,36 @@
 #ifndef _RSHARED_H
 #define _RSHARED_H
 
-#include "rgtypes.h"
 #include "rendertypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	extern RG_DECLSPEC SDL_Window*    R_ShowWindow(Uint32 w, Uint32 h);
-	extern RG_DECLSPEC void           R_Setup(RenderSetupInfo* info);
+	extern RG_DECLSPEC SDL_Window*     R_ShowWindow(Uint32 w, Uint32 h);
+	extern RG_DECLSPEC void            R_Setup();
 	//extern RG_DECLSPEC void        R_Initialize(SDL_Window* hwnd);
-	extern RG_DECLSPEC RRenderDevice* R_CreateDevice(RRenderSetupInfo* info);
+	extern RG_DECLSPEC RRenderDevice*  R_CreateDevice(RRenderSetupInfo* info);
 	//extern RG_DECLSPEC void        R_Destroy();
-	extern RG_DECLSPEC void           R_DestroyDevice(RRenderDevice* device);
-	extern RG_DECLSPEC void           R_SwapBuffers();
+	extern RG_DECLSPEC void            R_DestroyDevice(RRenderDevice* device);
+	extern RG_DECLSPEC void            R_SwapBuffers(RRenderDevice* device);
 	//extern RG_DECLSPEC void        R_GetInfo(RenderInfo* info);
-	extern RG_DECLSPEC void           R_GetInfo(RRenderDevice* dev, RenderInfo* info);
+	extern RG_DECLSPEC void            R_GetInfo(RRenderDevice* dev, RenderInfo* info);
 
-	extern RG_DECLSPEC RBuffer*       R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
-	extern RG_DECLSPEC void           R_DestroyBuffer(RBuffer* buffer);
-	extern RG_DECLSPEC RImage*        R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info);
-	extern RG_DECLSPEC void           R_DestroyImage(RImage* image);
-	extern RG_DECLSPEC RCommandQueue* R_CreateCommandQueue(RRenderDevice* dev, RCommandQueueCreateInfo* info);
-	extern RG_DECLSPEC void           R_DestroyCommandQueue(RCommandQueue* queue);
-	extern RG_DECLSPEC void           R_SubmitCommandQueue(RCommandQueueSubmitInfo* info);
+	// ImGUI rendering backend functions
+	extern RG_DECLSPEC void            R_ImGui_Init(RRenderDevice* dev);
+	extern RG_DECLSPEC void            R_ImGui_Shutdown(RRenderDevice* dev);
+	extern RG_DECLSPEC void            R_ImGui_NewFrame(RRenderDevice* dev);
+	extern RG_DECLSPEC void            R_ImGui_RenderDrawData(RRenderDevice* dev, void* drawData);
+
+
+	extern RG_DECLSPEC RBuffer*        R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyBuffer(RBuffer* buffer);
+	extern RG_DECLSPEC RImage*         R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyImage(RImage* image);
+	extern RG_DECLSPEC RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyCommandBuffer(RCommandBuffer* buffer);
+	extern RG_DECLSPEC void            R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info);
 
 
 

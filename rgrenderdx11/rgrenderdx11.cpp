@@ -1,3 +1,5 @@
+#if 0 // DEPRECATED
+
 #define DLL_EXPORT
 #include "rgrenderdx11.h"
 
@@ -284,3 +286,5 @@ void R_GetInfo(RenderInfo* info) {
 	info->r2d_renderResult   = R2DGetOuputTexture();
 
 }
+
+#endif

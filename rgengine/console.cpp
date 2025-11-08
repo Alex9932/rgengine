@@ -35,7 +35,7 @@ namespace Engine {
     static UTF8Decoder  utf8_decoder;
     static UTF8Encoder  utf8_encoder;
 
-    static Renderer*    r_ctx;
+    //static Renderer*    r_ctx;
 
     static R2D_Texture* font_tex;
 
@@ -202,7 +202,7 @@ namespace Engine {
     }
 
     static void UpdateVertexBuffer() {
-
+#if 0
         Float32 x = 0;
         Float32 y = 0;
 
@@ -245,11 +245,12 @@ namespace Engine {
         info.length = txt_vertices;
         info.data   = vertices;
         r_ctx->R2D_BufferData(&info);
-
+#endif
     }
 
     void InitializeConsole() {
         RegisterEventHandler(Input);
+#if 0
         r_ctx = Render::GetRenderContext();
 
         SDL_memset(command_buffer, 0, sizeof(command_buffer));
@@ -282,6 +283,7 @@ namespace Engine {
         binfo.initial_data = vertices;
         binfo.length = RG_R2D_MAX_VERTICES;
         buff2 = r_ctx->R2D_CreateBuffer(&binfo);
+#endif
 
     }
 
@@ -289,11 +291,12 @@ namespace Engine {
         FreeEventHandler(Input);
 
         RG_DELETE(Font, font);
-
+#if 0
         r_ctx->R2D_DestroyBuffer(buff1);
         r_ctx->R2D_DestroyBuffer(buff2);
 
         r_ctx->R2D_DestroyTexture(font_tex);
+#endif
     }
 
     void UpdateConsole() {
@@ -306,7 +309,7 @@ namespace Engine {
         }
 
         GetWindowSize(&scr_size);
-
+#if 0
         r_ctx->R2D_ResetStack();
 
         // Set projection mode
@@ -344,6 +347,7 @@ namespace Engine {
 
         r_ctx->R2D_Bind(&binfo);
         r_ctx->R2D_Draw(&dinfo);
+#endif
     }
 
     void ShowConsole() { is_shown = true; }

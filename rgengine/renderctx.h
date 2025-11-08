@@ -64,23 +64,27 @@ Backend proc (marked as backend functions):
 
 */
 
-typedef SDL_Window*    (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
-typedef void           (*PFN_R_SETUP)(RenderSetupInfo*);
-typedef void           (*PFN_R_SWAPBUFFERS)();
+typedef SDL_Window*     (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
+typedef void            (*PFN_R_SETUP)();
 
-typedef RRenderDevice* (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
-typedef void           (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
-typedef void           (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
+typedef RRenderDevice*  (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
+typedef void            (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
+typedef void            (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
+typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*);
 
-typedef RBuffer*       (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
-typedef void           (*PFN_R_DESTROYBUFFER)(RBuffer*);
-typedef RImage*        (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
-typedef void           (*PFN_R_DESTROYIMAGE)(RImage*);
-typedef RCommandQueue* (*PFN_R_CREATECOMMANDQUEUE)(RRenderDevice*, RCommandQueueCreateInfo*);
-typedef void           (*PFN_R_DESTROYCOMMANDQUEUE)(RCommandQueue*);
+typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
+typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);
+typedef void            (*PFN_R_IMGUI_NEWFRAME)(RRenderDevice*);
+typedef void            (*PFN_R_IMGUI_RENDERDRAWDATA)(RRenderDevice*, void*);
 
-typedef void           (*PFN_R_SUBMITCOMMANDQUEUE)(RCommandQueueSubmitInfo*);
-typedef void           (*PFN_R_SWAPBUFFERS)(RRenderDevice*);
+typedef RBuffer*        (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
+typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
+typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
+typedef RCommandBuffer* (*PFN_R_CREATECOMMANDBUFFER)(RRenderDevice*, RCommandBufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_SUBMITCOMMANDBUFFER)(RCommandBufferSubmitInfo*);
+
 
 namespace Engine {
 	typedef struct RenderBackend {
@@ -93,6 +97,12 @@ namespace Engine {
 		PFN_R_SWAPBUFFERS             SwapBuffers;
 		PFN_R_GETINFO                 GetInfo;
 
+		// ImGUI
+		PFN_R_IMGUI_INIT              ImGui_Init;
+		PFN_R_IMGUI_SHUTDOWN          ImGui_Shutdown;
+		PFN_R_IMGUI_NEWFRAME          ImGui_NewFrame;
+		PFN_R_IMGUI_RENDERDRAWDATA    ImGui_RenderDrawData;
+
 		// Buffer
 		PFN_R_CREATEBUFFER            CreateBuffer;
 		PFN_R_DESTROYBUFFER           DestroyBuffer;
@@ -101,10 +111,10 @@ namespace Engine {
 		PFN_R_CREATEIMAGE			  CreateImage;
 		PFN_R_DESTROYIMAGE            DestroyImage;
 
-		// Command Queue
-		PFN_R_CREATECOMMANDQUEUE      CreateCommandQueue;
-		PFN_R_DESTROYCOMMANDQUEUE     DestroyCommandQueue;
-		PFN_R_SUBMITCOMMANDQUEUE      SubmitCommandQueue;
+		// Command buffer
+		PFN_R_CREATECOMMANDBUFFER     CreateCommandBuffer;
+		PFN_R_DESTROYCOMMANDBUFFER    DestroyCommandBuffer;
+		PFN_R_SUBMITCOMMANDBUFFER     SubmitCommandBuffer;
 
 	} RenderBackend;
 

@@ -12,25 +12,31 @@ namespace Engine {
 
     void LoadRendererContext(RenderBackend* ctx, LibraryHandle handle) {
         // Core
-        ctx->ShowWindow    = (PFN_R_SHOWWINDOW)Engine::DL_GetProcAddress(handle, "R_ShowWindow");
-        ctx->Setup         = (PFN_R_SETUP)Engine::DL_GetProcAddress(handle, "R_Setup");
-        ctx->CreateDevice  = (PFN_R_CREATEDEVICE)Engine::DL_GetProcAddress(handle, "R_CreateDevice");
-        ctx->DestroyDevice = (PFN_R_DESTROYDEVICE)Engine::DL_GetProcAddress(handle, "R_DestroyDevice");
-        ctx->SwapBuffers   = (PFN_R_SWAPBUFFERS)Engine::DL_GetProcAddress(handle, "R_SwapBuffers");
-        ctx->GetInfo       = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
+        ctx->ShowWindow           = (PFN_R_SHOWWINDOW)Engine::DL_GetProcAddress(handle, "R_ShowWindow");
+        ctx->Setup                = (PFN_R_SETUP)Engine::DL_GetProcAddress(handle, "R_Setup");
+        ctx->CreateDevice         = (PFN_R_CREATEDEVICE)Engine::DL_GetProcAddress(handle, "R_CreateDevice");
+        ctx->DestroyDevice        = (PFN_R_DESTROYDEVICE)Engine::DL_GetProcAddress(handle, "R_DestroyDevice");
+        ctx->SwapBuffers          = (PFN_R_SWAPBUFFERS)Engine::DL_GetProcAddress(handle, "R_SwapBuffers");
+        ctx->GetInfo              = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
+
+		// ImGUI
+		ctx->ImGui_Init           = (PFN_R_IMGUI_INIT)Engine::DL_GetProcAddress(handle, "R_ImGui_Init");
+		ctx->ImGui_Shutdown       = (PFN_R_IMGUI_SHUTDOWN)Engine::DL_GetProcAddress(handle, "R_ImGui_Shutdown");
+		ctx->ImGui_NewFrame       = (PFN_R_IMGUI_NEWFRAME)Engine::DL_GetProcAddress(handle, "R_ImGui_NewFrame");
+		ctx->ImGui_RenderDrawData = (PFN_R_IMGUI_RENDERDRAWDATA)Engine::DL_GetProcAddress(handle, "R_ImGui_RenderDrawData");
 
         // Buffer
-		ctx->CreateBuffer  = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");
-		ctx->DestroyBuffer = (PFN_R_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyBuffer");
+		ctx->CreateBuffer         = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");
+		ctx->DestroyBuffer        = (PFN_R_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyBuffer");
 
 		// Image
-		ctx->CreateImage   = (PFN_R_CREATEIMAGE)Engine::DL_GetProcAddress(handle, "R_CreateImage");
-		ctx->DestroyImage  = (PFN_R_DESTROYIMAGE)Engine::DL_GetProcAddress(handle, "R_DestroyImage");
+		ctx->CreateImage          = (PFN_R_CREATEIMAGE)Engine::DL_GetProcAddress(handle, "R_CreateImage");
+		ctx->DestroyImage         = (PFN_R_DESTROYIMAGE)Engine::DL_GetProcAddress(handle, "R_DestroyImage");
 
 		// Command Queue
-		ctx->CreateCommandQueue  = (PFN_R_CREATECOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_CreateCommandQueue");
-		ctx->DestroyCommandQueue = (PFN_R_DESTROYCOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_DestroyCommandQueue");
-		ctx->SubmitCommandQueue  = (PFN_R_SUBMITCOMMANDQUEUE)Engine::DL_GetProcAddress(handle, "R_SubmitCommandQueue");
+		ctx->CreateCommandBuffer  = (PFN_R_CREATECOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateCommandBuffer");
+		ctx->DestroyCommandBuffer = (PFN_R_DESTROYCOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyCommandBuffer");
+		ctx->SubmitCommandBuffer  = (PFN_R_SUBMITCOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_SubmitCommandBuffer");
 
     }
 

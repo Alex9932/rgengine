@@ -160,6 +160,7 @@
     <ClCompile Include="r2d.cpp" />
     <ClCompile Include="r3d.cpp" />
     <ClCompile Include="rgrenderdx11.cpp" />
+    <ClCompile Include="rgrenderimpl.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shadowbuffer.cpp" />
     <ClCompile Include="stack.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="queue.h" />
     <ClInclude Include="r2d.h" />
     <ClInclude Include="r3d.h" />
+    <ClInclude Include="rendertypesdx.h" />
     <ClInclude Include="rgrenderdx11.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shadowbuffer.h" />

@@ -40,14 +40,13 @@ enum TextureType {
 typedef struct RRenderDevice RRenderDevice;
 typedef struct RBuffer RBuffer;
 typedef struct RImage RImage;
-typedef struct RCommandQueue RCommandQueue;
+typedef struct RCommandBuffer RCommandBuffer;
 
 ////////////
 
 typedef struct RRenderSetupInfo {
-
-	Uint32 flags;
-
+	Uint32      flags;
+	SDL_Window* hwnd;
 } RRenderSetupInfo;
 
 typedef struct RImageCreateInfo {
@@ -56,18 +55,37 @@ typedef struct RImageCreateInfo {
 	Uint32  height;
 } RImageCreateInfo;
 
+#define RG_BUFFER_USAGE_DEFAULT    0x0
+#define RG_BUFFER_USAGE_DYNAMIC    0x1
+
+#define RG_BUFFER_ACCESS_GPU_ONLY   0x0
+#define RG_BUFFER_ACCESS_CPU_WRITE  0x1
+#define RG_BUFFER_ACCESS_CPU_READ   0x2
+
+#define RG_BUFFER_TYPE_VERTEX     0x1
+#define RG_BUFFER_TYPE_INDEX      0x2
+#define RG_BUFFER_TYPE_CONSTANT   0x4
+#define RG_BUFFER_TYPE_SHADER_RES 0x8
+#define RG_BUFFER_TYPE_UNORDERED  0x10
+#define RG_BUFFER_TYPE_STRUCTURED 0x20
+
 typedef struct RBufferCreateInfo {
 	RFormat format;
 	Uint32  length; // in bytes
+	Uint16  type;
+	Uint8   usage;
+	Uint8   access;
+	Uint32  stride;
+	void*   initialData;
 } RBufferCreateInfo;
 
-typedef struct RCommandQueueSubmitInfo {
-	RCommandQueue* queue;
-} RCommandQueueSubmitInfo;
+typedef struct RCommandBufferSubmitInfo {
+	RCommandBuffer* buffer;
+} RCommandBufferSubmitInfo;
 
-typedef struct RCommandQueueCreateInfo {
+typedef struct RCommandBufferCreateInfo {
 	// nope
-} RCommandQueueCreateInfo;
+} RCommandBufferCreateInfo;
 
 
 

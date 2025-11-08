@@ -28,7 +28,7 @@ namespace Engine {
 		void InitializeContext(SDL_Window* hwnd);
 		void SwapBuffers();
 
-		Renderer* GetRenderContext();
+		RenderBackend* GetRenderContext();
 
 		// ImGui window
 		RG_DECLSPEC void DrawRendererStats();
