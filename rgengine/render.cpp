@@ -22,17 +22,29 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl3.h"
 
 #include "imgui/imgui_widget_flamegraph.h"
+
+#include <vector>
 
 namespace Engine {
     namespace Render {
 
+        static LibraryHandle        handle = NULL;
+        static Bool                 isRendererLoaded = false;
+
         static RenderBackend        renderctx              = {};
         static RRenderDevice*       rdev                   = NULL;
 
-        static LibraryHandle        handle                 = NULL;
-        static Bool                 isRendererLoaded       = false;
+        static RResourceView*       backbuffer             = NULL;
+
+        static RRenderpass*         renderpass = NULL;
+        static RCommandBuffer*      cmdbuffer = NULL;
+
+
+
+        static std::vector<RenderImGuiCallback> imguicallbacks;
         
         static Bool                 isEntityCullingEnabled = false;
         static Bool                 isStaticCullingEnabled = true;
@@ -125,10 +137,36 @@ namespace Engine {
         static R2D_Texture* r2d_texture = NULL;
         static R2D_Texture* r2d_texture_bg = NULL;
 
-        void InitSubSystem() {
-            GetWindowSize(&wndSize);
+        void InitSubSystem(SDL_Window* hwnd) {
+
+
+            RRenderSetupInfo setupinfo = {};
+            setupinfo.flags = setupParams.flags;
+            setupinfo.hwnd = hwnd;
+            rdev = renderctx.CreateDevice(&setupinfo);
+
+            RResourceViewCreateInfo backbufferinfo = {};
+            backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
+            backbufferinfo.var = 0; // Use first buffer only
+            backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
+
+            RRenderpassCreateInfo rpinfo = {};
+            rpinfo.rt_count = 1;
+			rpinfo.rts[0] = backbuffer;
+            rpinfo.dsv = NULL; // Do not use depth buffer
+            renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
+
+
+            RCommandBufferCreateInfo cmdbuffinfo = {};
+            cmdbuffinfo.maxcmds = 128;
+			cmdbuffer = renderctx.CreateCommandBuffer(rdev, &cmdbuffinfo);
+
+            renderctx.ImGui_Init(rdev);
+            //renderctx.ImGui_NewFrame(rdev);
 
 #if 0
+            GetWindowSize(&wndSize);
+
             R2D_Vertex r2d_vertices[] = {
                 /*
                 { -0.5f, -0.5f, 0.0f, 1.0f, 1, 0, 0, 1 },
@@ -184,29 +222,38 @@ namespace Engine {
             //renderctx.R2D_DestroyTexture(r2d_texture);
             //renderctx.R2D_DestroyTexture(r2d_texture_bg);
 
+            renderctx.ImGui_Shutdown(rdev);
+
+			renderctx.DestroyCommandBuffer(cmdbuffer);
+			renderctx.DestroyRenderpass(renderpass);
+            renderctx.DestroyResourceView(backbuffer);
+
             renderctx.DestroyDevice(rdev);
             //renderctx.Destroy();
+
+            imguicallbacks.clear();
+        }
+
+        void RegisterImGuiDrawCallback(RenderImGuiCallback cb) {
+            imguicallbacks.push_back(cb);
+        }
+        
+        void FreeImGuiDrawCallback(RenderImGuiCallback cb) {
+            std::vector<RenderImGuiCallback>::iterator it;
+            for (it = imguicallbacks.begin(); it != imguicallbacks.end(); it++) {
+                if (*it == cb) {
+                    *it = std::move(imguicallbacks.back());
+                    imguicallbacks.pop_back();
+                    break;
+                }
+            }
         }
 
         SDL_Window* ShowWindow(Uint32 w, Uint32 h) {
             return renderctx.ShowWindow(w, h);
         }
 
-        void InitializeContext(SDL_Window* hwnd) {
-			RRenderSetupInfo setupinfo = {};
-            setupinfo.flags = setupParams.flags;
-            setupinfo.hwnd  = hwnd;
-            rdev = renderctx.CreateDevice(&setupinfo);
-
-            renderctx.ImGui_Init(rdev);
-            renderctx.ImGui_NewFrame(rdev);
-        }
-
         void SwapBuffers() {
-
-            renderctx.ImGui_RenderDrawData(rdev, ImGui::GetDrawData());
-            renderctx.ImGui_NewFrame(rdev);
-            
             renderctx.SwapBuffers(rdev);
         }
 
@@ -403,6 +450,39 @@ namespace Engine {
 
         void Update() {
 
+            // Render scene
+
+            // ImGui draw callback
+
+            renderctx.ImGui_NewFrame(rdev);
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+
+            // Call all registered callbacks
+            std::vector<RenderImGuiCallback>::iterator it;
+            for (it = imguicallbacks.begin(); it != imguicallbacks.end(); it++) {
+                RenderImGuiCallback cb = *it;
+                cb();
+            }
+
+            ImGui::EndFrame();
+            ImGui::Render();
+
+            // Draw imgui
+
+            renderctx.ResetCommandBuffer(cmdbuffer);
+			renderctx.BeginCommandBuffer(cmdbuffer);
+			renderctx.CmdBeginRenderpass(cmdbuffer, renderpass);
+			renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
+            renderctx.CmdEndRenderpass(cmdbuffer);
+			renderctx.EndCommandBuffer(cmdbuffer);
+
+			RCommandBufferSubmitInfo submitinfo = {};
+			submitinfo.buffer = cmdbuffer;
+            renderctx.SubmitCommandBuffer(&submitinfo);
+
+
+            //renderctx.ImGui_RenderDrawData(rdev, ImGui::GetDrawData());
 
 #if 0
             RenderWorld(Engine::GetWorld());
@@ -505,7 +585,7 @@ namespace Engine {
 
 #endif
 
-            Window_Update();
+            //Window_Update();
         }
 
         void SetGlobalLight(R3D_GlobalLightDescrition* desc) {

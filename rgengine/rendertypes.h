@@ -41,6 +41,10 @@ typedef struct RRenderDevice RRenderDevice;
 typedef struct RBuffer RBuffer;
 typedef struct RImage RImage;
 typedef struct RCommandBuffer RCommandBuffer;
+typedef struct RResourceView RResourceView;
+
+typedef struct RPipeline RPipeline;
+typedef struct RRenderpass RRenderpass;
 
 ////////////
 
@@ -49,11 +53,15 @@ typedef struct RRenderSetupInfo {
 	SDL_Window* hwnd;
 } RRenderSetupInfo;
 
+// Image
+
 typedef struct RImageCreateInfo {
 	RFormat format;
 	Uint32  width;
 	Uint32  height;
 } RImageCreateInfo;
+
+// Buffer
 
 #define RG_BUFFER_USAGE_DEFAULT    0x0
 #define RG_BUFFER_USAGE_DYNAMIC    0x1
@@ -79,16 +87,49 @@ typedef struct RBufferCreateInfo {
 	void*   initialData;
 } RBufferCreateInfo;
 
+// Cmd buffer
+
 typedef struct RCommandBufferSubmitInfo {
 	RCommandBuffer* buffer;
 } RCommandBufferSubmitInfo;
 
 typedef struct RCommandBufferCreateInfo {
-	// nope
+	Uint32 maxcmds;
 } RCommandBufferCreateInfo;
 
+// Resource view
 
+#define RG_RESOURCEVIEW_TYPE_RTV 0x1
+#define RG_RESOURCEVIEW_TYPE_DSV 0x2
+#define RG_RESOURCEVIEW_TYPE_SRV 0x3
+#define RG_RESOURCEVIEW_TYPE_UAV 0x4
+#define RG_RESOURCEVIEW_TYPE_BBV 0x5 // Swapchain backbuffer
 
+typedef struct RResourceViewCreateInfo {
+	Uint8   type;
+	Uint8   var;
+	Uint16 _offset1;
+
+	union {
+		RBuffer* dst_buffer;
+		RImage*  dst_image;
+	};
+} RResourceViewCreateInfo;
+
+// Pipeline
+
+typedef struct RPipelineCreateInfo {
+	// TODO
+} RPipelineCreateInfo;
+
+// Renderpass
+
+typedef struct RRenderpassCreateInfo {
+	Uint32 rt_count;
+	RResourceView* rts[8];
+	RResourceView* dsv;
+	// TODO: add blend, rasterizer, depth-stencil states
+} RRenderpassCreateInfo;
 
 ////////////////////////////////////////////////////////////////////
 

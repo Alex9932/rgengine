@@ -78,17 +78,126 @@ static Bool EHandler(SDL_Event* event) {
 	return true;
 }
 
+static World*      world      = NULL;
+
+static EntityList* entitylist = NULL;
+static StaticList* staticlist = NULL;
+static LightList*  lightlist  = NULL;
+// Other components
+
+static void DrawGui() {
+	ImGuizmo::BeginFrame();
+	viewport->SetImGuizmoRect();
+
+	DockerBegin();
+	MenubarDraw();
+	if (PopupShown()) { ImGui::BeginDisabled(); }
+
+
+	////////////////////////////
+	// In docker windows      //
+	////////////////////////////
+
+
+	// TODO: External window class
+	ImGui::Begin("Window 1");
+	ImGui::Text("Some useful feature");
+	ImGui::Text("Useful information");
+	ImGui::Button("Some useful button");
+	ImGui::SameLine();
+	ImGui::Button("Other useful button");
+	ImGui::End();
+
+	lightlist->DrawComponent();
+	staticlist->DrawComponent();
+	entitylist->DrawComponent();
+
+	RGUUID gizmoId = viewport->GetGizmoID();
+	if (gizmoId != 0) {
+		// TODO: optimize this
+		Entity* ent = world->GetEntityByUUID(gizmoId);
+		StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
+		LightSource* src = world->GetLightSourceByUUID(gizmoId);
+
+		mat4 mat = MAT4_IDENTITY();
+
+		if (ent) { mat = *ent->GetTransform()->GetMatrix(); }
+		if (obj) { mat = *obj->GetMatrix(); }
+		if (src) {
+			vec3 s = { 1, 1, 1 };
+			vec3 r = { 0, 0, 0 };
+			vec3 d = src->source.direction;
+			Float32 len = SDL_sqrtf(d.x * d.x + d.y * d.y + d.z * d.z);
+			r.z = SDL_atan2f(d.y, d.x);
+			r.y = SDL_acosf(d.z / len);
+
+			mat4_model(&mat, src->source.position, r, s);
+		}
+
+		// Manipulate
+		viewport->Manipulate(&mat);
+	}
+
+	// TODO: External window class
+	ImGui::Begin("Global light");
+	ImGui::SliderFloat("Time", &globaLightDesc.time, 0, 6.283);
+	ImGui::SliderFloat("Ambient", &globaLightDesc.ambient, 0, 1);
+	ImGui::SliderFloat("Intensity", &globaLightDesc.intensity, 0, 20);
+	ImGui::SliderFloat("Turbidity", &globaLightDesc.turbidity, 0, 6);
+	ImGui::ColorPicker3("Color", globaLightDesc.color.array);
+	Render::SetGlobalLight(&globaLightDesc);
+	ImGui::End();
+
+	ImVec2 padding = { 0, 0 };
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
+	viewport->DrawComponent();
+	ImGui::PopStyleVar();
+
+	// ManipulateResult is available AFTER component redraw
+	if (viewport->IsManipulationResult() && gizmoId != 0) {
+		ManipulateResult result;
+		viewport->GetManipulateResult(&result);
+
+		Entity* ent = world->GetEntityByUUID(gizmoId);
+		StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
+		LightSource* src = world->GetLightSourceByUUID(gizmoId);
+
+		if (ent) {
+			Transform* transform = ent->GetTransform();
+
+			//vec3 r = result.rot.toEuler();
+			//transform->SetRotation(r);
+			//transform->SetPosition(result.pos);
+			//transform->Recalculate();
+
+			transform->SetMatrix(&result.matrix);
+		}
+
+		// Just copy matrix
+		if (obj) { SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4)); }
+
+		// Just copy postiton
+		if (src) {
+			quat q = {};
+			vec3 v = { 0, 0, 1 };
+			mat4_decompose(&src->source.position, &q, NULL, result.matrix);
+			src->source.direction = vec3_mulquat(v, q);
+		}
+	}
+
+
+	if (PopupShown()) { ImGui::EndDisabled(); }
+	DockerEnd();
+	PopupDraw();
+
+	if (docker_isStats) { Render::DrawRendererStats(); }
+}
+
 class Application : public BaseGame {
 	private:
-		EntityList* entitylist = NULL;
-		StaticList* staticlist = NULL;
-		LightList*  lightlist  = NULL;
-		// Other components
 
 		Camera*               camera     = NULL;
 		FreeCameraController* camcontrol = NULL;
-
-		World* world = NULL;
 
 	public:
 		Application() {
@@ -117,119 +226,13 @@ class Application : public BaseGame {
 			cam.rotation = camera->GetTransform()->GetRotation();
 			Render::SetCamera(&cam);
 
-
-			ImGuizmo::BeginFrame();
-			viewport->SetImGuizmoRect();
-
-			DockerBegin();
-			MenubarDraw();
-			if (PopupShown()) { ImGui::BeginDisabled(); }
-			
-
-			////////////////////////////
-			// In docker windows      //
-			////////////////////////////
-
-
-			// TODO: External window class
-			ImGui::Begin("Window 1");
-			ImGui::Text("Some useful feature");
-			ImGui::Text("Useful information");
-			ImGui::Button("Some useful button");
-			ImGui::SameLine();
-			ImGui::Button("Other useful button");
-			ImGui::End();
-
-			lightlist->DrawComponent();
-			staticlist->DrawComponent();
-			entitylist->DrawComponent();
-
-			RGUUID gizmoId = viewport->GetGizmoID();
-			if (gizmoId != 0) {
-				// TODO: optimize this
-				Entity*       ent = world->GetEntityByUUID(gizmoId);
-				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
-				LightSource*  src = world->GetLightSourceByUUID(gizmoId);
-
-				mat4 mat = MAT4_IDENTITY();
-
-				if (ent) { mat = *ent->GetTransform()->GetMatrix(); }
-				if (obj) { mat = *obj->GetMatrix(); }
-				if (src) {
-					vec3 s = { 1, 1, 1 };
-					vec3 r = { 0, 0, 0};
-					vec3 d = src->source.direction;
-					Float32 len = SDL_sqrtf(d.x* d.x + d.y*d.y + d.z*d.z);
-					r.z = SDL_atan2f(d.y, d.x);
-					r.y = SDL_acosf(d.z / len);
-
-					mat4_model(& mat, src->source.position, r, s);
-				}
-
-				// Manipulate
-				viewport->Manipulate(&mat);
-			}
-
-			// TODO: External window class
-			ImGui::Begin("Global light");
-			ImGui::SliderFloat("Time", &globaLightDesc.time, 0, 6.283);
-			ImGui::SliderFloat("Ambient", &globaLightDesc.ambient, 0, 1);
-			ImGui::SliderFloat("Intensity", &globaLightDesc.intensity, 0, 20);
-			ImGui::SliderFloat("Turbidity", &globaLightDesc.turbidity, 0, 6);
-			ImGui::ColorPicker3("Color", globaLightDesc.color.array);
-			Render::SetGlobalLight(&globaLightDesc);
-			ImGui::End();
-
-			ImVec2 padding = { 0, 0 };
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
-			viewport->DrawComponent();
-			ImGui::PopStyleVar();
-
-			// ManipulateResult is available AFTER component redraw
-			if (viewport->IsManipulationResult() && gizmoId != 0) {
-				ManipulateResult result;
-				viewport->GetManipulateResult(&result);
-
-				Entity* ent       = world->GetEntityByUUID(gizmoId);
-				StaticObject* obj = world->GetStaticObjectByUUID(gizmoId);
-				LightSource*  src = world->GetLightSourceByUUID(gizmoId);
-
-				if (ent) {
-					Transform* transform = ent->GetTransform();
-
-					//vec3 r = result.rot.toEuler();
-					//transform->SetRotation(r);
-					//transform->SetPosition(result.pos);
-					//transform->Recalculate();
-
-					transform->SetMatrix(&result.matrix);
-				}
-
-				// Just copy matrix
-				if (obj) { SDL_memcpy(obj->GetMatrix(), &result.matrix, sizeof(mat4)); }
-
-				// Just copy postiton
-				if (src) {
-					quat q = {};
-					vec3 v = { 0, 0, 1 };
-					mat4_decompose(&src->source.position, &q, NULL, result.matrix);
-					src->source.direction = vec3_mulquat(v, q);
-				}
-			}
-
-			
-			if (PopupShown()) { ImGui::EndDisabled(); }
-			DockerEnd();
-			PopupDraw();
-
-			if (docker_isStats) { Render::DrawRendererStats(); }
-
 		}
 
 		void Initialize() {
 
 			SetFpsLimit(60);
 			RegisterEventHandler(EHandler);
+			Render::RegisterImGuiDrawCallback(DrawGui);
 			
 			world = GetWorld();
 
@@ -241,10 +244,10 @@ class Application : public BaseGame {
 			camcontrol = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
 
 			// Windows
-			viewport = new Viewport(camera);
+			viewport   = new Viewport(camera);
 			entitylist = new EntityList(viewport);
 			staticlist = new StaticList(viewport);
-			lightlist = new LightList(viewport);
+			lightlist  = new LightList(viewport);
 
 		}
 

@@ -490,6 +490,7 @@ namespace Engine {
             if (game_ptr->IsGraphics()) {
                 core_profiler->StartSection(profiles[7]);
                 Render::Update();
+                Window_Update();
             }
 
             core_profiler->StartSection(profiles[8]);

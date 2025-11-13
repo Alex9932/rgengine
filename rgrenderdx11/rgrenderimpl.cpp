@@ -4,6 +4,8 @@
 
 #include "rendertypesdx.h"
 
+#define R_DXRENDER_DEBUG 0
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_impl_dx11.h"
 
@@ -125,6 +127,9 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	device->flags     = info->flags;
 	device->allocator = alloc;
 
+	// Get swapchain backbuffer. Use only first
+	device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
+
 	return device;
 }
 
@@ -147,6 +152,10 @@ void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
 	
 }
 
+//////////////////////////////////////////////////////////
+// IMGUI
+//////////////////////////////////////////////////////////
+
 void R_ImGui_Init(RRenderDevice* dev) {
 	ImGui_ImplDX11_Init(dev->dxdev, dev->dxctx);
 }
@@ -159,10 +168,9 @@ void R_ImGui_NewFrame(RRenderDevice* dev) {
 	ImGui_ImplDX11_NewFrame();
 }
 
-void R_ImGui_RenderDrawData(RRenderDevice* dev, void* drawData) {
-	ImGui_ImplDX11_RenderDrawData((ImDrawData*)drawData);
-}
-
+//////////////////////////////////////////////////////////
+// BUFFER
+//////////////////////////////////////////////////////////
 
 RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	RBuffer* buffer = (RBuffer*)dev->allocator->Allocate(sizeof(RBuffer));
@@ -205,6 +213,10 @@ void R_DestroyBuffer(RBuffer* buffer) {
 	dev->allocator->Deallocate(buffer);
 }
 
+//////////////////////////////////////////////////////////
+// IMAGE
+//////////////////////////////////////////////////////////
+
 RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
 	image->dev = dev;
@@ -222,23 +234,305 @@ void R_DestroyImage(RImage* image) {
 	dev->allocator->Deallocate(image);
 }
 
+//////////////////////////////////////////////////////////
+// COMMAND BUFFER
+//////////////////////////////////////////////////////////
+
 RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateInfo* info) {
 	RCommandBuffer* cmdbuff = (RCommandBuffer*)dev->allocator->Allocate(sizeof(RCommandBuffer));
 	cmdbuff->dev = dev;
-
-	// Make queue
-
+	char allocname[64];
+	SDL_snprintf(allocname, 64, "DX11 Commandpool (0x%p)", cmdbuff);
+	if (info->maxcmds == 0) { info->maxcmds = R_MAX_COMMANDS_PER_BUFFER; }
+	cmdbuff->pool = RG_NEW_CLASS(dev->allocator, LinearAllocator)(allocname, info->maxcmds *sizeof(RCommand));
+	cmdbuff->commands_recorded = 0;
 	return cmdbuff;
 }
 
 void R_DestroyCommandBuffer(RCommandBuffer* cmdbuff) {
 	RRenderDevice* dev = cmdbuff->dev;
-
-	// Free queue
-
+	cmdbuff->pool->Deallocate();
+	RG_DELETE_CLASS(dev->allocator, LinearAllocator, cmdbuff->pool);
 	dev->allocator->Deallocate(cmdbuff);
 }
 
-void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
+void R_ResetCommandBuffer(RCommandBuffer* cmdbuff) {
+	cmdbuff->commands_recorded = 0;
+	cmdbuff->pool->Deallocate();
+}
+
+void R_BeginCommandBuffer(RCommandBuffer* buffer) { /* DO NOTHING */ }
+void R_EndCommandBuffer(RCommandBuffer* buffer)   { /* DO NOTHING */ }
+
+static inline DXGI_FORMAT GetIndexType(IndexType type) {
+	switch (type) {
+	case RG_INDEX_U8:  return DXGI_FORMAT_R8_UINT;
+	case RG_INDEX_U16: return DXGI_FORMAT_R16_UINT;
+	case RG_INDEX_U32: return DXGI_FORMAT_R32_UINT;
+	default:           return DXGI_FORMAT_R8_UINT;
+	}
+}
+
+static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RRenderpass* rp = (RRenderpass*)cmd->handle;
+	RRenderDevice* dev = buffer->dev;
+
+	// Set render targets, clear, etc.
+
+	dev->dxctx->OMSetRenderTargets(rp->rtv_count, rp->rtv, rp->dsv);
+	dev->dxctx->OMSetDepthStencilState(rp->depth_stencil_state, 1);
+	dev->dxctx->RSSetState(rp->raster_state);
+
+	Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	dev->dxctx->OMSetBlendState(rp->blend_state, blendFactor, 0xffffffff);
+}
+
+static RG_INLINE void CMD_EndRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
 
 }
+
+static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RPipeline* pl = (RPipeline*)cmd->handle;
+	// Bind pipeline
+}
+
+static RG_INLINE void CMD_BindVertexBufferImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RBuffer* vb = (RBuffer*)cmd->handle;
+	Uint32 slot = cmd->data0;
+	UINT stride = cmd->data1;
+	UINT offset = cmd->data2;
+	buffer->dev->dxctx->IASetVertexBuffers(slot, 1, &vb->buffer, &stride, &offset);
+}
+
+static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RBuffer* ib = (RBuffer*)cmd->handle;
+	IndexType indexFormat = (IndexType)cmd->data0;  // Index size in bytes
+	buffer->dev->dxctx->IASetIndexBuffer(ib->buffer, GetIndexType(indexFormat), 0);
+}
+
+static RG_INLINE void CMD_DrawImGuiImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	// Restore pointer
+	void* rawpointer = (void*)(((Uint64)cmd->data0 << 32) | (Uint64)cmd->data1);
+	ImGui_ImplDX11_RenderDrawData((ImDrawData*)rawpointer);
+}
+
+static RG_INLINE void CMD_DrawIndexdImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	Uint32 idxcount = cmd->data0;
+	Uint32 idxstart = cmd->data1;
+	buffer->dev->dxctx->DrawIndexed(idxcount, idxstart, 0);
+}
+
+void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
+	RCommandBuffer* buffer = info->buffer;
+
+	// Execute commands
+
+	for (Uint32 i = 0; i < buffer->commands_recorded; i++) {
+		RCommand* cmd = (RCommand*)((Uint8*)buffer->pool->GetBasePointer() + i * sizeof(RCommand));
+		switch (cmd->cmd) {
+			case R_CMD_BEGIN_RENDERPASS:   { CMD_BeginRenderpassImpl(buffer, cmd); break; }
+			case R_CMD_END_RENDERPASS:     { CMD_EndRenderpassImpl(buffer, cmd); break; }
+			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
+			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
+			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
+			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
+			//case R_CMD_DRAW:               { CMD_DrawImpl(buffer, cmd); break; }
+			case R_CMD_DRAW_INDEXED:       { CMD_DrawIndexdImpl(buffer, cmd); break; }
+			default: { break; } // NOP
+		}
+	}
+
+}
+
+///////////
+// COMMANDS
+
+static RG_INLINE RCommand* AllocateNextCommand(RCommandBuffer* cmdbuff) {
+	RCommand* cmd = (RCommand*)cmdbuff->pool->Allocate(sizeof(RCommand));
+	cmdbuff->commands_recorded++;
+	return cmd;
+}
+
+void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpass* rp) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd    = R_CMD_BEGIN_RENDERPASS;
+	cmd->handle = rp;
+}
+
+void R_CmdEndRenderpass(RCommandBuffer* cmdbuff) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_END_RENDERPASS;
+}
+
+void R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd    = R_CMD_BIND_PIPELINE;
+	cmd->handle = pl;
+}
+
+void R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd    = R_CMD_BIND_VERTEX_BUFFER;
+	cmd->handle = vb;
+	cmd->data0  = slot; // Bind slot
+	cmd->data1  = 0;    // Stride
+	cmd->data2  = 0;    // Offset
+}
+
+void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd    = R_CMD_BIND_INDEX_BUFFER;
+	cmd->handle = ib;
+	cmd->data0  = isize;
+}
+
+/*
+void R_CmdDraw(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_DRAW;
+	cmd->data0 = idxcount;
+	cmd->data1 = idxstart;
+}
+*/
+
+void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_DRAW_INDEXED;
+	cmd->data0 = idxcount;
+	cmd->data1 = idxstart;
+}
+
+void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* data) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_DRAW_IMGUI;
+
+	Uint64 address = (Uint64)data;
+	cmd->data0 = (Uint32)(address >> 32); // High part
+	cmd->data1 = (Uint32)(address & 0xFFFFFFFF); // Low part
+}
+
+
+//////////////////////////////////////////////////////////
+// RESOURCE VIEW
+//////////////////////////////////////////////////////////
+
+RResourceView* R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info) {
+	RResourceView* rv = (RResourceView*)dev->allocator->Allocate(sizeof(RResourceView));
+	rv->dev = dev;
+
+	// Backbuffer view
+	if (info->type == RG_RESOURCEVIEW_TYPE_BBV) {
+		dev->dxdev->CreateRenderTargetView(dev->backbuffers[info->var], NULL, &rv->rtv);
+		rv->type = R_DX_RESOURCEVIEW_RTV;
+	}
+
+	// Make rv
+
+	return rv;
+}
+
+void R_DestroyResourceView(RResourceView* rv) {
+	RRenderDevice* dev = rv->dev;
+
+	if (rv->type == R_DX_RESOURCEVIEW_RTV) {
+		rv->rtv->Release();
+	}
+
+	// Free rv
+
+	dev->allocator->Deallocate(rv);
+}
+
+RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info) {
+#if R_DXRENDER_DEBUG
+	if (rp->dsv->type != R_DX_RESOURCEVIEW_DSV) { /* Error */ }
+	for (Uint32 i = 0; i < rp->rtv_count; i++) {
+		if (rp->rtv[i]->type != R_DX_RESOURCEVIEW_RTV) { /* Error */ }
+	}
+#endif
+	RRenderpass* rp = (RRenderpass*)dev->allocator->Allocate(sizeof(RRenderpass));
+	rp->dev = dev;
+
+	rp->rtv_count = info->rt_count;
+	rp->dsv = NULL;
+	rp->depth_stencil_state = NULL;
+
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+
+	// TODO: check this resourceviews
+	for (Uint32 i = 0; i < rp->rtv_count; i++) {
+
+		blendDesc.RenderTarget[i].BlendEnable = true;
+		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		rp->rtv[i] = info->rts[i]->rtv;
+	}
+
+	dev->dxdev->CreateBlendState(&blendDesc, &rp->blend_state);
+
+	D3D11_RASTERIZER_DESC rasterDesc = {};
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	dev->dxdev->CreateRasterizerState(&rasterDesc, &rp->raster_state);
+
+
+	if (info->dsv) {
+		// Make depth-stencil state
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+		depthStencilDesc.DepthEnable = true;
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthStencilDesc.StencilEnable = true;
+		depthStencilDesc.StencilReadMask = 0xFF;
+		depthStencilDesc.StencilWriteMask = 0xFF;
+		depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		dev->dxdev->CreateDepthStencilState(&depthStencilDesc, &rp->depth_stencil_state);
+
+		// TODO: check this resourceview
+		rp->dsv = info->dsv->dsv;
+	}
+
+	return rp;
+}
+
+void R_DestroyRenderpass(RRenderpass* rp) {
+	RRenderDevice* dev = rp->dev;
+	rp->blend_state->Release();
+	rp->raster_state->Release();
+	if (rp->depth_stencil_state) {
+		rp->depth_stencil_state->Release();
+	}
+	dev->allocator->Deallocate(rp);
+}
+
+RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
+	return NULL;
+}
+
+void R_DestroyPipeline(RPipeline* pl) {
+}
+

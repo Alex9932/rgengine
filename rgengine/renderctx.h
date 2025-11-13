@@ -75,16 +75,33 @@ typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_NEWFRAME)(RRenderDevice*);
-typedef void            (*PFN_R_IMGUI_RENDERDRAWDATA)(RRenderDevice*, void*);
 
 typedef RBuffer*        (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
 typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
 typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
+typedef RResourceView*  (*PFN_R_CREATERESOURCEVIEW)(RRenderDevice*, RResourceViewCreateInfo*);
+typedef void            (*PFN_R_DESTROYRESOURCEVIEW)(RResourceView*);
+typedef RRenderpass*    (*PFN_R_CREATERENDERPASS)(RRenderDevice*, RRenderpassCreateInfo*);
+typedef void            (*PFN_R_DESTROYRENDERPASS)(RRenderpass*);
+typedef RPipeline*      (*PFN_R_CREATEPIPELINE)(RRenderDevice*, RPipelineCreateInfo*);
+typedef void            (*PFN_R_DESTROYPIPELINE)(RPipeline*);
+
 typedef RCommandBuffer* (*PFN_R_CREATECOMMANDBUFFER)(RRenderDevice*, RCommandBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYCOMMANDBUFFER)(RCommandBuffer*);
 typedef void            (*PFN_R_SUBMITCOMMANDBUFFER)(RCommandBufferSubmitInfo*);
+typedef void            (*PFN_R_RESETCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_BEGINCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_ENDCOMMANDBUFFER)(RCommandBuffer*);
 
+typedef void            (*PFN_R_CMDBEGINRENDERPASS)(RCommandBuffer*, RRenderpass*);
+typedef void            (*PFN_R_CMDENDRENDERPASS)(RCommandBuffer*);
+typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
+typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32);
+typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
+typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
+
+typedef void            (*PFN_R_CMDIMGUIRENDERDRAWDATA)(RCommandBuffer*, void*);
 
 namespace Engine {
 	typedef struct RenderBackend {
@@ -101,7 +118,6 @@ namespace Engine {
 		PFN_R_IMGUI_INIT              ImGui_Init;
 		PFN_R_IMGUI_SHUTDOWN          ImGui_Shutdown;
 		PFN_R_IMGUI_NEWFRAME          ImGui_NewFrame;
-		PFN_R_IMGUI_RENDERDRAWDATA    ImGui_RenderDrawData;
 
 		// Buffer
 		PFN_R_CREATEBUFFER            CreateBuffer;
@@ -115,6 +131,26 @@ namespace Engine {
 		PFN_R_CREATECOMMANDBUFFER     CreateCommandBuffer;
 		PFN_R_DESTROYCOMMANDBUFFER    DestroyCommandBuffer;
 		PFN_R_SUBMITCOMMANDBUFFER     SubmitCommandBuffer;
+		PFN_R_RESETCOMMANDBUFFER      ResetCommandBuffer;
+		PFN_R_BEGINCOMMANDBUFFER      BeginCommandBuffer;
+		PFN_R_ENDCOMMANDBUFFER        EndCommandBuffer;
+
+		// Resource view
+		PFN_R_CREATERESOURCEVIEW      CreateResourceView;
+		PFN_R_DESTROYRESOURCEVIEW     DestroyResourceView;
+		PFN_R_CREATERENDERPASS		  CreateRenderpass;
+		PFN_R_DESTROYRENDERPASS		  DestroyRenderpass;
+		PFN_R_CREATEPIPELINE          CreatePipeline;
+		PFN_R_DESTROYPIPELINE         DestroyPipeline;
+
+		// Commands
+		PFN_R_CMDBEGINRENDERPASS      CmdBeginRenderpass;
+		PFN_R_CMDENDRENDERPASS        CmdEndRenderpass;
+		PFN_R_CMDBINDPIPELINE         CmdBindPipeline;
+		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
+		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
+		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;
+		PFN_R_CMDIMGUIRENDERDRAWDATA  CmdImGuiRenderDrawData;
 
 	} RenderBackend;
 

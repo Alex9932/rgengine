@@ -21,8 +21,6 @@ extern "C" {
 	extern RG_DECLSPEC void            R_ImGui_Init(RRenderDevice* dev);
 	extern RG_DECLSPEC void            R_ImGui_Shutdown(RRenderDevice* dev);
 	extern RG_DECLSPEC void            R_ImGui_NewFrame(RRenderDevice* dev);
-	extern RG_DECLSPEC void            R_ImGui_RenderDrawData(RRenderDevice* dev, void* drawData);
-
 
 	extern RG_DECLSPEC RBuffer*        R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyBuffer(RBuffer* buffer);
@@ -30,8 +28,25 @@ extern "C" {
 	extern RG_DECLSPEC void            R_DestroyImage(RImage* image);
 	extern RG_DECLSPEC RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyCommandBuffer(RCommandBuffer* buffer);
+	extern RG_DECLSPEC void            R_ResetCommandBuffer(RCommandBuffer* buffer);
+	extern RG_DECLSPEC void            R_BeginCommandBuffer(RCommandBuffer* buffer);
+	extern RG_DECLSPEC void            R_EndCommandBuffer(RCommandBuffer* buffer);
 	extern RG_DECLSPEC void            R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info);
+	extern RG_DECLSPEC RResourceView*  R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyResourceView(RResourceView* rv);
+	extern RG_DECLSPEC RRenderpass*    R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyRenderpass(RRenderpass* rp);
+	extern RG_DECLSPEC RPipeline*      R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyPipeline(RPipeline* pl);
 
+	extern RG_DECLSPEC void            R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpass* rp);
+	extern RG_DECLSPEC void            R_CmdEndRenderpass(RCommandBuffer* cmdbuff);
+	extern RG_DECLSPEC void            R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl);
+	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot);
+	extern RG_DECLSPEC void            R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize);
+	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
+
+	extern RG_DECLSPEC void            R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData);
 
 
 

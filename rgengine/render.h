@@ -8,6 +8,8 @@
 
 #define RG_EVENT_RENDER_VIEWPORT_RESIZE 0x00010001
 
+typedef void (*RenderImGuiCallback)();
+
 namespace Engine {
 
 	class ModelSystem;
@@ -21,11 +23,14 @@ namespace Engine {
 		RG_DECLSPEC Bool          IsRendererLoaded();
 		RG_DECLSPEC LibraryHandle GetHandle();
 
-		void InitSubSystem();
+		void InitSubSystem(SDL_Window* hwnd);
 		void DestroySubSystem();
 
+		RG_DECLSPEC void RegisterImGuiDrawCallback(RenderImGuiCallback cb);
+		RG_DECLSPEC void FreeImGuiDrawCallback(RenderImGuiCallback cb);
+
 		SDL_Window* ShowWindow(Uint32 w, Uint32 h);
-		void InitializeContext(SDL_Window* hwnd);
+		//void InitializeContext();
 		void SwapBuffers();
 
 		RenderBackend* GetRenderContext();

@@ -1,5 +1,4 @@
 #if 0 // DEPRECATED
-
 #define DLL_EXPORT
 #include "rgrenderdx11.h"
 
