@@ -36,6 +36,7 @@
 #define RG_EVENT_ONLOADINGFINISHED 0x0000000B
 
 typedef bool (*EventHandler)(SDL_Event*);
+typedef bool (*EventHandlerArg)(SDL_Event*, void*);
 
 namespace Engine {
 
@@ -44,7 +45,8 @@ namespace Engine {
     void HandleEvents();
 
     RG_DECLSPEC void RegisterEventHandler(EventHandler handler);
-    RG_DECLSPEC void FreeEventHandler(EventHandler handler);
+    RG_DECLSPEC void RegisterEventHandler(EventHandlerArg handler, void* userdata);
+    RG_DECLSPEC void FreeEventHandler(void* handler);
     RG_DECLSPEC void PushEvent(Uint32 wnd_id, Sint32 code, void* ptr1, void* ptr2);
 
     RG_DECLSPEC Uint32 GetUserEventID();
