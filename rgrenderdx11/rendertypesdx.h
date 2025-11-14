@@ -13,6 +13,10 @@ struct RRenderDevice {
 	IDXGISwapChain*      dxswapchain;
 	ID3D11Texture2D*     backbuffers[8];
 
+	SDL_Window*          hwnd;
+	ivec2                wndsize;
+	Bool 			     wndresized;
+
 	Engine::Allocator* allocator;
 
 	Uint64 buffersMemLen;
@@ -49,6 +53,8 @@ struct RImage {
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022
 #define R_CMD_DRAW_INDEXED       0x0023
+
+#define R_CMD_DISPATCH           0x0031
 
 struct RCommand {
 	void*  handle;

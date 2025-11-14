@@ -31,18 +31,18 @@
 namespace Engine {
     namespace Render {
 
-        static LibraryHandle        handle = NULL;
-        static Bool                 isRendererLoaded = false;
+        static LibraryHandle        handle                 = NULL;
+        static Bool                 isRendererLoaded       = false;
 
         static RenderBackend        renderctx              = {};
         static RRenderDevice*       rdev                   = NULL;
 
         static RResourceView*       backbuffer             = NULL;
 
-        static RRenderpass*         renderpass = NULL;
-        static RCommandBuffer*      cmdbuffer = NULL;
+        static RRenderpass*         renderpass             = NULL;
+        static RCommandBuffer*      cmdbuffer              = NULL;
 
-
+        static Bool isWindowResized = false;
 
         static std::vector<RenderImGuiCallback> imguicallbacks;
         
@@ -82,6 +82,7 @@ namespace Engine {
 
                         //rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", (Uint32)wndSize.x, (Uint32)wndSize.y);
                         PushEvent(0, RG_EVENT_RENDER_VIEWPORT_RESIZE, &wndSize, NULL);
+                        isWindowResized = true;
                         //break;
                     //}
                     //default: { break; }
@@ -154,6 +155,8 @@ namespace Engine {
             rpinfo.rt_count = 1;
 			rpinfo.rts[0] = backbuffer;
             rpinfo.dsv = NULL; // Do not use depth buffer
+			rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
+            rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
             renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
 
 
@@ -254,7 +257,36 @@ namespace Engine {
         }
 
         void SwapBuffers() {
-            renderctx.SwapBuffers(rdev);
+            RSwapBuffersInfo sbinfo = {};
+
+            if (isWindowResized) {
+                // Free swapchain resources
+                renderctx.DestroyResourceView(backbuffer);
+                renderctx.DestroyRenderpass(renderpass);
+
+                sbinfo.flags |= RG_SWAPCHAIN_FLAG_RESIZE;
+                GetWindowSize(&sbinfo.newsize);
+            }
+
+            renderctx.SwapBuffers(rdev, &sbinfo);
+            
+            if (isWindowResized) {
+                isWindowResized = false;
+
+                // Make new swapchain resources
+                RResourceViewCreateInfo backbufferinfo = {};
+                backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
+                backbufferinfo.var = 0; // Use first buffer only
+                backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
+
+                RRenderpassCreateInfo rpinfo = {};
+                rpinfo.rt_count = 1;
+                rpinfo.rts[0] = backbuffer;
+                rpinfo.dsv = NULL; // Do not use depth buffer
+                rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
+                rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+                renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
+            }
         }
 
         RenderBackend* GetRenderContext() {
@@ -276,7 +308,7 @@ namespace Engine {
 
         void DrawRendererStats() {
             RenderInfo renderer_info = {};
-            //renderctx.GetInfo(&renderer_info);
+            GetInfo(&renderer_info);
 
             ImGui::Begin("Renderer stats");
 
@@ -413,7 +445,7 @@ namespace Engine {
         static void RenderWorld(World* world) {
             R3D_PushModelInfo info = {};
 
-            UpdateFrametime(GetDeltaTime());
+            
 
             // Draw static geometry
             ProcessStatic(&info, world);
@@ -449,11 +481,11 @@ namespace Engine {
         }
 
         void Update() {
-
+            UpdateFrametime(GetDeltaTime());
             // Render scene
+            // TODO
 
-            // ImGui draw callback
-
+            // Update ImGui
             renderctx.ImGui_NewFrame(rdev);
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
@@ -469,20 +501,18 @@ namespace Engine {
             ImGui::Render();
 
             // Draw imgui
-
             renderctx.ResetCommandBuffer(cmdbuffer);
 			renderctx.BeginCommandBuffer(cmdbuffer);
-			renderctx.CmdBeginRenderpass(cmdbuffer, renderpass);
-			renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
-            renderctx.CmdEndRenderpass(cmdbuffer);
+            {
+                renderctx.CmdBeginRenderpass(cmdbuffer, renderpass);
+                renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
+                renderctx.CmdEndRenderpass(cmdbuffer);
+            }
 			renderctx.EndCommandBuffer(cmdbuffer);
 
 			RCommandBufferSubmitInfo submitinfo = {};
 			submitinfo.buffer = cmdbuffer;
             renderctx.SubmitCommandBuffer(&submitinfo);
-
-
-            //renderctx.ImGui_RenderDrawData(rdev, ImGui::GetDrawData());
 
 #if 0
             RenderWorld(Engine::GetWorld());
@@ -593,7 +623,7 @@ namespace Engine {
         }
 
         void GetInfo(RenderInfo* info) {
-            //renderctx.GetInfo(info);
+            renderctx.GetInfo(rdev, info);
         }
 
         ParticleSystem* GetParticleSystem() {

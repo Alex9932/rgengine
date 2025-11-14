@@ -13,7 +13,7 @@ extern "C" {
 	extern RG_DECLSPEC RRenderDevice*  R_CreateDevice(RRenderSetupInfo* info);
 	//extern RG_DECLSPEC void        R_Destroy();
 	extern RG_DECLSPEC void            R_DestroyDevice(RRenderDevice* device);
-	extern RG_DECLSPEC void            R_SwapBuffers(RRenderDevice* device);
+	extern RG_DECLSPEC void            R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info);
 	//extern RG_DECLSPEC void        R_GetInfo(RenderInfo* info);
 	extern RG_DECLSPEC void            R_GetInfo(RRenderDevice* dev, RenderInfo* info);
 

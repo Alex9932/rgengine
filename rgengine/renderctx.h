@@ -70,7 +70,7 @@ typedef void            (*PFN_R_SETUP)();
 typedef RRenderDevice*  (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
 typedef void            (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
 typedef void            (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
-typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*);
+typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*, RSwapBuffersInfo*);
 
 typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);

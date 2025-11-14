@@ -53,6 +53,13 @@ typedef struct RRenderSetupInfo {
 	SDL_Window* hwnd;
 } RRenderSetupInfo;
 
+#define RG_SWAPCHAIN_FLAG_RESIZE     0x01
+
+typedef struct RSwapBuffersInfo {
+	Uint32 flags;
+	ivec2  newsize;
+} RSwapBuffersInfo;
+
 // Image
 
 typedef struct RImageCreateInfo {
@@ -124,11 +131,23 @@ typedef struct RPipelineCreateInfo {
 
 // Renderpass
 
+#define RG_RENDERPASS_CULLMODE_NONE        0x0
+#define RG_RENDERPASS_CULLMODE_FRONT       0x1
+#define RG_RENDERPASS_CULLMODE_BACK        0x2
+
+#define RG_RENDERPASS_FILLMODE_SOLID       0x0
+#define RG_RENDERPASS_FILLMODE_WIREFRAME   0x1
+
 typedef struct RRenderpassCreateInfo {
+	Uint8  cullmode;
+	Uint8  fillmode;
+	Uint16 _off1;
 	Uint32 rt_count;
 	RResourceView* rts[8];
 	RResourceView* dsv;
 	// TODO: add blend, rasterizer, depth-stencil states
+
+
 } RRenderpassCreateInfo;
 
 ////////////////////////////////////////////////////////////////////

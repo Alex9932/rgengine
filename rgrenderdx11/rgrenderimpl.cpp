@@ -1,10 +1,12 @@
 #include <rshared.h>
 #include <allocator.h>
 #include <engine.h>
+#include <event.h>
+#include <render.h>
 
 #include "rendertypesdx.h"
 
-#define R_DXRENDER_DEBUG 0
+#define R_DXRENDER_DEBUG 1
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_impl_dx11.h"
@@ -79,6 +81,27 @@ static IDXGIAdapter* SelectAdapter(RRenderDevice* device) {
 	return pAdapter;
 }
 
+static Bool _EventHandler(SDL_Event* event, void* data) {
+	RRenderDevice* device = (RRenderDevice*)data;
+#if 0
+	if (event->type == Engine::GetUserEventID()) {
+
+		switch (event->user.code) {
+			case RG_EVENT_RENDER_VIEWPORT_RESIZE: {
+				ivec2* wnd_size = (ivec2*)event->user.data1;
+				device->wndsize = *wnd_size;
+				device->wndresized = true;
+				rgLogWarn(RG_LOG_RENDER, "Size changed: %dx%d", wnd_size->x, wnd_size->y);
+				break;
+			}
+		default: { break; }
+		}
+
+	}
+#endif
+	return true;
+}
+
 RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	flags = info->flags;
 
@@ -87,6 +110,9 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	// Create device
 	RRenderDevice* device = RG_NEW_CLASS(alloc, RRenderDevice);
+	device->hwnd = info->hwnd;
+	SDL_SetWindowTitle(device->hwnd, "rgEngine - D3D11");
+	Engine::RegisterEventHandler(_EventHandler, device);
 
 	SDL_PropertiesID props = SDL_GetWindowProperties(info->hwnd);
 	HWND win_hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
@@ -129,6 +155,10 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	// Get swapchain backbuffer. Use only first
 	device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
+	device->wndresized = false;
+
+
+	SDL_SetWindowPosition(device->hwnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
 	return device;
 }
@@ -144,12 +174,30 @@ void R_DestroyDevice(RRenderDevice* device) {
 	RG_DELETE(STDAllocator, alloc);
 }
 
-void R_SwapBuffers(RRenderDevice* device) {
-	device->dxswapchain->Present(0, 0);
+void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
+
+	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
+		device->dxswapchain->Present(0, 0);
+	}
+
+	// Resize swapchain
+	if (RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
+
+		device->wndsize = info->newsize;
+
+		device->dxctx->ClearState();
+		device->dxctx->Flush();
+
+		device->backbuffers[0]->Release();
+		HRESULT result = device->dxswapchain->ResizeBuffers(0, device->wndsize.x, device->wndsize.y, DXGI_FORMAT_UNKNOWN, 0);
+		RG_ASSERT_MSG(SUCCEEDED(result), "Unable to resize swapchain buffers");
+		device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
+	}
 }
 
 void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
-	
+	info->render_name = "Direct3D 11";
+	info->renderer    = dev->cardName;
 }
 
 //////////////////////////////////////////////////////////
@@ -330,6 +378,7 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	for (Uint32 i = 0; i < buffer->commands_recorded; i++) {
 		RCommand* cmd = (RCommand*)((Uint8*)buffer->pool->GetBasePointer() + i * sizeof(RCommand));
 		switch (cmd->cmd) {
+			case R_CMD_NOP: { break; }
 			case R_CMD_BEGIN_RENDERPASS:   { CMD_BeginRenderpassImpl(buffer, cmd); break; }
 			case R_CMD_END_RENDERPASS:     { CMD_EndRenderpassImpl(buffer, cmd); break; }
 			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
@@ -338,7 +387,12 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
 			//case R_CMD_DRAW:               { CMD_DrawImpl(buffer, cmd); break; }
 			case R_CMD_DRAW_INDEXED:       { CMD_DrawIndexdImpl(buffer, cmd); break; }
-			default: { break; } // NOP
+			default: {
+#if R_DXRENDER_DEBUG
+				rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid or unimplemented opcode in command buffer!");
+#endif
+				break;
+			}
 		}
 	}
 
@@ -444,12 +498,6 @@ void R_DestroyResourceView(RResourceView* rv) {
 }
 
 RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info) {
-#if R_DXRENDER_DEBUG
-	if (rp->dsv->type != R_DX_RESOURCEVIEW_DSV) { /* Error */ }
-	for (Uint32 i = 0; i < rp->rtv_count; i++) {
-		if (rp->rtv[i]->type != R_DX_RESOURCEVIEW_RTV) { /* Error */ }
-	}
-#endif
 	RRenderpass* rp = (RRenderpass*)dev->allocator->Allocate(sizeof(RRenderpass));
 	rp->dev = dev;
 
@@ -463,6 +511,11 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 
 	// TODO: check this resourceviews
 	for (Uint32 i = 0; i < rp->rtv_count; i++) {
+#if R_DXRENDER_DEBUG
+		if (info->rts[i]->type != R_DX_RESOURCEVIEW_RTV) {
+			rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(rts[%d]) must be a RG_RESOURCEVIEW_TYPE_RTV or RG_RESOURCEVIEW_TYPE_BBV in RRenderpass creation!", i);
+		}
+#endif
 
 		blendDesc.RenderTarget[i].BlendEnable = true;
 		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
@@ -472,7 +525,6 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
 		rp->rtv[i] = info->rts[i]->rtv;
 	}
 
@@ -480,11 +532,21 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.AntialiasedLineEnable = false;
+	switch (info->cullmode) {
+		case RG_RENDERPASS_CULLMODE_NONE:  { rasterDesc.CullMode = D3D11_CULL_NONE;  break; }
+		case RG_RENDERPASS_CULLMODE_FRONT: { rasterDesc.CullMode = D3D11_CULL_FRONT; break; }
+		case RG_RENDERPASS_CULLMODE_BACK:  { rasterDesc.CullMode = D3D11_CULL_BACK;  break; }
+		default: { rasterDesc.CullMode = D3D11_CULL_NONE; break; }
+	}
 	rasterDesc.CullMode = D3D11_CULL_NONE;
 	rasterDesc.DepthBias = 0;
 	rasterDesc.DepthBiasClamp = 0.0f;
 	rasterDesc.DepthClipEnable = true;
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	switch (info->fillmode) {
+		case RG_RENDERPASS_FILLMODE_SOLID:     { rasterDesc.FillMode = D3D11_FILL_SOLID; break; }
+		case RG_RENDERPASS_FILLMODE_WIREFRAME: { rasterDesc.FillMode = D3D11_FILL_WIREFRAME; break; }
+		default: { rasterDesc.FillMode = D3D11_FILL_SOLID; break; }
+	}
 	rasterDesc.FrontCounterClockwise = false;
 	rasterDesc.MultisampleEnable = false;
 	rasterDesc.ScissorEnable = false;
@@ -494,6 +556,13 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 
 
 	if (info->dsv) {
+
+#if R_DXRENDER_DEBUG
+		if (info->dsv->type != R_DX_RESOURCEVIEW_DSV) {
+			rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(dst) must be a RG_RESOURCEVIEW_TYPE_DSV in RRenderpass creation!");
+		}
+#endif
+
 		// Make depth-stencil state
 		D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
 		depthStencilDesc.DepthEnable = true;
