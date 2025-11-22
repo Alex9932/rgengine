@@ -13,24 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\r3d">
-      <UniqueIdentifier>{12958c84-3063-4187-9f4a-e1dd48d6e689}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\r2d">
-      <UniqueIdentifier>{94e9dc78-4128-40d6-ba10-5d07a4ee4160}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\r3d">
-      <UniqueIdentifier>{9e5ca4f9-cf91-4f7b-8efb-b253f2ea5de7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\r2d">
-      <UniqueIdentifier>{ac6c4642-e905-4e39-9820-1a6bea0f9702}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\utils">
-      <UniqueIdentifier>{add3b8b4-bb5f-4c45-916d-23fc0e573ab7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\utils">
-      <UniqueIdentifier>{e507f4df-670c-4aab-8fc1-60276a8ab54a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shaders">
       <UniqueIdentifier>{b6cc04ed-ef6b-4691-b296-3775db7a625f}</UniqueIdentifier>
     </Filter>
@@ -49,117 +31,150 @@
     <Filter Include="shaders\fwd">
       <UniqueIdentifier>{c9e0237e-07f0-47a6-9dcb-88702c55122c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\old">
+      <UniqueIdentifier>{905f64c4-ad01-4828-8431-e5544aea7eff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old\r2d">
+      <UniqueIdentifier>{ac6c4642-e905-4e39-9820-1a6bea0f9702}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old\r3d">
+      <UniqueIdentifier>{9e5ca4f9-cf91-4f7b-8efb-b253f2ea5de7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old\utils">
+      <UniqueIdentifier>{add3b8b4-bb5f-4c45-916d-23fc0e573ab7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\old">
+      <UniqueIdentifier>{b5147056-6c62-467b-8955-1d6ccbd0db81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\old\r2d">
+      <UniqueIdentifier>{94e9dc78-4128-40d6-ba10-5d07a4ee4160}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\old\r3d">
+      <UniqueIdentifier>{12958c84-3063-4187-9f4a-e1dd48d6e689}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\old\utils">
+      <UniqueIdentifier>{e507f4df-670c-4aab-8fc1-60276a8ab54a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rgrenderdx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui_impl_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="r3d.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="shadowbuffer.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="lightpass.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="gbuffer.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="buffer.cpp">
-      <Filter>Source Files\utils</Filter>
+      <Filter>Source Files\old\utils</Filter>
     </ClCompile>
     <ClCompile Include="loader.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="shader.cpp">
-      <Filter>Source Files\utils</Filter>
+      <Filter>Source Files\old\utils</Filter>
     </ClCompile>
     <ClCompile Include="texture.cpp">
-      <Filter>Source Files\utils</Filter>
+      <Filter>Source Files\old\utils</Filter>
     </ClCompile>
     <ClCompile Include="postprocess.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="queue.cpp">
-      <Filter>Source Files\utils</Filter>
+      <Filter>Source Files\old\utils</Filter>
     </ClCompile>
     <ClCompile Include="r2d.cpp">
-      <Filter>Source Files\r2d</Filter>
+      <Filter>Source Files\old\r2d</Filter>
     </ClCompile>
     <ClCompile Include="stack.cpp">
-      <Filter>Source Files\utils</Filter>
+      <Filter>Source Files\old\utils</Filter>
     </ClCompile>
     <ClCompile Include="particlepass.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="particleemitters.cpp">
-      <Filter>Source Files\r3d</Filter>
+      <Filter>Source Files\old\r3d</Filter>
     </ClCompile>
     <ClCompile Include="rgrenderimpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dx11.cpp">
+      <Filter>Source Files\old</Filter>
+    </ClCompile>
+    <ClCompile Include="rgrenderdx11.cpp">
+      <Filter>Source Files\old</Filter>
+    </ClCompile>
+    <ClCompile Include="resourcesimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="commandsimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pipelineimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="buffer.h">
+      <Filter>Header Files\old\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="gbuffer.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="lightpass.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="queue.h">
+      <Filter>Header Files\old\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="shader.h">
+      <Filter>Header Files\old\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="texture.h">
+      <Filter>Header Files\old\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="shadowbuffer.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="postprocess.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="loader.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r3d.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r2d.h">
+      <Filter>Header Files\old\r2d</Filter>
+    </ClInclude>
+    <ClInclude Include="stack.h">
+      <Filter>Header Files\old\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="particlepass.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="particleemitters.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
     <ClInclude Include="dx11.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\old</Filter>
     </ClInclude>
     <ClInclude Include="rgrenderdx11.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\old</Filter>
     </ClInclude>
     <ClInclude Include="imgui_impl_dx11.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="gbuffer.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="lightpass.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="queue.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="shader.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="texture.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="shadowbuffer.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="postprocess.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="loader.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="r3d.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="r2d.h">
-      <Filter>Header Files\r2d</Filter>
-    </ClInclude>
-    <ClInclude Include="stack.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="particlepass.h">
-      <Filter>Header Files\r3d</Filter>
-    </ClInclude>
-    <ClInclude Include="particleemitters.h">
-      <Filter>Header Files\r3d</Filter>
     </ClInclude>
     <ClInclude Include="rendertypesdx.h">
       <Filter>Header Files</Filter>

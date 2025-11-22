@@ -3,6 +3,8 @@
 
 #include "rendertypes.h"
 
+#define DLL_EXPORT
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,13 +40,16 @@ extern "C" {
 	extern RG_DECLSPEC void            R_DestroyRenderpass(RRenderpass* rp);
 	extern RG_DECLSPEC RPipeline*      R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyPipeline(RPipeline* pl);
+	extern RG_DECLSPEC RShader*        R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyShader(RShader* shader);
 
-	extern RG_DECLSPEC void            R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpass* rp);
+	extern RG_DECLSPEC void            R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info);
 	extern RG_DECLSPEC void            R_CmdEndRenderpass(RCommandBuffer* cmdbuff);
 	extern RG_DECLSPEC void            R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl);
-	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot);
+	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot, Uint32 stride);
 	extern RG_DECLSPEC void            R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize);
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
+	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
 
 	extern RG_DECLSPEC void            R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData);
 

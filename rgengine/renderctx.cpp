@@ -23,7 +23,6 @@ namespace Engine {
 		ctx->ImGui_Init           = (PFN_R_IMGUI_INIT)Engine::DL_GetProcAddress(handle, "R_ImGui_Init");
 		ctx->ImGui_Shutdown       = (PFN_R_IMGUI_SHUTDOWN)Engine::DL_GetProcAddress(handle, "R_ImGui_Shutdown");
 		ctx->ImGui_NewFrame       = (PFN_R_IMGUI_NEWFRAME)Engine::DL_GetProcAddress(handle, "R_ImGui_NewFrame");
-//		ctx->ImGui_RenderDrawData = (PFN_R_IMGUI_RENDERDRAWDATA)Engine::DL_GetProcAddress(handle, "R_ImGui_RenderDrawData");
 
         // Buffer
 		ctx->CreateBuffer         = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");
@@ -45,10 +44,18 @@ namespace Engine {
 		ctx->CreateResourceView   = (PFN_R_CREATERESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_CreateResourceView");
 		ctx->DestroyResourceView  = (PFN_R_DESTROYRESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_DestroyResourceView");
 
+        // Renderpass
 		ctx->CreateRenderpass     = (PFN_R_CREATERENDERPASS)Engine::DL_GetProcAddress(handle, "R_CreateRenderpass");
 		ctx->DestroyRenderpass    = (PFN_R_DESTROYRENDERPASS)Engine::DL_GetProcAddress(handle, "R_DestroyRenderpass");
+
+        // Pipeline
 		ctx->CreatePipeline       = (PFN_R_CREATEPIPELINE)Engine::DL_GetProcAddress(handle, "R_CreatePipeline");
 		ctx->DestroyPipeline      = (PFN_R_DESTROYPIPELINE)Engine::DL_GetProcAddress(handle, "R_DestroyPipeline");
+
+        // Shader
+		ctx->CreateShader         = (PFN_R_CREATESHADER)Engine::DL_GetProcAddress(handle, "R_CreateShader");
+		ctx->DestroyShader        = (PFN_R_DESTROYSHADER)Engine::DL_GetProcAddress(handle, "R_DestroyShader");
+
 		// Commands
 		ctx->CmdBeginRenderpass   = (PFN_R_CMDBEGINRENDERPASS)Engine::DL_GetProcAddress(handle, "R_CmdBeginRenderpass");
 		ctx->CmdEndRenderpass     = (PFN_R_CMDENDRENDERPASS)Engine::DL_GetProcAddress(handle, "R_CmdEndRenderpass");
@@ -56,6 +63,7 @@ namespace Engine {
 		ctx->CmdBindVertexBuffer  = (PFN_R_CMDBINDVERTEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindVertexBuffer");
 		ctx->CmdBindIndexBuffer   = (PFN_R_CMDBINDINDEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindIndexBuffer");
 		ctx->CmdDrawIndexed       = (PFN_R_CMDDRAWINDEXED)Engine::DL_GetProcAddress(handle, "R_CmdDrawIndexed");
+        ctx->CmdPushConstants     = (PFN_R_CMDPUSHCONSTANTS)Engine::DL_GetProcAddress(handle, "R_CmdPushConstants");
 
         ctx->CmdImGuiRenderDrawData = (PFN_R_CMDIMGUIRENDERDRAWDATA)Engine::DL_GetProcAddress(handle, "R_CmdImGuiRenderDrawData");
 

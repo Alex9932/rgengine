@@ -5,6 +5,11 @@
 #include <d3d11.h>
 #include <allocator.h>
 
+#define R_RENDERER_NAME      "DirectX 11"
+#define R_RENDERER_SHORTNAME "dx11"
+
+#define R_DXRENDER_DEBUG 1
+
 #define R_MAX_COMMANDS_PER_BUFFER 256
 
 struct RRenderDevice {
@@ -12,6 +17,11 @@ struct RRenderDevice {
 	ID3D11DeviceContext* dxctx;
 	IDXGISwapChain*      dxswapchain;
 	ID3D11Texture2D*     backbuffers[8];
+
+#if R_DXRENDER_DEBUG
+	ID3D11Debug*         dxdbg;
+	ID3D11InfoQueue*     dxdbginfoqueue;
+#endif
 
 	SDL_Window*          hwnd;
 	ivec2                wndsize;
@@ -45,26 +55,34 @@ struct RImage {
 
 #define R_CMD_BEGIN_RENDERPASS   0x0001
 #define R_CMD_END_RENDERPASS     0x0002
+#define R_CMD_CLEAR_RT           0x0003
 
 #define R_CMD_BIND_PIPELINE      0x0011
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
 
+#define R_CMD_PUSHCONSTANTS      0x0014
+
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022
 #define R_CMD_DRAW_INDEXED       0x0023
+
 
 #define R_CMD_DISPATCH           0x0031
 
 struct RCommand {
 	void*  handle;
 	Uint16 cmd;
-	Uint16 _offset0;
-	Uint32 data0;
-	Uint32 data1;
-	Uint32 data2;
-	Uint32 data3;
-	Uint32 data4;
+	Uint16 _off0;
+	Uint32 _off1;
+	union {
+		struct {
+			Uint32 data0; Uint32 data1; Uint32 data2;
+			Uint32 data3; Uint32 data4; Uint32 data5;
+		};
+		Uint32 data[32];
+		char buffer[128]; // for push constants
+	};
 };
 
 struct RCommandBuffer {
@@ -94,19 +112,55 @@ struct RResourceView {
 };
 
 struct RPipeline {
-	RRenderDevice* dev;
-	
+	RRenderDevice*        dev;
+	Uint32 	              type;
+	Uint32 	              _off0;
+	ID3D11InputLayout*    layout;
+	ID3D11VertexShader*   vs; // Vertex
+	ID3D11PixelShader*    ps; // Pixel
+	ID3D11GeometryShader* gs; // Geometry
+	ID3D11ComputeShader*  cs; // Compute
 };
 
 struct RRenderpass {
 	RRenderDevice*           dev;
 	Uint32 				     rtv_count;
 	Uint32 				     _offset; // For memory alignment
-	ID3D11RenderTargetView*  rtv[10]; // Render target (dx11 only 8 RTVs)
+	ID3D11RenderTargetView*  rtv[6];  // Render target (dx11 only 8 RTVs)
 	ID3D11DepthStencilView*  dsv;     // Depth stencil
 	ID3D11BlendState*        blend_state;
 	ID3D11RasterizerState*   raster_state;
 	ID3D11DepthStencilState* depth_stencil_state;
 };
+
+struct RShader {
+	RRenderDevice* dev;
+	Uint8  type;
+	Bool   isCompiled;
+	Uint16 _offset1;
+	Uint32 _offset2;
+	ID3D10Blob* buffer;
+	union {
+		ID3D11VertexShader*   vs; // Vertex
+		ID3D11PixelShader*    ps; // Pixel
+		ID3D11GeometryShader* gs; // Geometry
+		ID3D11ComputeShader*  cs; // Compute
+	};
+};
+
+static DXGI_FORMAT GetFormat(RFormat format) {
+	switch (format) {
+		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
+		case RG_FORMAT_R8_UNORM:        return DXGI_FORMAT_R8_UNORM;
+		case RG_FORMAT_R8G8B8A8_UNORM:  return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case RG_FORMAT_R32_FLOAT:       return DXGI_FORMAT_R32_FLOAT;
+		case RG_TEXTURE_F32_RGBA:       return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		case RG_FORMAT_D24S8:           return DXGI_FORMAT_D24_UNORM_S8_UINT;
+		case RG_FORMAT_R32G32_FLOAT:    return DXGI_FORMAT_R32G32_FLOAT;
+		case RG_FORMAT_R32G32B32_FLOAT: return DXGI_FORMAT_R32G32B32_FLOAT;
+		case RG_FORMAT_D32:             return DXGI_FORMAT_R32_TYPELESS;
+		default: return DXGI_FORMAT_UNKNOWN;
+	}
+}
 
 #endif

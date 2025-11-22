@@ -46,6 +46,20 @@ namespace Engine {
 
         static std::vector<RenderImGuiCallback> imguicallbacks;
         
+
+        // Test
+		static RBuffer* vertexbuffer = NULL;
+		static RBuffer* indexbuffer = NULL;
+        static RRenderpass* renderpass3d = NULL;
+		static RPipeline* pipeline3d = NULL;
+		static RShader* shader_vs = NULL;
+		static RShader* shader_ps = NULL;
+		static RImage* depthbuffer = NULL;
+		static RResourceView* depthbuffer_rv = NULL;
+
+
+
+
         static Bool                 isEntityCullingEnabled = false;
         static Bool                 isStaticCullingEnabled = true;
 
@@ -166,6 +180,91 @@ namespace Engine {
 
             renderctx.ImGui_Init(rdev);
             //renderctx.ImGui_NewFrame(rdev);
+
+
+
+            /////////////////////////////////////////////////////
+            RShaderCreateInfo vsinfo = {};
+            vsinfo.isCompiled = false;
+            vsinfo.name = "fwd_test.vs";
+            vsinfo.type = RG_SHADER_TYPE_VERTEX;
+            shader_vs = renderctx.CreateShader(rdev, &vsinfo);
+
+            RShaderCreateInfo psinfo = {};
+            psinfo.isCompiled = false;
+            psinfo.name = "fwd_test.ps";
+            psinfo.type = RG_SHADER_TYPE_PIXEL;
+            shader_ps = renderctx.CreateShader(rdev, &psinfo);
+
+            RImageCreateInfo dbinfo = {};
+			dbinfo.format = RG_FORMAT_D32;
+            // TMP
+            dbinfo.width  = 1600;
+			dbinfo.height = 900;
+            depthbuffer = renderctx.CreateImage(rdev, &dbinfo);
+
+            RResourceViewCreateInfo drvinfo = {};
+            drvinfo.type      = RG_RESOURCEVIEW_TYPE_DSV;
+			drvinfo.dst_image = depthbuffer;
+            depthbuffer_rv = renderctx.CreateResourceView(rdev, &drvinfo);
+
+            RRenderpassCreateInfo rp3dinfo = {};
+            rp3dinfo.rt_count = 1;
+            rp3dinfo.rts[0]   = backbuffer;
+            rp3dinfo.dsv      = depthbuffer_rv;
+            rp3dinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
+            rp3dinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+            renderpass3d = renderctx.CreateRenderpass(rdev, &rp3dinfo);
+
+
+			RPipelineInputDescription inputdescriptions[4] = {};
+			inputdescriptions[0].format = RG_FORMAT_R32G32B32_FLOAT;
+			inputdescriptions[0].inputSlot = 0;
+			inputdescriptions[0].name = "POSITION";
+			inputdescriptions[1].format = RG_FORMAT_R32G32B32_FLOAT;
+			inputdescriptions[1].inputSlot = 0;
+			inputdescriptions[1].name = "NORMAL";
+			inputdescriptions[2].format = RG_FORMAT_R32G32B32_FLOAT;
+			inputdescriptions[2].inputSlot = 0;
+			inputdescriptions[2].name = "TANGENT";
+			inputdescriptions[3].format = RG_FORMAT_R32G32_FLOAT;
+			inputdescriptions[3].inputSlot = 0;
+			inputdescriptions[3].name = "VPOS";
+            RPipelineCreateInfo plinfo = {};
+            plinfo.type          = RG_PIPELINE_TYPE_GRAPHICS;
+            plinfo.vertex_shader = shader_vs;
+            plinfo.pixel_shader  = shader_ps;
+			plinfo.inputCount    = 4;
+            plinfo.descriptions = inputdescriptions;
+
+            // Layout
+            pipeline3d = renderctx.CreatePipeline(rdev, &plinfo);
+
+            static R3D_Vertex vbuffer[] = {
+                { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f } },
+				{ {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }
+            };
+
+			static Uint16 ibuffer[] = { 0, 1, 2 };
+
+            RBufferCreateInfo vbinfo = {};
+			vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+			vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+			vbinfo.type   = RG_BUFFER_TYPE_VERTEX;
+			vbinfo.stride = sizeof(R3D_Vertex);
+			vbinfo.length = sizeof(vbuffer);
+            vbinfo.initialData = vbuffer;
+            vertexbuffer = renderctx.CreateBuffer(rdev, &vbinfo);
+
+            RBufferCreateInfo ibinfo = {};
+            ibinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            ibinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+            ibinfo.type   = RG_BUFFER_TYPE_INDEX;
+            ibinfo.stride = sizeof(Uint16);
+            ibinfo.length = sizeof(ibuffer);
+            ibinfo.initialData = ibuffer;
+            indexbuffer = renderctx.CreateBuffer(rdev, &ibinfo);
 
 #if 0
             GetWindowSize(&wndSize);
@@ -485,6 +584,32 @@ namespace Engine {
             // Render scene
             // TODO
 
+            {
+                renderctx.ResetCommandBuffer(cmdbuffer);
+                renderctx.BeginCommandBuffer(cmdbuffer);
+                {
+					RRenderpassClearInfo clearinfo = {};
+                    clearinfo.color[0] = { 0, 0, 0, 1 };
+                    clearinfo.depth = 1.0f;
+                    clearinfo.stencil = 0;
+                    RRenderpassBeginInfo rpbegininfo = {};
+                    rpbegininfo.renderpass = renderpass3d;
+                    rpbegininfo.clearinfo = &clearinfo;
+                    renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
+                    renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
+                    renderctx.CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(R3D_Vertex)); // add stride
+                    renderctx.CmdBindIndexBuffer(cmdbuffer, indexbuffer, RG_INDEX_U16);
+                    renderctx.CmdPushConstants(cmdbuffer, NULL, 0, RG_SHADER_TYPE_VERTEX); // TODO: add data
+                    renderctx.CmdDrawIndexed(cmdbuffer, 3, 0);
+                    renderctx.CmdEndRenderpass(cmdbuffer);
+                }
+                renderctx.EndCommandBuffer(cmdbuffer);
+
+                RCommandBufferSubmitInfo submitinfo = {};
+                submitinfo.buffer = cmdbuffer;
+                renderctx.SubmitCommandBuffer(&submitinfo);
+            }
+
             // Update ImGui
             renderctx.ImGui_NewFrame(rdev);
             ImGui_ImplSDL3_NewFrame();
@@ -500,19 +625,24 @@ namespace Engine {
             ImGui::EndFrame();
             ImGui::Render();
 
-            // Draw imgui
-            renderctx.ResetCommandBuffer(cmdbuffer);
-			renderctx.BeginCommandBuffer(cmdbuffer);
             {
-                renderctx.CmdBeginRenderpass(cmdbuffer, renderpass);
-                renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
-                renderctx.CmdEndRenderpass(cmdbuffer);
-            }
-			renderctx.EndCommandBuffer(cmdbuffer);
+                // Draw imgui
+                renderctx.ResetCommandBuffer(cmdbuffer);
+                renderctx.BeginCommandBuffer(cmdbuffer);
+                {
+                    RRenderpassBeginInfo rpbegininfo = {};
+                    rpbegininfo.renderpass = renderpass;
+                    rpbegininfo.clearinfo = NULL;
+                    renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
+                    renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
+                    renderctx.CmdEndRenderpass(cmdbuffer);
+                }
+                renderctx.EndCommandBuffer(cmdbuffer);
 
-			RCommandBufferSubmitInfo submitinfo = {};
-			submitinfo.buffer = cmdbuffer;
-            renderctx.SubmitCommandBuffer(&submitinfo);
+                RCommandBufferSubmitInfo submitinfo = {};
+                submitinfo.buffer = cmdbuffer;
+                renderctx.SubmitCommandBuffer(&submitinfo);
+            }
 
 #if 0
             RenderWorld(Engine::GetWorld());

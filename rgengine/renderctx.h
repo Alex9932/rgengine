@@ -86,6 +86,8 @@ typedef RRenderpass*    (*PFN_R_CREATERENDERPASS)(RRenderDevice*, RRenderpassCre
 typedef void            (*PFN_R_DESTROYRENDERPASS)(RRenderpass*);
 typedef RPipeline*      (*PFN_R_CREATEPIPELINE)(RRenderDevice*, RPipelineCreateInfo*);
 typedef void            (*PFN_R_DESTROYPIPELINE)(RPipeline*);
+typedef RShader*        (*PFN_R_CREATESHADER)(RRenderDevice*, RShaderCreateInfo*);
+typedef void            (*PFN_R_DESTROYSHADER)(RShader*);
 
 typedef RCommandBuffer* (*PFN_R_CREATECOMMANDBUFFER)(RRenderDevice*, RCommandBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYCOMMANDBUFFER)(RCommandBuffer*);
@@ -94,12 +96,13 @@ typedef void            (*PFN_R_RESETCOMMANDBUFFER)(RCommandBuffer*);
 typedef void            (*PFN_R_BEGINCOMMANDBUFFER)(RCommandBuffer*);
 typedef void            (*PFN_R_ENDCOMMANDBUFFER)(RCommandBuffer*);
 
-typedef void            (*PFN_R_CMDBEGINRENDERPASS)(RCommandBuffer*, RRenderpass*);
+typedef void            (*PFN_R_CMDBEGINRENDERPASS)(RCommandBuffer*, RRenderpassBeginInfo*);
 typedef void            (*PFN_R_CMDENDRENDERPASS)(RCommandBuffer*);
 typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
-typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32);
+typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
 typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDPUSHCONSTANTS)(RCommandBuffer*, void*, Uint32, Uint32);
 
 typedef void            (*PFN_R_CMDIMGUIRENDERDRAWDATA)(RCommandBuffer*, void*);
 
@@ -138,10 +141,18 @@ namespace Engine {
 		// Resource view
 		PFN_R_CREATERESOURCEVIEW      CreateResourceView;
 		PFN_R_DESTROYRESOURCEVIEW     DestroyResourceView;
+
+		// Renderpass
 		PFN_R_CREATERENDERPASS		  CreateRenderpass;
 		PFN_R_DESTROYRENDERPASS		  DestroyRenderpass;
+
+		// Pipeline
 		PFN_R_CREATEPIPELINE          CreatePipeline;
 		PFN_R_DESTROYPIPELINE         DestroyPipeline;
+
+		// Shader
+		PFN_R_CREATESHADER            CreateShader;
+		PFN_R_DESTROYSHADER           DestroyShader;
 
 		// Commands
 		PFN_R_CMDBEGINRENDERPASS      CmdBeginRenderpass;
@@ -150,6 +161,7 @@ namespace Engine {
 		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
 		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
 		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;
+		PFN_R_CMDPUSHCONSTANTS        CmdPushConstants;
 		PFN_R_CMDIMGUIRENDERDRAWDATA  CmdImGuiRenderDrawData;
 
 	} RenderBackend;

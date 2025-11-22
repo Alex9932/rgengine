@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="buffer.cpp" />
+    <ClCompile Include="commandsimpl.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="dx11.cpp" />
     <ClCompile Include="gbuffer.cpp" />
@@ -155,10 +156,12 @@
     <ClCompile Include="loader.cpp" />
     <ClCompile Include="particleemitters.cpp" />
     <ClCompile Include="particlepass.cpp" />
+    <ClCompile Include="pipelineimpl.cpp" />
     <ClCompile Include="postprocess.cpp" />
     <ClCompile Include="queue.cpp" />
     <ClCompile Include="r2d.cpp" />
     <ClCompile Include="r3d.cpp" />
+    <ClCompile Include="resourcesimpl.cpp" />
     <ClCompile Include="rgrenderdx11.cpp" />
     <ClCompile Include="rgrenderimpl.cpp" />
     <ClCompile Include="shader.cpp" />

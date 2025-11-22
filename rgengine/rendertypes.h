@@ -22,10 +22,22 @@ enum LightType {
 };
 
 enum TextureType {
-	RG_TEXTURE_U8_R_ONLY  = 1,
-	RG_TEXTURE_U8_RGBA    = 2,
-	RG_TEXTURE_F32_R_ONLY = 3,
-	RG_TEXTURE_F32_RGBA   = 4
+	RG_FORMAT_UNKNOWN = 0,
+
+	RG_TEXTURE_U8_R_ONLY  = 1, // 8-bit per channel (R)
+	RG_TEXTURE_U8_RGBA    = 2, // 8-bit per channel (RGBA)
+	RG_TEXTURE_F32_R_ONLY = 3, // 32-bit float per channel (R)
+	RG_TEXTURE_F32_RGBA   = 4, // 32-bit float per channel (RGBA)
+	
+	RG_FORMAT_R8_UNORM           = 1,
+	RG_FORMAT_R8G8B8A8_UNORM     = 2,
+	RG_FORMAT_R32_FLOAT          = 3,
+	RG_FORMAT_R32G32B32A32_FLOAT = 4,
+	RG_FORMAT_R32G32B32_FLOAT    = 5,
+	RG_FORMAT_R32G32_FLOAT       = 6,
+	RG_FORMAT_D24S8 = 7, // Depth 24-bit + Stencil 8-bit
+	RG_FORMAT_D32   = 8  // Depth 32-bit
+
 };
 
 #define RFormat TextureType
@@ -42,6 +54,8 @@ typedef struct RBuffer RBuffer;
 typedef struct RImage RImage;
 typedef struct RCommandBuffer RCommandBuffer;
 typedef struct RResourceView RResourceView;
+
+typedef struct RShader RShader;
 
 typedef struct RPipeline RPipeline;
 typedef struct RRenderpass RRenderpass;
@@ -85,7 +99,6 @@ typedef struct RImageCreateInfo {
 #define RG_BUFFER_TYPE_STRUCTURED 0x20
 
 typedef struct RBufferCreateInfo {
-	RFormat format;
 	Uint32  length; // in bytes
 	Uint16  type;
 	Uint8   usage;
@@ -125,8 +138,28 @@ typedef struct RResourceViewCreateInfo {
 
 // Pipeline
 
+#define RG_PIPELINE_TYPE_GRAPHICS 0x1
+#define RG_PIPELINE_TYPE_COMPUTE  0x2
+
+
+typedef  struct RPipelineInputDescription {
+	String name;
+	Uint32 inputSlot;
+	RFormat format;
+} RPipelineInputDescription;
+
 typedef struct RPipelineCreateInfo {
-	// TODO
+	Uint8    type; // Graphics, compute
+	Uint8    _off0;
+	Uint16   _off1;
+	Uint32   _off2;
+	RShader* vertex_shader;
+	RShader* pixel_shader;
+	RShader* geometry_shader;
+	RShader* compute_shader;
+	
+	Uint32   inputCount;
+	RPipelineInputDescription* descriptions;
 } RPipelineCreateInfo;
 
 // Renderpass
@@ -143,12 +176,36 @@ typedef struct RRenderpassCreateInfo {
 	Uint8  fillmode;
 	Uint16 _off1;
 	Uint32 rt_count;
-	RResourceView* rts[8];
+	RResourceView* rts[6];
 	RResourceView* dsv;
 	// TODO: add blend, rasterizer, depth-stencil states
 
 
 } RRenderpassCreateInfo;
+
+typedef struct RRenderpassClearInfo {
+	vec4           color[6];
+	Float32        depth;
+	Uint8          stencil;
+} RRenderpassClearInfo;
+
+typedef struct RRenderpassBeginInfo {
+	RRenderpass*          renderpass;
+	RRenderpassClearInfo* clearinfo;
+} RRenderpassBeginInfo;
+
+#define RG_SHADER_TYPE_VERTEX    0x01
+#define RG_SHADER_TYPE_PIXEL     0x02
+#define RG_SHADER_TYPE_GEOMETRY  0x03
+#define RG_SHADER_TYPE_COMPUTE   0x11
+
+typedef struct RShaderCreateInfo {
+	String name; // Loaded from "platform/&renderername&/"
+	Uint8  type; // Vertex, pixel, compute, etc.
+	Uint8  isCompiled;
+	Uint16 _offset1;
+	Uint32 _offset2;
+} RShaderCreateInfo;
 
 ////////////////////////////////////////////////////////////////////
 
