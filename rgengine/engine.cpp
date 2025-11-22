@@ -256,6 +256,10 @@ namespace Engine {
     }
 
     static void SignalHandler(int sig) {
+
+        PushEvent(0, RG_EVENT_SYSTEM_SIGNAL, (void*)sig, NULL);
+		HandleEvents(); // Intermediate event handling
+
         switch (sig) {
             case SIGINT:   { printf("SIGNAL: Interrupt\n"); Quit(); break; }
             case SIGILL:   { printf("SIGNAL: Illegal instruction\n"); break; }

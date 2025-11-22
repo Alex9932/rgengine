@@ -35,6 +35,8 @@
 #define RG_EVENT_ONLOADINGSTARTED  0x0000000A
 #define RG_EVENT_ONLOADINGFINISHED 0x0000000B
 
+#define RG_EVENT_SYSTEM_SIGNAL 0x00000010
+
 typedef bool (*EventHandler)(SDL_Event*);
 typedef bool (*EventHandlerArg)(SDL_Event*, void*);
 

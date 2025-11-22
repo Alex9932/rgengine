@@ -36,6 +36,7 @@ namespace Engine {
 
     void Event_Destroy() {
         PushEvent(0xFFFFFFFF, RG_EVENT_STOP, NULL, NULL);
+        HandleEvents();
         handlers.clear();
     }
 
