@@ -62,6 +62,31 @@ static Bool Handler(SDL_Event* event) {
 
 }
 
+void DrawImGuiCallback() {
+
+	ImGui::Begin("Scene light");
+	ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
+	ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
+	ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
+	ImGui::SliderFloat("Turbidity", &desc.turbidity, 0, 5);
+	ImGui::ColorPicker3("Color", desc.color.array);
+	ImGui::End();
+
+
+	ImGui::Begin("Animation control");
+
+	if (ImGui::Combo("Animation", &val, items, IM_ARRAYSIZE(items))) {
+		if (val == 0) {
+			kmodel->GetAnimator()->PlayAnimation(NULL);
+		}
+		else {
+			kmodel->GetAnimator()->PlayAnimation(anim[val - 1]);
+		}
+	}
+
+	ImGui::End();
+}
+
 class Application : public BaseGame {
 	public:
 		Application()  {
@@ -84,26 +109,6 @@ class Application : public BaseGame {
 
 			}
 
-			ImGui::Begin("Scene light");
-			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
-			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
-			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
-			ImGui::SliderFloat("Turbidity", &desc.turbidity, 0, 5);
-			ImGui::ColorPicker3("Color", desc.color.array);
-			ImGui::End();
-
-
-			ImGui::Begin("Animation control");
-
-			if (ImGui::Combo("Animation", &val, items, IM_ARRAYSIZE(items))) {
-				if (val == 0) {
-					kmodel->GetAnimator()->PlayAnimation(NULL);
-				} else {
-					kmodel->GetAnimator()->PlayAnimation(anim[val - 1]);
-				}
-			}
-
-			ImGui::End();
 
 			Render::SetGlobalLight(&desc);
 		
@@ -144,6 +149,8 @@ class Application : public BaseGame {
 
 		void Initialize() {
 		
+			Render::RegisterImGuiDrawCallback(DrawImGuiCallback);
+
 			World* world = GetWorld();
 
 			// Create 3-rd person camera
