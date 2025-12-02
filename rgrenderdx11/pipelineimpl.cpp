@@ -7,6 +7,7 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 	RRenderpass* rp = (RRenderpass*)dev->allocator->Allocate(sizeof(RRenderpass));
 	rp->dev = dev;
 
+	rp->viewport  = info->viewport;
 	rp->rtv_count = info->rt_count;
 	rp->dsv = NULL;
 	rp->depth_stencil_state = NULL;

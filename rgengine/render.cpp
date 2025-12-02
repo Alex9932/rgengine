@@ -157,26 +157,71 @@ namespace Engine {
         static R2D_Texture* r2d_texture = NULL;
         static R2D_Texture* r2d_texture_bg = NULL;
 
-        void InitSubSystem(SDL_Window* hwnd) {
+        static void CreateFramebuffers() {
 
+			RRect wndrect = {};
+            wndrect.x = 0;
+            wndrect.y = 0;
+			wndrect.width  = wndSize.x;
+			wndrect.height = wndSize.y;
 
-            RRenderSetupInfo setupinfo = {};
-            setupinfo.flags = setupParams.flags;
-            setupinfo.hwnd = hwnd;
-            rdev = renderctx.CreateDevice(&setupinfo);
-
+            // Get swapchain backbuffer and renderpass
             RResourceViewCreateInfo backbufferinfo = {};
             backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
             backbufferinfo.var = 0; // Use first buffer only
             backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
 
             RRenderpassCreateInfo rpinfo = {};
+            rpinfo.viewport = wndrect;
             rpinfo.rt_count = 1;
-			rpinfo.rts[0] = backbuffer;
+            rpinfo.rts[0] = backbuffer;
             rpinfo.dsv = NULL; // Do not use depth buffer
-			rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
+            rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
             rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
             renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
+
+            // Create 3d renderpass
+            RImageCreateInfo dbinfo = {};
+            dbinfo.format = RG_FORMAT_D32;
+            dbinfo.width  = wndSize.x;
+            dbinfo.height = wndSize.y;
+            depthbuffer = renderctx.CreateImage(rdev, &dbinfo);
+
+            RResourceViewCreateInfo drvinfo = {};
+            drvinfo.type = RG_RESOURCEVIEW_TYPE_DSV;
+            drvinfo.dst_image = depthbuffer;
+            depthbuffer_rv = renderctx.CreateResourceView(rdev, &drvinfo);
+
+            RRenderpassCreateInfo rp3dinfo = {};
+            rp3dinfo.viewport = wndrect;
+            rp3dinfo.rt_count = 1;
+            rp3dinfo.rts[0] = backbuffer;
+            rp3dinfo.dsv = depthbuffer_rv;
+            rp3dinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
+            rp3dinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+            renderpass3d = renderctx.CreateRenderpass(rdev, &rp3dinfo);
+
+        }
+
+        static void DestroyFramebuffers() {
+
+            renderctx.DestroyRenderpass(renderpass3d);
+            renderctx.DestroyImage(depthbuffer);
+            renderctx.DestroyResourceView(depthbuffer_rv);
+
+            renderctx.DestroyRenderpass(renderpass);
+            renderctx.DestroyResourceView(backbuffer);
+        }
+
+        void InitSubSystem(SDL_Window* hwnd) {
+            GetWindowSize(&wndSize);
+
+            RRenderSetupInfo setupinfo = {};
+            setupinfo.flags = setupParams.flags;
+            setupinfo.hwnd = hwnd;
+            rdev = renderctx.CreateDevice(&setupinfo);
+
+            CreateFramebuffers();
 
 
             RCommandBufferCreateInfo cmdbuffinfo = {};
@@ -200,26 +245,6 @@ namespace Engine {
             psinfo.name = "fwd_test.ps";
             psinfo.type = RG_SHADER_TYPE_PIXEL;
             shader_ps = renderctx.CreateShader(rdev, &psinfo);
-
-            RImageCreateInfo dbinfo = {};
-			dbinfo.format = RG_FORMAT_D32;
-            // TMP
-            dbinfo.width  = 1600;
-			dbinfo.height = 900;
-            depthbuffer = renderctx.CreateImage(rdev, &dbinfo);
-
-            RResourceViewCreateInfo drvinfo = {};
-            drvinfo.type      = RG_RESOURCEVIEW_TYPE_DSV;
-			drvinfo.dst_image = depthbuffer;
-            depthbuffer_rv = renderctx.CreateResourceView(rdev, &drvinfo);
-
-            RRenderpassCreateInfo rp3dinfo = {};
-            rp3dinfo.rt_count = 1;
-            rp3dinfo.rts[0]   = backbuffer;
-            rp3dinfo.dsv      = depthbuffer_rv;
-            rp3dinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
-            rp3dinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
-            renderpass3d = renderctx.CreateRenderpass(rdev, &rp3dinfo);
 
 
 			RPipelineInputDescription inputdescriptions[4] = {};
@@ -272,7 +297,7 @@ namespace Engine {
             indexbuffer = renderctx.CreateBuffer(rdev, &ibinfo);
 
 #if 0
-            GetWindowSize(&wndSize);
+            
 
             R2D_Vertex r2d_vertices[] = {
                 /*
@@ -332,11 +357,17 @@ namespace Engine {
             renderctx.ImGui_Shutdown(rdev);
 
 			renderctx.DestroyCommandBuffer(cmdbuffer);
-			renderctx.DestroyRenderpass(renderpass);
-            renderctx.DestroyResourceView(backbuffer);
+
+            renderctx.DestroyShader(shader_vs);
+            renderctx.DestroyShader(shader_ps);
+            renderctx.DestroyPipeline(pipeline3d);
+            renderctx.DestroyBuffer(vertexbuffer);
+            renderctx.DestroyBuffer(indexbuffer);
+
+
+            DestroyFramebuffers();
 
             renderctx.DestroyDevice(rdev);
-            //renderctx.Destroy();
 
             imguicallbacks.clear();
         }
@@ -365,11 +396,11 @@ namespace Engine {
 
             if (isWindowResized) {
                 // Free swapchain resources
-                renderctx.DestroyResourceView(backbuffer);
-                renderctx.DestroyRenderpass(renderpass);
+                DestroyFramebuffers();
 
                 sbinfo.flags |= RG_SWAPCHAIN_FLAG_RESIZE;
-                GetWindowSize(&sbinfo.newsize);
+                GetWindowSize(&wndSize);
+                sbinfo.newsize = wndSize;
             }
 
             renderctx.SwapBuffers(rdev, &sbinfo);
@@ -377,19 +408,8 @@ namespace Engine {
             if (isWindowResized) {
                 isWindowResized = false;
 
-                // Make new swapchain resources
-                RResourceViewCreateInfo backbufferinfo = {};
-                backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
-                backbufferinfo.var = 0; // Use first buffer only
-                backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
-
-                RRenderpassCreateInfo rpinfo = {};
-                rpinfo.rt_count = 1;
-                rpinfo.rts[0] = backbuffer;
-                rpinfo.dsv = NULL; // Do not use depth buffer
-                rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
-                rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
-                renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
+                // Recreate swapchain, framebuffers and renderpasses
+                CreateFramebuffers();
             }
         }
 

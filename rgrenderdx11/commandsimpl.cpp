@@ -69,10 +69,10 @@ static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* 
 	dev->dxctx->OMSetBlendState(rp->blend_state, blendFactor, 0xffffffff);
 
 	D3D11_VIEWPORT pViewport = {};
-	pViewport.TopLeftX = 0;
-	pViewport.TopLeftY = 0;
-	pViewport.Width = (Float32)1600;
-	pViewport.Height = (Float32)900;
+	pViewport.TopLeftX = rp->viewport.x;
+	pViewport.TopLeftY = rp->viewport.y;
+	pViewport.Width    = rp->viewport.width;
+	pViewport.Height   = rp->viewport.height;
 	pViewport.MinDepth = 0.0f;
 	pViewport.MaxDepth = 1.0f;
 	dev->dxctx->RSSetViewports(1, &pViewport);

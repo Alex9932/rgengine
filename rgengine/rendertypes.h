@@ -171,11 +171,19 @@ typedef struct RPipelineCreateInfo {
 #define RG_RENDERPASS_FILLMODE_SOLID       0x0
 #define RG_RENDERPASS_FILLMODE_WIREFRAME   0x1
 
+typedef struct RRect {
+	Float32 x;
+	Float32 y;
+	Float32 width;
+	Float32 height;
+} RRect;
+
 typedef struct RRenderpassCreateInfo {
 	Uint8  cullmode;
 	Uint8  fillmode;
 	Uint16 _off1;
 	Uint32 rt_count;
+	RRect  viewport;
 	RResourceView* rts[6];
 	RResourceView* dsv;
 	// TODO: add blend, rasterizer, depth-stencil states

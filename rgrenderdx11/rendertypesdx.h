@@ -129,7 +129,7 @@ struct RPipeline {
 struct RRenderpass {
 	RRenderDevice*           dev;
 	Uint32 				     rtv_count;
-	Uint32 				     _offset; // For memory alignment
+	RRect                    viewport;
 	ID3D11RenderTargetView*  rtv[6];  // Render target (dx11 only 8 RTVs)
 	ID3D11DepthStencilView*  dsv;     // Depth stencil
 	ID3D11BlendState*        blend_state;
