@@ -47,6 +47,11 @@ namespace Engine {
         static std::vector<RenderImGuiCallback> imguicallbacks;
         
 
+        static struct mat_transform {
+            mat4 viewproj;
+            mat4 model;
+        } mat_camera;
+
         // Test
 		static RBuffer* vertexbuffer = NULL;
 		static RBuffer* indexbuffer = NULL;
@@ -572,6 +577,12 @@ namespace Engine {
             finfo.view   = &camera_view;
             CreateFrustum(&finfo);
 
+            mat4 view;
+			mat4_view(&view, info->position, info->rotation);
+            mat_camera.viewproj = info->projection * view;
+
+            mat4_model(&mat_camera.model, { 0, 0, 0 }, { 0, 0, 0 }, { 1, 1, 1 });
+
             //renderctx.R3D_SetCamera(info);
         }
 
@@ -597,9 +608,14 @@ namespace Engine {
                     rpbegininfo.clearinfo = &clearinfo;
                     renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
                     renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
+                    renderctx.CmdPushConstants(cmdbuffer, &mat_camera, sizeof(mat_transform), RG_SHADER_TYPE_VERTEX);
+
+					static struct ps_constants {
+						vec4 color;
+					} pc_color = { { 1, 0, 1, 1 } };
+                    renderctx.CmdPushConstants(cmdbuffer, &pc_color, sizeof(ps_constants), RG_SHADER_TYPE_PIXEL);
                     renderctx.CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(R3D_Vertex)); // add stride
                     renderctx.CmdBindIndexBuffer(cmdbuffer, indexbuffer, RG_INDEX_U16);
-                    renderctx.CmdPushConstants(cmdbuffer, NULL, 0, RG_SHADER_TYPE_VERTEX); // TODO: add data
                     renderctx.CmdDrawIndexed(cmdbuffer, 3, 0);
                     renderctx.CmdEndRenderpass(cmdbuffer);
                 }

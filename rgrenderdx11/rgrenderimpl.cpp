@@ -102,7 +102,11 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	// Create device
 	RRenderDevice* device = RG_NEW_CLASS(alloc, RRenderDevice);
-	device->hwnd = info->hwnd;
+
+	device->flags     = info->flags;
+	device->allocator = alloc;
+	device->hwnd      = info->hwnd;
+
 	SDL_SetWindowTitle(device->hwnd, "rgEngine - D3D11");
 	Engine::RegisterEventHandler(_EventHandler, device);
 
@@ -153,12 +157,18 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 #endif
 
+	RBufferCreateInfo pc_info = {};
+	pc_info.access = RG_BUFFER_ACCESS_CPU_WRITE;
+	pc_info.length = 128;
+	pc_info.type   = RG_BUFFER_TYPE_CONSTANT;
+	pc_info.usage  = RG_BUFFER_USAGE_DYNAMIC;
+	device->pc_vertex = R_CreateBuffer(device, &pc_info);
+	device->pc_pixel  = R_CreateBuffer(device, &pc_info);
+
 	RG_ASSERT_MSG(device->dxdev, "Unable to initialize direct3d: D3D11Device");
 	RG_ASSERT_MSG(device->dxctx, "Unable to initialize direct3d: D3D11DeviceContext");
 	RG_ASSERT_MSG(device->dxswapchain, "Unable to initialize direct3d: D3D11SwapChain");
 
-	device->flags     = info->flags;
-	device->allocator = alloc;
 
 	// Get swapchain backbuffer. Use only first
 	device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
@@ -172,6 +182,9 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 }
 
 void R_DestroyDevice(RRenderDevice* device) {
+
+	R_DestroyBuffer(device->pc_vertex);
+	R_DestroyBuffer(device->pc_pixel);
 
 #if R_DXRENDER_DEBUG
 	device->dxdbginfoqueue->Release();

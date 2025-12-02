@@ -23,6 +23,10 @@ struct RRenderDevice {
 	ID3D11InfoQueue*     dxdbginfoqueue;
 #endif
 
+	// Pipeline constant buffers
+	RBuffer*             pc_vertex;
+	RBuffer*             pc_pixel;
+
 	SDL_Window*          hwnd;
 	ivec2                wndsize;
 	Bool 			     wndresized;

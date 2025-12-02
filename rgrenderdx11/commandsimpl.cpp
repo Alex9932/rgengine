@@ -113,8 +113,48 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 
 static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 	void* data = cmd->buffer;
-	Uint32 size = cmd->_off1; // Size stored in unused field
+	//Uint32 size = cmd->_off1; // Size stored in unused field
+	Uint16 stage = cmd->_off0;
+	Uint32 size  = cmd->_off1;
+
 	// For DX11, we can use constant buffers. Here we would ideally have a pre-allocated constant buffer to update.
+	ID3D11Buffer* d3d11buffer = NULL;
+	Uint8 access = 0;
+	if (stage == RG_SHADER_TYPE_VERTEX) {
+		d3d11buffer = buffer->dev->pc_vertex->buffer;
+		access = buffer->dev->pc_vertex->access;
+	}
+	else if (stage == RG_SHADER_TYPE_PIXEL) {
+		d3d11buffer = buffer->dev->pc_pixel->buffer;
+		access = buffer->dev->pc_pixel->access;
+	}
+
+	// Update constant buffer
+
+	if (access == RG_BUFFER_ACCESS_GPU_ONLY) {
+		// Use UpdateSubresource
+		// !! WARN: No partial updates supported here !!
+		buffer->dev->dxctx->UpdateSubresource(d3d11buffer, 0, NULL, data, 0, 0);
+	}
+	else if (access == RG_BUFFER_ACCESS_CPU_WRITE) {
+		// Map the buffer and copy data
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		HRESULT result = buffer->dev->dxctx->Map(d3d11buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+		if (SUCCEEDED(result)) {
+			SDL_memcpy(mappedResource.pData, data, size);
+			buffer->dev->dxctx->Unmap(d3d11buffer, 0);
+		}
+	}
+
+	// Bind constant buffer
+	// !! USED SLOT 0 FOR PUSH CONSTANTS !!
+	if (stage == RG_SHADER_TYPE_VERTEX) {
+		buffer->dev->dxctx->VSSetConstantBuffers(0, 1, &d3d11buffer);
+	}
+	else if (stage == RG_SHADER_TYPE_PIXEL) {
+		buffer->dev->dxctx->PSSetConstantBuffers(0, 1, &d3d11buffer);
+	}
+
 }
 
 static RG_INLINE void CMD_DrawImGuiImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -226,8 +266,9 @@ void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart)
 void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	cmd->cmd = R_CMD_PUSHCONSTANTS;
-	cmd->_off1 = size; // Use "unused" field to store size
-	SDL_memcpy(cmd->buffer, buffer, SDL_min(size, 128)); // Copy max 128 bytess
+	cmd->_off0 = stage; // Use "unused" field to store pipeline stage
+	cmd->_off1 = size;  // Use "unused" field to store size
+	SDL_memcpy(cmd->buffer, buffer, SDL_min(size, 128)); // Copy max 128 bytes
 }
 
 void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* data) {

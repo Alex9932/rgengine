@@ -450,7 +450,9 @@ typedef struct R3D_CameraInfo {
 	mat4 projection;
 	//mat4 view;
 	vec3 position;
+	Float32 _offset0;
 	vec3 rotation;
+	Float32 _offset1;
 } R3D_CameraInfo;
 
 #endif
