@@ -53,6 +53,9 @@ struct RBuffer {
 struct RImage {
 	RRenderDevice*   dev;
 	ID3D11Texture2D* image;
+	RFormat		     format;
+	Uint16		     width;
+	Uint16		     height;
 };
 
 #define R_CMD_NOP                0x0000
@@ -64,13 +67,13 @@ struct RImage {
 #define R_CMD_BIND_PIPELINE      0x0011
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
+#define R_CMD_BIND_RESOURCEVIEWS 0x0014
 
-#define R_CMD_PUSHCONSTANTS      0x0014
+#define R_CMD_PUSHCONSTANTS      0x0015
 
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022
 #define R_CMD_DRAW_INDEXED       0x0023
-
 
 #define R_CMD_DISPATCH           0x0031
 
@@ -164,6 +167,21 @@ static DXGI_FORMAT GetFormat(RFormat format) {
 		case RG_FORMAT_R32G32B32_FLOAT: return DXGI_FORMAT_R32G32B32_FLOAT;
 		case RG_FORMAT_D32:             return DXGI_FORMAT_R32_TYPELESS;
 		default: return DXGI_FORMAT_UNKNOWN;
+	}
+}
+
+static Uint32 GetFormatSize(RFormat format) {
+	switch (format) {
+		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
+		case RG_FORMAT_R8_UNORM:        return 1;
+		case RG_FORMAT_R8G8B8A8_UNORM:  return 4;
+		case RG_FORMAT_R32_FLOAT:       return 4;
+		case RG_TEXTURE_F32_RGBA:       return 16;
+		case RG_FORMAT_D24S8:           return 4;
+		case RG_FORMAT_R32G32_FLOAT:    return 16;
+		case RG_FORMAT_R32G32B32_FLOAT: return 32;
+		case RG_FORMAT_D32:             return 4;
+		default: return 1;
 	}
 }
 

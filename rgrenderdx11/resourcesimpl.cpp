@@ -66,6 +66,14 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	}
 
 	HRESULT result = dev->dxdev->CreateBuffer(&buff, dataptr, &buffer->buffer);
+	if (result == E_INVALIDARG) {
+		// Check for common mistakes
+		if (buff.ByteWidth == 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid ByteWidth passed (%d)", buff.ByteWidth); }
+		if (buff.StructureByteStride == 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid StructureByteStride passed (%d)", buff.StructureByteStride); }
+		if ((buff.ByteWidth % buff.StructureByteStride) != 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid buffer size or stride (%d %d)", buff.ByteWidth, buff.StructureByteStride); }
+		if (buff.StructureByteStride > 2048) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid ByteWidth passed (%d)", buff.ByteWidth); }
+		if ((buff.BindFlags & D3D11_BIND_UNORDERED_ACCESS) == 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: No RG_BUFFER_TYPE_UNORDERED flag passed!"); }
+	}
 	RG_ASSERT_MSG(buffer->buffer, "Unable to create buffer: D3D11Buffer");
 	dev->buffersMemLen += buffer->length;
 	return buffer;
@@ -78,38 +86,61 @@ void R_DestroyBuffer(RBuffer* buffer) {
 	dev->allocator->Deallocate(buffer);
 }
 
+void R_UpdateBuffer(RUpdateBufferInfo* info) {
+	RRenderDevice* dev = info->handle->dev;
+	if (info->handle->access == RG_BUFFER_ACCESS_GPU_ONLY) {
+		// Ignore offset and length arguments
+		dev->dxctx->UpdateSubresource(info->handle->buffer, 0, NULL, info->data, 0, 0);
+	}
+	else {
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		dev->dxctx->Map(info->handle->buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+		char* mdata = (char*)mappedResource.pData;
+		SDL_memcpy(&mdata[info->offset], info->data, info->length);
+		dev->dxctx->Unmap(info->handle->buffer, 0);
+	}
+}
+
 //////////////////////////////////////////////////////////
 // IMAGE
 //////////////////////////////////////////////////////////
 
 RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
-	image->dev = dev;
+	image->dev    = dev;
+	image->format = info->format;
+	image->width  = info->width;
+	image->height = info->height;
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width = info->width;
-	textureDesc.Height = info->height;
+	textureDesc.Width     = info->width;
+	textureDesc.Height    = info->height;
 	textureDesc.MipLevels = 0;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = GetFormat(info->format);
+	textureDesc.Format    = GetFormat(info->format);
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.Usage     = D3D11_USAGE_DEFAULT;
 	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
 	if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
 		textureDesc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	} else {
 		textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
 		textureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	}
+
 	textureDesc.CPUAccessFlags = 0;
 	dev->dxdev->CreateTexture2D(&textureDesc, NULL, &image->image);
+
+	dev->imageMemLen += info->width * info->height * GetFormatSize(info->format);
 
 	return image;
 }
 
 void R_DestroyImage(RImage* image) {
 	RRenderDevice* dev = image->dev;
+	dev->imageMemLen -= image->width * image->height * GetFormatSize(image->format);
 	image->image->Release();
 	dev->allocator->Deallocate(image);
 }
@@ -121,32 +152,77 @@ void R_DestroyImage(RImage* image) {
 RResourceView* R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info) {
 	RResourceView* rv = (RResourceView*)dev->allocator->Allocate(sizeof(RResourceView));
 	rv->dev = dev;
-
-	// Backbuffer view
-	if (info->type == RG_RESOURCEVIEW_TYPE_BBV) {
-		dev->dxdev->CreateRenderTargetView(dev->backbuffers[info->var], NULL, &rv->rtv);
+	
+	// Render target view
+	if (info->type == RG_RESOURCEVIEW_TYPE_RTV) {
 		rv->type = R_DX_RESOURCEVIEW_RTV;
+
 	}
-#if 0
+
+	// Depth stencil view
+	if (info->type == RG_RESOURCEVIEW_TYPE_DSV) {
+		rv->type = R_DX_RESOURCEVIEW_DSV;
+
+		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+		depthStencilViewDesc.Format             = DXGI_FORMAT_D32_FLOAT;
+		depthStencilViewDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+		depthStencilViewDesc.Texture2D.MipSlice = 0;
+		dev->dxdev->CreateDepthStencilView(info->dst_image->image, &depthStencilViewDesc, &rv->dsv);
+	}
+
+	// Shader resource view
 	if (info->type == RG_RESOURCEVIEW_TYPE_SRV) {
 		rv->type = R_DX_RESOURCEVIEW_SRV;
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		srvDesc.Format = info->dst_image->format;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = -1;
-		dev->dxdev->CreateShaderResourceView(this->texture, &srvDesc, &rv->srv);
-		dev->dxctx->GenerateMips(this->shaderResource);
+		if(info->buffer_type == RG_RESOURCEVIEW_IMAGE) {
+			srvDesc.Format        = GetFormat(info->dst_image->format);
+			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.MipLevels       = -1;
+		}
+		else {
+			srvDesc.Format        = DXGI_FORMAT_UNKNOWN;
+			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+
+			srvDesc.BufferEx.FirstElement = 0;
+			srvDesc.BufferEx.Flags        = 0;
+			srvDesc.BufferEx.NumElements  = info->elements;
+		}
+
+		dev->dxdev->CreateShaderResourceView(info->dst_buffer->buffer, &srvDesc, &rv->srv);
+		if (info->buffer_type == RG_RESOURCEVIEW_IMAGE && rv->srv) {
+			dev->dxctx->GenerateMips(rv->srv);
+		}
 	}
-#endif
-	if (info->type == RG_RESOURCEVIEW_TYPE_DSV) {
-		rv->type = R_DX_RESOURCEVIEW_DSV;
-		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
-		depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
-		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		depthStencilViewDesc.Texture2D.MipSlice = 0;
-		dev->dxdev->CreateDepthStencilView(info->dst_image->image, &depthStencilViewDesc, &rv->dsv);
+
+	// Unordered access view
+	if (info->type == RG_RESOURCEVIEW_TYPE_UAV) {
+		rv->type = R_DX_RESOURCEVIEW_UAV;
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		if (info->buffer_type == RG_RESOURCEVIEW_IMAGE) {
+			uavDesc.Format        = GetFormat(info->dst_image->format);
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+
+			uavDesc.Texture2D.MipSlice = 0;
+		}
+		else {
+			uavDesc.Format        = DXGI_FORMAT_UNKNOWN;
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+
+			uavDesc.Buffer.FirstElement = 0;
+			uavDesc.Buffer.NumElements  = info->elements;
+			uavDesc.Buffer.Flags        = 0;
+		}
+		dev->dxdev->CreateUnorderedAccessView(info->dst_buffer->buffer, &uavDesc, &rv->uav);
+	}
+
+	// Backbuffer view
+	if (info->type == RG_RESOURCEVIEW_TYPE_BBV) {
+		rv->type = R_DX_RESOURCEVIEW_RTV;
+		dev->dxdev->CreateRenderTargetView(dev->backbuffers[info->var], NULL, &rv->rtv);
 	}
 
 	return rv;

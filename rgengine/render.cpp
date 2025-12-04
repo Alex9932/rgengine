@@ -28,9 +28,43 @@
 
 #include <vector>
 
+enum ModelType {
+    R_MODEL_STATIC = 0,
+    R_MODEL_RIGGED = 1
+};
+
+typedef struct R3D_StaticModel {
+    ModelType     type;
+    Uint32        mCount;
+    R3D_MeshInfo* info;
+    RBuffer*      vBuffer;
+    RBuffer*      iBuffer;
+    Uint32        iCount;
+    IndexType     iType;
+} R3D_StaticModel;
+
+typedef struct R3D_RiggedModel {
+    ModelType       type;
+    Uint32          vCount;
+    // Input data
+    RBuffer*        i_vertex;  // Input vertex data
+    RBuffer*        i_weight;  // Input weight data
+    RResourceView*  i_srv_vtx; // Shader resource view for vertex input data
+    RResourceView*  i_srv_wht; // Shader resource view for weight input data
+    // Output data
+    R3D_StaticModel s_model;   // Static model / output vertex data
+    RResourceView*  s_uav;     // Unordered access view for vertex output data
+} R3D_RiggedModel;
+
+typedef struct R3D_BoneBuffer {
+    RBuffer*       buffer;
+    RResourceView* rv;
+} R3D_BoneBuffer;
+
 namespace Engine {
     namespace Render {
 
+		static STDAllocator*        renderalloc            = NULL;
         static LibraryHandle        handle                 = NULL;
         static Bool                 isRendererLoaded       = false;
 
@@ -61,6 +95,9 @@ namespace Engine {
 		static RShader* shader_ps = NULL;
 		static RImage* depthbuffer = NULL;
 		static RResourceView* depthbuffer_rv = NULL;
+
+        static RShader*   skinning_shader   = NULL;
+        static RPipeline* skinning_pipeline = NULL;
 
 
 
@@ -112,6 +149,9 @@ namespace Engine {
         }
 
         void LoadRenderer(String path) {
+
+			// TODO: create custom allocator for renderer
+			renderalloc = GetDefaultAllocator();
 
             RegisterEventHandler(_EventHandler);
             handle = Engine::DL_LoadLibrary(path);
@@ -168,6 +208,7 @@ namespace Engine {
             // Get swapchain backbuffer and renderpass
             RResourceViewCreateInfo backbufferinfo = {};
             backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
+            backbufferinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
             backbufferinfo.var = 0; // Use first buffer only
             backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
 
@@ -232,6 +273,19 @@ namespace Engine {
             //renderctx.ImGui_NewFrame(rdev);
 
 
+            RShaderCreateInfo csinfo = {};
+            csinfo.isCompiled = false;
+            csinfo.name = "skinning.cs";
+            csinfo.type = RG_SHADER_TYPE_COMPUTE;
+            skinning_shader = renderctx.CreateShader(rdev, &csinfo);
+
+            RPipelineCreateInfo cplinfo = {};
+            cplinfo.type = RG_PIPELINE_TYPE_COMPUTE;
+            cplinfo.compute_shader = skinning_shader;
+            cplinfo.inputCount     = 0;
+            cplinfo.descriptions   = NULL;
+            skinning_pipeline = renderctx.CreatePipeline(rdev, &cplinfo);
+
 
             /////////////////////////////////////////////////////
             RShaderCreateInfo vsinfo = {};
@@ -267,7 +321,6 @@ namespace Engine {
 			plinfo.inputCount    = 4;
             plinfo.descriptions = inputdescriptions;
 
-            // Layout
             pipeline3d = renderctx.CreatePipeline(rdev, &plinfo);
 
             static R3D_Vertex vbuffer[] = {
@@ -357,6 +410,9 @@ namespace Engine {
             renderctx.ImGui_Shutdown(rdev);
 
 			renderctx.DestroyCommandBuffer(cmdbuffer);
+
+            renderctx.DestroyShader(skinning_shader);
+            renderctx.DestroyPipeline(skinning_pipeline);
 
             renderctx.DestroyShader(shader_vs);
             renderctx.DestroyShader(shader_ps);
@@ -601,8 +657,6 @@ namespace Engine {
 			mat4_view(&view, info->position, info->rotation);
             mat_camera.viewproj = info->projection * view;
 
-            mat4_model(&mat_camera.model, { 0, 0, 0 }, { 0, 0, 0 }, { 1, 1, 1 });
-
             //renderctx.R3D_SetCamera(info);
         }
 
@@ -610,7 +664,38 @@ namespace Engine {
             particlesystem->UpdateComponents(NULL);
         }
 
+        static void DrawStatic(RCommandBuffer* cmdbuf, R3D_StaticModel* model) {
+#if 0
+            vec3 p = {};
+            p.x = mat_camera.model.m03;
+            p.y = mat_camera.model.m13;
+            p.z = mat_camera.model.m23;
+
+            AABB aabb = *staticobj->GetAABB();
+            aabb.Add(p);
+
+            if (isStaticCullingEnabled) {
+                Bool inFrustum = AABBInFrustum(&frustum, &aabb);
+                if (!inFrustum) { continue; }
+            }
+#endif
+            renderctx.CmdPushConstants(cmdbuffer, &mat_camera, sizeof(mat_transform), RG_SHADER_TYPE_VERTEX);
+
+            static struct ps_constants {
+                vec4 color;
+            } pc_color = { { 1, 0, 1, 1 } };
+
+            renderctx.CmdPushConstants(cmdbuffer, &pc_color, sizeof(ps_constants), RG_SHADER_TYPE_PIXEL);
+
+            renderctx.CmdBindVertexBuffer(cmdbuffer, model->vBuffer, 0, sizeof(R3D_Vertex));
+            renderctx.CmdBindIndexBuffer(cmdbuffer, model->iBuffer, model->iType);
+            renderctx.CmdDrawIndexed(cmdbuffer, model->iCount, 0);
+		}
+
         void Update() {
+			World* world = Engine::GetWorld();
+            ModelSystem* mdlsystem = GetModelSystem();
+
             UpdateFrametime(GetDeltaTime());
             // Render scene
             // TODO
@@ -619,6 +704,37 @@ namespace Engine {
                 renderctx.ResetCommandBuffer(cmdbuffer);
                 renderctx.BeginCommandBuffer(cmdbuffer);
                 {
+					// Calculate skeleton animations
+					renderctx.CmdBindPipeline(cmdbuffer, skinning_pipeline);
+                    for (Uint32 i = 0; i < mdlsystem->GetRiggedModelCount(); i++) {
+                        RiggedModelComponent* com = mdlsystem->GetRiggedModelComponent(i);
+                        R3D_BoneBuffer* bbuf = com->GetKinematicsModel()->GetBufferHandle();
+                        R3D_RiggedModel* mdl = com->GetHandle(); //->s_model.iCount
+
+                        RBindResourceViewInfo info[4] = {};
+                        info[0].rv     = bbuf->rv;
+                        info[0].slot   = 0;
+                        info[0].target = RG_PIPELINE_TYPE_COMPUTE;
+                        info[0].type   = RG_RESOURCEVIEW_TYPE_SRV;
+						info[1].rv     = mdl->i_srv_vtx;
+                        info[1].slot   = 1;
+                        info[1].target = RG_PIPELINE_TYPE_COMPUTE;
+                        info[1].type   = RG_RESOURCEVIEW_TYPE_SRV;
+                        info[2].rv     = mdl->i_srv_wht;
+                        info[2].slot   = 2;
+                        info[2].target = RG_PIPELINE_TYPE_COMPUTE;
+                        info[2].type   = RG_RESOURCEVIEW_TYPE_SRV;
+                        info[3].rv     = mdl->s_uav;
+                        info[3].slot   = 0;
+						info[3].target = RG_PIPELINE_TYPE_COMPUTE;
+                        info[3].type   = RG_RESOURCEVIEW_TYPE_UAV;
+                        renderctx.CmdBindResourceViews(cmdbuffer, 4, info);
+
+						renderctx.CmdDispatch(cmdbuffer, mdl->vCount, 1, 1);
+                    }
+
+					// Draw 3D scene
+
 					RRenderpassClearInfo clearinfo = {};
                     clearinfo.color[0] = { 0, 0, 0, 1 };
                     clearinfo.depth = 1.0f;
@@ -628,15 +744,45 @@ namespace Engine {
                     rpbegininfo.clearinfo = &clearinfo;
                     renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
                     renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
-                    renderctx.CmdPushConstants(cmdbuffer, &mat_camera, sizeof(mat_transform), RG_SHADER_TYPE_VERTEX);
 
-					static struct ps_constants {
-						vec4 color;
-					} pc_color = { { 1, 0, 1, 1 } };
-                    renderctx.CmdPushConstants(cmdbuffer, &pc_color, sizeof(ps_constants), RG_SHADER_TYPE_PIXEL);
-                    renderctx.CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(R3D_Vertex)); // add stride
-                    renderctx.CmdBindIndexBuffer(cmdbuffer, indexbuffer, RG_INDEX_U16);
-                    renderctx.CmdDrawIndexed(cmdbuffer, 3, 0);
+					// Draw entities
+
+                    for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
+						Entity* ent = world->GetEntity(i);
+                        ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+                        RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+
+                        mat_camera.model = *ent->GetTransform()->GetMatrix();
+
+                        if (mc) {
+                            DrawStatic(cmdbuffer, mc->GetHandle());
+                        }
+
+                        if (rmc) {
+                            DrawStatic(cmdbuffer, &rmc->GetHandle()->s_model);
+                        }
+
+                    }
+
+
+                    // Draw static models
+
+                    for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
+                        StaticObject* staticobj = world->GetStaticObject(i);
+
+                        mat_camera.model = *staticobj->GetMatrix();
+                        R3D_StaticModel* staticmdl = staticobj->GetModelHandle();
+
+						DrawStatic(cmdbuffer, staticmdl);
+                    }
+
+                    
+
+                    //renderctx.CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(R3D_Vertex)); // add stride
+                    //renderctx.CmdBindIndexBuffer(cmdbuffer, indexbuffer, RG_INDEX_U16);
+                    //renderctx.CmdDrawIndexed(cmdbuffer, 3, 0);
+
+
                     renderctx.CmdEndRenderpass(cmdbuffer);
                 }
                 renderctx.EndCommandBuffer(cmdbuffer);
@@ -799,39 +945,200 @@ namespace Engine {
 
         R3D_StaticModel* CreateStaticModel(R3DStaticModelInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            //return renderctx.R3D_CreateStaticModel(info);
-            return NULL;
+
+            R3D_StaticModel* staticmdl = (R3D_StaticModel*)renderalloc->Allocate(sizeof(R3D_StaticModel));
+			staticmdl->type = R_MODEL_STATIC;
+            staticmdl->mCount = info->mCount;
+			staticmdl->info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+            for (Uint32 i = 0; i < info->mCount; i++) {
+                staticmdl->info[i].indexCount  = info->mInfo[i].indexCount;
+                staticmdl->info[i].indexOffset = info->mInfo[i].indexOffset;
+                staticmdl->info[i].material    = 0;// materials[info->mInfo[i].materialIdx];
+            }
+            //staticmdl->vBuffer
+            //staticmdl->iBuffer
+
+            RBufferCreateInfo vbinfo = {};
+            vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+            vbinfo.type   = RG_BUFFER_TYPE_VERTEX;
+            vbinfo.stride = sizeof(R3D_Vertex);
+            vbinfo.length = sizeof(R3D_Vertex) * info->vCount;
+            vbinfo.initialData = info->vertices;
+            staticmdl->vBuffer = renderctx.CreateBuffer(rdev, &vbinfo);
+
+            RBufferCreateInfo ibinfo = {};
+            ibinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            ibinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+            ibinfo.type   = RG_BUFFER_TYPE_INDEX;
+            ibinfo.stride = info->iType;
+            ibinfo.length = info->iCount * info->iType;
+            ibinfo.initialData = info->indices;
+            staticmdl->iBuffer = renderctx.CreateBuffer(rdev, &ibinfo);
+
+            staticmdl->iCount = info->iCount;
+            staticmdl->iType  = info->iType;
+
+            return staticmdl;
         }
 
         void DestroyStaticModel(R3D_StaticModel* mdl) {
             if (!isRendererLoaded) { return; }
+
+			renderctx.DestroyBuffer(mdl->vBuffer);
+			renderctx.DestroyBuffer(mdl->iBuffer);
+			renderalloc->Deallocate(mdl->info);
+			renderalloc->Deallocate(mdl);
+
             //renderctx.R3D_DestroyStaticModel(mdl);
         }
 
         R3D_RiggedModel* CreateRiggedModel(R3DRiggedModelInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            //return renderctx.R3D_CreateRiggedModel(info);
-            return NULL;
+            
+            R3D_RiggedModel* rigmdl = (R3D_RiggedModel*)renderalloc->Allocate(sizeof(R3D_RiggedModel));
+            rigmdl->type   = R_MODEL_RIGGED;
+			rigmdl->vCount = info->vCount;
+
+            rigmdl->s_model.mCount = info->mCount;
+            rigmdl->s_model.info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+            for (Uint32 i = 0; i < info->mCount; i++) {
+                rigmdl->s_model.info[i].indexCount = info->mInfo[i].indexCount;
+                rigmdl->s_model.info[i].indexOffset = info->mInfo[i].indexOffset;
+                rigmdl->s_model.info[i].material = 0;// materials[info->mInfo[i].materialIdx];
+            }
+
+			// Vertex buffer for skinning output and model rendering
+            RBufferCreateInfo vbinfo = {};
+            vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+
+            // We MUST use the RG_BUFFER_TYPE_VERTEX flag
+            // its working perfectly on Nvidia drivers without this flag LoL
+			// TODO: Add another buffer with this flag for copy data and rendering only?
+            
+            //vbinfo.type   = RG_BUFFER_TYPE_VERTEX | RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
+            vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
+            vbinfo.stride = sizeof(R3D_Vertex);
+            vbinfo.length = sizeof(R3D_Vertex) * info->vCount;
+            //vbinfo.initialData = info->vertices; // Not needed (generated dynamicly by compute shader)
+            rigmdl->s_model.vBuffer = renderctx.CreateBuffer(rdev, &vbinfo);
+
+			// Index buffer
+            RBufferCreateInfo ibinfo = {};
+            ibinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            ibinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+            ibinfo.type   = RG_BUFFER_TYPE_INDEX;
+            ibinfo.stride = info->iType;
+            ibinfo.length = info->iCount * info->iType;
+            ibinfo.initialData = info->indices;
+            rigmdl->s_model.iBuffer = renderctx.CreateBuffer(rdev, &ibinfo);
+
+            rigmdl->s_model.iCount = info->iCount;
+            rigmdl->s_model.iType = info->iType;
+
+			// Vertex buffer for skinning input
+            vbinfo = {};
+            vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+            vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+            vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_STRUCTURED;
+            vbinfo.stride = sizeof(R3D_Vertex);
+            vbinfo.length = sizeof(R3D_Vertex) * info->vCount;
+            vbinfo.initialData = info->vertices;
+            rigmdl->i_vertex = renderctx.CreateBuffer(rdev, &vbinfo);
+
+			// Vertex weights buffer
+			RBufferCreateInfo wbuffinfo = {};
+			wbuffinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
+			wbuffinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
+			wbuffinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_STRUCTURED;
+            wbuffinfo.stride = sizeof(R3D_Weight);
+            wbuffinfo.length = sizeof(R3D_Weight) * info->vCount;
+            wbuffinfo.initialData = info->weights;
+            rigmdl->i_weight = renderctx.CreateBuffer(rdev, &wbuffinfo);
+
+			// Resource views for input buffers
+			RResourceViewCreateInfo rvinfo = {};
+			rvinfo.type        = RG_RESOURCEVIEW_TYPE_SRV;
+            rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
+			rvinfo.elements    = info->vCount;
+
+            rvinfo.dst_buffer = rigmdl->i_vertex;
+            rigmdl->i_srv_vtx = renderctx.CreateResourceView(rdev, &rvinfo);
+            rvinfo.dst_buffer = rigmdl->i_weight;
+            rigmdl->i_srv_wht = renderctx.CreateResourceView(rdev, &rvinfo);
+
+			// Resource view for output vertex buffer
+            rvinfo = {};
+            rvinfo.type        = RG_RESOURCEVIEW_TYPE_UAV;
+            rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
+            rvinfo.elements    = info->vCount;
+            rvinfo.dst_buffer  = rigmdl->s_model.vBuffer;
+
+			rigmdl->s_uav = renderctx.CreateResourceView(rdev, &rvinfo);
+
+            return rigmdl;
         }
 
         void DestroyRiggedModel(R3D_RiggedModel* mdl) {
             if (!isRendererLoaded) { return; }
-            //renderctx.R3D_DestroyRiggedModel(mdl);
+            
+			renderctx.DestroyResourceView(mdl->i_srv_vtx);
+			renderctx.DestroyResourceView(mdl->i_srv_wht);
+			renderctx.DestroyResourceView(mdl->s_uav);
+			renderctx.DestroyBuffer(mdl->i_vertex);
+			renderctx.DestroyBuffer(mdl->i_weight);
+			renderctx.DestroyBuffer(mdl->s_model.vBuffer);
+			renderctx.DestroyBuffer(mdl->s_model.iBuffer);
+
+			renderalloc->Deallocate(mdl->s_model.info);
+			renderalloc->Deallocate(mdl);
+
         }
 
         R3D_BoneBuffer* CreateBoneBuffer(R3DCreateBufferInfo* info) {
             if (!isRendererLoaded) { return NULL; }
-            //return renderctx.R3D_CreateBoneBuffer(info);
-            return NULL;
+			R3D_BoneBuffer* bonebuf = (R3D_BoneBuffer*)renderalloc->Allocate(sizeof(R3D_BoneBuffer));
+
+			RBufferCreateInfo buffinfo = {};
+			buffinfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
+			buffinfo.usage  = RG_BUFFER_USAGE_DYNAMIC;
+			buffinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_STRUCTURED;
+            buffinfo.stride = sizeof(mat4);
+            buffinfo.length = info->len;
+            buffinfo.initialData = info->initialData;
+
+            bonebuf->buffer = renderctx.CreateBuffer(rdev, &buffinfo);
+
+            RResourceViewCreateInfo rvinfo = {};
+            rvinfo.type        = RG_RESOURCEVIEW_TYPE_SRV;
+            rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
+            rvinfo.elements    = info->len / sizeof(mat4);
+            rvinfo.dst_buffer  = bonebuf->buffer;
+
+            bonebuf->rv = renderctx.CreateResourceView(rdev, &rvinfo);
+
+            return bonebuf;
         }
 
         void DestroyBoneBuffer(R3D_BoneBuffer* hbuff) {
             if (!isRendererLoaded) { return; }
-            //renderctx.R3D_DestroyBoneBuffer(hbuff);
+
+            renderctx.DestroyResourceView(hbuff->rv);
+			renderctx.DestroyBuffer(hbuff->buffer);
+
+			renderalloc->Deallocate(hbuff);
         }
 
         void UpdateBoneBuffer(R3DUpdateBufferInfo* info) {
             if (!isRendererLoaded) { return; }
+
+			RUpdateBufferInfo ubinfo = {};
+            ubinfo.data   = info->data;
+            ubinfo.handle = info->handle_bone->buffer;
+			ubinfo.length = info->length;
+			ubinfo.offset = info->offset;
+            renderctx.UpdateBuffer(&ubinfo);
             //renderctx.R3D_UpdateBoneBuffer(info);
         }
 

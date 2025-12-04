@@ -26,6 +26,7 @@ extern "C" {
 
 	extern RG_DECLSPEC RBuffer*        R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyBuffer(RBuffer* buffer);
+	extern RG_DECLSPEC void            R_UpdateBuffer(RUpdateBufferInfo* buffer);
 	extern RG_DECLSPEC RImage*         R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyImage(RImage* image);
 	extern RG_DECLSPEC RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateInfo* info);
@@ -48,10 +49,12 @@ extern "C" {
 	extern RG_DECLSPEC void            R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl);
 	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot, Uint32 stride);
 	extern RG_DECLSPEC void            R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize);
+	extern RG_DECLSPEC void            R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views);
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
 	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
 
 	extern RG_DECLSPEC void            R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData);
+	extern RG_DECLSPEC void            R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 groupcount_x, Uint32 groupcount_y, Uint32 groupcount_z);
 
 
 

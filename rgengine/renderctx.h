@@ -78,6 +78,7 @@ typedef void            (*PFN_R_IMGUI_NEWFRAME)(RRenderDevice*);
 
 typedef RBuffer*        (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
+typedef void            (*PFN_R_UPDATEBUFFER)(RUpdateBufferInfo*);
 typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
 typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
 typedef RResourceView*  (*PFN_R_CREATERESOURCEVIEW)(RRenderDevice*, RResourceViewCreateInfo*);
@@ -101,8 +102,10 @@ typedef void            (*PFN_R_CMDENDRENDERPASS)(RCommandBuffer*);
 typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
 typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
+typedef void            (*PFN_R_CMDBINDRESOURCEVIEWS)(RCommandBuffer*, Uint32, RBindResourceViewInfo*);
 typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDPUSHCONSTANTS)(RCommandBuffer*, void*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDDISPATCH)(RCommandBuffer*, Uint32, Uint32, Uint32);
 
 typedef void            (*PFN_R_CMDIMGUIRENDERDRAWDATA)(RCommandBuffer*, void*);
 
@@ -125,6 +128,7 @@ namespace Engine {
 		// Buffer
 		PFN_R_CREATEBUFFER            CreateBuffer;
 		PFN_R_DESTROYBUFFER           DestroyBuffer;
+		PFN_R_UPDATEBUFFER            UpdateBuffer;
 
 		// Image
 		PFN_R_CREATEIMAGE			  CreateImage;
@@ -160,8 +164,10 @@ namespace Engine {
 		PFN_R_CMDBINDPIPELINE         CmdBindPipeline;
 		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
 		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
+		PFN_R_CMDBINDRESOURCEVIEWS    CmdBindResourceViews;
 		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;
 		PFN_R_CMDPUSHCONSTANTS        CmdPushConstants;
+		PFN_R_CMDDISPATCH             CmdDispatch;
 		PFN_R_CMDIMGUIRENDERDRAWDATA  CmdImGuiRenderDrawData;
 
 	} RenderBackend;

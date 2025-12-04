@@ -183,6 +183,9 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 void R_DestroyDevice(RRenderDevice* device) {
 
+
+	Engine::FreeEventHandler(_EventHandler);
+
 	R_DestroyBuffer(device->pc_vertex);
 	R_DestroyBuffer(device->pc_pixel);
 
@@ -219,7 +222,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	}
 
 #if R_DXRENDER_DEBUG
-	PollInfoQueue(device);
+	//PollInfoQueue(device);
 #endif
 }
 

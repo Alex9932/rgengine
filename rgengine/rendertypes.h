@@ -125,10 +125,17 @@ typedef struct RCommandBufferCreateInfo {
 #define RG_RESOURCEVIEW_TYPE_UAV 0x4
 #define RG_RESOURCEVIEW_TYPE_BBV 0x5 // Swapchain backbuffer
 
+#define RG_RESOURCEVIEW_IMAGE  0x0
+#define RG_RESOURCEVIEW_BUFFER 0x1
+
 typedef struct RResourceViewCreateInfo {
-	Uint8   type;
-	Uint8   var;
-	Uint16 _offset1;
+	Uint16 type;
+	Uint16 buffer_type;
+
+	union {
+		Uint32 var;
+		Uint32 elements;
+	};
 
 	union {
 		RBuffer* dst_buffer;
@@ -214,6 +221,20 @@ typedef struct RShaderCreateInfo {
 	Uint16 _offset1;
 	Uint32 _offset2;
 } RShaderCreateInfo;
+
+typedef struct RBindResourceViewInfo {
+	RResourceView* rv;
+	Uint16         slot;
+	Uint16         target; // Pipeline type
+	Uint32 	       type;
+} RBindResourceViewInfo;
+
+typedef struct RUpdateBufferInfo {
+	RBuffer* handle;
+	Uint32 offset;
+	Uint32 length;
+	void* data;
+} RUpdateBufferInfo;
 
 ////////////////////////////////////////////////////////////////////
 

@@ -84,15 +84,30 @@ static RG_INLINE void CMD_EndRenderpassImpl(RCommandBuffer* buffer, RCommand* cm
 
 static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	RPipeline* pl = (RPipeline*)cmd->handle;
-	// Bind pipeline
-	buffer->dev->dxctx->IASetInputLayout(pl->layout);
-	buffer->dev->dxctx->VSSetShader(pl->vs, NULL, 0);
-	buffer->dev->dxctx->PSSetShader(pl->ps, NULL, 0);
-	if (pl->gs) {
-		buffer->dev->dxctx->GSSetShader(pl->gs, NULL, 0);
-	}
-	else {
+
+	if (pl->type == RG_PIPELINE_TYPE_GRAPHICS) {
+		// Bind graphics pipeline
+		buffer->dev->dxctx->IASetInputLayout(pl->layout);
+		buffer->dev->dxctx->VSSetShader(pl->vs, NULL, 0);
+		buffer->dev->dxctx->PSSetShader(pl->ps, NULL, 0);
+		if (pl->gs) {
+			buffer->dev->dxctx->GSSetShader(pl->gs, NULL, 0);
+		}
+		else {
+			buffer->dev->dxctx->GSSetShader(NULL, NULL, 0);
+		}
+
+		buffer->dev->dxctx->CSSetShader(NULL, NULL, 0);
+
+		ID3D11UnorderedAccessView* uav = NULL;
+		buffer->dev->dxctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
+
+	} else {
+		// Bind compute pipeline
+		buffer->dev->dxctx->VSSetShader(NULL, NULL, 0);
+		buffer->dev->dxctx->PSSetShader(NULL, NULL, 0);
 		buffer->dev->dxctx->GSSetShader(NULL, NULL, 0);
+		buffer->dev->dxctx->CSSetShader(pl->cs, NULL, 0);
 	}
 }
 
@@ -109,6 +124,39 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 	IndexType indexFormat = (IndexType)cmd->data0;  // Index size in bytes
 	buffer->dev->dxctx->IASetIndexBuffer(ib->buffer, GetIndexType(indexFormat), 0);
 	buffer->dev->dxctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+static RG_INLINE void BindResourceView(RBindResourceViewInfo* info) {
+	if(info->target == RG_PIPELINE_TYPE_COMPUTE) {
+		// Compute pipeline
+		if (info->type == R_DX_RESOURCEVIEW_SRV) {
+			// Bind SRV
+			info->rv->dev->dxctx->CSSetShaderResources(info->slot, 1, &info->rv->srv);
+		} else if (info->type == R_DX_RESOURCEVIEW_UAV) {
+			// Bind UAV
+			info->rv->dev->dxctx->CSSetUnorderedAccessViews(info->slot, 1, &info->rv->uav, NULL);
+		}
+	} else {
+		// Graphics pipeline
+		if (info->type == R_DX_RESOURCEVIEW_SRV) {
+			// Bind SRV
+			info->rv->dev->dxctx->PSSetShaderResources(info->slot, 1, &info->rv->srv);
+		} else if (info->type == R_DX_RESOURCEVIEW_UAV) {
+			rgLogError(RG_LOG_RENDER, "R_DX11: Binding UAV resource views to graphics pipeline is not implemented yet.");
+#if 0
+			// Bind UAV
+			info->rv->dev->dxctx->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, info->slot, 1, &info->rv->uav, NULL);
+#endif
+		}
+	}
+}
+
+static RG_INLINE void CMD_BindResourceViewsImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	Uint32 count = cmd->_off0;
+	RBindResourceViewInfo* infos = (RBindResourceViewInfo*)cmd->buffer;
+	for (Uint32 i = 0; i < count; i++) {
+		BindResourceView(&infos[i]);
+	}
 }
 
 static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
@@ -169,6 +217,13 @@ static RG_INLINE void CMD_DrawIndexdImpl(RCommandBuffer* buffer, RCommand* cmd) 
 	buffer->dev->dxctx->DrawIndexed(idxcount, idxstart, 0);
 }
 
+static RG_INLINE void CMD_DispatchImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	Uint32 groupcount_x = cmd->data0;
+	Uint32 groupcount_y = cmd->data1;
+	Uint32 groupcount_z = cmd->data2;
+	buffer->dev->dxctx->Dispatch(groupcount_x, groupcount_y, groupcount_z);
+}
+
 void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	RCommandBuffer* buffer = info->buffer;
 
@@ -183,10 +238,12 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
+			case R_CMD_BIND_RESOURCEVIEWS: { CMD_BindResourceViewsImpl(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
 			//case R_CMD_DRAW:               { CMD_DrawImpl(buffer, cmd); break; }
 			case R_CMD_DRAW_INDEXED:       { CMD_DrawIndexdImpl(buffer, cmd); break; }
+			case R_CMD_DISPATCH:           { CMD_DispatchImpl(buffer, cmd); break; }
 
 			default: {
 #if R_DXRENDER_DEBUG
@@ -247,6 +304,16 @@ void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize)
 	cmd->data0  = isize;
 }
 
+void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_BIND_RESOURCEVIEWS;
+	if (count >= 8) {
+		rgLogError(RG_LOG_RENDER, "DX11 Renderer: R_CmdBindResourceViews supports max 8 resource views!");
+	}
+	cmd->_off0 = count; // Store count in unused field
+	SDL_memcpy(cmd->buffer, views, sizeof(RBindResourceViewInfo) * count);
+}
+
 /*
 void R_CmdDraw(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
@@ -278,4 +345,12 @@ void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* data) {
 	Uint64 address = (Uint64)data;
 	cmd->data0 = (Uint32)(address >> 32); // High part
 	cmd->data1 = (Uint32)(address & 0xFFFFFFFF); // Low part
+}
+
+void R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 groupcount_x, Uint32 groupcount_y, Uint32 groupcount_z) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_DISPATCH;
+	cmd->data0 = groupcount_x;
+	cmd->data1 = groupcount_y;
+	cmd->data2 = groupcount_z;
 }

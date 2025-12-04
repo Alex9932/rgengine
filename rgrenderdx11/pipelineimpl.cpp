@@ -192,7 +192,7 @@ static void LoadShaderFromSource(RShader* shader, String file) {
 		case RG_SHADER_TYPE_COMPUTE: {
 			shader_type = "compute";
 			shader_version = "cs_5_0";
-			shader_entrypoint = "cmain";
+			shader_entrypoint = "main";
 			break;
 		}
 		default: {

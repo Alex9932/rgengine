@@ -27,6 +27,7 @@ namespace Engine {
         // Buffer
 		ctx->CreateBuffer         = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");
 		ctx->DestroyBuffer        = (PFN_R_DESTROYBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyBuffer");
+		ctx->UpdateBuffer         = (PFN_R_UPDATEBUFFER)Engine::DL_GetProcAddress(handle, "R_UpdateBuffer");
 
 		// Image
 		ctx->CreateImage          = (PFN_R_CREATEIMAGE)Engine::DL_GetProcAddress(handle, "R_CreateImage");
@@ -62,8 +63,10 @@ namespace Engine {
 		ctx->CmdBindPipeline      = (PFN_R_CMDBINDPIPELINE)Engine::DL_GetProcAddress(handle, "R_CmdBindPipeline");
 		ctx->CmdBindVertexBuffer  = (PFN_R_CMDBINDVERTEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindVertexBuffer");
 		ctx->CmdBindIndexBuffer   = (PFN_R_CMDBINDINDEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindIndexBuffer");
+		ctx->CmdBindResourceViews = (PFN_R_CMDBINDRESOURCEVIEWS)Engine::DL_GetProcAddress(handle, "R_CmdBindResourceViews");
 		ctx->CmdDrawIndexed       = (PFN_R_CMDDRAWINDEXED)Engine::DL_GetProcAddress(handle, "R_CmdDrawIndexed");
         ctx->CmdPushConstants     = (PFN_R_CMDPUSHCONSTANTS)Engine::DL_GetProcAddress(handle, "R_CmdPushConstants");
+		ctx->CmdDispatch          = (PFN_R_CMDDISPATCH)Engine::DL_GetProcAddress(handle, "R_CmdDispatch");
 
         ctx->CmdImGuiRenderDrawData = (PFN_R_CMDIMGUIRENDERDRAWDATA)Engine::DL_GetProcAddress(handle, "R_CmdImGuiRenderDrawData");
 
