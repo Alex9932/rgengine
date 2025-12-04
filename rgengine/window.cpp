@@ -101,14 +101,14 @@ namespace Engine {
 
     }
 
-    void Window_Destroy() {
+    void Window_Destroy(String savepath) {
 
 
         FreeEventHandler(_EventHandler);
 
         // Save ImGui state
         char imcfgpath[512];
-        GetPath(imcfgpath, 512, RG_PATH_USERDATA, GetGame()->imguiIni);
+        GetPath(imcfgpath, 512, RG_PATH_USERDATA, savepath);
         size_t imini_len = 0;
         String imini = ImGui::SaveIniSettingsToMemory(&imini_len);
         FSWriter writer(imcfgpath);

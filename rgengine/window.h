@@ -12,7 +12,7 @@ namespace Engine {
     void Window_SetLogo(String p);
 
     void Window_Initialize(String lib_renderer);
-    void Window_Destroy();
+    void Window_Destroy(String savepath);
     void Window_Show();
     void Window_Update();
 
