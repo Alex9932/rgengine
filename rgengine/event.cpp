@@ -67,7 +67,10 @@ namespace Engine {
         std::vector<HandlerPair>::iterator it;
         for (it = handlers.begin(); it != handlers.end(); it++) {
             if ((*it).rawptr == handler) {
-                handlers.erase(it);
+                //handlers.erase(it);
+
+                *it = std::move(handlers.back());
+                handlers.pop_back();
                 break;
             }
         }
