@@ -149,6 +149,7 @@
     <ClCompile Include="font.cpp" />
     <ClCompile Include="freecameracontroller.cpp" />
     <ClCompile Include="frustum.cpp" />
+    <ClCompile Include="guiwnds.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\ImGuiFileDialog.cpp" />
     <ClCompile Include="imgui\ImGuizmo.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="lightsystem.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="lookatcameracontroller.cpp" />
+    <ClCompile Include="material.cpp" />
     <ClCompile Include="meshtool.cpp" />
     <ClCompile Include="objimporter.cpp" />
     <ClCompile Include="particlesystem.cpp" />
@@ -212,6 +214,7 @@
     <ClInclude Include="font.h" />
     <ClInclude Include="freecameracontroller.h" />
     <ClInclude Include="frustum.h" />
+    <ClInclude Include="guiwnds.h" />
     <ClInclude Include="imgui\dirent\dirent.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
@@ -231,6 +234,7 @@
     <ClInclude Include="levelloader.h" />
     <ClInclude Include="lightsystem.h" />
     <ClInclude Include="lookatcameracontroller.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="meshtool.h" />
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="objimporter.h" />

@@ -17,14 +17,14 @@
 
 #include "console.h"
 
+#include "guiwnds.h"
 #include "profiler.h"
 #include "frustum.h"
+#include "material.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
-
-#include "imgui/imgui_widget_flamegraph.h"
 
 #include <vector>
 
@@ -87,8 +87,6 @@ namespace Engine {
         } mat_camera;
 
         // Test
-		static RBuffer* vertexbuffer = NULL;
-		static RBuffer* indexbuffer = NULL;
         static RRenderpass* renderpass3d = NULL;
 		static RPipeline* pipeline3d = NULL;
 		static RShader* shader_vs = NULL;
@@ -98,8 +96,6 @@ namespace Engine {
 
         static RShader*   skinning_shader   = NULL;
         static RPipeline* skinning_pipeline = NULL;
-
-
 
 
         static Bool                 isEntityCullingEnabled = false;
@@ -262,6 +258,7 @@ namespace Engine {
             setupinfo.hwnd = hwnd;
             rdev = renderctx.CreateDevice(&setupinfo);
 
+            InitializeMaterials();
             CreateFramebuffers();
 
 
@@ -270,8 +267,6 @@ namespace Engine {
 			cmdbuffer = renderctx.CreateCommandBuffer(rdev, &cmdbuffinfo);
 
             renderctx.ImGui_Init(rdev);
-            //renderctx.ImGui_NewFrame(rdev);
-
 
             RShaderCreateInfo csinfo = {};
             csinfo.isCompiled = false;
@@ -323,32 +318,6 @@ namespace Engine {
 
             pipeline3d = renderctx.CreatePipeline(rdev, &plinfo);
 
-            static R3D_Vertex vbuffer[] = {
-                { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
-				{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f } },
-				{ {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }
-            };
-
-			static Uint16 ibuffer[] = { 0, 1, 2 };
-
-            RBufferCreateInfo vbinfo = {};
-			vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
-			vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
-			vbinfo.type   = RG_BUFFER_TYPE_VERTEX;
-			vbinfo.stride = sizeof(R3D_Vertex);
-			vbinfo.length = sizeof(vbuffer);
-            vbinfo.initialData = vbuffer;
-            vertexbuffer = renderctx.CreateBuffer(rdev, &vbinfo);
-
-            RBufferCreateInfo ibinfo = {};
-            ibinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
-            ibinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
-            ibinfo.type   = RG_BUFFER_TYPE_INDEX;
-            ibinfo.stride = sizeof(Uint16);
-            ibinfo.length = sizeof(ibuffer);
-            ibinfo.initialData = ibuffer;
-            indexbuffer = renderctx.CreateBuffer(rdev, &ibinfo);
-
 #if 0
             
 
@@ -379,22 +348,6 @@ namespace Engine {
             r2d_texture_bg = renderctx.R2D_CreateTexture(&createtextureinfo);
 #endif
 
-#if 0
-            rgLogInfo(RG_LOG_SYSTEM, "R3D Test");
-            R3DCreateMaterialInfo minfo = {};
-            R3D_Material* mat_ptr = R3D_CreateMaterial(&minfo);
-
-            R3DCreateStaticModelInfo sminfo = {};
-            R3D_StaticModel* sm_ptr = R3D_CreateStaticModel(&sminfo);
-
-            rgLogInfo(RG_LOG_SYSTEM, "Mat: %p, model: %p", mat_ptr, sm_ptr);
-
-            R3D_DestroyStaticModel(sm_ptr);
-            R3D_DestroyMaterial(mat_ptr);
-
-            rgLogInfo(RG_LOG_SYSTEM, "~ ~ ~ ~ ~ ~ ~");
-#endif
-
             //InitializeConsole();
 
         }
@@ -417,11 +370,10 @@ namespace Engine {
             renderctx.DestroyShader(shader_vs);
             renderctx.DestroyShader(shader_ps);
             renderctx.DestroyPipeline(pipeline3d);
-            renderctx.DestroyBuffer(vertexbuffer);
-            renderctx.DestroyBuffer(indexbuffer);
 
 
             DestroyFramebuffers();
+            DestroyMaterials();
 
             renderctx.DestroyDevice(rdev);
 
@@ -473,94 +425,7 @@ namespace Engine {
             return &renderctx;
         }
 
-        static Float32 ft_array[128] = {};
-        static void UpdateFrametime(Float32 ft) {
-            for (Sint32 i = 126; i >= 0; i--) {
-                ft_array[i + 1] = ft_array[i];
-            }
-            ft_array[0] = ft;
-        }
-
-        static float FrametimeGetter(void* data, int idx) {
-            Float32* ft_data = (Float32*)data;
-            return ft_data[idx];
-        }
-
-        void DrawRendererStats() {
-            RenderInfo renderer_info = {};
-            GetInfo(&renderer_info);
-
-            ImGui::Begin("Renderer stats");
-
-            ImGui::Text("Name: %s", renderer_info.render_name);
-            ImGui::Text("Renderer: %s", renderer_info.renderer);
-
-            ImGui::Separator();
-
-            ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory >> 10);
-            ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
-
-            ImGui::Separator();
-
-            ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
-
-            ImGui::Separator();
-
-            ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
-            ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
-            ImGui::Text("Textures to load/queued: %d/%d", renderer_info.textures_inQueue, renderer_info.textures_left);
-
-            Float32 f = 1;
-            if (renderer_info.textures_inQueue != 0) {
-                f = 1.0f - ((Float32)renderer_info.textures_left / (Float32)renderer_info.textures_inQueue);
-            }
-
-            ImGui::ProgressBar(f);
-
-            ImGui::Separator();
-
-            ImGui::Text("Fps: %.2f", 1.0f / GetDeltaTime());
-            
-            ImGui::PlotLines("Frametime", FrametimeGetter, ft_array, 128);
-
-            ImGui::End();
-        }
-
-        static void ProfilerValueGetter(float* startTimestamp, float* endTimestamp, ImU8* level, const char** caption, const void* data, int idx) {
-            Profiler* prof = (Profiler*)data;
-
-            String  section = GetProfile(idx);
-            Float64 time = prof->GetTime(section);
-
-            Float64 start = 0;
-            for (Uint32 i = 0; i < idx; i++) {
-                start += prof->GetTime(GetProfile(i));
-            }
-            if (startTimestamp) { *startTimestamp = (Float32)start * 1000; }
-            if (endTimestamp)   { *endTimestamp = (Float32)(start + time) * 1000; }
-            if (level)          { *level = 0; }
-            if (caption)        { *caption = section; }
-        }
-
-        void DrawProfilerStats() {
-            ImGui::Begin("Main profiler");
-
-            Profiler* prof = GetProfiler();
-
-            ImGui::Text("Task: time ms");
-
-            Uint32 sections = prof->GetSectionCount();
-            for (Uint32 i = 0; i < sections; i++) {
-                String  secsrc = GetProfile(i);
-                Float64 time   = prof->GetTime(secsrc) * 1000;
-
-                ImGui::Text("%s: %.3lfms", secsrc, time);
-            }
-
-            ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, sections, 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
-
-            ImGui::End();
-        }
+        
 #if 0
         RG_FORCE_INLINE static void DrawEntity(R3D_PushModelInfo* info, Entity* ent) {
             ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
@@ -664,32 +529,35 @@ namespace Engine {
             particlesystem->UpdateComponents(NULL);
         }
 
-        static void DrawStatic(RCommandBuffer* cmdbuf, R3D_StaticModel* model) {
-#if 0
-            vec3 p = {};
-            p.x = mat_camera.model.m03;
-            p.y = mat_camera.model.m13;
-            p.z = mat_camera.model.m23;
+        static void DrawStatic(RCommandBuffer* cmdbuf, R3D_StaticModel* mdl) {
+            R3D_Material* current_mat = NULL;
+			Bool useMaterial = true;
 
-            AABB aabb = *staticobj->GetAABB();
-            aabb.Add(p);
+            // Bind vertexbuffer
+            renderctx.CmdBindVertexBuffer(cmdbuffer, mdl->vBuffer, 0, sizeof(R3D_Vertex));
+            renderctx.CmdBindIndexBuffer(cmdbuffer, mdl->iBuffer, mdl->iType);
 
-            if (isStaticCullingEnabled) {
-                Bool inFrustum = AABBInFrustum(&frustum, &aabb);
-                if (!inFrustum) { continue; }
-            }
-#endif
             renderctx.CmdPushConstants(cmdbuffer, &mat_camera, sizeof(mat_transform), RG_SHADER_TYPE_VERTEX);
 
-            static struct ps_constants {
-                vec4 color;
-            } pc_color = { { 1, 0, 1, 1 } };
+            for (Uint32 i = 0; i < mdl->mCount; i++) {
+                R3D_MeshInfo* minfo = &mdl->info[i];
+                R3D_Material* mat   = minfo->material;
 
-            renderctx.CmdPushConstants(cmdbuffer, &pc_color, sizeof(ps_constants), RG_SHADER_TYPE_PIXEL);
+                // Bind material
+                if (useMaterial && current_mat != mat) {
 
-            renderctx.CmdBindVertexBuffer(cmdbuffer, model->vBuffer, 0, sizeof(R3D_Vertex));
-            renderctx.CmdBindIndexBuffer(cmdbuffer, model->iBuffer, model->iType);
-            renderctx.CmdDrawIndexed(cmdbuffer, model->iCount, 0);
+                    vec4 color = { mat->color.r, mat->color.g, mat->color.b, 1 };
+
+                    renderctx.CmdPushConstants(cmdbuffer, &color, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+
+                    // Bind textures
+                    // TODO
+                }
+
+				// Draw mesh
+                renderctx.CmdDrawIndexed(cmdbuffer, minfo->indexCount, minfo->indexOffset);
+            }
+
 		}
 
         void Update() {
@@ -775,12 +643,6 @@ namespace Engine {
 
 						DrawStatic(cmdbuffer, staticmdl);
                     }
-
-                    
-
-                    //renderctx.CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(R3D_Vertex)); // add stride
-                    //renderctx.CmdBindIndexBuffer(cmdbuffer, indexbuffer, RG_INDEX_U16);
-                    //renderctx.CmdDrawIndexed(cmdbuffer, 3, 0);
 
 
                     renderctx.CmdEndRenderpass(cmdbuffer);
@@ -950,13 +812,14 @@ namespace Engine {
 			staticmdl->type = R_MODEL_STATIC;
             staticmdl->mCount = info->mCount;
 			staticmdl->info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+
             for (Uint32 i = 0; i < info->mCount; i++) {
                 staticmdl->info[i].indexCount  = info->mInfo[i].indexCount;
                 staticmdl->info[i].indexOffset = info->mInfo[i].indexOffset;
-                staticmdl->info[i].material    = 0;// materials[info->mInfo[i].materialIdx];
+
+				Uint32 matidx = info->mInfo[i].materialIdx;
+                staticmdl->info[i].material = GetMaterial(&info->matInfo[matidx]);
             }
-            //staticmdl->vBuffer
-            //staticmdl->iBuffer
 
             RBufferCreateInfo vbinfo = {};
             vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
@@ -985,6 +848,10 @@ namespace Engine {
         void DestroyStaticModel(R3D_StaticModel* mdl) {
             if (!isRendererLoaded) { return; }
 
+            for (Uint32 i = 0; i < mdl->mCount; i++) {
+                FreeMaterial(mdl->info[i].material);
+            }
+
 			renderctx.DestroyBuffer(mdl->vBuffer);
 			renderctx.DestroyBuffer(mdl->iBuffer);
 			renderalloc->Deallocate(mdl->info);
@@ -1002,10 +869,13 @@ namespace Engine {
 
             rigmdl->s_model.mCount = info->mCount;
             rigmdl->s_model.info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
+
             for (Uint32 i = 0; i < info->mCount; i++) {
                 rigmdl->s_model.info[i].indexCount = info->mInfo[i].indexCount;
                 rigmdl->s_model.info[i].indexOffset = info->mInfo[i].indexOffset;
-                rigmdl->s_model.info[i].material = 0;// materials[info->mInfo[i].materialIdx];
+
+                Uint32 matidx = info->mInfo[i].materialIdx;
+                rigmdl->s_model.info[i].material = GetMaterial(&info->matInfo[matidx]);
             }
 
 			// Vertex buffer for skinning output and model rendering
@@ -1015,7 +885,7 @@ namespace Engine {
 
             // We MUST use the RG_BUFFER_TYPE_VERTEX flag
             // its working perfectly on Nvidia drivers without this flag LoL
-			// TODO: Add another buffer with this flag for copy data and rendering only?
+			// TODO: Add another buffer with this flag for copy data and rendering (bind as vertex buffer)
             
             //vbinfo.type   = RG_BUFFER_TYPE_VERTEX | RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
             vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
@@ -1082,6 +952,10 @@ namespace Engine {
 
         void DestroyRiggedModel(R3D_RiggedModel* mdl) {
             if (!isRendererLoaded) { return; }
+
+            for (Uint32 i = 0; i < mdl->s_model.mCount; i++) {
+                FreeMaterial(mdl->s_model.info[i].material);
+            }
             
 			renderctx.DestroyResourceView(mdl->i_srv_vtx);
 			renderctx.DestroyResourceView(mdl->i_srv_wht);

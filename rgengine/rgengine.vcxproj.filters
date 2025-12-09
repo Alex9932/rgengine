@@ -270,6 +270,12 @@
     <ClCompile Include="imgui\imgui_impl_sdl3.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="guiwnds.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="material.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -484,6 +490,12 @@
     </ClInclude>
     <ClInclude Include="imgui\imgui_impl_sdl3.h">
       <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="guiwnds.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="material.h">
+      <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
