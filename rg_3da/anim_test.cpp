@@ -21,7 +21,7 @@
 // MMD tools
 #include <mmdimporter.h>
 
-#include <objimporter.h>
+#include <pm2importer.h>
 
 
 
@@ -80,8 +80,19 @@ void DrawImGuiCallback() {
 			kmodel->GetAnimator()->PlayAnimation(NULL);
 		}
 		else {
-			kmodel->GetAnimator()->PlayAnimation(anim[val - 1]);
+			Animation* animation = anim[val - 1];
+			animation->SetSpeed(1);
+			kmodel->GetAnimator()->PlayAnimation(animation);
 		}
+	}
+
+	Animation* anim = kmodel->GetAnimator()->GetCurrentAnimation();
+	Float32 speed = 1;
+	if (anim) {
+		speed = (Float32)anim->GetSpeed();
+	}
+	if (ImGui::SliderFloat("Animation speed", &speed, 0, 10)) {
+		if (anim) { anim->SetSpeed(speed); }
 	}
 
 	ImGui::End();
@@ -178,7 +189,8 @@ class Application : public BaseGame {
 			ImportModelInfo iminfo = {};
 			ModelExtraData  extra  = {};
 			iminfo.path  = "mmd_models";
-			iminfo.file  = "Miku_Hatsune.pmd";
+			//iminfo.file  = "Miku_Hatsune.pmd";
+			iminfo.file = "Rin_Kagamine.pmd";
 			iminfo.extra = &extra;
 			iminfo.info.as_rigged = &info;
 
@@ -220,8 +232,18 @@ class Application : public BaseGame {
 			player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 
-#if 0
 			// Level ground
+
+			PM2Importer pm2;
+			R3DStaticModelInfo sinfo = {};
+			pm2.ImportModel("gamedata/models/flatplane.pm2", &sinfo);
+			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&sinfo);
+			pm2.FreeModelData(&sinfo);
+
+			mat4 model = MAT4_IDENTITY();
+			world->NewStatic(level_mdl_handle, &model, &sinfo.aabb);
+
+#if 0
 			ObjImporter objImporter;
 			R3DStaticModelInfo l_info = {};
 			objImporter.ImportModel("gamedata/flatplane/untitled.obj", &l_info);
@@ -239,6 +261,11 @@ class Application : public BaseGame {
 		void Quit() {
 		
 			GetWorld()->ClearWorld();
+
+
+			for (Uint32 i = 0; i < 9; i++) {
+				RG_DELETE(Animation, anim[i]);
+			}
 
 			//RG_DELETE_CLASS(GetDefaultAllocator(), LookatCameraController, cam_controller);
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, cam_controller);
