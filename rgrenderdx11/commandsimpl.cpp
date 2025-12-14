@@ -159,6 +159,21 @@ static RG_INLINE void CMD_BindResourceViewsImpl(RCommandBuffer* buffer, RCommand
 	}
 }
 
+static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RSampler* sampler = (RSampler*)cmd->handle;
+	Uint32 slot = cmd->data0;
+	Uint32 stage = cmd->data1;
+	if (stage == RG_SHADER_TYPE_VERTEX) {
+		buffer->dev->dxctx->VSSetSamplers(slot, 1, &sampler->state);
+	}
+	else if (stage == RG_SHADER_TYPE_PIXEL) {
+		buffer->dev->dxctx->PSSetSamplers(slot, 1, &sampler->state);
+	}
+	else if (stage == RG_SHADER_TYPE_COMPUTE) {
+		buffer->dev->dxctx->CSSetSamplers(slot, 1, &sampler->state);
+	}
+}
+
 static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 	void* data = cmd->buffer;
 	//Uint32 size = cmd->_off1; // Size stored in unused field
@@ -239,6 +254,7 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_RESOURCEVIEWS: { CMD_BindResourceViewsImpl(buffer, cmd); break; }
+			case R_CMD_BIND_SAMPLER:       { CMD_BindSamplerImpl(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
 			//case R_CMD_DRAW:               { CMD_DrawImpl(buffer, cmd); break; }
@@ -312,6 +328,14 @@ void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResource
 	}
 	cmd->_off0 = count; // Store count in unused field
 	SDL_memcpy(cmd->buffer, views, sizeof(RBindResourceViewInfo) * count);
+}
+
+void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd    = R_CMD_BIND_SAMPLER;
+	cmd->handle = sampler;
+	cmd->data0  = slot;
+	cmd->data1  = stage;
 }
 
 /*

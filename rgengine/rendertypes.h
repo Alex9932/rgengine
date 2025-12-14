@@ -54,6 +54,7 @@ typedef struct RBuffer RBuffer;
 typedef struct RImage RImage;
 typedef struct RCommandBuffer RCommandBuffer;
 typedef struct RResourceView RResourceView;
+typedef struct RSampler RSampler;
 
 typedef struct RShader RShader;
 
@@ -80,6 +81,7 @@ typedef struct RImageCreateInfo {
 	RFormat format;
 	Uint32  width;
 	Uint32  height;
+	void*   initialData;
 } RImageCreateInfo;
 
 // Buffer
@@ -235,6 +237,23 @@ typedef struct RUpdateBufferInfo {
 	Uint32 length;
 	void* data;
 } RUpdateBufferInfo;
+
+#define RG_SAMPLER_ADDRESSMODE_REPEAT        0x0
+#define RG_SAMPLER_ADDRESSMODE_MIRRORED      0x1
+#define RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE 0x2
+
+#define RG_SAMPLER_FILTER_NEAREST            0x0
+#define RG_SAMPLER_FILTER_LINEAR             0x1
+#define RG_SAMPLER_FILTER_ANISOTROPIC        0x2
+
+typedef struct RSamplerCreateInfo {
+	Uint8 addressModeU;
+	Uint8 addressModeV;
+	Uint8 addressModeW;
+	Uint8 filterMode;
+	Uint8 maxAnisotropy;
+	Uint8 _padding[3];
+} RSamplerCreateInfo;
 
 ////////////////////////////////////////////////////////////////////
 

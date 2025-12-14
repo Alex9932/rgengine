@@ -48,6 +48,7 @@ static IDXGIAdapter* SelectAdapter(RRenderDevice* device) {
 	return pAdapter;
 }
 
+#if R_DXRENDER_DEBUG
 static void _PollMsg(ID3D11InfoQueue* infoqueue, UINT64 i) {
 	SIZE_T messageSize = 0;
 	infoqueue->GetMessage(i, nullptr, &messageSize);
@@ -66,6 +67,7 @@ static void PollInfoQueue(RRenderDevice* device) {
 	}
 	device->dxdbginfoqueue->ClearStoredMessages();
 }
+#endif
 
 static Bool _EventHandler(SDL_Event* event, void* data) {
 	RRenderDevice* device = (RRenderDevice*)data;
@@ -75,7 +77,9 @@ static Bool _EventHandler(SDL_Event* event, void* data) {
 		switch (event->user.code) {
 			case RG_EVENT_SYSTEM_SIGNAL: {
 				Sint32 signal = (Sint32)event->user.data1;
+#if R_DXRENDER_DEBUG
 				PollInfoQueue(device);
+#endif
 				break;
 			}
 #if 0
@@ -143,6 +147,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, 2, D3D11_SDK_VERSION, &scd, &device->dxswapchain, &device->dxdev, NULL, &device->dxctx);
 
 #if R_DXRENDER_DEBUG
+	rgLogInfo(RG_LOG_RENDER, "Setup query");
 	device->dxdev->QueryInterface(__uuidof(ID3D11Debug), (void**)&device->dxdbg);
 	device->dxdev->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&device->dxdbginfoqueue);
 
@@ -201,6 +206,7 @@ void R_DestroyDevice(RRenderDevice* device) {
 	RG_DELETE(STDAllocator, alloc);
 }
 
+static Bool firstswap = true;
 void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
@@ -222,7 +228,10 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	}
 
 #if R_DXRENDER_DEBUG
-	//PollInfoQueue(device);
+	if (firstswap) {
+		firstswap = false;
+		PollInfoQueue(device);
+	}
 #endif
 }
 

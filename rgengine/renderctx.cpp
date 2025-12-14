@@ -57,6 +57,9 @@ namespace Engine {
 		ctx->CreateShader         = (PFN_R_CREATESHADER)Engine::DL_GetProcAddress(handle, "R_CreateShader");
 		ctx->DestroyShader        = (PFN_R_DESTROYSHADER)Engine::DL_GetProcAddress(handle, "R_DestroyShader");
 
+		ctx->CreateSampler        = (PFN_R_CREATESAMPLER)Engine::DL_GetProcAddress(handle, "R_CreateSampler");
+		ctx->DestroySampler       = (PFN_R_DESTROYSAMPLER)Engine::DL_GetProcAddress(handle, "R_DestroySampler");
+
 		// Commands
 		ctx->CmdBeginRenderpass   = (PFN_R_CMDBEGINRENDERPASS)Engine::DL_GetProcAddress(handle, "R_CmdBeginRenderpass");
 		ctx->CmdEndRenderpass     = (PFN_R_CMDENDRENDERPASS)Engine::DL_GetProcAddress(handle, "R_CmdEndRenderpass");
@@ -64,6 +67,7 @@ namespace Engine {
 		ctx->CmdBindVertexBuffer  = (PFN_R_CMDBINDVERTEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindVertexBuffer");
 		ctx->CmdBindIndexBuffer   = (PFN_R_CMDBINDINDEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindIndexBuffer");
 		ctx->CmdBindResourceViews = (PFN_R_CMDBINDRESOURCEVIEWS)Engine::DL_GetProcAddress(handle, "R_CmdBindResourceViews");
+        ctx->CmdBindSampler       = (PFN_R_CMDBINDSAMPLER)Engine::DL_GetProcAddress(handle, "R_CmdBindSampler");
 		ctx->CmdDrawIndexed       = (PFN_R_CMDDRAWINDEXED)Engine::DL_GetProcAddress(handle, "R_CmdDrawIndexed");
         ctx->CmdPushConstants     = (PFN_R_CMDPUSHCONSTANTS)Engine::DL_GetProcAddress(handle, "R_CmdPushConstants");
 		ctx->CmdDispatch          = (PFN_R_CMDDISPATCH)Engine::DL_GetProcAddress(handle, "R_CmdDispatch");

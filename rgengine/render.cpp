@@ -20,7 +20,9 @@
 #include "guiwnds.h"
 #include "profiler.h"
 #include "frustum.h"
+
 #include "material.h"
+#include "texture.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
@@ -91,6 +93,7 @@ namespace Engine {
 		static RPipeline* pipeline3d = NULL;
 		static RShader* shader_vs = NULL;
 		static RShader* shader_ps = NULL;
+		static RSampler* sampler_linear = NULL;
 		static RImage* depthbuffer = NULL;
 		static RResourceView* depthbuffer_rv = NULL;
 
@@ -259,6 +262,8 @@ namespace Engine {
             rdev = renderctx.CreateDevice(&setupinfo);
 
             InitializeMaterials();
+            InitializeTextures();
+
             CreateFramebuffers();
 
 
@@ -294,6 +299,19 @@ namespace Engine {
             psinfo.name = "fwd_test.ps";
             psinfo.type = RG_SHADER_TYPE_PIXEL;
             shader_ps = renderctx.CreateShader(rdev, &psinfo);
+
+			RSamplerCreateInfo samplerinfo = {};
+#if 0
+			samplerinfo.addressModeU  = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+			samplerinfo.addressModeV  = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+			samplerinfo.addressModeW  = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+#endif
+			samplerinfo.addressModeU  = RG_SAMPLER_ADDRESSMODE_REPEAT;
+			samplerinfo.addressModeV  = RG_SAMPLER_ADDRESSMODE_REPEAT;
+			samplerinfo.addressModeW  = RG_SAMPLER_ADDRESSMODE_REPEAT;
+			samplerinfo.filterMode    = RG_SAMPLER_FILTER_LINEAR;
+			samplerinfo.maxAnisotropy = 1;
+			sampler_linear = renderctx.CreateSampler(rdev, &samplerinfo);
 
 
 			RPipelineInputDescription inputdescriptions[4] = {};
@@ -367,6 +385,7 @@ namespace Engine {
             renderctx.DestroyShader(skinning_shader);
             renderctx.DestroyPipeline(skinning_pipeline);
 
+			renderctx.DestroySampler(sampler_linear);
             renderctx.DestroyShader(shader_vs);
             renderctx.DestroyShader(shader_ps);
             renderctx.DestroyPipeline(pipeline3d);
@@ -374,6 +393,7 @@ namespace Engine {
 
             DestroyFramebuffers();
             DestroyMaterials();
+            DestroyTextures();
 
             renderctx.DestroyDevice(rdev);
 
@@ -412,6 +432,8 @@ namespace Engine {
             }
 
             renderctx.SwapBuffers(rdev, &sbinfo);
+
+            DoLoadTextures();
             
             if (isWindowResized) {
                 isWindowResized = false;
@@ -419,6 +441,10 @@ namespace Engine {
                 // Recreate swapchain, framebuffers and renderpasses
                 CreateFramebuffers();
             }
+        }
+
+        RRenderDevice* GetRenderDevice() {
+            return rdev;
         }
 
         RenderBackend* GetRenderContext() {
@@ -551,7 +577,20 @@ namespace Engine {
                     renderctx.CmdPushConstants(cmdbuffer, &color, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
 
                     // Bind textures
-                    // TODO
+					RBindResourceViewInfo info[3] = {};
+                    info[0].rv     = mat->albedo->srv ? mat->albedo->srv : GetDefaultWhiteTexture()->srv;
+                    info[0].slot   = 0;
+                    info[0].target = RG_PIPELINE_TYPE_GRAPHICS;
+                    info[0].type   = RG_RESOURCEVIEW_TYPE_SRV;
+                    info[1].rv     = mat->normal->srv ? mat->normal->srv : GetDefaultNormalTexture()->srv;
+                    info[1].slot   = 1;
+                    info[1].target = RG_PIPELINE_TYPE_GRAPHICS;
+                    info[1].type   = RG_RESOURCEVIEW_TYPE_SRV;
+                    info[2].rv     = mat->pbr->srv ? mat->pbr->srv : GetDefaultPBRTexture()->srv;
+                    info[2].slot   = 2;
+                    info[2].target = RG_PIPELINE_TYPE_GRAPHICS;
+					info[2].type   = RG_RESOURCEVIEW_TYPE_SRV;
+					renderctx.CmdBindResourceViews(cmdbuffer, 3, info);
                 }
 
 				// Draw mesh
@@ -612,6 +651,7 @@ namespace Engine {
                     rpbegininfo.clearinfo = &clearinfo;
                     renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
                     renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
+					renderctx.CmdBindSampler(cmdbuffer, sampler_linear, 0, RG_SHADER_TYPE_PIXEL);
 
 					// Draw entities
 
@@ -887,8 +927,8 @@ namespace Engine {
             // its working perfectly on Nvidia drivers without this flag LoL
 			// TODO: Add another buffer with this flag for copy data and rendering (bind as vertex buffer)
             
-            //vbinfo.type   = RG_BUFFER_TYPE_VERTEX | RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
-            vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
+            vbinfo.type   = RG_BUFFER_TYPE_VERTEX | RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
+            //vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
             vbinfo.stride = sizeof(R3D_Vertex);
             vbinfo.length = sizeof(R3D_Vertex) * info->vCount;
             //vbinfo.initialData = info->vertices; // Not needed (generated dynamicly by compute shader)

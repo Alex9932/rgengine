@@ -89,6 +89,8 @@ typedef RPipeline*      (*PFN_R_CREATEPIPELINE)(RRenderDevice*, RPipelineCreateI
 typedef void            (*PFN_R_DESTROYPIPELINE)(RPipeline*);
 typedef RShader*        (*PFN_R_CREATESHADER)(RRenderDevice*, RShaderCreateInfo*);
 typedef void            (*PFN_R_DESTROYSHADER)(RShader*);
+typedef RSampler*       (*PFN_R_CREATESAMPLER)(RRenderDevice*, RSamplerCreateInfo*);
+typedef void            (*PFN_R_DESTROYSAMPLER)(RSampler*);
 
 typedef RCommandBuffer* (*PFN_R_CREATECOMMANDBUFFER)(RRenderDevice*, RCommandBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYCOMMANDBUFFER)(RCommandBuffer*);
@@ -103,6 +105,7 @@ typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
 typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
 typedef void            (*PFN_R_CMDBINDRESOURCEVIEWS)(RCommandBuffer*, Uint32, RBindResourceViewInfo*);
+typedef void            (*PFN_R_CMDBINDSAMPLER)(RCommandBuffer*, RSampler*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDPUSHCONSTANTS)(RCommandBuffer*, void*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDDISPATCH)(RCommandBuffer*, Uint32, Uint32, Uint32);
@@ -158,6 +161,10 @@ namespace Engine {
 		PFN_R_CREATESHADER            CreateShader;
 		PFN_R_DESTROYSHADER           DestroyShader;
 
+		// Sampler
+		PFN_R_CREATESAMPLER           CreateSampler;
+		PFN_R_DESTROYSAMPLER          DestroySampler;
+
 		// Commands
 		PFN_R_CMDBEGINRENDERPASS      CmdBeginRenderpass;
 		PFN_R_CMDENDRENDERPASS        CmdEndRenderpass;
@@ -165,6 +172,7 @@ namespace Engine {
 		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
 		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
 		PFN_R_CMDBINDRESOURCEVIEWS    CmdBindResourceViews;
+		PFN_R_CMDBINDSAMPLER          CmdBindSampler;
 		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;
 		PFN_R_CMDPUSHCONSTANTS        CmdPushConstants;
 		PFN_R_CMDDISPATCH             CmdDispatch;

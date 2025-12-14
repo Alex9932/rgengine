@@ -233,7 +233,8 @@ namespace Engine {
 		m_allocEntity->DeallocateAll();
 		m_allocTransform->DeallocateAll();
 		m_allocLight->DeallocateAll();
-		//m_entities.clear();
+		m_entities.clear();
+		m_static.clear();
 	}
 
 }

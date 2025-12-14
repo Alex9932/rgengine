@@ -41,6 +41,13 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	RBuffer* buffer = (RBuffer*)dev->allocator->Allocate(sizeof(RBuffer));
 	buffer->dev = dev;
 
+	// Remove the RG_BUFFER_TYPE_VERTEX flag if the buffer is used as shader resource
+	// its working perfectly on Nvidia and AMD drivers without this flag LoL
+
+	if (RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_VERTEX) && (RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_UNORDERED) || RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_STRUCTURED))) {
+		info->type &= ~RG_BUFFER_TYPE_VERTEX;
+	}
+	
 	buffer->access = info->access;
 	buffer->usage  = info->usage;
 	buffer->type   = info->type;
@@ -66,6 +73,7 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	}
 
 	HRESULT result = dev->dxdev->CreateBuffer(&buff, dataptr, &buffer->buffer);
+#if R_DXRENDER_DEBUG
 	if (result == E_INVALIDARG) {
 		// Check for common mistakes
 		if (buff.ByteWidth == 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid ByteWidth passed (%d)", buff.ByteWidth); }
@@ -74,6 +82,7 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 		if (buff.StructureByteStride > 2048) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: Invalid ByteWidth passed (%d)", buff.ByteWidth); }
 		if ((buff.BindFlags & D3D11_BIND_UNORDERED_ACCESS) == 0) { rgLogError(RG_LOG_RENDER, "DX11 Renderer: No RG_BUFFER_TYPE_UNORDERED flag passed!"); }
 	}
+#endif
 	RG_ASSERT_MSG(buffer->buffer, "Unable to create buffer: D3D11Buffer");
 	dev->buffersMemLen += buffer->length;
 	return buffer;
@@ -134,6 +143,12 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	dev->dxdev->CreateTexture2D(&textureDesc, NULL, &image->image);
 
 	dev->imageMemLen += info->width * info->height * GetFormatSize(info->format);
+
+	if (info->initialData) {
+		// TODO: Support other formats and mip levels
+		int rowPitch = (info->width * 4);
+		dev->dxctx->UpdateSubresource(image->image, 0, NULL, info->initialData, rowPitch, 0);
+	}
 
 	return image;
 }
@@ -237,8 +252,41 @@ void R_DestroyResourceView(RResourceView* rv) {
 	if (rv->type == R_DX_RESOURCEVIEW_DSV) {
 		rv->dsv->Release();
 	}
+	if (rv->type == R_DX_RESOURCEVIEW_SRV) {
+		rv->srv->Release();
+	}
+	if (rv->type == R_DX_RESOURCEVIEW_UAV) {
+		rv->uav->Release();
+	}
 
 	// Free rv
 
 	dev->allocator->Deallocate(rv);
+}
+
+RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
+	RSampler* sampler = (RSampler*)dev->allocator->Allocate(sizeof(RSampler));
+	sampler->dev = dev;
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.Filter         = GetFilter(info->filterMode);
+	sampDesc.AddressU       = GetAddressMode(info->addressModeU);
+	sampDesc.AddressV       = GetAddressMode(info->addressModeV);
+	sampDesc.AddressW       = GetAddressMode(info->addressModeW);
+	sampDesc.MipLODBias     = 0.0f;
+	sampDesc.MaxAnisotropy  = info->maxAnisotropy;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	sampDesc.BorderColor[0] = 0;
+	sampDesc.BorderColor[1] = 0;
+	sampDesc.BorderColor[2] = 0;
+	sampDesc.BorderColor[3] = 0;
+	sampDesc.MinLOD         = 0;
+	sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
+	dev->dxdev->CreateSamplerState(&sampDesc, &sampler->state);
+	return sampler;
+}
+
+void R_DestroySampler(RSampler* sampler) {
+	RRenderDevice* dev = sampler->dev;
+	sampler->state->Release();
+	dev->allocator->Deallocate(sampler);
 }

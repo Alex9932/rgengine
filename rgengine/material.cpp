@@ -1,5 +1,7 @@
 #include "material.h"
 #include "allocator.h"
+#include "texture.h"
+#include "filesystem.h"
 
 #include <map>
 
@@ -14,9 +16,28 @@ namespace Engine {
 		static R3D_Material* CreateMaterial(R3D_MaterialInfo* info) {
 			R3D_Material* material = (R3D_Material*)materialpool->Allocate();
 
-			material->albedo = NULL; // TODO: Load texture
-			material->normal = NULL; // TODO: Load texture
-			material->pbr    = NULL; // TODO: Load texture
+			char albedo[256];
+			char normal[256];
+			char pbr[256];
+			SDL_snprintf(albedo, 256, "%s/textures/%s.png",      GetGamedataPath(), info->texture);
+			SDL_snprintf(normal, 256, "%s/textures/%s_norm.png", GetGamedataPath(), info->texture);
+			SDL_snprintf(pbr,    256, "%s/textures/%s_pbr.png",  GetGamedataPath(), info->texture);
+
+			if (!FS_IsExist(albedo)) {
+				rgLogWarn(RG_LOG_RENDER, "Texture (%s) not found! Using default", albedo);
+				SDL_snprintf(albedo, 256, "platform/textures/def_diffuse.png", GetGamedataPath());
+			}
+			if (!FS_IsExist(normal)) {
+				SDL_snprintf(normal, 256, "platform/textures/def_normal.png", GetGamedataPath());
+			}
+			if (!FS_IsExist(pbr)) {
+				SDL_snprintf(pbr,    256, "platform/textures/def_pbr.png", GetGamedataPath());
+			}
+
+			// NEED FOR ~SPIRT~ TEXTURES
+			material->albedo = GetTexture(albedo);
+			material->normal = GetTexture(normal);
+			material->pbr    = GetTexture(pbr);
 
 			material->color = info->color;
 			material->refcounter = 1;
@@ -24,6 +45,9 @@ namespace Engine {
 		}
 
 		static void DestroyMaterial(R3D_Material* hmat) {
+			FreeTexture(hmat->albedo);
+			FreeTexture(hmat->normal);
+			FreeTexture(hmat->pbr);
 			materialpool->Deallocate(hmat);
 		}
 
@@ -38,18 +62,19 @@ namespace Engine {
 
 		R3D_Material* GetMaterial(R3D_MaterialInfo* info) {
 			Uint64 hash = rgHash(info, sizeof(R3D_MaterialInfo));
+			R3D_Material* mat = NULL;
 
 			// Return loaded material
 			if (materialcache.count(hash) != 0) {
-				R3D_Material* mat = materialcache[hash];
+				mat = materialcache[hash];
 				mat->refcounter++;
 				return mat;
 			}
 
 			// Create new material
-			R3D_Material* material = CreateMaterial(info);
-			materialcache[hash] = material;
-			return material;
+			mat = CreateMaterial(info);
+			materialcache[hash] = mat;
+			return mat;
 		}
 
 		void FreeMaterial(R3D_Material* hmat) {

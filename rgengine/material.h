@@ -3,10 +3,7 @@
 
 #include "rendertypes.h"
 
-typedef struct Texture {
-	RImage* img;
-	RResourceView* srv;
-} Texture;
+struct Texture;
 
 typedef struct R3D_Material {
 	Texture* albedo;

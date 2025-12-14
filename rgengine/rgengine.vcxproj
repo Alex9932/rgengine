@@ -174,6 +174,7 @@
     <ClCompile Include="pm2exporter.cpp" />
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="queue.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="renderctx.cpp" />
     <ClCompile Include="rgmath.cpp" />
@@ -189,6 +190,7 @@
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
     <ClCompile Include="staticobject.cpp" />
+    <ClCompile Include="texture.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="entity.cpp" />
@@ -243,6 +245,7 @@
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
+    <ClInclude Include="queue.h" />
     <ClInclude Include="renderctx.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rgentrypoint.h" />
@@ -254,6 +257,7 @@
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />
     <ClInclude Include="staticobject.h" />
+    <ClInclude Include="texture.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="logger.h" />

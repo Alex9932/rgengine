@@ -8,7 +8,7 @@
 #define R_RENDERER_NAME      "DirectX 11"
 #define R_RENDERER_SHORTNAME "dx11"
 
-#define R_DXRENDER_DEBUG 1
+#define R_DXRENDER_DEBUG 0
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
 
@@ -68,8 +68,9 @@ struct RImage {
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
 #define R_CMD_BIND_RESOURCEVIEWS 0x0014
+#define R_CMD_BIND_SAMPLER       0x0015
 
-#define R_CMD_PUSHCONSTANTS      0x0015
+#define R_CMD_PUSHCONSTANTS      0x0016
 
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022
@@ -155,6 +156,11 @@ struct RShader {
 	};
 };
 
+struct RSampler {
+	RRenderDevice* dev;
+	ID3D11SamplerState* state;
+};
+
 static DXGI_FORMAT GetFormat(RFormat format) {
 	switch (format) {
 		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
@@ -182,6 +188,24 @@ static Uint32 GetFormatSize(RFormat format) {
 		case RG_FORMAT_R32G32B32_FLOAT: return 32;
 		case RG_FORMAT_D32:             return 4;
 		default: return 1;
+	}
+}
+
+static D3D11_FILTER GetFilter(Uint8 filterMode) {
+	switch (filterMode) {
+		case RG_SAMPLER_FILTER_NEAREST:     return D3D11_FILTER_MIN_MAG_MIP_POINT;
+		case RG_SAMPLER_FILTER_LINEAR:      return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		case RG_SAMPLER_FILTER_ANISOTROPIC: return D3D11_FILTER_ANISOTROPIC;
+		default:                            return D3D11_FILTER_MIN_MAG_MIP_POINT;
+	}
+}
+
+static D3D11_TEXTURE_ADDRESS_MODE GetAddressMode(Uint8 addressMode) {
+	switch (addressMode) {
+		case RG_SAMPLER_ADDRESSMODE_REPEAT:        return D3D11_TEXTURE_ADDRESS_WRAP;
+		case RG_SAMPLER_ADDRESSMODE_MIRRORED:      return D3D11_TEXTURE_ADDRESS_MIRROR;
+		case RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE: return D3D11_TEXTURE_ADDRESS_CLAMP;
+		default:                                   return D3D11_TEXTURE_ADDRESS_WRAP;
 	}
 }
 

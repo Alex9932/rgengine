@@ -33,6 +33,7 @@ namespace Engine {
 		//void InitializeContext();
 		void SwapBuffers();
 
+		RRenderDevice* GetRenderDevice();
 		RenderBackend* GetRenderContext();
 
 		// ImGui window

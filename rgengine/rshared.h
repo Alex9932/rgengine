@@ -43,6 +43,8 @@ extern "C" {
 	extern RG_DECLSPEC void            R_DestroyPipeline(RPipeline* pl);
 	extern RG_DECLSPEC RShader*        R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyShader(RShader* shader);
+	extern RG_DECLSPEC RSampler*       R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroySampler(RSampler* sampler);
 
 	extern RG_DECLSPEC void            R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info);
 	extern RG_DECLSPEC void            R_CmdEndRenderpass(RCommandBuffer* cmdbuff);
@@ -50,6 +52,7 @@ extern "C" {
 	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot, Uint32 stride);
 	extern RG_DECLSPEC void            R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize);
 	extern RG_DECLSPEC void            R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views);
+	extern RG_DECLSPEC void            R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage);
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
 	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
 
