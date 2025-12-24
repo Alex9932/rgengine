@@ -13,36 +13,54 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\r2d">
-      <UniqueIdentifier>{9de3b65d-8ef9-461e-b760-91f79e6c7223}</UniqueIdentifier>
+    <Filter Include="Source Files\old">
+      <UniqueIdentifier>{1c74240c-a629-49da-bec1-e41aa8ed86dc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\r3d">
-      <UniqueIdentifier>{80206743-5b8d-47d2-9995-c944e0229438}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\r2d">
+    <Filter Include="Source Files\old\r2d">
       <UniqueIdentifier>{b9ee516d-8497-4b1e-9200-b99c15775189}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\r3d">
+    <Filter Include="Source Files\old\r3d">
       <UniqueIdentifier>{604ed750-6f42-4d41-a177-4475328844de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old">
+      <UniqueIdentifier>{ae5a94ec-4b0d-47a6-a47b-de1f92101a7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old\r2d">
+      <UniqueIdentifier>{9de3b65d-8ef9-461e-b760-91f79e6c7223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\old\r3d">
+      <UniqueIdentifier>{80206743-5b8d-47d2-9995-c944e0229438}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rgrendervk.cpp">
+    <ClCompile Include="r3d.cpp">
+      <Filter>Source Files\old\r3d</Filter>
+    </ClCompile>
+    <ClCompile Include="r2d.cpp">
+      <Filter>Source Files\old\r2d</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_vulkan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vk.cpp">
+      <Filter>Source Files\old</Filter>
+    </ClCompile>
+    <ClCompile Include="rgrendervk.cpp">
+      <Filter>Source Files\old</Filter>
+    </ClCompile>
+    <ClCompile Include="vkrenderimpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r3d.cpp">
-      <Filter>Source Files\r3d</Filter>
+    <ClCompile Include="commandsimpl.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r2d.cpp">
-      <Filter>Source Files\r2d</Filter>
+    <ClCompile Include="pipelineimpl.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui_impl_vulkan.cpp">
+    <ClCompile Include="resourcesimpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="swapchain.cpp">
@@ -50,19 +68,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="rgrendervk.h">
+    <ClInclude Include="r3d.h">
+      <Filter>Header Files\old\r3d</Filter>
+    </ClInclude>
+    <ClInclude Include="r2d.h">
+      <Filter>Header Files\old\r2d</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_vulkan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vk.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\old</Filter>
     </ClInclude>
-    <ClInclude Include="r3d.h">
-      <Filter>Header Files\r3d</Filter>
+    <ClInclude Include="rgrendervk.h">
+      <Filter>Header Files\old</Filter>
     </ClInclude>
-    <ClInclude Include="r2d.h">
-      <Filter>Header Files\r2d</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_impl_vulkan.h">
+    <ClInclude Include="rendertypesvk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="swapchain.h">

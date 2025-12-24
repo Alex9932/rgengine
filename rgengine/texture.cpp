@@ -45,6 +45,7 @@ namespace Engine {
 
 			RResourceViewCreateInfo srvinfo = {};
 			srvinfo.type = RG_RESOURCEVIEW_TYPE_SRV;
+			srvinfo.stage = RG_SHADER_TYPE_PIXEL;
 			srvinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
 			srvinfo.dst_image = tptr->img;
 			tptr->srv = rctx->CreateResourceView(rdev, &srvinfo);

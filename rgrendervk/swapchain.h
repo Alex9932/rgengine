@@ -3,16 +3,11 @@
 
 #include <SDL3/SDL.h>
 #include <vulkan/vulkan.h>
+#include "rendertypesvk.h"
 
-void CreateSwapchain(SDL_Window* hwnd);
-void MakeSwapchainFramebuffer();
-void DestroySwapchain();
-void ResizeSwapchain();
-
-Uint32 GetSwapchainImageCount();
-VkFramebuffer GetSwapchainFramebuffer(Uint32 idx);
-VkExtent2D GetSwapchainExtent();
-VkSwapchainKHR GetSwapchain();
-VkSurfaceFormatKHR GetSwapchainFormat();
+void CreateSwapchain(RRenderDevice* dev);
+void MakeSwapchainFramebuffer(RRenderDevice* dev);
+void DestroySwapchain(RRenderDevice* dev);
+void ResizeSwapchain(RRenderDevice* dev);
 
 #endif

@@ -81,6 +81,8 @@ typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
 typedef void            (*PFN_R_UPDATEBUFFER)(RUpdateBufferInfo*);
 typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
 typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
+typedef RFramebuffer*   (*PFN_R_CREATEFRAMEBUFFER)(RRenderDevice*, RFramebufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYFRAMEBUFFER)(RFramebuffer*);
 typedef RResourceView*  (*PFN_R_CREATERESOURCEVIEW)(RRenderDevice*, RResourceViewCreateInfo*);
 typedef void            (*PFN_R_DESTROYRESOURCEVIEW)(RResourceView*);
 typedef RRenderpass*    (*PFN_R_CREATERENDERPASS)(RRenderDevice*, RRenderpassCreateInfo*);
@@ -136,6 +138,10 @@ namespace Engine {
 		// Image
 		PFN_R_CREATEIMAGE			  CreateImage;
 		PFN_R_DESTROYIMAGE            DestroyImage;
+
+		// Framebuffer
+		PFN_R_CREATEFRAMEBUFFER       CreateFramebuffer;
+		PFN_R_DESTROYFRAMEBUFFER      DestroyFramebuffer;
 
 		// Command buffer
 		PFN_R_CREATECOMMANDBUFFER     CreateCommandBuffer;

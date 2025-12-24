@@ -65,6 +65,6 @@ void main(uint3 DTid : SV_DispatchThreadID) {
     output[idx].pos  = total_position.xyz;
     output[idx].norm = total_normal;
     output[idx].tang = total_tangent;
-    output[idx].uv   = vertices[idx].uv;
+    output[idx].uv   = in_vtx.uv;
 
 }

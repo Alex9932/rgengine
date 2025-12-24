@@ -1,3 +1,4 @@
+#if 0
 #define DLL_EXPORT
 #include "rgrendervk.h"
 
@@ -196,3 +197,4 @@ void R_GetInfo(RenderInfo* info) {
 #endif
 
 }
+#endif

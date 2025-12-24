@@ -47,26 +47,24 @@ static inline DXGI_FORMAT GetIndexType(IndexType type) {
 
 static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	RRenderpass* rp = (RRenderpass*)cmd->handle;
-	RRenderpassClearInfo* clearinfo = (RRenderpassClearInfo*)cmd->buffer;
+	Uint64 fb_ptr = *((Uint64*)&cmd->buffer[0]);
+	RFramebuffer* fb = (RFramebuffer*)fb_ptr;
+	RRenderpassClearInfo* clearinfo = (RRenderpassClearInfo*)&cmd->buffer[8];
 	RRenderDevice* dev = buffer->dev;
 
 	// Set render targets, clear, etc.
 
-	dev->dxctx->OMSetRenderTargets(rp->rtv_count, rp->rtv, rp->dsv);
-	dev->dxctx->OMSetDepthStencilState(rp->depth_stencil_state, 1);
-	dev->dxctx->RSSetState(rp->raster_state);
+	dev->dxctx->OMSetRenderTargets(fb->rtv_count, fb->rtv, fb->dsv);
 
 	if (cmd->_off0) {
-		for (Uint32 i = 0; i < rp->rtv_count; i++) {
-			dev->dxctx->ClearRenderTargetView(rp->rtv[i], clearinfo->color[i].array);
+		for (Uint32 i = 0; i < fb->rtv_count; i++) {
+			dev->dxctx->ClearRenderTargetView(fb->rtv[i], clearinfo->color[i].array);
 		}
-		if (rp->dsv) {
-			dev->dxctx->ClearDepthStencilView(rp->dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearinfo->depth, (Uint8)clearinfo->stencil);
+		if (fb->dsv) {
+			dev->dxctx->ClearDepthStencilView(fb->dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearinfo->depth, (Uint8)clearinfo->stencil);
 		}
 	}
 
-	Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	dev->dxctx->OMSetBlendState(rp->blend_state, blendFactor, 0xffffffff);
 
 	D3D11_VIEWPORT pViewport = {};
 	pViewport.TopLeftX = rp->viewport.x;
@@ -83,9 +81,19 @@ static RG_INLINE void CMD_EndRenderpassImpl(RCommandBuffer* buffer, RCommand* cm
 }
 
 static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RRenderDevice* dev = buffer->dev;
 	RPipeline* pl = (RPipeline*)cmd->handle;
 
 	if (pl->type == RG_PIPELINE_TYPE_GRAPHICS) {
+
+
+		dev->dxctx->OMSetDepthStencilState(pl->depth_stencil_state, 1);
+		dev->dxctx->RSSetState(pl->raster_state);
+
+		Float32 blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		dev->dxctx->OMSetBlendState(pl->blend_state, blendFactor, 0xffffffff);
+
+
 		// Bind graphics pipeline
 		buffer->dev->dxctx->IASetInputLayout(pl->layout);
 		buffer->dev->dxctx->VSSetShader(pl->vs, NULL, 0);
@@ -284,12 +292,28 @@ static RG_INLINE RCommand* AllocateNextCommand(RCommandBuffer* cmdbuff) {
 void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	cmd->cmd    = R_CMD_BEGIN_RENDERPASS;
-	cmd->handle = info->renderpass;
+	cmd->handle = NULL;
 	cmd->_off0  = 0;
+
+	// Use default renderpass
+	if (!info) {
+		RRenderDevice* dev = cmdbuff->dev;
+		cmd->handle = dev->default_renderpass;
+		SDL_memcpy(cmd->buffer, &dev->default_framebuffers[dev->currentframe], sizeof(RFramebuffer*));
+		return;
+	}
+
+	cmd->handle = info->renderpass;
+
+	// WARN: Memory layout dependency
+
+	// Store framebuffer pointer
+	SDL_memcpy(cmd->buffer, &info->framebuffer, sizeof(RFramebuffer*));
+
+	// Store clear info
 	if (info->clearinfo) {
-		// WARN: Memory layout dependency
 		cmd->_off0 = 1;
-		SDL_memcpy(&cmd->buffer, info->clearinfo, sizeof(RRenderpassClearInfo));
+		SDL_memcpy(&cmd->buffer[8], info->clearinfo, sizeof(RRenderpassClearInfo));
 	}
 }
 

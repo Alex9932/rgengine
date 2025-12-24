@@ -30,6 +30,8 @@
 
 #include <vector>
 
+#define R_BUFFER_COUNT 2
+
 enum ModelType {
     R_MODEL_STATIC = 0,
     R_MODEL_RIGGED = 1
@@ -73,9 +75,7 @@ namespace Engine {
         static RenderBackend        renderctx              = {};
         static RRenderDevice*       rdev                   = NULL;
 
-        static RResourceView*       backbuffer             = NULL;
 
-        static RRenderpass*         renderpass             = NULL;
         static RCommandBuffer*      cmdbuffer              = NULL;
 
         static Bool isWindowResized = false;
@@ -89,7 +89,11 @@ namespace Engine {
         } mat_camera;
 
         // Test
+		static Uint32 frameIndex = 0;
+        static RResourceView* backbuffer[R_BUFFER_COUNT] = {};
+        static RFramebuffer* framebuffer3d[R_BUFFER_COUNT] = {};
         static RRenderpass* renderpass3d = NULL;
+
 		static RPipeline* pipeline3d = NULL;
 		static RShader* shader_vs = NULL;
 		static RShader* shader_ps = NULL;
@@ -204,21 +208,6 @@ namespace Engine {
 			wndrect.width  = wndSize.x;
 			wndrect.height = wndSize.y;
 
-            // Get swapchain backbuffer and renderpass
-            RResourceViewCreateInfo backbufferinfo = {};
-            backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
-            backbufferinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
-            backbufferinfo.var = 0; // Use first buffer only
-            backbuffer = renderctx.CreateResourceView(rdev, &backbufferinfo);
-
-            RRenderpassCreateInfo rpinfo = {};
-            rpinfo.viewport = wndrect;
-            rpinfo.rt_count = 1;
-            rpinfo.rts[0] = backbuffer;
-            rpinfo.dsv = NULL; // Do not use depth buffer
-            rpinfo.cullmode = RG_RENDERPASS_CULLMODE_BACK;
-            rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
-            renderpass = renderctx.CreateRenderpass(rdev, &rpinfo);
 
             // Create 3d renderpass
             RImageCreateInfo dbinfo = {};
@@ -233,24 +222,117 @@ namespace Engine {
             depthbuffer_rv = renderctx.CreateResourceView(rdev, &drvinfo);
 
             RRenderpassCreateInfo rp3dinfo = {};
-            rp3dinfo.viewport = wndrect;
-            rp3dinfo.rt_count = 1;
-            rp3dinfo.rts[0] = backbuffer;
-            rp3dinfo.dsv = depthbuffer_rv;
-            rp3dinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
-            rp3dinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+            rp3dinfo.rt_count  = 1;
+            rp3dinfo.use_depth = true;
+            rp3dinfo.viewport  = wndrect;
+            rp3dinfo.rt_formats[0] = RG_FORMAT_R8G8B8A8_UNORM;
             renderpass3d = renderctx.CreateRenderpass(rdev, &rp3dinfo);
+
+            for (Uint32 i = 0; i < R_BUFFER_COUNT; i++) {
+                
+                // Get swapchain backbuffer and renderpass
+                RResourceViewCreateInfo backbufferinfo = {};
+                backbufferinfo.type = RG_RESOURCEVIEW_TYPE_BBV;
+                backbufferinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
+                backbufferinfo.var = i; // Use first buffer only
+                backbuffer[i] = renderctx.CreateResourceView(rdev, &backbufferinfo);
+
+                RFramebufferCreateInfo fbinfo = {};
+			    fbinfo.width      = wndSize.x;
+			    fbinfo.height     = wndSize.y;
+			    fbinfo.rt_count   = 1;
+			    fbinfo.rts[0]     = backbuffer[i];
+			    fbinfo.dsv        = depthbuffer_rv;
+			    fbinfo.renderpass = renderpass3d;
+                framebuffer3d[i] = renderctx.CreateFramebuffer(rdev, &fbinfo);
+            }
+
+            RPipelineLayoutDescription layout = {};
+            layout.binding_count = 4;
+            layout.bindings[0].binding = 0;
+            layout.bindings[0].stage   = RG_SHADER_TYPE_PIXEL;
+            layout.bindings[0].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+            layout.bindings[1].binding = 1;
+            layout.bindings[1].stage   = RG_SHADER_TYPE_PIXEL;
+            layout.bindings[1].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+            layout.bindings[2].binding = 2;
+            layout.bindings[2].stage   = RG_SHADER_TYPE_PIXEL;
+            layout.bindings[2].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+            layout.bindings[3].binding = 3;
+            layout.bindings[3].stage   = RG_SHADER_TYPE_PIXEL;
+            layout.bindings[3].type    = RG_DESCRIPTOR_TYPE_SAMPLER;
+
+			RPipelineInputDescription layoutdescriptions[4] = {};
+            layoutdescriptions[0].format = RG_FORMAT_R32G32B32_FLOAT;
+            layoutdescriptions[0].inputSlot = 0;
+            layoutdescriptions[0].name = "POSITION";
+            layoutdescriptions[1].format = RG_FORMAT_R32G32B32_FLOAT;
+            layoutdescriptions[1].inputSlot = 0;
+            layoutdescriptions[1].name = "NORMAL";
+            layoutdescriptions[2].format = RG_FORMAT_R32G32B32_FLOAT;
+            layoutdescriptions[2].inputSlot = 0;
+            layoutdescriptions[2].name = "TANGENT";
+            layoutdescriptions[3].format = RG_FORMAT_R32G32_FLOAT;
+            layoutdescriptions[3].inputSlot = 0;
+            layoutdescriptions[3].name = "VPOS";
+            RPipelineCreateInfo plinfo = {};
+            plinfo.type          = RG_PIPELINE_TYPE_GRAPHICS;
+            plinfo.vertex_shader = shader_vs;
+            plinfo.pixel_shader  = shader_ps;
+			plinfo.inputCount    = 4;
+            plinfo.descriptions  = layoutdescriptions;
+            plinfo.renderpass    = renderpass3d;
+            plinfo.layout        = &layout;
+            plinfo.cullmode      = RG_RENDERPASS_CULLMODE_BACK;
+            plinfo.fillmode      = RG_RENDERPASS_FILLMODE_SOLID;
+
+            pipeline3d = renderctx.CreatePipeline(rdev, &plinfo);
+            
+
+            RPipelineLayoutDescription cslayout = {};
+            cslayout.binding_count = 4;
+            // Matrices
+            cslayout.bindings[0].binding = 0;
+            cslayout.bindings[0].stage   = RG_SHADER_TYPE_COMPUTE;
+            cslayout.bindings[0].type    = RG_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            // Input vertices
+            cslayout.bindings[1].binding = 1;
+            cslayout.bindings[1].stage   = RG_SHADER_TYPE_COMPUTE;
+            cslayout.bindings[1].type    = RG_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            // Input weights
+            cslayout.bindings[2].binding = 2;
+            cslayout.bindings[2].stage   = RG_SHADER_TYPE_COMPUTE;
+            cslayout.bindings[2].type    = RG_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            // Output vertices
+            cslayout.bindings[3].binding = 3;
+            cslayout.bindings[3].stage   = RG_SHADER_TYPE_COMPUTE;
+            cslayout.bindings[3].type    = RG_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+            RPipelineCreateInfo cplinfo = {};
+            cplinfo.type = RG_PIPELINE_TYPE_COMPUTE;
+            cplinfo.compute_shader = skinning_shader;
+            cplinfo.inputCount     = 0;
+            cplinfo.descriptions   = NULL;
+            cplinfo.layout         = &cslayout;
+            skinning_pipeline = renderctx.CreatePipeline(rdev, &cplinfo);
 
         }
 
         static void DestroyFramebuffers() {
 
+            renderctx.DestroyPipeline(skinning_pipeline);
+
+            renderctx.DestroyPipeline(pipeline3d);
+
+            for (Uint32 i = 0; i < R_BUFFER_COUNT; i++) {
+                renderctx.DestroyFramebuffer(framebuffer3d[i]);
+                renderctx.DestroyResourceView(backbuffer[i]);
+            }
             renderctx.DestroyRenderpass(renderpass3d);
+
             renderctx.DestroyImage(depthbuffer);
             renderctx.DestroyResourceView(depthbuffer_rv);
 
-            renderctx.DestroyRenderpass(renderpass);
-            renderctx.DestroyResourceView(backbuffer);
         }
 
         void InitSubSystem(SDL_Window* hwnd) {
@@ -264,8 +346,6 @@ namespace Engine {
             InitializeMaterials();
             InitializeTextures();
 
-            CreateFramebuffers();
-
 
             RCommandBufferCreateInfo cmdbuffinfo = {};
             cmdbuffinfo.maxcmds = 128;
@@ -274,28 +354,24 @@ namespace Engine {
             renderctx.ImGui_Init(rdev);
 
             RShaderCreateInfo csinfo = {};
-            csinfo.isCompiled = false;
+            //csinfo.isCompiled = false;
+            csinfo.isCompiled = true;
             csinfo.name = "skinning.cs";
             csinfo.type = RG_SHADER_TYPE_COMPUTE;
             skinning_shader = renderctx.CreateShader(rdev, &csinfo);
 
-            RPipelineCreateInfo cplinfo = {};
-            cplinfo.type = RG_PIPELINE_TYPE_COMPUTE;
-            cplinfo.compute_shader = skinning_shader;
-            cplinfo.inputCount     = 0;
-            cplinfo.descriptions   = NULL;
-            skinning_pipeline = renderctx.CreatePipeline(rdev, &cplinfo);
-
 
             /////////////////////////////////////////////////////
             RShaderCreateInfo vsinfo = {};
-            vsinfo.isCompiled = false;
+            //vsinfo.isCompiled = false;
+            vsinfo.isCompiled = true;
             vsinfo.name = "fwd_test.vs";
             vsinfo.type = RG_SHADER_TYPE_VERTEX;
             shader_vs = renderctx.CreateShader(rdev, &vsinfo);
 
             RShaderCreateInfo psinfo = {};
-            psinfo.isCompiled = false;
+            //psinfo.isCompiled = false;
+            psinfo.isCompiled = true;
             psinfo.name = "fwd_test.ps";
             psinfo.type = RG_SHADER_TYPE_PIXEL;
             shader_ps = renderctx.CreateShader(rdev, &psinfo);
@@ -314,31 +390,10 @@ namespace Engine {
 			sampler_linear = renderctx.CreateSampler(rdev, &samplerinfo);
 
 
-			RPipelineInputDescription inputdescriptions[4] = {};
-			inputdescriptions[0].format = RG_FORMAT_R32G32B32_FLOAT;
-			inputdescriptions[0].inputSlot = 0;
-			inputdescriptions[0].name = "POSITION";
-			inputdescriptions[1].format = RG_FORMAT_R32G32B32_FLOAT;
-			inputdescriptions[1].inputSlot = 0;
-			inputdescriptions[1].name = "NORMAL";
-			inputdescriptions[2].format = RG_FORMAT_R32G32B32_FLOAT;
-			inputdescriptions[2].inputSlot = 0;
-			inputdescriptions[2].name = "TANGENT";
-			inputdescriptions[3].format = RG_FORMAT_R32G32_FLOAT;
-			inputdescriptions[3].inputSlot = 0;
-			inputdescriptions[3].name = "VPOS";
-            RPipelineCreateInfo plinfo = {};
-            plinfo.type          = RG_PIPELINE_TYPE_GRAPHICS;
-            plinfo.vertex_shader = shader_vs;
-            plinfo.pixel_shader  = shader_ps;
-			plinfo.inputCount    = 4;
-            plinfo.descriptions = inputdescriptions;
-
-            pipeline3d = renderctx.CreatePipeline(rdev, &plinfo);
+            CreateFramebuffers();
 
 #if 0
             
-
             R2D_Vertex r2d_vertices[] = {
                 /*
                 { -0.5f, -0.5f, 0.0f, 1.0f, 1, 0, 0, 1 },
@@ -383,12 +438,10 @@ namespace Engine {
 			renderctx.DestroyCommandBuffer(cmdbuffer);
 
             renderctx.DestroyShader(skinning_shader);
-            renderctx.DestroyPipeline(skinning_pipeline);
 
 			renderctx.DestroySampler(sampler_linear);
             renderctx.DestroyShader(shader_vs);
             renderctx.DestroyShader(shader_ps);
-            renderctx.DestroyPipeline(pipeline3d);
 
 
             DestroyFramebuffers();
@@ -433,6 +486,9 @@ namespace Engine {
 
             renderctx.SwapBuffers(rdev, &sbinfo);
 
+            frameIndex++;
+            frameIndex = frameIndex % R_BUFFER_COUNT;
+
             DoLoadTextures();
             
             if (isWindowResized) {
@@ -440,6 +496,7 @@ namespace Engine {
 
                 // Recreate swapchain, framebuffers and renderpasses
                 CreateFramebuffers();
+                frameIndex = 0;
             }
         }
 
@@ -607,93 +664,106 @@ namespace Engine {
             // Render scene
             // TODO
 
+#if 1
             {
                 renderctx.ResetCommandBuffer(cmdbuffer);
                 renderctx.BeginCommandBuffer(cmdbuffer);
-                {
-					// Calculate skeleton animations
-					renderctx.CmdBindPipeline(cmdbuffer, skinning_pipeline);
-                    for (Uint32 i = 0; i < mdlsystem->GetRiggedModelCount(); i++) {
-                        RiggedModelComponent* com = mdlsystem->GetRiggedModelComponent(i);
-                        R3D_BoneBuffer* bbuf = com->GetKinematicsModel()->GetBufferHandle();
-                        R3D_RiggedModel* mdl = com->GetHandle(); //->s_model.iCount
 
-                        RBindResourceViewInfo info[4] = {};
-                        info[0].rv     = bbuf->rv;
-                        info[0].slot   = 0;
-                        info[0].target = RG_PIPELINE_TYPE_COMPUTE;
-                        info[0].type   = RG_RESOURCEVIEW_TYPE_SRV;
-						info[1].rv     = mdl->i_srv_vtx;
-                        info[1].slot   = 1;
-                        info[1].target = RG_PIPELINE_TYPE_COMPUTE;
-                        info[1].type   = RG_RESOURCEVIEW_TYPE_SRV;
-                        info[2].rv     = mdl->i_srv_wht;
-                        info[2].slot   = 2;
-                        info[2].target = RG_PIPELINE_TYPE_COMPUTE;
-                        info[2].type   = RG_RESOURCEVIEW_TYPE_SRV;
-                        info[3].rv     = mdl->s_uav;
-                        info[3].slot   = 0;
-						info[3].target = RG_PIPELINE_TYPE_COMPUTE;
-                        info[3].type   = RG_RESOURCEVIEW_TYPE_UAV;
-                        renderctx.CmdBindResourceViews(cmdbuffer, 4, info);
+                // Calculate skeleton animations
+                renderctx.CmdBindPipeline(cmdbuffer, skinning_pipeline);
+                for (Uint32 i = 0; i < mdlsystem->GetRiggedModelCount(); i++) {
+                    RiggedModelComponent* com = mdlsystem->GetRiggedModelComponent(i);
+                    R3D_BoneBuffer* bbuf = com->GetKinematicsModel()->GetBufferHandle();
+                    R3D_RiggedModel* mdl = com->GetHandle(); //->s_model.iCount
 
-						renderctx.CmdDispatch(cmdbuffer, mdl->vCount, 1, 1);
-                    }
+                    RBindResourceViewInfo info[4] = {};
+                    info[0].rv = bbuf->rv;
+                    info[0].slot = 0;
+                    info[0].target = RG_PIPELINE_TYPE_COMPUTE;
+                    info[0].type = RG_RESOURCEVIEW_TYPE_SRV;
+                    info[1].rv = mdl->i_srv_vtx;
+                    info[1].slot = 1;
+                    info[1].target = RG_PIPELINE_TYPE_COMPUTE;
+                    info[1].type = RG_RESOURCEVIEW_TYPE_SRV;
+                    info[2].rv = mdl->i_srv_wht;
+                    info[2].slot = 2;
+                    info[2].target = RG_PIPELINE_TYPE_COMPUTE;
+                    info[2].type = RG_RESOURCEVIEW_TYPE_SRV;
+                    info[3].rv = mdl->s_uav;
+                    info[3].slot = 3;
+                    info[3].target = RG_PIPELINE_TYPE_COMPUTE;
+                    info[3].type = RG_RESOURCEVIEW_TYPE_UAV;
+                    renderctx.CmdBindResourceViews(cmdbuffer, 4, info);
 
-					// Draw 3D scene
-
-					RRenderpassClearInfo clearinfo = {};
-                    clearinfo.color[0] = { 0, 0, 0, 1 };
-                    clearinfo.depth = 1.0f;
-                    clearinfo.stencil = 0;
-                    RRenderpassBeginInfo rpbegininfo = {};
-                    rpbegininfo.renderpass = renderpass3d;
-                    rpbegininfo.clearinfo = &clearinfo;
-                    renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
-                    renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
-					renderctx.CmdBindSampler(cmdbuffer, sampler_linear, 0, RG_SHADER_TYPE_PIXEL);
-
-					// Draw entities
-
-                    for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
-						Entity* ent = world->GetEntity(i);
-                        ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
-                        RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
-
-                        mat_camera.model = *ent->GetTransform()->GetMatrix();
-
-                        if (mc) {
-                            DrawStatic(cmdbuffer, mc->GetHandle());
-                        }
-
-                        if (rmc) {
-                            DrawStatic(cmdbuffer, &rmc->GetHandle()->s_model);
-                        }
-
-                    }
-
-
-                    // Draw static models
-
-                    for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
-                        StaticObject* staticobj = world->GetStaticObject(i);
-
-                        mat_camera.model = *staticobj->GetMatrix();
-                        R3D_StaticModel* staticmdl = staticobj->GetModelHandle();
-
-						DrawStatic(cmdbuffer, staticmdl);
-                    }
-
-
-                    renderctx.CmdEndRenderpass(cmdbuffer);
+                    renderctx.CmdDispatch(cmdbuffer, mdl->vCount, 1, 1);
                 }
+
+                renderctx.EndCommandBuffer(cmdbuffer);
+
+                RCommandBufferSubmitInfo submitinfo = {};
+                submitinfo.buffer = cmdbuffer;
+                renderctx.SubmitCommandBuffer(&submitinfo);
+
+            }
+
+            {
+                renderctx.ResetCommandBuffer(cmdbuffer);
+                renderctx.BeginCommandBuffer(cmdbuffer);
+
+				// Draw 3D scene
+				RRenderpassClearInfo clearinfo = {};
+                clearinfo.color[0] = { 0, 0, 0, 1 };
+                clearinfo.depth    = 1.0f;
+                clearinfo.stencil  = 0;
+                RRenderpassBeginInfo rpbegininfo = {};
+				rpbegininfo.framebuffer = framebuffer3d[frameIndex];
+                rpbegininfo.renderpass  = renderpass3d;
+                rpbegininfo.clearinfo   = &clearinfo;
+                renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
+                renderctx.CmdBindPipeline(cmdbuffer, pipeline3d);
+				renderctx.CmdBindSampler(cmdbuffer, sampler_linear, 3, RG_SHADER_TYPE_PIXEL);
+
+				// Draw entities
+
+                for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
+					Entity* ent = world->GetEntity(i);
+                    ModelComponent* mc = ent->GetComponent(Component_MODELCOMPONENT)->AsModelComponent();
+                    RiggedModelComponent* rmc = ent->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+
+                    mat_camera.model = *ent->GetTransform()->GetMatrix();
+
+                    if (mc) {
+                        DrawStatic(cmdbuffer, mc->GetHandle());
+                    }
+
+                    if (rmc) {
+                        DrawStatic(cmdbuffer, &rmc->GetHandle()->s_model);
+                    }
+
+                }
+
+
+                // Draw static models
+
+                for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
+                    StaticObject* staticobj = world->GetStaticObject(i);
+
+                    mat_camera.model = *staticobj->GetMatrix();
+                    R3D_StaticModel* staticmdl = staticobj->GetModelHandle();
+
+					DrawStatic(cmdbuffer, staticmdl);
+                }
+
+
+                renderctx.CmdEndRenderpass(cmdbuffer);
+
                 renderctx.EndCommandBuffer(cmdbuffer);
 
                 RCommandBufferSubmitInfo submitinfo = {};
                 submitinfo.buffer = cmdbuffer;
                 renderctx.SubmitCommandBuffer(&submitinfo);
             }
-
+#endif
             // Update ImGui
             renderctx.ImGui_NewFrame(rdev);
             ImGui_ImplSDL3_NewFrame();
@@ -714,10 +784,7 @@ namespace Engine {
                 renderctx.ResetCommandBuffer(cmdbuffer);
                 renderctx.BeginCommandBuffer(cmdbuffer);
                 {
-                    RRenderpassBeginInfo rpbegininfo = {};
-                    rpbegininfo.renderpass = renderpass;
-                    rpbegininfo.clearinfo = NULL;
-                    renderctx.CmdBeginRenderpass(cmdbuffer, &rpbegininfo);
+                    renderctx.CmdBeginRenderpass(cmdbuffer, NULL);
                     renderctx.CmdImGuiRenderDrawData(cmdbuffer, ImGui::GetDrawData());
                     renderctx.CmdEndRenderpass(cmdbuffer);
                 }
@@ -970,6 +1037,7 @@ namespace Engine {
 			// Resource views for input buffers
 			RResourceViewCreateInfo rvinfo = {};
 			rvinfo.type        = RG_RESOURCEVIEW_TYPE_SRV;
+            rvinfo.stage       = RG_SHADER_TYPE_COMPUTE;
             rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
 			rvinfo.elements    = info->vCount;
 
@@ -981,6 +1049,7 @@ namespace Engine {
 			// Resource view for output vertex buffer
             rvinfo = {};
             rvinfo.type        = RG_RESOURCEVIEW_TYPE_UAV;
+            rvinfo.stage       = RG_SHADER_TYPE_COMPUTE;
             rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
             rvinfo.elements    = info->vCount;
             rvinfo.dst_buffer  = rigmdl->s_model.vBuffer;
@@ -1026,6 +1095,7 @@ namespace Engine {
 
             RResourceViewCreateInfo rvinfo = {};
             rvinfo.type        = RG_RESOURCEVIEW_TYPE_SRV;
+            rvinfo.stage       = RG_SHADER_TYPE_COMPUTE;
             rvinfo.buffer_type = RG_RESOURCEVIEW_BUFFER;
             rvinfo.elements    = info->len / sizeof(mat4);
             rvinfo.dst_buffer  = bonebuf->buffer;

@@ -12,22 +12,26 @@ cbuffer ConstBuffer : register(b0) {
 	float4 color;
 };
 
-Texture2D shaderTexture : register(t0);
+Texture2D t_albedo : register(t0);
+Texture2D t_normal : register(t1);
+Texture2D t_pbr    : register(t2);
 SamplerState SampleType : register(s0);
 
 PSOUTPUT pmain(PSINPUT psin) {
 
-	float4 textureColor = shaderTexture.Sample(SampleType, psin.uv);
+	float4 albd = t_albedo.Sample(SampleType, psin.uv);
+	float4 nrml = t_normal.Sample(SampleType, psin.uv);
+	float4 pbr  = t_pbr.Sample(SampleType, psin.uv);
 
-	if(textureColor.a < 0.8) {
+	if(albd.a < 0.8) {
 		//discard;
 	}
 
 	float3 col = {0, 0, 1};
 
 	PSOUTPUT pout;
-	//pout.color.xyz = textureColor.xyz * color.xyz;
-	pout.color.xyz = color.xyz;
+	pout.color.xyz = albd.xyz * color.xyz;
+	//pout.color.xyz = color.xyz;
 	pout.color.w = 1;
 	return pout;
 

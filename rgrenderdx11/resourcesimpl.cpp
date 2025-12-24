@@ -237,7 +237,15 @@ RResourceView* R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo*
 	// Backbuffer view
 	if (info->type == RG_RESOURCEVIEW_TYPE_BBV) {
 		rv->type = R_DX_RESOURCEVIEW_RTV;
-		dev->dxdev->CreateRenderTargetView(dev->backbuffers[info->var], NULL, &rv->rtv);
+
+		ID3D11Texture2D* backbufferTex = NULL;
+		//HRESULT t = dev->dxswapchain->GetBuffer(info->var, IID_ID3D11Texture2D, (void**)&backbufferTex);
+		HRESULT t = dev->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&backbufferTex);
+		RG_ASSERT_MSG(SUCCEEDED(t), "Unable to get swapchain buffers");
+
+		t = dev->dxdev->CreateRenderTargetView(backbufferTex, NULL, &rv->rtv);
+		RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
+		backbufferTex->Release();
 	}
 
 	return rv;

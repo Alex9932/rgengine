@@ -33,6 +33,10 @@ namespace Engine {
 		ctx->CreateImage          = (PFN_R_CREATEIMAGE)Engine::DL_GetProcAddress(handle, "R_CreateImage");
 		ctx->DestroyImage         = (PFN_R_DESTROYIMAGE)Engine::DL_GetProcAddress(handle, "R_DestroyImage");
 
+        // Framebuffer
+        ctx->CreateFramebuffer    = (PFN_R_CREATEFRAMEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateFramebuffer");
+        ctx->DestroyFramebuffer   = (PFN_R_DESTROYFRAMEBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyFramebuffer");
+
 		// Command Queue
 		ctx->CreateCommandBuffer  = (PFN_R_CREATECOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateCommandBuffer");
 		ctx->DestroyCommandBuffer = (PFN_R_DESTROYCOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_DestroyCommandBuffer");

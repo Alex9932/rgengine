@@ -1,7 +1,7 @@
 #ifndef _RENDERTYPESDX_H
 #define _RENDERTYPESDX_H
 
-#include "rendertypes.h"
+#include <rendertypes.h>
 #include <d3d11.h>
 #include <allocator.h>
 
@@ -16,7 +16,13 @@ struct RRenderDevice {
 	ID3D11Device*        dxdev;
 	ID3D11DeviceContext* dxctx;
 	IDXGISwapChain*      dxswapchain;
-	ID3D11Texture2D*     backbuffers[8];
+	Uint32               currentframe;
+	Uint32               backbuffer_count;
+	//ID3D11Texture2D*     backbuffers[8];
+
+	RRenderpass*         default_renderpass;
+	RResourceView*       default_backbuffers[8];
+	RFramebuffer*        default_framebuffers[8];
 
 #if R_DXRENDER_DEBUG
 	ID3D11Debug*         dxdbg;
@@ -128,17 +134,26 @@ struct RPipeline {
 	ID3D11PixelShader*    ps; // Pixel
 	ID3D11GeometryShader* gs; // Geometry
 	ID3D11ComputeShader*  cs; // Compute
-};
-
-struct RRenderpass {
-	RRenderDevice*           dev;
-	Uint32 				     rtv_count;
-	RRect                    viewport;
-	ID3D11RenderTargetView*  rtv[6];  // Render target (dx11 only 8 RTVs)
-	ID3D11DepthStencilView*  dsv;     // Depth stencil
+	// Raster state
 	ID3D11BlendState*        blend_state;
 	ID3D11RasterizerState*   raster_state;
 	ID3D11DepthStencilState* depth_stencil_state;
+};
+
+struct RFramebuffer {
+	RRenderDevice* dev;
+	Uint16         width;
+	Uint16         height;
+	Uint32         rtv_count;
+	ID3D11RenderTargetView* rtv[6];  // Render target (dx11 only 8 RTVs)
+	ID3D11DepthStencilView* dsv;     // Depth stencil
+};
+
+struct RRenderpass {
+	RRenderDevice* dev;
+	Uint32         rt_count;
+	Uint32         use_depth;
+	RRect          viewport;
 };
 
 struct RShader {

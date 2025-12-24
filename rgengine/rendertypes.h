@@ -59,6 +59,7 @@ typedef struct RSampler RSampler;
 typedef struct RShader RShader;
 
 typedef struct RPipeline RPipeline;
+typedef struct RFramebuffer RFramebuffer;
 typedef struct RRenderpass RRenderpass;
 
 ////////////
@@ -83,6 +84,17 @@ typedef struct RImageCreateInfo {
 	Uint32  height;
 	void*   initialData;
 } RImageCreateInfo;
+
+// Framebuffer
+
+typedef struct RFramebufferCreateInfo {
+	Uint16 width;
+	Uint16 height;
+	Uint32 rt_count;
+	RResourceView* rts[6];
+	RResourceView* dsv;
+	RRenderpass*   renderpass;
+} RFramebufferCreateInfo;
 
 // Buffer
 
@@ -131,7 +143,8 @@ typedef struct RCommandBufferCreateInfo {
 #define RG_RESOURCEVIEW_BUFFER 0x1
 
 typedef struct RResourceViewCreateInfo {
-	Uint16 type;
+	Uint8  type;
+	Uint8  stage;
 	Uint16 buffer_type;
 
 	union {
@@ -151,24 +164,49 @@ typedef struct RResourceViewCreateInfo {
 #define RG_PIPELINE_TYPE_COMPUTE  0x2
 
 
-typedef  struct RPipelineInputDescription {
+typedef struct RPipelineInputDescription {
 	String name;
 	Uint32 inputSlot;
 	RFormat format;
 } RPipelineInputDescription;
 
+#define RG_DESCRIPTOR_TYPE_SAMPLER        0x01
+#define RG_DESCRIPTOR_TYPE_IMAGE          0x02
+#define RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER 0x03
+#define RG_DESCRIPTOR_TYPE_STORAGE_BUFFER 0x04
+
+typedef struct RPipelineLayoutBinding {
+	Uint8 binding;
+	Uint8 type;
+	Uint8 stage;
+	Uint8 _offset;
+} RPipelineLayoutBinding;
+
+typedef struct RPipelineLayoutDescription {
+	RPipelineLayoutBinding bindings[16];
+	Uint32 binding_count;
+} RPipelineLayoutDescription;
+
 typedef struct RPipelineCreateInfo {
 	Uint8    type; // Graphics, compute
 	Uint8    _off0;
-	Uint16   _off1;
-	Uint32   _off2;
+	Uint8    cullmode;
+	Uint8    fillmode;
+	Uint32   inputCount;
+
 	RShader* vertex_shader;
 	RShader* pixel_shader;
 	RShader* geometry_shader;
-	RShader* compute_shader;
-	
-	Uint32   inputCount;
+
+	// Use union for less memory usage
+	union {
+		void* cs_or_pl_pointer;
+		RShader* compute_shader; // Used for create compute pipeline
+		RRenderpass* renderpass; // Used for create graphics pipeline
+	};
+
 	RPipelineInputDescription* descriptions;
+	RPipelineLayoutDescription* layout;
 } RPipelineCreateInfo;
 
 // Renderpass
@@ -188,16 +226,12 @@ typedef struct RRect {
 } RRect;
 
 typedef struct RRenderpassCreateInfo {
-	Uint8  cullmode;
-	Uint8  fillmode;
-	Uint16 _off1;
-	Uint32 rt_count;
-	RRect  viewport;
-	RResourceView* rts[6];
-	RResourceView* dsv;
+	Uint16  _offset;
+	Uint8   rt_count;
+	Uint8   use_depth;
+	RRect   viewport;
+	RFormat rt_formats[6];
 	// TODO: add blend, rasterizer, depth-stencil states
-
-
 } RRenderpassCreateInfo;
 
 typedef struct RRenderpassClearInfo {
@@ -208,13 +242,14 @@ typedef struct RRenderpassClearInfo {
 
 typedef struct RRenderpassBeginInfo {
 	RRenderpass*          renderpass;
+	RFramebuffer*         framebuffer;
 	RRenderpassClearInfo* clearinfo;
 } RRenderpassBeginInfo;
 
 #define RG_SHADER_TYPE_VERTEX    0x01
 #define RG_SHADER_TYPE_PIXEL     0x02
-#define RG_SHADER_TYPE_GEOMETRY  0x03
-#define RG_SHADER_TYPE_COMPUTE   0x11
+#define RG_SHADER_TYPE_GEOMETRY  0x04
+#define RG_SHADER_TYPE_COMPUTE   0x20
 
 typedef struct RShaderCreateInfo {
 	String name; // Loaded from "platform/&renderername&/"

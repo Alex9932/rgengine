@@ -98,6 +98,42 @@ static Bool _EventHandler(SDL_Event* event, void* data) {
 	return true;
 }
 
+static void CreateDefaultFramebuffer(RRenderDevice* device) {
+
+	RRenderpassCreateInfo rpinfo = {};
+	//rpinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
+	//rpinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+	rpinfo.rt_count = 1;
+	rpinfo.use_depth = false;
+	rpinfo.viewport = { 0.0f, 0.0f, (Float32)device->wndsize.x, (Float32)device->wndsize.y };
+	device->default_renderpass = R_CreateRenderpass(device, &rpinfo);
+
+	for (size_t i = 0; i < device->backbuffer_count; i++) {
+		RResourceViewCreateInfo backbufferinfo = {};
+		backbufferinfo.type        = RG_RESOURCEVIEW_TYPE_BBV;
+		backbufferinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
+		backbufferinfo.var         = 0;
+		device->default_backbuffers[i] = R_CreateResourceView(device, &backbufferinfo);
+
+		RFramebufferCreateInfo fbinfo = {};
+		fbinfo.width      = (Uint16)device->wndsize.x;
+		fbinfo.height     = (Uint16)device->wndsize.y;
+		fbinfo.rt_count   = 1;
+		fbinfo.rts[0]     = device->default_backbuffers[i];
+		fbinfo.renderpass = device->default_renderpass;
+		device->default_framebuffers[i] = R_CreateFramebuffer(device, &fbinfo);
+
+	}
+}
+
+static void FreeDefaultFramebuffer(RRenderDevice* device) {
+	for (size_t i = 0; i < device->backbuffer_count; i++) {
+		R_DestroyFramebuffer(device->default_framebuffers[i]);
+		R_DestroyResourceView(device->default_backbuffers[i]);
+	}
+	R_DestroyRenderpass(device->default_renderpass);
+}
+
 RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	flags = info->flags;
 
@@ -118,23 +154,31 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	HWND win_hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 	int w = 0, h = 0;
 	SDL_GetWindowSize(info->hwnd, &w, &h);
+	device->wndsize.x = w;
+	device->wndsize.y = h;
 
 	IDXGIAdapter* pAdapter = SelectAdapter(device); // Use in future
 
 	// Swapchain
-	DXGI_SWAP_CHAIN_DESC scd;
-	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
-	scd.BufferCount = 1;
-	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scd.OutputWindow = win_hwnd;
-	scd.SampleDesc.Count = 1;
+
+	device->backbuffer_count = 2; // Buffers needed
+
+	DXGI_SWAP_CHAIN_DESC scd = {};
+	//ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
+	scd.BufferCount        = 1;
+	scd.BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	scd.OutputWindow       = win_hwnd;
+	scd.SampleDesc.Count   = 1;
 	scd.SampleDesc.Quality = 0;
-	scd.Windowed = TRUE;
+	scd.Windowed           = TRUE;
+	scd.OutputWindow	   = win_hwnd;
 	scd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-	scd.Flags = 0;
+	scd.BufferDesc.Format  = DXGI_FORMAT_R8G8B8A8_UNORM;
+	//scd.BufferDesc.Width   = w;
+	//scd.BufferDesc.Height  = h;
+	scd.SwapEffect         = DXGI_SWAP_EFFECT_DISCARD;
+	scd.Flags              = 0;
 
 	D3D_FEATURE_LEVEL levels[] = {
 	   D3D_FEATURE_LEVEL_11_0,
@@ -145,6 +189,11 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 	D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, 2, D3D11_SDK_VERSION, &scd, &device->dxswapchain, &device->dxdev, NULL, &device->dxctx);
+
+	// Get actual backbuffer count
+	DXGI_SWAP_CHAIN_DESC scDesc;
+	device->dxswapchain->GetDesc(&scDesc);
+	device->backbuffer_count = scDesc.BufferCount;
 
 #if R_DXRENDER_DEBUG
 	rgLogInfo(RG_LOG_RENDER, "Setup query");
@@ -174,10 +223,10 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	RG_ASSERT_MSG(device->dxctx, "Unable to initialize direct3d: D3D11DeviceContext");
 	RG_ASSERT_MSG(device->dxswapchain, "Unable to initialize direct3d: D3D11SwapChain");
 
-
-	// Get swapchain backbuffer. Use only first
-	device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
 	device->wndresized = false;
+	device->currentframe = 0;
+
+	CreateDefaultFramebuffer(device);
 
 	//device->dxdbg->ValidateContext(device->dxctx);
 
@@ -188,7 +237,6 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 void R_DestroyDevice(RRenderDevice* device) {
 
-
 	Engine::FreeEventHandler(_EventHandler);
 
 	R_DestroyBuffer(device->pc_vertex);
@@ -198,6 +246,12 @@ void R_DestroyDevice(RRenderDevice* device) {
 	device->dxdbginfoqueue->Release();
 	device->dxdbg->Release();
 #endif
+
+	FreeDefaultFramebuffer(device);
+
+	device->dxswapchain->Release();
+	device->dxctx->Release();
+	device->dxdev->Release();
 
 	// Free device object
 	STDAllocator* alloc = (STDAllocator*)device->allocator;
@@ -211,20 +265,29 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
 		device->dxswapchain->Present(0, 0);
+
+		device->currentframe++;
+		device->currentframe = device->currentframe % device->backbuffer_count;
 	}
 
 	// Resize swapchain
 	if (RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
 
 		device->wndsize = info->newsize;
+		device->currentframe = 0;
 
 		device->dxctx->ClearState();
 		device->dxctx->Flush();
 
-		device->backbuffers[0]->Release();
+		rgLogInfo(RG_LOG_RENDER, "Swapchain resized %dx%d", device->wndsize.x, device->wndsize.y);
+		FreeDefaultFramebuffer(device);
+
 		HRESULT result = device->dxswapchain->ResizeBuffers(0, device->wndsize.x, device->wndsize.y, DXGI_FORMAT_UNKNOWN, 0);
 		RG_ASSERT_MSG(SUCCEEDED(result), "Unable to resize swapchain buffers");
-		device->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&device->backbuffers[0]);
+
+		CreateDefaultFramebuffer(device);
+
+		device->wndresized = false;
 	}
 
 #if R_DXRENDER_DEBUG

@@ -1,3 +1,4 @@
+#if 0
 #include "vk.h"
 
 #include <engine.h>
@@ -316,3 +317,5 @@ VkCommandPool    VK_GetCommandPool()      { return vk_commandpool; }
 Uint32           VK_GetCurrentImageIdx()  { return vk_currentimage; }
 VkSemaphore      VK_GetPresentSemaphore() { return vk_presentsemaphore; }
 VkSemaphore      VK_GetImageAvailableSemaphore() { return vk_eximagesemaphore; }
+
+#endif

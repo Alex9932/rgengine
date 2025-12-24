@@ -1,0 +1,199 @@
+#ifndef _RENDERTYPESVK_H
+#define _RENDERTYPESVK_H
+
+#include <rendertypes.h>
+#include <vulkan/vulkan.h>
+#include <allocator.h>
+#include <vma/vk_mem_alloc.h>
+
+#define R_RENDERER_NAME      "Vulkan"
+#define R_RENDERER_SHORTNAME "vk"
+
+#define R_VKRENDER_DEBUG 1
+
+#define R_MAX_COMMANDS_PER_BUFFER 256
+
+struct RRenderDevice {
+	VkInstance         vkctx;
+	VkPhysicalDevice   vkpdev;
+	VkDevice           vkdev;
+	VkQueue            vkqueue;
+	Uint32             vkqueuefamily;
+
+	VkCommandPool      vkcommandpool;
+
+	VkDescriptorPool   vkdescriptorpool[4];
+
+	VmaAllocator	   vmaallocator;
+
+	VkSurfaceKHR       vksurface;
+	VkSurfaceFormatKHR vkswapchainformat;
+	VkPresentModeKHR   vkpresentmode;
+	VkExtent2D         vkextent;
+	VkSwapchainKHR     vkswapchain;
+	Uint32             vkimagescount;
+	VkImage            vkswapimages[4];
+	VkImageView        vkimageviews[4];
+	VkFramebuffer      vkframebuffers[4];
+	Uint32             vkpresentqueue;
+	Uint32             vkcurrentimage;
+	VkSemaphore        vkeximagesemaphore;
+	VkSemaphore        vkpresentsemaphore;
+
+	VkRenderPass       imguirenderpass;
+
+	SDL_Window*        hwnd;
+	ivec2              wndsize;
+	Bool 			   wndresized;
+
+	VkAllocationCallbacks* vkalloc;
+	Engine::Allocator* allocator;
+
+	Uint64 buffersMemLen;
+	Uint64 imageMemLen;
+	Uint32 flags;
+
+	char cardName[128];
+};
+
+#define RG_BUFFER_TYPE_VK_TSRC 0x8000
+#define RG_BUFFER_TYPE_VK_TDST 0x8001
+
+struct RBuffer {
+	RRenderDevice* dev;
+	VkBuffer       buffer;
+	VmaAllocation  allocation;
+	Uint32         length;
+	Uint8          access;
+	Uint8          _off0;
+	Uint16         _off1;
+};
+
+struct RImage {
+	RRenderDevice* dev;
+	VkImage        image;
+	VmaAllocation  allocation;
+	Uint32         length;
+	RFormat        format;
+};
+
+struct RCommandBuffer {
+	RRenderDevice*  dev;
+	VkCommandBuffer cmdbuffer;
+	RPipeline*      pipeline; // Last binded pipeline
+};
+
+struct RResourceView {
+	RRenderDevice*  dev;
+	RFormat         format;
+	Uint16          buffer_type;
+	Uint16          _off;
+	VkImageView     imageView;
+	VkDescriptorSet descSet;
+	VkDescriptorSetLayout descLayout;
+};
+
+struct RPipeline {
+	RRenderDevice*        dev;
+	VkPipelineBindPoint   type;
+	VkPipeline            pipeline;
+	VkPipelineLayout      layout;
+	Uint32                bindings;
+	Uint32                _offset;
+	VkDescriptorSetLayout dslayout[16]; // max 16 attachments to pipeline
+};
+
+struct RFramebuffer {
+	RRenderDevice* dev;
+	Uint16         width;
+	Uint16         height;
+	Uint32         _offset;
+	VkFramebuffer  framebuffer;
+};
+
+struct RRenderpass {
+	RRenderDevice* dev;
+	VkRenderPass   renderpass;
+	Bool           depthEnabled;
+	Uint8          rt_count;
+	Uint16         _off0;
+	Uint32         _off1;
+};
+
+struct RShader {
+	RRenderDevice* dev;
+	VkShaderModule shader;
+};
+
+struct RSampler {
+	RRenderDevice*  dev;
+	VkSampler       sampler;
+	VkDescriptorSet descSet;
+	VkDescriptorSetLayout descLayout;
+};
+
+static RG_INLINE VkIndexType GetVkIndexType(IndexType type) {
+	switch (type) {
+		case RG_INDEX_U32: return VK_INDEX_TYPE_UINT32;
+		case RG_INDEX_U16: return VK_INDEX_TYPE_UINT16;
+		case RG_INDEX_U8:  return VK_INDEX_TYPE_UINT8;
+		default: return VK_INDEX_TYPE_UINT16;
+	}
+}
+
+static VkFormat GetImageFormat(RFormat format) {
+	switch (format) {
+	case RG_FORMAT_R8_UNORM:           return VK_FORMAT_R8_UNORM;
+	case RG_FORMAT_R8G8B8A8_UNORM:     return VK_FORMAT_R8G8B8A8_UNORM;
+	case RG_FORMAT_R32_FLOAT:          return VK_FORMAT_R32_SFLOAT;
+	case RG_FORMAT_R32G32B32A32_FLOAT: return VK_FORMAT_R32G32B32A32_SFLOAT;
+	case RG_FORMAT_R32G32B32_FLOAT:    return VK_FORMAT_R32G32B32_SFLOAT;
+	case RG_FORMAT_R32G32_FLOAT:       return VK_FORMAT_R32G32_SFLOAT;
+	case RG_FORMAT_D24S8:              return VK_FORMAT_D24_UNORM_S8_UINT;
+	case RG_FORMAT_D32:                return VK_FORMAT_D32_SFLOAT;
+	default:                           return VK_FORMAT_UNDEFINED;
+	}
+}
+
+static Uint32 GetImageFormatSize(RFormat format) {
+	switch (format) {
+	case RG_FORMAT_R8_UNORM:           return 1;
+	case RG_FORMAT_R8G8B8A8_UNORM:     return 4;
+	case RG_FORMAT_R32_FLOAT:          return 4;
+	case RG_FORMAT_R32G32B32A32_FLOAT: return 16;
+	case RG_FORMAT_R32G32B32_FLOAT:    return 12;
+	case RG_FORMAT_R32G32_FLOAT:       return 8;
+	case RG_FORMAT_D24S8:              return 4;
+	case RG_FORMAT_D32:                return 4;
+	default:                           return 1;
+	}
+}
+
+static VkShaderStageFlags GetShaderStage(Uint32 stage) {
+	VkShaderStageFlags flags = 0;
+	if (RG_CHECK_FLAG(stage, RG_SHADER_TYPE_VERTEX)) {
+		flags |= VK_SHADER_STAGE_VERTEX_BIT;
+	}
+	if (RG_CHECK_FLAG(stage, RG_SHADER_TYPE_PIXEL)) {
+		flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	if (RG_CHECK_FLAG(stage, RG_SHADER_TYPE_GEOMETRY)) {
+		flags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	}
+	if (RG_CHECK_FLAG(stage, RG_SHADER_TYPE_COMPUTE)) {
+		flags |= VK_SHADER_STAGE_COMPUTE_BIT;
+	}
+	return flags;
+}
+
+static VkDescriptorType GetDescriptorType(Uint32 type) {
+	switch (type) {
+	case RG_DESCRIPTOR_TYPE_SAMPLER: return VK_DESCRIPTOR_TYPE_SAMPLER;
+	case RG_DESCRIPTOR_TYPE_IMAGE:   return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	case RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	case RG_DESCRIPTOR_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	default: return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+	}
+}
+
+#endif

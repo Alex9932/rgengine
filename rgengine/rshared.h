@@ -29,6 +29,8 @@ extern "C" {
 	extern RG_DECLSPEC void            R_UpdateBuffer(RUpdateBufferInfo* buffer);
 	extern RG_DECLSPEC RImage*         R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyImage(RImage* image);
+	extern RG_DECLSPEC RFramebuffer*   R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyFramebuffer(RFramebuffer* image);
 	extern RG_DECLSPEC RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyCommandBuffer(RCommandBuffer* buffer);
 	extern RG_DECLSPEC void            R_ResetCommandBuffer(RCommandBuffer* buffer);
