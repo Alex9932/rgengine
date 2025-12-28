@@ -12,6 +12,7 @@
 #define R_VKRENDER_DEBUG 1
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
+#define R_MAX_COMMANDBUFFERS_PER_FRAME 256
 
 struct RRenderDevice {
 	VkInstance         vkctx;
@@ -20,9 +21,12 @@ struct RRenderDevice {
 	VkQueue            vkqueue;
 	Uint32             vkqueuefamily;
 
+	Uint32             cmdsemaphore;
 	VkCommandPool      vkcommandpool;
-
-	VkDescriptorPool   vkdescriptorpool[4];
+	VkCommandBuffer    vkswapcmdbuffer[2];
+	VkSemaphore        cmdbuffsemaphores[R_MAX_COMMANDBUFFERS_PER_FRAME];
+	
+	VkDescriptorPool   vkdescriptorpool;
 
 	VmaAllocator	   vmaallocator;
 
@@ -45,6 +49,7 @@ struct RRenderDevice {
 	SDL_Window*        hwnd;
 	ivec2              wndsize;
 	Bool 			   wndresized;
+	Bool               isAnisotropicEnabled;
 
 	VkAllocationCallbacks* vkalloc;
 	Engine::Allocator* allocator;
@@ -72,6 +77,7 @@ struct RBuffer {
 struct RImage {
 	RRenderDevice* dev;
 	VkImage        image;
+	VkImageView    view;
 	VmaAllocation  allocation;
 	Uint32         length;
 	RFormat        format;
@@ -83,6 +89,13 @@ struct RCommandBuffer {
 	RPipeline*      pipeline; // Last binded pipeline
 };
 
+struct RDescriptorSet {
+	RRenderDevice*  dev;
+	VkDescriptorSet set;
+	VkDescriptorSetLayout layout;
+};
+
+#if 0
 struct RResourceView {
 	RRenderDevice*  dev;
 	RFormat         format;
@@ -92,6 +105,7 @@ struct RResourceView {
 	VkDescriptorSet descSet;
 	VkDescriptorSetLayout descLayout;
 };
+#endif
 
 struct RPipeline {
 	RRenderDevice*        dev;
@@ -151,6 +165,10 @@ static VkFormat GetImageFormat(RFormat format) {
 	case RG_FORMAT_R32G32_FLOAT:       return VK_FORMAT_R32G32_SFLOAT;
 	case RG_FORMAT_D24S8:              return VK_FORMAT_D24_UNORM_S8_UINT;
 	case RG_FORMAT_D32:                return VK_FORMAT_D32_SFLOAT;
+	case RG_FORMAT_R16_FLOAT:          return VK_FORMAT_R16_SFLOAT;
+	case RG_FORMAT_R16G16_FLOAT:       return VK_FORMAT_R16G16_SFLOAT;
+	case RG_FORMAT_R16G16B16_FLOAT:    return VK_FORMAT_R16G16B16_SFLOAT;
+	case RG_FORMAT_R16G16B16A16_FLOAT: return VK_FORMAT_R16G16B16A16_SFLOAT;
 	default:                           return VK_FORMAT_UNDEFINED;
 	}
 }
@@ -165,6 +183,10 @@ static Uint32 GetImageFormatSize(RFormat format) {
 	case RG_FORMAT_R32G32_FLOAT:       return 8;
 	case RG_FORMAT_D24S8:              return 4;
 	case RG_FORMAT_D32:                return 4;
+	case RG_FORMAT_R16_FLOAT:          return 2;
+	case RG_FORMAT_R16G16_FLOAT:       return 4;
+	case RG_FORMAT_R16G16B16_FLOAT:    return 6;
+	case RG_FORMAT_R16G16B16A16_FLOAT: return 8;
 	default:                           return 1;
 	}
 }

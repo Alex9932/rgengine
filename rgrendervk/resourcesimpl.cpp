@@ -271,6 +271,33 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 	vmaCreateImage(dev->vmaallocator, &imageInfo, &allocCreateInfo, &image->image, &image->allocation, NULL);
 
+	VkImageAspectFlagBits aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+#if 0
+	if (info->format == RG_FORMAT_D24S8) {
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	if (info->format == RG_FORMAT_D32) {
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+#else
+	if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+#endif
+
+	VkImageViewCreateInfo viewInfo = {};
+	viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image                           = image->image;
+	viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format                          = GetImageFormat(info->format);
+	viewInfo.subresourceRange.aspectMask     = aspect;
+	viewInfo.subresourceRange.baseMipLevel   = 0;
+	viewInfo.subresourceRange.levelCount     = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount     = 1;
+	vkCreateImageView(dev->vkdev, &viewInfo, dev->vkalloc, &image->view);
+
 	// Upload initial data if provided
 	if (info->initialData) {
 		RBufferCreateInfo stagingInfo = {};
@@ -291,6 +318,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 
 void R_DestroyImage(RImage* image) {
 	RRenderDevice* dev = image->dev;
+	vkDestroyImageView(dev->vkdev, image->view, dev->vkalloc);
 	vmaDestroyImage(dev->vmaallocator, image->image, image->allocation);
 	dev->imageMemLen -= image->length;
 	dev->allocator->Deallocate(image);
@@ -304,11 +332,11 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 
 	VkImageView attachments[8];
 	for (Uint32 i = 0; i < info->rt_count; i++) {
-		attachments[i] = info->rts[i]->imageView;
+		attachments[i] = info->rts[i]->view;
 	}
 
 	if (info->dsv) {
-		attachments[info->rt_count] = info->dsv->imageView;
+		attachments[info->rt_count] = info->dsv->view;
 	}
 
 	VkFramebufferCreateInfo fbInfo = {};
@@ -372,13 +400,25 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	// TODO: Support semaphores and fences
 	RRenderDevice* dev = info->buffer->dev;
 	VkSubmitInfo submitInfo = {};
+	
+	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+	
 	submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers    = &info->buffer->cmdbuffer;
+
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores    = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
+	submitInfo.pWaitDstStageMask  = f;
+
+	dev->cmdsemaphore++;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores  = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
 	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
-	vkQueueWaitIdle(dev->vkqueue);
+	//vkQueueWaitIdle(dev->vkqueue);
 }
 
+#if 0
 RResourceView* R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info) {
 	RResourceView* rv = (RResourceView*)dev->allocator->Allocate(sizeof(RResourceView));
 	rv->dev = dev;
@@ -514,6 +554,7 @@ void R_DestroyResourceView(RResourceView* rv) {
 
 	dev->allocator->Deallocate(rv);
 }
+#endif
 
 static VkFilter GetSamplerFilter(Uint8 filterMode) {
 	if (filterMode == RG_SAMPLER_FILTER_NEAREST) {
@@ -541,7 +582,7 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	sampInfo.addressModeU     = GetSamplerAddressMode(info->addressModeU);
 	sampInfo.addressModeV     = GetSamplerAddressMode(info->addressModeV);
 	sampInfo.addressModeW     = GetSamplerAddressMode(info->addressModeW);
-	sampInfo.anisotropyEnable = (info->filterMode == RG_SAMPLER_FILTER_ANISOTROPIC) ? VK_TRUE : VK_FALSE;
+	sampInfo.anisotropyEnable = (info->filterMode == RG_SAMPLER_FILTER_ANISOTROPIC && dev->isAnisotropicEnabled) ? VK_TRUE : VK_FALSE;
 	sampInfo.maxAnisotropy    = info->maxAnisotropy;
 	sampInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	//sampInfo.unnormalizedCoordinates = VK_FALSE;
@@ -566,7 +607,7 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool     = dev->vkdescriptorpool[3];
+	allocInfo.descriptorPool     = dev->vkdescriptorpool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts        = &sampler->descLayout;
 	vkAllocateDescriptorSets(dev->vkdev, &allocInfo, &sampler->descSet);
@@ -590,7 +631,76 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 }
 
 void R_DestroySampler(RSampler* sampler) {
-	vkFreeDescriptorSets(sampler->dev->vkdev, sampler->dev->vkdescriptorpool[3], 1, &sampler->descSet);
-	vkDestroyDescriptorSetLayout(sampler->dev->vkdev, sampler->descLayout, sampler->dev->vkalloc);
-	vkDestroySampler(sampler->dev->vkdev, sampler->sampler, sampler->dev->vkalloc);
+	RRenderDevice* dev = sampler->dev;
+	vkFreeDescriptorSets(dev->vkdev, dev->vkdescriptorpool, 1, &sampler->descSet);
+	vkDestroyDescriptorSetLayout(dev->vkdev, sampler->descLayout, dev->vkalloc);
+	vkDestroySampler(dev->vkdev, sampler->sampler, sampler->dev->vkalloc);
+
+	dev->allocator->Deallocate(sampler);
+}
+
+RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateInfo* info) {
+	RDescriptorSet* ds = (RDescriptorSet*)dev->allocator->Allocate(sizeof(RDescriptorSet));
+
+	ds->dev = dev;
+
+	VkDescriptorSetLayoutBinding bindings[16] = {};
+	for (size_t i = 0; i < info->binding_count; i++) {
+		bindings[i].binding = info->bindings[i].binding;
+		bindings[i].descriptorCount = 1;
+		bindings[i].descriptorType  = GetDescriptorType(info->bindings[i].type);
+		bindings[i].stageFlags = GetShaderStage(info->bindings[i].stage);
+	}
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = info->binding_count;
+	layoutInfo.pBindings = bindings;
+	vkCreateDescriptorSetLayout(dev->vkdev, &layoutInfo, dev->vkalloc, &ds->layout);
+
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = dev->vkdescriptorpool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &ds->layout;
+	vkAllocateDescriptorSets(dev->vkdev, &allocInfo, &ds->set);
+
+	VkWriteDescriptorSet   writes[16]  = {};
+	VkDescriptorImageInfo  images[16]  = {};
+	VkDescriptorBufferInfo buffers[16] = {};
+
+	for (size_t i = 0; i < info->binding_count; i++) {
+
+		writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[i].dstSet = ds->set;
+		writes[i].dstBinding = info->bindings[i].binding;
+		writes[i].dstArrayElement = 0;
+		writes[i].descriptorCount = 1;
+		writes[i].descriptorType = GetDescriptorType(info->bindings[i].type);
+
+		if (info->bindings[i].type == RG_DESCRIPTOR_TYPE_IMAGE) {
+			images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			images[i].imageView   = info->bindings[i].image->view;
+			writes[i].pImageInfo = &images[i];
+		}
+		else {
+			buffers[i].buffer = info->bindings[i].buffer->buffer;
+			buffers[i].offset = 0;
+			buffers[i].range  = VK_WHOLE_SIZE;
+			writes[i].pBufferInfo = &buffers[i];
+		}
+
+	}
+	vkUpdateDescriptorSets(dev->vkdev, info->binding_count, writes, 0, nullptr);
+
+	return ds;
+}
+
+void R_DestroyDescriptorSet(RDescriptorSet* ds) {
+	RRenderDevice* dev = ds->dev;
+
+	vkFreeDescriptorSets(dev->vkdev, dev->vkdescriptorpool, 1, &ds->set);
+	vkDestroyDescriptorSetLayout(dev->vkdev, ds->layout, dev->vkalloc);
+
+	dev->allocator->Deallocate(ds);
 }

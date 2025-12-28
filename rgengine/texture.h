@@ -3,10 +3,12 @@
 
 #include "rendertypes.h"
 
+typedef void (*PFN_TEXTURELOADED)(void* userdata);
+
 typedef struct Texture {
 	RImage* img;
-	RResourceView* srv;
-	Uint32 refcounter;
+	Uint32  isLoaded;
+	Uint32  refcounter;
 } Texture;
 
 namespace Engine {
@@ -15,7 +17,7 @@ namespace Engine {
 		void InitializeTextures();
 		void DestroyTextures();
 
-		Texture* GetTexture(String path);
+		Texture* GetTexture(String path, PFN_TEXTURELOADED callback = NULL, void* userdata = NULL);
 		void FreeTexture(Texture* tex);
 
 		void DoLoadTextures();

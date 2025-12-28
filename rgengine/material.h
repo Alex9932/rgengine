@@ -11,6 +11,7 @@ typedef struct R3D_Material {
 	Texture* pbr;
 	vec3     color;
 	Uint32   refcounter;
+	RDescriptorSet* descset;
 } R3D_Material;
 
 namespace Engine {
@@ -20,6 +21,7 @@ namespace Engine {
 		void DestroyMaterials();
 		R3D_Material* GetMaterial(R3D_MaterialInfo* info);
 		void FreeMaterial(R3D_Material* hmat);
+		void MakeMaterialDescriptorSet(R3D_Material* mat);
 
 	}
 }

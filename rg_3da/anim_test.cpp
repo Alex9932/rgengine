@@ -6,6 +6,7 @@
 #include <engine.h>
 
 #include <render.h>
+#include <rimgui.h>
 #include <window.h>
 #include <modelsystem.h>
 
@@ -22,15 +23,6 @@
 #include <mmdimporter.h>
 
 #include <pm2importer.h>
-
-
-
-/*
-
-
-
-
-*/
 
 using namespace Engine;
 
@@ -166,10 +158,12 @@ class Application : public BaseGame {
 
 			// Create 3-rd person camera
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
+
 			//cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), LookatCameraController)(camera);
 
 			cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
-
+			cam_controller->SetAngles({ 0, 3.1415, 0 });
+			camera->GetTransform()->SetPosition({ 0.0f, 1.6f, -2.0f });
 
 			PMXImporter pmxImporter;
 			PMDImporter pmdImporter;

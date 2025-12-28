@@ -24,11 +24,11 @@ layout(set = 1, binding = 0, std430) readonly buffer VertexBuffer {
     R3D_Vertex vertices[];
 };
 
-layout(set = 2, binding = 0, std430) readonly buffer WeightBuffer {
+layout(set = 1, binding = 1, std430) readonly buffer WeightBuffer {
     R3D_Weight weights[];
 };
 
-layout(set = 3, binding = 0, std430) writeonly buffer OutputBuffer {
+layout(set = 1, binding = 2, std430) writeonly buffer OutputBuffer {
     R3D_Vertex outputVertices[];
 };
 

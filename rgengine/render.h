@@ -8,7 +8,42 @@
 
 #define RG_EVENT_RENDER_VIEWPORT_RESIZE 0x00010001
 
-typedef void (*RenderImGuiCallback)();
+
+enum ModelType {
+	R_MODEL_STATIC = 0,
+	R_MODEL_RIGGED = 1
+};
+
+typedef struct R3D_StaticModel {
+    ModelType     type;
+    Uint32        mCount;
+    R3D_MeshInfo* info;
+    RBuffer*      vBuffer;
+    RBuffer*      iBuffer;
+    Uint32        iCount;
+    IndexType     iType;
+} R3D_StaticModel;
+
+typedef struct R3D_RiggedModel {
+    ModelType       type;
+    Uint32          vCount;
+    // Input data
+    RBuffer*        i_vertex;    // Input vertex data
+    RBuffer*        i_weight;    // Input weight data
+    //RResourceView*  i_srv_vtx; // Shader resource view for vertex input data
+    //RResourceView*  i_srv_wht; // Shader resource view for weight input data
+    // Output data
+    R3D_StaticModel s_model;     // Static model / output vertex data
+    //RResourceView*  s_uav;     // Unordered access view for vertex output data
+
+	RDescriptorSet* set;         // Descriptor set binds all buffers simultaneously
+} R3D_RiggedModel;
+
+typedef struct R3D_BoneBuffer {
+    RBuffer*       buffer;
+	RDescriptorSet* set;
+    //RResourceView* rv;
+} R3D_BoneBuffer;
 
 namespace Engine {
 
@@ -26,8 +61,6 @@ namespace Engine {
 		void InitSubSystem(SDL_Window* hwnd);
 		void DestroySubSystem();
 
-		RG_DECLSPEC void RegisterImGuiDrawCallback(RenderImGuiCallback cb);
-		RG_DECLSPEC void FreeImGuiDrawCallback(RenderImGuiCallback cb);
 
 		SDL_Window* ShowWindow(Uint32 w, Uint32 h);
 		//void InitializeContext();
@@ -35,10 +68,6 @@ namespace Engine {
 
 		RRenderDevice* GetRenderDevice();
 		RenderBackend* GetRenderContext();
-
-		// ImGui window
-		RG_DECLSPEC void DrawRendererStats();
-		RG_DECLSPEC void DrawProfilerStats();
 
 		RG_DECLSPEC void SetCamera(R3D_CameraInfo* info);
 

@@ -1,4 +1,6 @@
+#define DLL_EXPORT
 #include "render.h"
+#include "rimgui.h"
 #include "profiler.h"
 #include "engine.h"
 

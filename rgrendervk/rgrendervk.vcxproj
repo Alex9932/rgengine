@@ -150,12 +150,8 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="imgui_impl_vulkan.cpp" />
     <ClCompile Include="pipelineimpl.cpp" />
-    <ClCompile Include="r2d.cpp" />
-    <ClCompile Include="r3d.cpp" />
     <ClCompile Include="resourcesimpl.cpp" />
-    <ClCompile Include="rgrendervk.cpp" />
     <ClCompile Include="swapchain.cpp" />
-    <ClCompile Include="vk.cpp" />
     <ClCompile Include="vkrenderimpl.cpp" />
   </ItemGroup>
   <ItemGroup>

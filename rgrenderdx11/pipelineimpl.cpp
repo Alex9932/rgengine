@@ -106,7 +106,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 			case RG_RENDERPASS_FILLMODE_WIREFRAME: { rasterDesc.FillMode = D3D11_FILL_WIREFRAME; break; }
 			default: { rasterDesc.FillMode = D3D11_FILL_SOLID; break; }
 		}
-		rasterDesc.FrontCounterClockwise = false;
+		rasterDesc.FrontCounterClockwise = true;
 		rasterDesc.MultisampleEnable = false;
 		rasterDesc.ScissorEnable = false;
 		rasterDesc.SlopeScaledDepthBias = 0.0f;

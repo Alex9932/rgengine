@@ -46,8 +46,10 @@ namespace Engine {
 		ctx->EndCommandBuffer     = (PFN_R_ENDCOMMANDBUFFER)Engine::DL_GetProcAddress(handle, "R_EndCommandBuffer");
 
         // Resource view
-		ctx->CreateResourceView   = (PFN_R_CREATERESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_CreateResourceView");
-		ctx->DestroyResourceView  = (PFN_R_DESTROYRESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_DestroyResourceView");
+		//ctx->CreateResourceView   = (PFN_R_CREATERESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_CreateResourceView");
+		//ctx->DestroyResourceView  = (PFN_R_DESTROYRESOURCEVIEW)Engine::DL_GetProcAddress(handle, "R_DestroyResourceView");
+        ctx->CreateDescriptorSet  = (PFN_R_CREATEDESCRIPTORSET)Engine::DL_GetProcAddress(handle, "R_CreateDescriptorSet");
+        ctx->DestroyDescriptorSet = (PFN_R_DESTROYDESCRIPTORSET)Engine::DL_GetProcAddress(handle, "R_DestroyDescriptorSet");
 
         // Renderpass
 		ctx->CreateRenderpass     = (PFN_R_CREATERENDERPASS)Engine::DL_GetProcAddress(handle, "R_CreateRenderpass");
@@ -70,7 +72,8 @@ namespace Engine {
 		ctx->CmdBindPipeline      = (PFN_R_CMDBINDPIPELINE)Engine::DL_GetProcAddress(handle, "R_CmdBindPipeline");
 		ctx->CmdBindVertexBuffer  = (PFN_R_CMDBINDVERTEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindVertexBuffer");
 		ctx->CmdBindIndexBuffer   = (PFN_R_CMDBINDINDEXBUFFER)Engine::DL_GetProcAddress(handle, "R_CmdBindIndexBuffer");
-		ctx->CmdBindResourceViews = (PFN_R_CMDBINDRESOURCEVIEWS)Engine::DL_GetProcAddress(handle, "R_CmdBindResourceViews");
+        ctx->CmdBindDescriptorSets = (PFN_R_CMDBINDDESCRIPTORSETS)Engine::DL_GetProcAddress(handle, "R_CmdBindDescriptorSets");
+		//ctx->CmdBindResourceViews = (PFN_R_CMDBINDRESOURCEVIEWS)Engine::DL_GetProcAddress(handle, "R_CmdBindResourceViews");
         ctx->CmdBindSampler       = (PFN_R_CMDBINDSAMPLER)Engine::DL_GetProcAddress(handle, "R_CmdBindSampler");
 		ctx->CmdDrawIndexed       = (PFN_R_CMDDRAWINDEXED)Engine::DL_GetProcAddress(handle, "R_CmdDrawIndexed");
         ctx->CmdPushConstants     = (PFN_R_CMDPUSHCONSTANTS)Engine::DL_GetProcAddress(handle, "R_CmdPushConstants");

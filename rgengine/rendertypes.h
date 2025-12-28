@@ -36,8 +36,12 @@ enum TextureType {
 	RG_FORMAT_R32G32B32_FLOAT    = 5,
 	RG_FORMAT_R32G32_FLOAT       = 6,
 	RG_FORMAT_D24S8 = 7, // Depth 24-bit + Stencil 8-bit
-	RG_FORMAT_D32   = 8  // Depth 32-bit
+	RG_FORMAT_D32   = 8, // Depth 32-bit
 
+	RG_FORMAT_R16G16B16A16_FLOAT = 10,
+	RG_FORMAT_R16G16B16_FLOAT    = 11,
+	RG_FORMAT_R16G16_FLOAT       = 12,
+	RG_FORMAT_R16_FLOAT          = 13,
 };
 
 #define RFormat TextureType
@@ -53,7 +57,8 @@ typedef struct RRenderDevice RRenderDevice;
 typedef struct RBuffer RBuffer;
 typedef struct RImage RImage;
 typedef struct RCommandBuffer RCommandBuffer;
-typedef struct RResourceView RResourceView;
+typedef struct RDescriptorSet RDescriptorSet;
+//typedef struct RResourceView RResourceView;
 typedef struct RSampler RSampler;
 
 typedef struct RShader RShader;
@@ -88,12 +93,12 @@ typedef struct RImageCreateInfo {
 // Framebuffer
 
 typedef struct RFramebufferCreateInfo {
-	Uint16 width;
-	Uint16 height;
-	Uint32 rt_count;
-	RResourceView* rts[6];
-	RResourceView* dsv;
-	RRenderpass*   renderpass;
+	Uint16  width;
+	Uint16  height;
+	Uint32  rt_count;
+	RImage* rts[6];
+	RImage* dsv;
+	RRenderpass* renderpass;
 } RFramebufferCreateInfo;
 
 // Buffer
@@ -179,7 +184,10 @@ typedef struct RPipelineLayoutBinding {
 	Uint8 binding;
 	Uint8 type;
 	Uint8 stage;
-	Uint8 _offset;
+	union {
+		Uint8 _offset;
+		Uint8 set; // For future use
+	};
 } RPipelineLayoutBinding;
 
 typedef struct RPipelineLayoutDescription {
@@ -259,12 +267,46 @@ typedef struct RShaderCreateInfo {
 	Uint32 _offset2;
 } RShaderCreateInfo;
 
+typedef struct RDescriptorSetBinding {
+	Uint8  binding; // Max 16 bindings per set
+	Uint8  type; // See RG_DESCRIPTOR_TYPE_
+	Uint8  stage;
+	Uint8  _offset0;
+	Uint32 _offset1;
+	union {
+		RImage*  image;
+		RBuffer* buffer;
+	};
+} RDescriptorSetBinding;
+
+typedef struct RDescriptorSetCreateInfo {
+	RDescriptorSetBinding* bindings;
+	Uint16 binding_count;
+} RDescriptorSetCreateInfo;
+
+typedef struct RBindDescriptorSetsInfo {
+	RDescriptorSet** sets;
+	Uint8            startslot; // First bind slot
+	Uint8            count;     // Set count
+	Uint16           _offset0;
+	Uint32           _offset1;
+} RBindDescriptorSetsInfo;
+
+#if 0
 typedef struct RBindResourceViewInfo {
 	RResourceView* rv;
-	Uint16         slot;
+	// Temporary solution
+	union {
+		Uint16 slot;
+		struct {
+			Uint8 set;
+			Uint8 binding;
+		};
+	};
 	Uint16         target; // Pipeline type
 	Uint32 	       type;
 } RBindResourceViewInfo;
+#endif
 
 typedef struct RUpdateBufferInfo {
 	RBuffer* handle;
@@ -333,7 +375,7 @@ typedef struct RenderInfo {
 	Uint32 r3d_dispatch_calls;
 
 	////////////////
-	void* r3d_renderResult; // (OpenGL - GLuint, D3D11 - ID3D11ShaderResourceView*)
+	void* r3d_renderResult; // (OpenGL - GLuint, D3D11 - ID3D11ShaderResourceView*, Vulkan - VkDescriptorSet)
 	void* r2d_renderResult;
 
 } RenderInfo;

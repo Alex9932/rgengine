@@ -147,6 +147,14 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	rg_free(devices);
 
 
+	device->isAnisotropicEnabled = false;
+	VkPhysicalDeviceFeatures supportedFeatures;
+	vkGetPhysicalDeviceFeatures(device->vkpdev, &supportedFeatures);
+	if (supportedFeatures.samplerAnisotropy) {
+		device->isAnisotropicEnabled = true;
+	}
+
+
 	Uint32 queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device->vkpdev, &queueFamilyCount, nullptr);
 
@@ -192,6 +200,12 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	deviceCreateInfo.queueCreateInfoCount = 1;
 	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
 
+	if (device->isAnisotropicEnabled) {
+		VkPhysicalDeviceFeatures enabledFeatures = {};
+		enabledFeatures.samplerAnisotropy = VK_TRUE;
+		deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
+	}
+
 	// Swapchain extension
 	String extansions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
@@ -225,29 +239,10 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	dpoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	dpoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	// Starage buffer
 	dpoolInfo.maxSets       = 4096;
-	dpoolInfo.pPoolSizes    = &poolSizes[0];
-	dpoolInfo.poolSizeCount = 1;
-	vkCreateDescriptorPool(device->vkdev, &dpoolInfo, device->vkalloc, &device->vkdescriptorpool[0]);
-
-	// Uniform buffer
-	dpoolInfo.maxSets       = 1024;
-	dpoolInfo.pPoolSizes    = &poolSizes[1];
-	dpoolInfo.poolSizeCount = 1;
-	vkCreateDescriptorPool(device->vkdev, &dpoolInfo, device->vkalloc, &device->vkdescriptorpool[1]);
-	
-	// Image view
-	dpoolInfo.maxSets       = 4096;
-	dpoolInfo.pPoolSizes    = &poolSizes[2];
-	dpoolInfo.poolSizeCount = 1;
-	vkCreateDescriptorPool(device->vkdev, &dpoolInfo, device->vkalloc, &device->vkdescriptorpool[2]);
-	
-	// Sampler
-	dpoolInfo.maxSets       = 64;
-	dpoolInfo.pPoolSizes    = &poolSizes[3];
-	dpoolInfo.poolSizeCount = 1;
-	vkCreateDescriptorPool(device->vkdev, &dpoolInfo, device->vkalloc, &device->vkdescriptorpool[3]);
+	dpoolInfo.pPoolSizes    = poolSizes;
+	dpoolInfo.poolSizeCount = 4;
+	vkCreateDescriptorPool(device->vkdev, &dpoolInfo, device->vkalloc, &device->vkdescriptorpool);
 
 
 	// Allocator
@@ -303,21 +298,29 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		RG_ERROR_MSG("Present semaphore error!");
 	}
 
+	for (Uint32 i = 0; i < R_MAX_COMMANDBUFFERS_PER_FRAME; i++) {
+		if (vkCreateSemaphore(device->vkdev, &semaphoreInfo, device->vkalloc, &device->cmdbuffsemaphores[i]) != VK_SUCCESS) {
+			RG_ERROR_MSG("Semaphore error!");
+		}
+	}
+
 	device->vkcurrentimage = 0;
 	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore, VK_NULL_HANDLE, &device->vkcurrentimage);
 
-	VkCommandBuffer cmdbuffer;
+
+
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = device->vkcommandpool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	vkAllocateCommandBuffers(device->vkdev, &allocInfo, &cmdbuffer);
-	vkResetCommandBuffer(cmdbuffer, 0);
+	allocInfo.commandBufferCount = 2;
+	vkAllocateCommandBuffers(device->vkdev, &allocInfo, device->vkswapcmdbuffer);
+
+	vkResetCommandBuffer(device->vkswapcmdbuffer[0], 0);
 	VkCommandBufferBeginInfo begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(cmdbuffer, &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[0], &begininfo);
 
 	for (Uint32 i = 0; i < device->vkimagescount; i++) {
 		// Transition image layout to COLOR_ATTACHMENT
@@ -335,7 +338,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(cmdbuffer,
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[0],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
@@ -344,21 +347,21 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 			1, &barrier);
 	}
 
-	vkEndCommandBuffer(cmdbuffer);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[0]);
+
+	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdbuffer;
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[0];
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore;
-	VkPipelineStageFlags f[] = {
-		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-	};
 	submitInfo.pWaitDstStageMask = f;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[0];
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
 	vkQueueWaitIdle(device->vkqueue);
-	vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 1, &cmdbuffer);
-
+	device->cmdsemaphore = 0;
 
 	SDL_SetWindowPosition(device->hwnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
@@ -371,17 +374,21 @@ void R_DestroyDevice(RRenderDevice* device) {
 
 	Engine::FreeEventHandler(_EventHandler);
 
+	vkQueueWaitIdle(device->vkqueue);
+	vkDeviceWaitIdle(device->vkdev);
+
+	vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 2, device->vkswapcmdbuffer);
 	vkDestroySemaphore(device->vkdev, device->vkeximagesemaphore, device->vkalloc);
 	vkDestroySemaphore(device->vkdev, device->vkpresentsemaphore, device->vkalloc);
+	for (Uint32 i = 0; i < R_MAX_COMMANDBUFFERS_PER_FRAME; i++) {
+		vkDestroySemaphore(device->vkdev, device->cmdbuffsemaphores[i], device->vkalloc);
+	}
 
 	DestroySwapchain(device);
 	vkDestroyRenderPass(device->vkdev, device->imguirenderpass, device->vkalloc);
 
 	vkDestroyCommandPool(device->vkdev, device->vkcommandpool, device->vkalloc);
-	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool[0], device->vkalloc);
-	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool[1], device->vkalloc);
-	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool[2], device->vkalloc);
-	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool[3], device->vkalloc);
+	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool, device->vkalloc);
 
 	vmaDestroyAllocator(device->vmaallocator);
 
@@ -400,22 +407,15 @@ void R_DestroyDevice(RRenderDevice* device) {
 void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	// Wait render end
-	vkDeviceWaitIdle(device->vkdev);
+	//vkDeviceWaitIdle(device->vkdev);
 
 	// Submit an empty command buffer
 
-	VkCommandBuffer cmdbuffer;
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = device->vkcommandpool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	vkAllocateCommandBuffers(device->vkdev, &allocInfo, &cmdbuffer);
-	vkResetCommandBuffer(cmdbuffer, 0);
+	vkResetCommandBuffer(device->vkswapcmdbuffer[0], 0);
 	VkCommandBufferBeginInfo begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(cmdbuffer, &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[0], &begininfo);
 #if 0
 	{
 		// Transition image layout to PRESENT
@@ -442,16 +442,24 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 			1, &barrier);
 	}
 #endif
-	vkEndCommandBuffer(cmdbuffer);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[0]);
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdbuffer;
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[0];
+
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores    = &device->cmdbuffsemaphores[device->cmdsemaphore];
+
+	VkPipelineStageFlags f[] = {
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+	};
+	submitInfo.pWaitDstStageMask = f;
+
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &device->vkpresentsemaphore;
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
-	vkQueueWaitIdle(device->vkqueue);
-	vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 1, &cmdbuffer);
+	//vkQueueWaitIdle(device->vkqueue);
 
 	VkSwapchainKHR swapchain[] = { device->vkswapchain };
 
@@ -470,7 +478,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		//RG_ERROR_MSG("Queue error!");
 	}
 
-	vkDeviceWaitIdle(device->vkdev);
+	//vkDeviceWaitIdle(device->vkdev);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
 		// Resize requested!
@@ -485,17 +493,11 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	// Wait next image
 
-	allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = device->vkcommandpool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	vkAllocateCommandBuffers(device->vkdev, &allocInfo, &cmdbuffer);
-	vkResetCommandBuffer(cmdbuffer, 0);
+	vkResetCommandBuffer(device->vkswapcmdbuffer[1], 0);
 	begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(cmdbuffer, &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[1], &begininfo);
 
 	{
 		// Transition image layout to COLOR_ATTACHMENT
@@ -513,7 +515,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(cmdbuffer,
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[1],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
@@ -522,26 +524,40 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 			1, &barrier);
 	}
 
-	vkEndCommandBuffer(cmdbuffer);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[1]);
 	submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdbuffer;
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[1];
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore;
-	VkPipelineStageFlags f[] = {
-		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-	};
 	submitInfo.pWaitDstStageMask = f;
+
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[0];
+
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
 	vkQueueWaitIdle(device->vkqueue);
-	vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 1, &cmdbuffer);
+	//vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 1, &cmdbuffer);
+
+	device->cmdsemaphore = 0;
 
 
+	//char* string;
+	//vmaBuildStatsString(device->vmaallocator, &string, VK_TRUE);
+	//rgLogInfo(RG_LOG_RENDER, "%s", string);
 }
 
 void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
+	info->buffers_memory = dev->buffersMemLen;
+	info->textures_memory = dev->imageMemLen;
+	info->render_name = dev->cardName;
 
+
+	VmaBudget budgets;
+	vmaGetHeapBudgets(dev->vmaallocator, &budgets);
+
+	info->dedicated_memory = budgets.usage + budgets.budget;
 }
 
 void R_ImGui_Init(RRenderDevice* dev) {

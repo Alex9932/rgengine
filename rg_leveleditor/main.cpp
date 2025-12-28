@@ -9,6 +9,7 @@
 #include <freecameracontroller.h>
 
 #include <render.h>
+#include <rimgui.h>
 #include <window.h>
 #include <world.h>
 #include <imgui/imgui.h>

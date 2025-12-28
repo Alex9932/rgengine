@@ -282,6 +282,21 @@
     <ClCompile Include="queue.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
+    <ClCompile Include="ranimator.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="rimgui.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="rgbuffer.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="rgbufferdraw.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
+    <ClCompile Include="rlighting.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -508,6 +523,21 @@
     </ClInclude>
     <ClInclude Include="queue.h">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="ranimator.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="rimgui.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="rgbuffer.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="rgbufferdraw.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="rlighting.h">
+      <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

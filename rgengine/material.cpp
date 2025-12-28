@@ -3,6 +3,8 @@
 #include "texture.h"
 #include "filesystem.h"
 
+#include "render.h"
+
 #include <map>
 
 #define R_MAX_MATERIALS 16000
@@ -31,20 +33,24 @@ namespace Engine {
 				SDL_snprintf(normal, 256, "platform/textures/def_normal.png", GetGamedataPath());
 			}
 			if (!FS_IsExist(pbr)) {
-				SDL_snprintf(pbr,    256, "platform/textures/def_pbr.png", GetGamedataPath());
+				SDL_snprintf(pbr, 256, "platform/textures/def_pbr.png", GetGamedataPath());
 			}
 
-			// NEED FOR ~SPIRT~ TEXTURES
 			material->albedo = GetTexture(albedo);
 			material->normal = GetTexture(normal);
 			material->pbr    = GetTexture(pbr);
 
+			material->descset = NULL;
 			material->color = info->color;
 			material->refcounter = 1;
+
 			return material;
 		}
 
 		static void DestroyMaterial(R3D_Material* hmat) {
+			if (hmat->descset) {
+				GetRenderContext()->DestroyDescriptorSet(hmat->descset);
+			}
 			FreeTexture(hmat->albedo);
 			FreeTexture(hmat->normal);
 			FreeTexture(hmat->pbr);
@@ -89,6 +95,39 @@ namespace Engine {
 				}
 				DestroyMaterial(hmat);
 			}
+		}
+
+		void MakeMaterialDescriptorSet(R3D_Material* material) {
+
+			if (!material->albedo->isLoaded ||
+				!material->normal->isLoaded ||
+				!material->pbr->isLoaded) {
+				return;
+			}
+
+			RenderBackend* ctx = GetRenderContext();
+			RRenderDevice* dev = GetRenderDevice();
+
+			RDescriptorSetBinding bindings[3] = {};
+			bindings[0].binding = 0;
+			bindings[0].stage = RG_SHADER_TYPE_PIXEL;
+			bindings[0].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			bindings[0].image = material->albedo->img;
+			bindings[1].binding = 1;
+			bindings[1].stage = RG_SHADER_TYPE_PIXEL;
+			bindings[1].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			bindings[1].image = material->normal->img;
+			bindings[2].binding = 2;
+			bindings[2].stage = RG_SHADER_TYPE_PIXEL;
+			bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			bindings[2].image = material->pbr->img;
+
+			RDescriptorSetCreateInfo dsinfo = {};
+			dsinfo.binding_count = 3;
+			dsinfo.bindings = bindings;
+
+			material->descset = ctx->CreateDescriptorSet(dev, &dsinfo);
+
 		}
 
 	}

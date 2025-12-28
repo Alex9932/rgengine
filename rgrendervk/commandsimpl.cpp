@@ -87,9 +87,12 @@ void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize)
 	vkCmdBindIndexBuffer(cmdbuff->cmdbuffer, ib->buffer, 0, GetVkIndexType(isize));
 }
 
-void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views) {
-	for (Uint32 i = 0; i < count; i++) {
-		vkCmdBindDescriptorSets(cmdbuff->cmdbuffer, cmdbuff->pipeline->type, cmdbuff->pipeline->layout, views[i].slot, 1, &views[i].rv->descSet, 0, NULL);
+void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* info) {
+	for (Uint32 i = 0; i < info->count; i++) {
+		vkCmdBindDescriptorSets(
+			cmdbuff->cmdbuffer, cmdbuff->pipeline->type, cmdbuff->pipeline->layout,
+			info->startslot + i, 1, &info->sets[i]->set,
+			0, NULL);
 	}
 }
 

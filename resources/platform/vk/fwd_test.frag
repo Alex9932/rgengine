@@ -1,31 +1,17 @@
 #version 430 core
 
 layout(location = 0) in vec3 o_position;
-layout(location = 1) in vec3 o_normal;
-layout(location = 2) in vec2 o_uv;
-
 layout(location = 0) out vec4 color;
 
-layout(set = 0, binding = 0) uniform texture2D t_albedo;
-layout(set = 1, binding = 0) uniform texture2D t_normal;
-layout(set = 2, binding = 0) uniform texture2D t_pbr;
-
-layout(set = 3, binding = 0) uniform sampler smplr;
-
-layout(push_constant) uniform PushConstants {
-    layout(offset = 128) vec4 color;
-} push;
+layout(set = 0, binding = 0) uniform sampler smplr;
+layout(set = 1, binding = 0) uniform texture2D t_unit0;
+layout(set = 1, binding = 1) uniform texture2D t_unit1;
+layout(set = 1, binding = 2) uniform texture2D t_unit2;
 
 void main() {
 
-	float light = 0.2;
-	
-	vec3 light_vec = vec3(0, 1, -1);
-	float global = max(0, dot(normalize(o_normal), normalize(light_vec)));
+	vec2 uv = o_position.xy * 0.5 + 0.5;
 
-	light += global;
-
-	vec2 uv = vec2(o_uv.x, -o_uv.y);
-	color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb * light;
+	color.rgb = texture(sampler2D(t_unit0, smplr), uv).rgb;
 	color.a = 1;
 }

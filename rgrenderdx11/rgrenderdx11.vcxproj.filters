@@ -43,18 +43,6 @@
     <Filter Include="Header Files\old\utils">
       <UniqueIdentifier>{add3b8b4-bb5f-4c45-916d-23fc0e573ab7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\old">
-      <UniqueIdentifier>{b5147056-6c62-467b-8955-1d6ccbd0db81}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\old\r2d">
-      <UniqueIdentifier>{94e9dc78-4128-40d6-ba10-5d07a4ee4160}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\old\r3d">
-      <UniqueIdentifier>{12958c84-3063-4187-9f4a-e1dd48d6e689}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\old\utils">
-      <UniqueIdentifier>{e507f4df-670c-4aab-8fc1-60276a8ab54a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -63,56 +51,8 @@
     <ClCompile Include="imgui_impl_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r3d.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="shadowbuffer.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="lightpass.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="gbuffer.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="buffer.cpp">
-      <Filter>Source Files\old\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="loader.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="shader.cpp">
-      <Filter>Source Files\old\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="texture.cpp">
-      <Filter>Source Files\old\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="postprocess.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="queue.cpp">
-      <Filter>Source Files\old\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="r2d.cpp">
-      <Filter>Source Files\old\r2d</Filter>
-    </ClCompile>
-    <ClCompile Include="stack.cpp">
-      <Filter>Source Files\old\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="particlepass.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="particleemitters.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
     <ClCompile Include="rgrenderimpl.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dx11.cpp">
-      <Filter>Source Files\old</Filter>
-    </ClCompile>
-    <ClCompile Include="rgrenderdx11.cpp">
-      <Filter>Source Files\old</Filter>
     </ClCompile>
     <ClCompile Include="resourcesimpl.cpp">
       <Filter>Source Files</Filter>

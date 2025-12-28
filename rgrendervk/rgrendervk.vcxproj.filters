@@ -13,15 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\old">
-      <UniqueIdentifier>{1c74240c-a629-49da-bec1-e41aa8ed86dc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\old\r2d">
-      <UniqueIdentifier>{b9ee516d-8497-4b1e-9200-b99c15775189}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\old\r3d">
-      <UniqueIdentifier>{604ed750-6f42-4d41-a177-4475328844de}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\old">
       <UniqueIdentifier>{ae5a94ec-4b0d-47a6-a47b-de1f92101a7b}</UniqueIdentifier>
     </Filter>
@@ -36,20 +27,8 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r3d.cpp">
-      <Filter>Source Files\old\r3d</Filter>
-    </ClCompile>
-    <ClCompile Include="r2d.cpp">
-      <Filter>Source Files\old\r2d</Filter>
-    </ClCompile>
     <ClCompile Include="imgui_impl_vulkan.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vk.cpp">
-      <Filter>Source Files\old</Filter>
-    </ClCompile>
-    <ClCompile Include="rgrendervk.cpp">
-      <Filter>Source Files\old</Filter>
     </ClCompile>
     <ClCompile Include="vkrenderimpl.cpp">
       <Filter>Source Files</Filter>

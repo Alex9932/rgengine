@@ -37,8 +37,10 @@ extern "C" {
 	extern RG_DECLSPEC void            R_BeginCommandBuffer(RCommandBuffer* buffer);
 	extern RG_DECLSPEC void            R_EndCommandBuffer(RCommandBuffer* buffer);
 	extern RG_DECLSPEC void            R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info);
-	extern RG_DECLSPEC RResourceView*  R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info);
-	extern RG_DECLSPEC void            R_DestroyResourceView(RResourceView* rv);
+	//extern RG_DECLSPEC RResourceView*  R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info);
+	//extern RG_DECLSPEC void            R_DestroyResourceView(RResourceView* rv);
+	extern RG_DECLSPEC RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateInfo* info);
+	extern RG_DECLSPEC void            R_DestroyDescriptorSet(RDescriptorSet* ds);
 	extern RG_DECLSPEC RRenderpass*    R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyRenderpass(RRenderpass* rp);
 	extern RG_DECLSPEC RPipeline*      R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info);
@@ -53,7 +55,8 @@ extern "C" {
 	extern RG_DECLSPEC void            R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl);
 	extern RG_DECLSPEC void            R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot, Uint32 stride);
 	extern RG_DECLSPEC void            R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize);
-	extern RG_DECLSPEC void            R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views);
+	extern RG_DECLSPEC void            R_CmdBindDescriptorSets(RCommandBuffer* cmdbuffer, RBindDescriptorSetsInfo* info);
+	//extern RG_DECLSPEC void            R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views);
 	extern RG_DECLSPEC void            R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage);
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
 	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
