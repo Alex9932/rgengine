@@ -389,7 +389,6 @@ namespace Engine {
             // TODO
 
 #if 1
-            UpdateImGui();
             DoAnimate();
 
             BeginGBufferPass(&mat_camera.proj, &mat_camera.view);
@@ -419,6 +418,7 @@ namespace Engine {
 #endif
             DoRLighting();
 
+            UpdateImGui();
             DrawImGui();
 
 
@@ -532,6 +532,7 @@ namespace Engine {
 
         void GetInfo(RenderInfo* info) {
             renderctx.GetInfo(rdev, info);
+            info->r3d_renderResult = GetGBufferOutputSet();
         }
 
         ParticleSystem* GetParticleSystem() {

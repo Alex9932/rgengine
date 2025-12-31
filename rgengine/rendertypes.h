@@ -83,6 +83,13 @@ typedef struct RSwapBuffersInfo {
 
 // Image
 
+#define RG_IMAGE_LAYOUT_UNDEFINED        0x00
+#define RG_IMAGE_LAYOUT_COLOR_ATTACHMENT 0x01
+#define RG_IMAGE_LAYOUT_DEPTH_ATTACHMENT 0x02
+#define RG_IMAGE_LAYOUT_SHADER_READ_ONLY 0x03
+#define RG_IMAGE_LAYOUT_TRANSFER_SRC     0x04
+#define RG_IMAGE_LAYOUT_TRANSFER_DST     0x05
+
 typedef struct RImageCreateInfo {
 	RFormat format;
 	Uint32  width;
@@ -137,7 +144,7 @@ typedef struct RCommandBufferCreateInfo {
 } RCommandBufferCreateInfo;
 
 // Resource view
-
+#if 0
 #define RG_RESOURCEVIEW_TYPE_RTV 0x1
 #define RG_RESOURCEVIEW_TYPE_DSV 0x2
 #define RG_RESOURCEVIEW_TYPE_SRV 0x3
@@ -162,7 +169,7 @@ typedef struct RResourceViewCreateInfo {
 		RImage*  dst_image;
 	};
 } RResourceViewCreateInfo;
-
+#endif
 // Pipeline
 
 #define RG_PIPELINE_TYPE_GRAPHICS 0x1

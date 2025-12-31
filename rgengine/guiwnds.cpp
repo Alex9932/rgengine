@@ -34,18 +34,17 @@ namespace Engine {
 
             ImGui::Separator();
 
+            ImGui::Text("GPU memory: %ld Kb", renderer_info.dedicated_memory >> 10);
+            ImGui::Text("Shared memory: %ld Kb", renderer_info.shared_memory >> 10);
+
+            ImGui::Separator();
+
             ImGui::Text("Buffers memory: %ld Kb", renderer_info.buffers_memory >> 10);
-            ImGui::Text("Models loaded: %d", renderer_info.meshes_loaded);
+            ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
 
             ImGui::Separator();
 
             ImGui::Text("Draw/Dispatch calls: %d/%d", renderer_info.r3d_draw_calls, renderer_info.r3d_dispatch_calls);
-
-            ImGui::Separator();
-
-            ImGui::Text("Textures memory: %ld Kb", renderer_info.textures_memory >> 10);
-            ImGui::Text("Textures loaded: %d", renderer_info.textures_loaded);
-            ImGui::Text("Textures to load/queued: %d/%d", renderer_info.textures_inQueue, renderer_info.textures_left);
 
             Float32 f = 1;
             if (renderer_info.textures_inQueue != 0) {

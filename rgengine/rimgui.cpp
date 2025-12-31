@@ -2,6 +2,7 @@
 #include "rimgui.h"
 
 #include "render.h"
+#include "guiwnds.h"
 
 #include <vector>
 
@@ -49,6 +50,8 @@ namespace Engine {
                 RenderImGuiCallback cb = *it;
                 cb();
             }
+
+            DrawRendererStats();
 
             ImGui::EndFrame();
             ImGui::Render();
