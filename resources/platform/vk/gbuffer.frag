@@ -21,14 +21,9 @@ layout(push_constant) uniform PushConstants {
 void main() {
 	vec2 uv = vec2(o_uv.x, -o_uv.y);
 
-	float light = 0.2;
-	
-	vec3 light_vec = vec3(0, 1, -1);
-	float global = max(0, dot(normalize(o_normal), normalize(light_vec)));
-
-	light += global;
-
-	color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb * light;
-	//color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb;
+	color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb;
 	color.a = 1;
+
+	normal.xyz = normalize(o_normal);
+	wpos.xyz   = o_position;
 }

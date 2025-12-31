@@ -42,6 +42,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	// Create device
 	RRenderDevice* device = RG_NEW_CLASS(alloc, RRenderDevice);
+	SDL_memset(device, 0, sizeof(RRenderDevice)); // Reset device struct
 
 	device->flags     = info->flags;
 	device->allocator = alloc;
@@ -538,26 +539,33 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
 	vkQueueWaitIdle(device->vkqueue);
-	//vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 1, &cmdbuffer);
 
+	// Reset
 	device->cmdsemaphore = 0;
 
-
-	//char* string;
-	//vmaBuildStatsString(device->vmaallocator, &string, VK_TRUE);
-	//rgLogInfo(RG_LOG_RENDER, "%s", string);
+	device->draw_calls = 0;
+	device->dispatch_calls = 0;
 }
 
 void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
-	info->buffers_memory = dev->buffersMemLen;
+
+	VmaBudget budgets[16] = {};
+	vmaGetHeapBudgets(dev->vmaallocator, budgets);
+
+	info->buffers_memory  = dev->buffersMemLen;
 	info->textures_memory = dev->imageMemLen;
-	info->render_name = dev->cardName;
 
+	info->r3d_draw_calls = dev->draw_calls;
+	info->r3d_dispatch_calls = dev->dispatch_calls;
 
-	VmaBudget budgets;
-	vmaGetHeapBudgets(dev->vmaallocator, &budgets);
-
-	info->dedicated_memory = budgets.usage + budgets.budget;
+	info->dedicated_memory = budgets[0].usage + budgets[0].budget;
+	info->shared_memory = 0;
+	for (Uint32 i = 1; i < 16; i++) {
+		info->shared_memory += budgets[i].usage + budgets[i].budget;
+	}
+	
+	info->renderer = dev->cardName;
+	info->render_name = "Vulkan";
 }
 
 void R_ImGui_Init(RRenderDevice* dev) {

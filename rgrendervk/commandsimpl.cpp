@@ -102,6 +102,7 @@ void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, U
 
 void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart) {
 	vkCmdDrawIndexed(cmdbuff->cmdbuffer, idxcount, 1, idxstart, 0, 0);
+	cmdbuff->dev->draw_calls++;
 }
 
 void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage) {
@@ -118,4 +119,5 @@ void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData) {
 
 void R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 gc_x, Uint32 gc_y, Uint32 gc_z) {
 	vkCmdDispatch(cmdbuff->cmdbuffer, gc_x, gc_y, gc_z);
+	cmdbuff->dev->dispatch_calls++;
 }

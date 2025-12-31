@@ -32,9 +32,9 @@ struct RRenderDevice {
 
 	VkSurfaceKHR       vksurface;
 	VkSurfaceFormatKHR vkswapchainformat;
-	VkPresentModeKHR   vkpresentmode;
 	VkExtent2D         vkextent;
 	VkSwapchainKHR     vkswapchain;
+	VkPresentModeKHR   vkpresentmode;
 	Uint32             vkimagescount;
 	VkImage            vkswapimages[4];
 	VkImageView        vkimageviews[4];
@@ -50,13 +50,17 @@ struct RRenderDevice {
 	ivec2              wndsize;
 	Bool 			   wndresized;
 	Bool               isAnisotropicEnabled;
+	Uint16 _offset0;
+	Uint32             flags;
 
 	VkAllocationCallbacks* vkalloc;
 	Engine::Allocator* allocator;
 
 	Uint64 buffersMemLen;
 	Uint64 imageMemLen;
-	Uint32 flags;
+
+	Uint32 draw_calls;
+	Uint32 dispatch_calls;
 
 	char cardName[128];
 };

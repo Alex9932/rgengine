@@ -311,7 +311,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 		R_DestroyBuffer(stagingBuffer);
 	}
 
-	dev->buffersMemLen += image->length;
+	dev->imageMemLen += image->length;
 
 	return image;
 }
