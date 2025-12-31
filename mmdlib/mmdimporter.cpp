@@ -93,7 +93,7 @@ static void LoadPMDMaterials(pmd_file* pmd, String path, R3D_MaterialInfo** info
 	for (Uint32 i = 0; i < pmd->material_count; i++) {
 		pmd_material* mat = &pmd->materials[i];
 		if (mat->file_name[0] == '\0') {
-			SDL_snprintf(matsInfo[i].texture, 128, "toon%02d", mat->toon_number);
+			SDL_snprintf(matsInfo[i].texture, 128, "mmd/toon%02d", mat->toon_number);
 		} else {
 
 			SDL_snprintf(matsInfo[i].texture, 128, "%s/%s", path, mat->file_name);
