@@ -19,7 +19,8 @@ layout(push_constant) uniform PushConstants {
 } push;
 
 void main() {
-	vec2 uv = vec2(o_uv.x, -o_uv.y);
+	//vec2 uv = vec2(o_uv.x, -o_uv.y);
+	vec2 uv = o_uv;
 
 	color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb;
 	color.a = 1;

@@ -27,7 +27,6 @@ SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 }
 
 void R_Setup() {
-
 }
 
 static Bool _EventHandler(SDL_Event* event, void* data) {
@@ -380,6 +379,15 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		}
 	}
 
+	// Default sampler
+	RSamplerCreateInfo samplerInfo = {};
+	samplerInfo.maxAnisotropy = 1;
+	samplerInfo.filterMode = RG_SAMPLER_FILTER_LINEAR;
+	samplerInfo.addressModeU = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+	samplerInfo.addressModeV = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+	samplerInfo.addressModeW = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
+	device->defaultsampler = R_CreateSampler(device, &samplerInfo);
+
 	device->vkcurrentimage = 0;
 	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore, VK_NULL_HANDLE, &device->vkcurrentimage);
 
@@ -452,6 +460,8 @@ void R_DestroyDevice(RRenderDevice* device) {
 
 	vkQueueWaitIdle(device->vkqueue);
 	vkDeviceWaitIdle(device->vkdev);
+
+	R_DestroySampler(device->defaultsampler);
 
 	vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 2, device->vkswapcmdbuffer);
 	vkDestroySemaphore(device->vkdev, device->vkeximagesemaphore, device->vkalloc);
@@ -671,4 +681,12 @@ void R_ImGui_Shutdown(RRenderDevice* dev) {
 
 void R_ImGui_NewFrame(RRenderDevice* dev) {
 	ImGui_ImplVulkan_NewFrame();
+}
+
+void* R_ImGui_AddTexture(RRenderDevice* dev, RImage* image) {
+	return ImGui_ImplVulkan_AddTexture(dev->defaultsampler->sampler, image->view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+void R_ImGui_RemoveTexture(void* handle) {
+	ImGui_ImplVulkan_RemoveTexture((VkDescriptorSet)handle);
 }

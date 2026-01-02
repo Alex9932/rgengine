@@ -9,7 +9,7 @@
 #define R_RENDERER_NAME      "Vulkan"
 #define R_RENDERER_SHORTNAME "vk"
 
-#define R_VKRENDER_DEBUG 0
+#define R_VKRENDER_DEBUG 1
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
 #define R_MAX_COMMANDBUFFERS_PER_FRAME 256
@@ -49,6 +49,8 @@ struct RRenderDevice {
 	VkSemaphore        vkpresentsemaphore;
 
 	VkRenderPass       imguirenderpass;
+
+	RSampler*          defaultsampler;
 
 	SDL_Window*        hwnd;
 	ivec2              wndsize;

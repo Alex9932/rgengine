@@ -174,7 +174,7 @@ namespace Engine {
 
             InitRenderAnimation();
             InitRImGui();
-            InitRLighting();
+            InitRLighting(&wndSize);
 
 
 
@@ -265,6 +265,7 @@ namespace Engine {
                 // Recreate swapchain, framebuffers and renderpasses
                 //CreateFramebuffers();
                 ResizeGBuffer(&wndSize);
+                ResizeRLighting(&wndSize);
                 frameIndex = 0;
             }
         }
@@ -532,7 +533,7 @@ namespace Engine {
 
         void GetInfo(RenderInfo* info) {
             renderctx.GetInfo(rdev, info);
-            info->r3d_renderResult = GetGBufferOutputSet();
+            info->r3d_renderResult = GetRLightingOutputSet();
         }
 
         ParticleSystem* GetParticleSystem() {

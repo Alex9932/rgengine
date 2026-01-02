@@ -75,6 +75,8 @@ typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*, RSwapBuffersInfo*);
 typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_NEWFRAME)(RRenderDevice*);
+typedef void*           (*PFN_R_IMGUI_ADDTEXTURE)(RRenderDevice*, RImage*);
+typedef void            (*PFN_R_IMGUI_REMOVETEXTURE)(void*);
 
 typedef RBuffer*        (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
@@ -134,6 +136,8 @@ namespace Engine {
 		PFN_R_IMGUI_INIT              ImGui_Init;
 		PFN_R_IMGUI_SHUTDOWN          ImGui_Shutdown;
 		PFN_R_IMGUI_NEWFRAME          ImGui_NewFrame;
+		PFN_R_IMGUI_ADDTEXTURE        ImGui_AddTexture;
+		PFN_R_IMGUI_REMOVETEXTURE     ImGui_RemoveTexture;
 
 		// Buffer
 		PFN_R_CREATEBUFFER            CreateBuffer;

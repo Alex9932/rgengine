@@ -23,6 +23,8 @@ namespace Engine {
 		ctx->ImGui_Init           = (PFN_R_IMGUI_INIT)Engine::DL_GetProcAddress(handle, "R_ImGui_Init");
 		ctx->ImGui_Shutdown       = (PFN_R_IMGUI_SHUTDOWN)Engine::DL_GetProcAddress(handle, "R_ImGui_Shutdown");
 		ctx->ImGui_NewFrame       = (PFN_R_IMGUI_NEWFRAME)Engine::DL_GetProcAddress(handle, "R_ImGui_NewFrame");
+		ctx->ImGui_AddTexture     = (PFN_R_IMGUI_ADDTEXTURE)Engine::DL_GetProcAddress(handle, "R_ImGui_AddTexture");
+		ctx->ImGui_RemoveTexture  = (PFN_R_IMGUI_REMOVETEXTURE)Engine::DL_GetProcAddress(handle, "R_ImGui_RemoveTexture");
 
         // Buffer
 		ctx->CreateBuffer         = (PFN_R_CREATEBUFFER)Engine::DL_GetProcAddress(handle, "R_CreateBuffer");

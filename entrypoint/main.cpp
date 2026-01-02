@@ -26,8 +26,8 @@ int main(int argc, char** argv) {
 		//"rgrenderdx11.dll",
 		"rgrendervk.dll",
 		"-game",
-		"rg_3da.dll"
-		//"rg_leveleditor.dll"
+		//"rg_3da.dll"
+		"rg_leveleditor.dll"
 		//"rg_modeleditor.dll"
 	};
 

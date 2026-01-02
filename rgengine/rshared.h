@@ -24,6 +24,9 @@ extern "C" {
 	extern RG_DECLSPEC void            R_ImGui_Shutdown(RRenderDevice* dev);
 	extern RG_DECLSPEC void            R_ImGui_NewFrame(RRenderDevice* dev);
 
+	extern RG_DECLSPEC void*           R_ImGui_AddTexture(RRenderDevice* dev, RImage* image);
+	extern RG_DECLSPEC void            R_ImGui_RemoveTexture(void* handle);
+
 	extern RG_DECLSPEC RBuffer*        R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info);
 	extern RG_DECLSPEC void            R_DestroyBuffer(RBuffer* buffer);
 	extern RG_DECLSPEC void            R_UpdateBuffer(RUpdateBufferInfo* buffer);
