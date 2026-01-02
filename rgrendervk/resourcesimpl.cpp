@@ -128,6 +128,7 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 	vkQueueWaitIdle(dev->vkqueue);
 
 	vkFreeCommandBuffers(dev->vkdev, dev->vkcommandpool, 1, &cmdbuffer);
+	dst->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 static void CopyToBuffer(RBuffer* src, RBuffer* dst, RBufferCreateInfo* info) {
@@ -245,6 +246,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	image->dev = dev;
 	image->length = info->width * info->height * GetImageFormatSize(info->format);
 	image->format = info->format;
+	image->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -371,6 +373,8 @@ RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateIn
 	allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, &buffer->cmdbuffer);
+
+	rgLogInfo(RG_LOG_RENDER, "VK: Created commandbuffer (%x)", buffer->cmdbuffer);
 
 	return buffer;
 }

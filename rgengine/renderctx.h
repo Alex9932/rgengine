@@ -115,6 +115,7 @@ typedef void            (*PFN_R_CMDBINDSAMPLER)(RCommandBuffer*, RSampler*, Uint
 typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDPUSHCONSTANTS)(RCommandBuffer*, void*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDDISPATCH)(RCommandBuffer*, Uint32, Uint32, Uint32);
+typedef void            (*PFN_R_CMDUSEIMAGE)(RCommandBuffer*, RImage*, Uint32);
 
 typedef void            (*PFN_R_CMDIMGUIRENDERDRAWDATA)(RCommandBuffer*, void*);
 
@@ -190,6 +191,7 @@ namespace Engine {
 		PFN_R_CMDPUSHCONSTANTS        CmdPushConstants;
 		PFN_R_CMDDISPATCH             CmdDispatch;
 		PFN_R_CMDIMGUIRENDERDRAWDATA  CmdImGuiRenderDrawData;
+		PFN_R_CMDUSEIMAGE             CmdUseImage;
 
 	} RenderBackend;
 

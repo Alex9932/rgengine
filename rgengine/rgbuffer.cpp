@@ -184,5 +184,8 @@ namespace Engine {
 		RRenderpass* GetGBufferRenderpass() { return renderpass; }
 		RPipeline* GetGBufferPipeline() { return pipeline; }
 
+		RImage* GetGBufferImage(Uint32 i) { return rtargets[i]; }
+		RImage* GetGBufferDepth() { return depthbuffer; }
+
 	}
 }

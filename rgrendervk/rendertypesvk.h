@@ -9,7 +9,7 @@
 #define R_RENDERER_NAME      "Vulkan"
 #define R_RENDERER_SHORTNAME "vk"
 
-#define R_VKRENDER_DEBUG 1
+#define R_VKRENDER_DEBUG 0
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
 #define R_MAX_COMMANDBUFFERS_PER_FRAME 256
@@ -26,6 +26,10 @@ struct RRenderDevice {
 	VkCommandBuffer    vkswapcmdbuffer[2];
 	VkSemaphore        cmdbuffsemaphores[R_MAX_COMMANDBUFFERS_PER_FRAME];
 	
+#if R_VKRENDER_DEBUG
+	VkDebugUtilsMessengerEXT debugMessenger;
+#endif
+
 	VkDescriptorPool   vkdescriptorpool;
 
 	VmaAllocator	   vmaallocator;
@@ -85,6 +89,8 @@ struct RImage {
 	VmaAllocation  allocation;
 	Uint32         length;
 	RFormat        format;
+	VkImageLayout  layout;
+	Uint32 _offset;
 };
 
 struct RCommandBuffer {
@@ -219,6 +225,42 @@ static VkDescriptorType GetDescriptorType(Uint32 type) {
 	case RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	case RG_DESCRIPTOR_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	default: return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+	}
+}
+
+static VkImageLayout GetImageLayout(Uint32 usage) {
+	switch (usage) {
+	case RG_IMAGE_USAGE_UNDEFINED:        { return VK_IMAGE_LAYOUT_UNDEFINED; }
+	case RG_IMAGE_USAGE_COLOR_ATTACHMENT: { return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; }
+	case RG_IMAGE_USAGE_DEPTH_ATTACHMENT: { return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL; }
+	case RG_IMAGE_USAGE_SHADER_READ_ONLY: { return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; }
+	case RG_IMAGE_USAGE_TRANSFER_SRC:     { return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL; }
+	case RG_IMAGE_USAGE_TRANSFER_DST:     { return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; }
+	default: { return VK_IMAGE_LAYOUT_GENERAL; }
+	}
+}
+
+static VkPipelineStageFlagBits GetImagePipelineStage(Uint32 usage) {
+	switch (usage) {
+	case RG_IMAGE_USAGE_UNDEFINED:        { return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; }
+	case RG_IMAGE_USAGE_COLOR_ATTACHMENT: { return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; }
+	case RG_IMAGE_USAGE_DEPTH_ATTACHMENT: { return (VkPipelineStageFlagBits)(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT); }
+	case RG_IMAGE_USAGE_SHADER_READ_ONLY: { return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; }
+	case RG_IMAGE_USAGE_TRANSFER_SRC:     { return VK_PIPELINE_STAGE_TRANSFER_BIT; }
+	case RG_IMAGE_USAGE_TRANSFER_DST:     { return VK_PIPELINE_STAGE_TRANSFER_BIT; }
+	default: { return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; }
+	}
+}
+
+static VkAccessFlagBits GetImageAccess(Uint32 usage) {
+	switch (usage) {
+	case RG_IMAGE_USAGE_UNDEFINED:        { return VK_ACCESS_NONE; }
+	case RG_IMAGE_USAGE_COLOR_ATTACHMENT: { return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; }
+	case RG_IMAGE_USAGE_DEPTH_ATTACHMENT: { return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; }
+	case RG_IMAGE_USAGE_SHADER_READ_ONLY: { return VK_ACCESS_SHADER_READ_BIT; }
+	case RG_IMAGE_USAGE_TRANSFER_SRC:     { return VK_ACCESS_TRANSFER_READ_BIT; }
+	case RG_IMAGE_USAGE_TRANSFER_DST:     { return VK_ACCESS_TRANSFER_WRITE_BIT; }
+	default: { return VK_ACCESS_NONE; }
 	}
 }
 

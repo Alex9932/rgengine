@@ -78,6 +78,7 @@ namespace Engine {
 		ctx->CmdDrawIndexed       = (PFN_R_CMDDRAWINDEXED)Engine::DL_GetProcAddress(handle, "R_CmdDrawIndexed");
         ctx->CmdPushConstants     = (PFN_R_CMDPUSHCONSTANTS)Engine::DL_GetProcAddress(handle, "R_CmdPushConstants");
 		ctx->CmdDispatch          = (PFN_R_CMDDISPATCH)Engine::DL_GetProcAddress(handle, "R_CmdDispatch");
+		ctx->CmdUseImage          = (PFN_R_CMDUSEIMAGE)Engine::DL_GetProcAddress(handle, "R_CmdUseImage");
 
         ctx->CmdImGuiRenderDrawData = (PFN_R_CMDIMGUIRENDERDRAWDATA)Engine::DL_GetProcAddress(handle, "R_CmdImGuiRenderDrawData");
 

@@ -118,6 +118,10 @@ namespace Engine {
 			ctx->ResetCommandBuffer(cmdbuffer);
 			ctx->BeginCommandBuffer(cmdbuffer);
 
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(0), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(1), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(2), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+
 			ctx->CmdBeginRenderpass(cmdbuffer, NULL);
 			ctx->CmdBindPipeline(cmdbuffer, pipeline);
 			ctx->CmdBindVertexBuffer(cmdbuffer, vertexbuffer, 0, sizeof(Float32) * 2);

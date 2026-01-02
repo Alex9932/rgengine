@@ -16,6 +16,9 @@ namespace Engine {
 		RRenderpass* GetGBufferRenderpass();
 		RPipeline* GetGBufferPipeline();
 
+		RImage* GetGBufferImage(Uint32 i);
+		RImage* GetGBufferDepth();
+
 	}
 }
 

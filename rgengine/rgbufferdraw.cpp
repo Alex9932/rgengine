@@ -86,6 +86,11 @@ namespace Engine {
 			ctx->ResetCommandBuffer(cmdbuffer);
 			ctx->BeginCommandBuffer(cmdbuffer);
 
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(0), RG_IMAGE_USAGE_COLOR_ATTACHMENT);
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(1), RG_IMAGE_USAGE_COLOR_ATTACHMENT);
+			ctx->CmdUseImage(cmdbuffer, GetGBufferImage(2), RG_IMAGE_USAGE_COLOR_ATTACHMENT);
+			ctx->CmdUseImage(cmdbuffer, GetGBufferDepth(),  RG_IMAGE_USAGE_DEPTH_ATTACHMENT);
+
 			// Draw 3D scene
 			RRenderpassClearInfo clearinfo = {};
 			clearinfo.color[0] = { 0, 0, 0, 1 };

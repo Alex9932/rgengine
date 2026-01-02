@@ -34,6 +34,36 @@ static Bool _EventHandler(SDL_Event* event, void* data) {
 	return true;
 }
 
+#if R_VKRENDER_DEBUG
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL R_DebugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData) {
+
+	RRenderDevice* dev = (RRenderDevice*)pUserData;
+
+	rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~");
+	rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: Swap image: %d", dev->vkcurrentimage);
+	rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: %s", pCallbackData->pMessage);
+	rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: VK objects (%d)", pCallbackData->objectCount);
+	for (Uint32 i = 0; i < pCallbackData->objectCount; i++) {
+		const VkDebugUtilsObjectNameInfoEXT* obj = &pCallbackData->pObjects[i];
+		rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: + %s (%x)", obj->pObjectName, obj->objectHandle);
+	}
+
+	rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: Command buffers (%d)", pCallbackData->cmdBufLabelCount);
+	for (Uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++) {
+		const VkDebugUtilsLabelEXT* cb = &pCallbackData->pCmdBufLabels[i];
+		rgLogWarn(RG_LOG_RENDER, "Vulkan DBG: + %s", cb->pLabelName);
+	}
+
+	return VK_FALSE;
+}
+
+#endif
+
 RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	flags = info->flags;
 
@@ -70,6 +100,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	Uint32 sdlExtensionCount = 0;
 	String* sdlExtensions = (String*)SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
 
+
 	VkApplicationInfo appInfo = {};
     appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName   = "test renderer"; // TODO: replace this
@@ -81,19 +112,63 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	VkInstanceCreateInfo createInfo = {};
     createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo        = &appInfo;
+#if R_VKRENDER_DEBUG
+	std::vector<String> exts;
+	for (Uint32 i = 0; i < sdlExtensionCount; i++) {
+		exts.push_back(sdlExtensions[i]);
+	}
+	exts.push_back("VK_EXT_debug_utils");
+	
+    createInfo.enabledExtensionCount   = exts.size();
+    createInfo.ppEnabledExtensionNames = exts.data();
+#else
     createInfo.enabledExtensionCount   = sdlExtensionCount;
     createInfo.ppEnabledExtensionNames = sdlExtensions;
-	
+#endif
+
+#if R_VKRENDER_DEBUG
 	String validationlayer = "VK_LAYER_KHRONOS_validation";
 	createInfo.enabledLayerCount       = 1;
 	createInfo.ppEnabledLayerNames     = &validationlayer;
+#else
+	createInfo.enabledLayerCount       = 0;
+	createInfo.ppEnabledLayerNames     = NULL;
+#endif
 
 	if (vkCreateInstance(&createInfo, device->vkalloc, &device->vkctx) != VK_SUCCESS) {
 		RG_ERROR_MSG("Vulkan instance error!");
 	}
 
+#if R_VKRENDER_DEBUG
+
+	VkDebugUtilsMessengerCreateInfoEXT msgCreateInfo = {};
+	msgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	msgCreateInfo.messageSeverity =
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	msgCreateInfo.messageType =
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	msgCreateInfo.pfnUserCallback = R_DebugCallback;
+	msgCreateInfo.pUserData = device;
+	device->debugMessenger;
+
+	auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(device->vkctx, "vkCreateDebugUtilsMessengerEXT");
+
+	if (vkCreateDebugUtilsMessengerEXT != NULL) {
+		if (vkCreateDebugUtilsMessengerEXT(device->vkctx, &msgCreateInfo, NULL, &device->debugMessenger) != VK_SUCCESS) {
+			rgLogWarn(RG_LOG_RENDER, "VK: Debug messanger error!");
+		}
+	}
+	else {
+		rgLogWarn(RG_LOG_RENDER, "VK: No debug messanger extenion!");
+	}
+#endif
+
 	Uint32 deviceCount = 0;
-	vkEnumeratePhysicalDevices(device->vkctx, &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(device->vkctx, &deviceCount, NULL);
 	if (deviceCount == 0) { RG_ERROR_MSG("No Vulkan devices found!"); }
 
 	VkPhysicalDevice* devices = (VkPhysicalDevice*)rg_malloc(sizeof(VkPhysicalDevice) * deviceCount);
@@ -157,7 +232,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 
 	Uint32 queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device->vkpdev, &queueFamilyCount, nullptr);
+	vkGetPhysicalDeviceQueueFamilyProperties(device->vkpdev, &queueFamilyCount, NULL);
 
 	if (queueFamilyCount == 0) { RG_ERROR_MSG("No Vulkan device queues!"); }
 
@@ -268,7 +343,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
     colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment  = 0;
@@ -327,8 +402,8 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		// Transition image layout to COLOR_ATTACHMENT
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -340,8 +415,8 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 		vkCmdPipelineBarrier(device->vkswapcmdbuffer[0],
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
 			0, NULL,
 			0, NULL,
@@ -395,7 +470,12 @@ void R_DestroyDevice(RRenderDevice* device) {
 
 	vkDestroyDevice(device->vkdev, device->vkalloc);
 
-
+#if R_VKRENDER_DEBUG
+	auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(device->vkctx, "vkDestroyDebugUtilsMessengerEXT");
+	if (vkDestroyDebugUtilsMessengerEXT != NULL) {
+		vkDestroyDebugUtilsMessengerEXT(device->vkctx, device->debugMessenger, NULL);
+	}
+#endif
 
 	vkDestroyInstance(device->vkctx, device->vkalloc);
 
@@ -417,13 +497,13 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	vkBeginCommandBuffer(device->vkswapcmdbuffer[0], &begininfo);
-#if 0
+#if 1
 	{
 		// Transition image layout to PRESENT
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		barrier.dstAccessMask = 0;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -434,9 +514,9 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(cmdbuffer,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[0],
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
 			0, NULL,
 			0, NULL,
@@ -488,7 +568,6 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	device->vkcurrentimage++;
 	device->vkcurrentimage = device->vkcurrentimage % device->vkimagescount;
-	//rgLogError(RG_LOG_RENDER, "Image: %d", vk_currentimage);
 
 	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore, VK_NULL_HANDLE, &device->vkcurrentimage);
 
@@ -504,8 +583,8 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		// Transition image layout to COLOR_ATTACHMENT
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -517,8 +596,8 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 		vkCmdPipelineBarrier(device->vkswapcmdbuffer[1],
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
 			0, NULL,
 			0, NULL,

@@ -11,6 +11,7 @@ layout(set = 1, binding = 2) uniform texture2D t_unit2;
 void main() {
 
 	vec2 uv = o_position.xy * 0.5 + 0.5;
+	uv.y = 1.0 - uv.y;
 	
 	vec4 u0 = texture(sampler2D(t_unit0, smplr), uv);
 	vec4 u1 = texture(sampler2D(t_unit1, smplr), uv);

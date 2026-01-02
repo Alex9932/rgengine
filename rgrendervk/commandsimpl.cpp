@@ -27,9 +27,9 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 		}
 
 		viewport.width  = info->framebuffer->width;
-		viewport.height = -info->framebuffer->height;
+		viewport.height = info->framebuffer->height;// -info->framebuffer->height;
 		viewport.x = 0;
-		viewport.y = info->framebuffer->height;
+		viewport.y = 0;// info->framebuffer->height;
 
 		scissor.extent.width  = info->framebuffer->width;
 		scissor.extent.height = info->framebuffer->height;
@@ -120,4 +120,39 @@ void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData) {
 void R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 gc_x, Uint32 gc_y, Uint32 gc_z) {
 	vkCmdDispatch(cmdbuff->cmdbuffer, gc_x, gc_y, gc_z);
 	cmdbuff->dev->dispatch_calls++;
+}
+
+void R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage) {
+	VkImageLayout newLayout = GetImageLayout(usage);
+
+	// No need to change layout
+	if (image->layout == newLayout) { return; }
+
+	VkPipelineStageFlagBits srcStage = GetImagePipelineStage(image->layout);
+	VkPipelineStageFlagBits dstStage = GetImagePipelineStage(newLayout);
+
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.srcAccessMask = GetImageAccess(image->layout);
+	barrier.dstAccessMask = GetImageAccess(newLayout);
+	barrier.oldLayout = image->layout;
+	barrier.newLayout = newLayout;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = image->image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	if (image->format == RG_FORMAT_D32) {
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+	if (image->format == RG_FORMAT_D24S8) {
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	barrier.subresourceRange.baseMipLevel   = 0;
+	barrier.subresourceRange.levelCount     = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount     = 1;
+
+	vkCmdPipelineBarrier(cmdbuff->cmdbuffer, srcStage, dstStage, 0, 0, NULL, 0, NULL, 1, &barrier);
+
+	image->layout = newLayout;
 }

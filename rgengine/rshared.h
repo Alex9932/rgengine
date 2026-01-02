@@ -61,6 +61,7 @@ extern "C" {
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
 	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
 
+	extern RG_DECLSPEC void            R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage);
 	extern RG_DECLSPEC void            R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData);
 	extern RG_DECLSPEC void            R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 groupcount_x, Uint32 groupcount_y, Uint32 groupcount_z);
 

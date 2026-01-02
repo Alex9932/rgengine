@@ -19,7 +19,7 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 		attachments[i].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
 		attachments[i].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[i].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[i].initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		attachments[i].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		colorAttachmentRef[i].attachment = i;
@@ -34,7 +34,7 @@ RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info)
 		attachments[info->rt_count].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
 		attachments[info->rt_count].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[info->rt_count].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[info->rt_count].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[info->rt_count].initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		attachments[info->rt_count].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		colorAttachmentRef[info->rt_count].attachment = info->rt_count;
@@ -238,7 +238,7 @@ static void MakeGraphicsPipeline(RRenderDevice* dev, RPipelineCreateInfo* info, 
 	case RG_RENDERPASS_CULLMODE_NONE: { rasterizer.cullMode = VK_CULL_MODE_NONE; break; }
 	default: { rasterizer.cullMode = VK_CULL_MODE_NONE; break; }
 	}
-	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.depthBiasEnable = VK_FALSE;
 
