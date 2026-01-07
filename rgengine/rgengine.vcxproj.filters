@@ -297,6 +297,9 @@
     <ClCompile Include="rlighting.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="rpostprocess.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -537,6 +540,9 @@
       <Filter>Header Files\render</Filter>
     </ClInclude>
     <ClInclude Include="rlighting.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="rpostprocess.h">
       <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>

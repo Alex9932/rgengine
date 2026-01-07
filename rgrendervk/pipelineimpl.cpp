@@ -256,7 +256,14 @@ static void MakeGraphicsPipeline(RRenderDevice* dev, RPipelineCreateInfo* info, 
 			VK_COLOR_COMPONENT_G_BIT |
 			VK_COLOR_COMPONENT_B_BIT |
 			VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachments[i].blendEnable = VK_FALSE;
+		colorBlendAttachments[i].blendEnable = info->blendstates[i].blendEnable ? VK_TRUE : VK_FALSE;
+
+		colorBlendAttachments[i].colorBlendOp = GetBlendOp(info->blendstates[i].colorBlendOp);
+		colorBlendAttachments[i].alphaBlendOp = GetBlendOp(info->blendstates[i].alphaBlendOp);
+		colorBlendAttachments[i].srcColorBlendFactor = GetBlendFactor(info->blendstates[i].srcColorFactor);
+		colorBlendAttachments[i].dstColorBlendFactor = GetBlendFactor(info->blendstates[i].dstColorFactor);
+		colorBlendAttachments[i].srcAlphaBlendFactor = GetBlendFactor(info->blendstates[i].srcAlphaFactor);
+		colorBlendAttachments[i].dstAlphaBlendFactor = GetBlendFactor(info->blendstates[i].dstAlphaFactor);
 	}
 
 	VkPipelineColorBlendStateCreateInfo colorBlending = {};

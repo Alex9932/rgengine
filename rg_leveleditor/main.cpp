@@ -253,6 +253,9 @@ class Application : public BaseGame {
 		}
 
 		void Quit() {
+
+			FreeEventHandler(EHandler);
+
 			delete entitylist;
 			delete staticlist;
 			delete lightlist;

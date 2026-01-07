@@ -45,10 +45,10 @@ void LightList::Draw() {
 					}
 				}
 
-				Bool isSpotlight = src->source.type == RG_SPOTLIGHT;
+				Bool isSpotlight = src->source.type == RG_LIGHT_SPOT;
 				if (ImGui::RadioButton("Spotlight", isSpotlight)) {
-					if (isSpotlight) { src->source.type = RG_POINTLIGHT; }
-					else { src->source.type = RG_SPOTLIGHT; }
+					if (isSpotlight) { src->source.type = RG_LIGHT_POINT; }
+					else { src->source.type = RG_LIGHT_SPOT; }
 				}
 
 				if (isSpotlight) {
@@ -70,7 +70,7 @@ void LightList::Draw() {
 
 	if (ImGui::Button("New pointlight")) {
 		LightSource* src = world->NewLightSource();
-		src->source.type = RG_POINTLIGHT;
+		src->source.type = RG_LIGHT_POINT;
 	}
 
 	if (toRemove) {

@@ -1,8 +1,12 @@
 #version 430 core
 
+#define NORMALMAP 1
+
 layout(location = 0) in vec3 o_position;
-layout(location = 1) in vec3 o_normal;
-layout(location = 2) in vec2 o_uv;
+layout(location = 1) in vec3 o_T;
+layout(location = 2) in vec3 o_B;
+layout(location = 3) in vec3 o_N;
+layout(location = 4) in vec2 o_uv;
 
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 normal;
@@ -22,9 +26,24 @@ void main() {
 	//vec2 uv = vec2(o_uv.x, -o_uv.y);
 	vec2 uv = o_uv;
 
-	color.rgb = texture(sampler2D(t_albedo, smplr), uv).rgb * push.color.rgb;
-	color.a = 1;
+	vec3 t_col  = texture(sampler2D(t_albedo, smplr), uv).rgb;
+	vec3 t_norm = texture(sampler2D(t_normal, smplr), uv).rgb;
+	vec3 t_pbr  = texture(sampler2D(t_pbr,    smplr), uv).rgb;
 
-	normal.xyz = normalize(o_normal);
-	wpos.xyz   = o_position;
+	vec3 N = vec3(0);
+
+#if NORMALMAP
+	mat3 TBN = mat3(normalize(o_T), normalize(o_B), normalize(o_N));
+	vec3 nmap = t_norm * 2.0 - 1.0;
+	N = normalize(TBN * nmap);
+#else
+	N = normalize(o_N);
+#endif
+
+	color.rgb = t_col * push.color.rgb;
+	color.a = t_pbr.x;
+	normal.xyz = N;
+	normal.a = t_pbr.y;
+	wpos.xyz = o_position;
+	wpos.a = t_pbr.z;
 }

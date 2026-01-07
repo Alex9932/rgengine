@@ -17,8 +17,9 @@ enum IndexType {
 };
 
 enum LightType {
-	RG_POINTLIGHT = 0,
-	RG_SPOTLIGHT = 1
+	RG_LIGHT_GLOBAL = 0,
+	RG_LIGHT_POINT  = 1,
+	RG_LIGHT_SPOT   = 2
 };
 
 enum TextureType {
@@ -202,6 +203,34 @@ typedef struct RPipelineLayoutDescription {
 	Uint32 binding_count;
 } RPipelineLayoutDescription;
 
+#define RG_BLEND_FACTOR_ZERO                0x00
+#define RG_BLEND_FACTOR_ONE                 0x01
+#define RG_BLEND_FACTOR_SRC_COLOR           0x02
+#define RG_BLEND_FACTOR_DST_COLOR           0x03
+#define RG_BLEND_FACTOR_ONE_MINUS_SRC_COLOR 0x04
+#define RG_BLEND_FACTOR_ONE_MINUS_DST_COLOR 0x05
+#define RG_BLEND_FACTOR_SRC_ALPHA           0x06
+#define RG_BLEND_FACTOR_DST_ALPHA           0x07
+#define RG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA 0x08
+#define RG_BLEND_FACTOR_ONE_MINUS_DST_ALPHA 0x09
+
+#define RG_BLEND_OP_ADD     0x00
+#define RG_BLEND_OP_SUB     0x01
+#define RG_BLEND_OP_REV_SUB 0x02
+#define RG_BLEND_OP_MIN     0x03
+#define RG_BLEND_OP_MAX     0x04
+
+typedef struct RPipelineBlendState {
+	Uint8  blendEnable;
+	Uint8  srcColorFactor;
+	Uint8  dstColorFactor;
+	Uint8  colorBlendOp;
+	Uint8  srcAlphaFactor;
+	Uint8  dstAlphaFactor;
+	Uint8  alphaBlendOp;
+	Uint8  _offset;
+} RPipelineBlendState;
+
 typedef struct RPipelineCreateInfo {
 	Uint8    type; // Graphics, compute
 	Uint8    _off0;
@@ -220,8 +249,9 @@ typedef struct RPipelineCreateInfo {
 		RRenderpass* renderpass; // Used for create graphics pipeline
 	};
 
-	RPipelineInputDescription* descriptions;
+	RPipelineInputDescription*  descriptions;
 	RPipelineLayoutDescription* layout;
+	RPipelineBlendState         blendstates[6];
 } RPipelineCreateInfo;
 
 // Renderpass
@@ -246,7 +276,6 @@ typedef struct RRenderpassCreateInfo {
 	Uint8   use_depth;
 	RRect   viewport;
 	RFormat rt_formats[6];
-	// TODO: add blend, rasterizer, depth-stencil states
 } RRenderpassCreateInfo;
 
 typedef struct RRenderpassClearInfo {
@@ -580,7 +609,7 @@ typedef struct R3D_PushModelInfo {
 
 typedef struct R3D_CameraInfo {
 	mat4 projection;
-	//mat4 view;
+	mat4 view;
 	vec3 position;
 	Float32 _offset0;
 	vec3 rotation;

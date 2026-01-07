@@ -71,10 +71,13 @@ namespace Engine {
 
 		RG_DECLSPEC void SetCamera(R3D_CameraInfo* info);
 
+		R3D_CameraInfo* GetCameraInfo();
+
 		RG_DECLSPEC void UpdateSystems();
 		RG_DECLSPEC void Update();
 
 		RG_DECLSPEC void SetGlobalLight(R3D_GlobalLightDescrition* desc);
+		RG_DECLSPEC R3D_GlobalLightDescrition* GetGlobalLight();
 		RG_DECLSPEC void GetInfo(RenderInfo* info);
 
 		RG_DECLSPEC ParticleSystem* GetParticleSystem();

@@ -36,7 +36,13 @@ namespace Engine {
 			rtargets[1] = ctx->CreateImage(dev, &cainfo);
 			rtargets[2] = ctx->CreateImage(dev, &cainfo);
 
-			RDescriptorSetBinding bindings[3] = {};
+			RImageCreateInfo dbinfo = {}; // Depth attachment
+			dbinfo.format = RG_FORMAT_D32;
+			dbinfo.width = wndSize->x;
+			dbinfo.height = wndSize->y;
+			depthbuffer = ctx->CreateImage(dev, &dbinfo);
+
+			RDescriptorSetBinding bindings[4] = {};
 			bindings[0].binding = 0;
 			bindings[0].stage = RG_SHADER_TYPE_PIXEL;
 			bindings[0].type = RG_DESCRIPTOR_TYPE_IMAGE;
@@ -49,17 +55,15 @@ namespace Engine {
 			bindings[2].stage = RG_SHADER_TYPE_PIXEL;
 			bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
 			bindings[2].image = rtargets[2];
+			bindings[3].binding = 3;
+			bindings[3].stage = RG_SHADER_TYPE_PIXEL;
+			bindings[3].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			bindings[3].image = depthbuffer;
 
 			RDescriptorSetCreateInfo setinfo = {};
-			setinfo.binding_count = 3;
+			setinfo.binding_count = 4;
 			setinfo.bindings = bindings;
 			set = ctx->CreateDescriptorSet(dev, &setinfo);
-
-			RImageCreateInfo dbinfo = {}; // Depth attachment
-			dbinfo.format = RG_FORMAT_D32;
-			dbinfo.width  = wndSize->x;
-			dbinfo.height = wndSize->y;
-			depthbuffer = ctx->CreateImage(dev, &dbinfo);
 
 			RRenderpassCreateInfo rp3dinfo = {};
 			rp3dinfo.rt_count  = 3;

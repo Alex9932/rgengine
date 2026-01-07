@@ -189,6 +189,7 @@
     <ClCompile Include="rgvector.cpp" />
     <ClCompile Include="rimgui.cpp" />
     <ClCompile Include="rlighting.cpp" />
+    <ClCompile Include="rpostprocess.cpp" />
     <ClCompile Include="scriptengine.cpp" />
     <ClCompile Include="scriptruntime.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
@@ -261,6 +262,7 @@
     <ClInclude Include="rgthread.h" />
     <ClInclude Include="rimgui.h" />
     <ClInclude Include="rlighting.h" />
+    <ClInclude Include="rpostprocess.h" />
     <ClInclude Include="scriptengine.h" />
     <ClInclude Include="scriptruntime.h" />
     <ClInclude Include="soundbuffer.h" />

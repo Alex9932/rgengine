@@ -29,6 +29,7 @@
 #include "rgbuffer.h"
 #include "rgbufferdraw.h"
 #include "rlighting.h"
+#include "rpostprocess.h"
 
 
 #include <vector>
@@ -52,10 +53,7 @@ namespace Engine {
 
         
 
-        static struct mat_transform {
-            mat4 proj;
-            mat4 view;
-        } mat_camera;
+        static R3D_CameraInfo camera;
 
         // Test
 		static Uint32 frameIndex = 0;
@@ -175,6 +173,7 @@ namespace Engine {
             InitRenderAnimation();
             InitRImGui();
             InitRLighting(&wndSize);
+            InitPostProcess(&wndSize);
 
 
 
@@ -223,6 +222,7 @@ namespace Engine {
             //renderctx.R2D_DestroyTexture(r2d_texture);
             //renderctx.R2D_DestroyTexture(r2d_texture_bg);
 
+            DestroyPostProcess();
             DestroyRLighting();
             DestroyRImGui();
             DestroyRenderAnimation();
@@ -266,6 +266,7 @@ namespace Engine {
                 //CreateFramebuffers();
                 ResizeGBuffer(&wndSize);
                 ResizeRLighting(&wndSize);
+                ResizePostProcess(&wndSize);
                 frameIndex = 0;
             }
         }
@@ -362,21 +363,22 @@ namespace Engine {
 
         void SetCamera(R3D_CameraInfo* info) {
 
-            // Undate frustum
-            mat4 camera_view;
-            mat4_view(&camera_view, info->position, info->rotation);
+            camera.position   = info->position;
+            camera.rotation   = info->rotation;
+            camera.projection = info->projection;
+            mat4_view(&camera.view, camera.position, camera.rotation);
+
+            // Update frustum
             CreateFrustumInfo finfo = {};
             finfo.result = &frustum;
-            finfo.proj   = &info->projection;
-            finfo.view   = &camera_view;
+            finfo.proj   = &camera.projection;
+            finfo.view   = &camera.view;
             CreateFrustum(&finfo);
-
-            mat4 view;
-			mat4_view(&mat_camera.view, info->position, info->rotation);
-            mat_camera.proj = info->projection;
 
             //renderctx.R3D_SetCamera(info);
         }
+
+        R3D_CameraInfo* GetCameraInfo() { return &camera; }
 
         void UpdateSystems() {
             particlesystem->UpdateComponents(NULL);
@@ -389,10 +391,15 @@ namespace Engine {
             // Render scene
             // TODO
 
+            for (Uint32 i = 0; i < world->GetLightCount(); i++) {
+                LightSource* src = world->GetLightSource(i);
+                PushSourceRLighting(&src->source);
+            }
+
 #if 1
             DoAnimate();
 
-            BeginGBufferPass(&mat_camera.proj, &mat_camera.view);
+            BeginGBufferPass(&camera.projection, &camera.view);
 
 			// Draw entities
             for (Uint32 i = 0; i < world->GetEntityCount(); i++) {
@@ -418,6 +425,7 @@ namespace Engine {
 
 #endif
             DoRLighting();
+            DoPostProcess();
 
             UpdateImGui();
             DrawImGui();
@@ -531,9 +539,13 @@ namespace Engine {
             glightdescription = *desc;
         }
 
+        R3D_GlobalLightDescrition* GetGlobalLight() {
+            return &glightdescription;
+        }
+
         void GetInfo(RenderInfo* info) {
             renderctx.GetInfo(rdev, info);
-            info->r3d_renderResult = GetRLightingOutputSet();
+            info->r3d_renderResult = GetPostProcessOutputSet();
         }
 
         ParticleSystem* GetParticleSystem() {
