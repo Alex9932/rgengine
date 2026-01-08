@@ -21,7 +21,7 @@ struct RRenderDevice {
 	//ID3D11Texture2D*     backbuffers[8];
 
 	RRenderpass*         default_renderpass;
-	RResourceView*       default_backbuffers[8];
+	//RResourceView*       default_backbuffers[8];
 	RFramebuffer*        default_framebuffers[8];
 
 #if R_DXRENDER_DEBUG

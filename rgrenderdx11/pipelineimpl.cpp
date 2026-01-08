@@ -3,6 +3,7 @@
 #include <filesystem.h>
 #include <d3dcompiler.h>
 
+#if 0
 RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* info) {
 	RFramebuffer* fb = (RFramebuffer*)dev->allocator->Allocate(sizeof(RFramebuffer));
 	fb->dev = dev;
@@ -18,6 +19,7 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 	}
 	return fb;
 }
+#endif
 
 void R_DestroyFramebuffer(RFramebuffer* fb) {
 	RRenderDevice* dev = fb->dev;

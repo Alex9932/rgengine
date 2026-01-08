@@ -163,7 +163,7 @@ void R_DestroyImage(RImage* image) {
 //////////////////////////////////////////////////////////
 // RESOURCE VIEW
 //////////////////////////////////////////////////////////
-
+#if 0
 RResourceView* R_CreateResourceView(RRenderDevice* dev, RResourceViewCreateInfo* info) {
 	RResourceView* rv = (RResourceView*)dev->allocator->Allocate(sizeof(RResourceView));
 	rv->dev = dev;
@@ -271,7 +271,7 @@ void R_DestroyResourceView(RResourceView* rv) {
 
 	dev->allocator->Deallocate(rv);
 }
-
+#endif
 RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	RSampler* sampler = (RSampler*)dev->allocator->Allocate(sizeof(RSampler));
 	sampler->dev = dev;

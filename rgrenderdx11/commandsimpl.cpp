@@ -133,7 +133,7 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 	buffer->dev->dxctx->IASetIndexBuffer(ib->buffer, GetIndexType(indexFormat), 0);
 	buffer->dev->dxctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
-
+#if 0
 static RG_INLINE void BindResourceView(RBindResourceViewInfo* info) {
 	if(info->target == RG_PIPELINE_TYPE_COMPUTE) {
 		// Compute pipeline
@@ -166,6 +166,7 @@ static RG_INLINE void CMD_BindResourceViewsImpl(RCommandBuffer* buffer, RCommand
 		BindResourceView(&infos[i]);
 	}
 }
+#endif
 
 static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	RSampler* sampler = (RSampler*)cmd->handle;
@@ -261,7 +262,7 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
-			case R_CMD_BIND_RESOURCEVIEWS: { CMD_BindResourceViewsImpl(buffer, cmd); break; }
+			//case R_CMD_BIND_RESOURCEVIEWS: { CMD_BindResourceViewsImpl(buffer, cmd); break; }
 			case R_CMD_BIND_SAMPLER:       { CMD_BindSamplerImpl(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
@@ -344,6 +345,7 @@ void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize)
 	cmd->data0  = isize;
 }
 
+#if 0
 void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	cmd->cmd = R_CMD_BIND_RESOURCEVIEWS;
@@ -353,6 +355,7 @@ void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResource
 	cmd->_off0 = count; // Store count in unused field
 	SDL_memcpy(cmd->buffer, views, sizeof(RBindResourceViewInfo) * count);
 }
+#endif
 
 void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);

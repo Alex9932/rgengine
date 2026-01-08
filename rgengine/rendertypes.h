@@ -144,35 +144,6 @@ typedef struct RCommandBufferCreateInfo {
 	Uint32 maxcmds;
 } RCommandBufferCreateInfo;
 
-// Resource view
-#if 0
-#define RG_RESOURCEVIEW_TYPE_RTV 0x1
-#define RG_RESOURCEVIEW_TYPE_DSV 0x2
-#define RG_RESOURCEVIEW_TYPE_SRV 0x3
-#define RG_RESOURCEVIEW_TYPE_UAV 0x4
-#define RG_RESOURCEVIEW_TYPE_BBV 0x5 // Swapchain backbuffer
-
-#define RG_RESOURCEVIEW_IMAGE  0x0
-#define RG_RESOURCEVIEW_BUFFER 0x1
-
-typedef struct RResourceViewCreateInfo {
-	Uint8  type;
-	Uint8  stage;
-	Uint16 buffer_type;
-
-	union {
-		Uint32 var;
-		Uint32 elements;
-	};
-
-	union {
-		RBuffer* dst_buffer;
-		RImage*  dst_image;
-	};
-} RResourceViewCreateInfo;
-#endif
-// Pipeline
-
 #define RG_PIPELINE_TYPE_GRAPHICS 0x1
 #define RG_PIPELINE_TYPE_COMPUTE  0x2
 
@@ -327,22 +298,6 @@ typedef struct RBindDescriptorSetsInfo {
 	Uint16           _offset0;
 	Uint32           _offset1;
 } RBindDescriptorSetsInfo;
-
-#if 0
-typedef struct RBindResourceViewInfo {
-	RResourceView* rv;
-	// Temporary solution
-	union {
-		Uint16 slot;
-		struct {
-			Uint8 set;
-			Uint8 binding;
-		};
-	};
-	Uint16         target; // Pipeline type
-	Uint32 	       type;
-} RBindResourceViewInfo;
-#endif
 
 typedef struct RUpdateBufferInfo {
 	RBuffer* handle;

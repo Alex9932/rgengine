@@ -28,7 +28,7 @@ SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 }
 
 void R_Setup() {
-
+	RG_ERROR_MSG("Direct3D 11 renderer is not support new rendering system!");
 }
 
 static IDXGIAdapter* SelectAdapter(RRenderDevice* device) {
@@ -107,7 +107,7 @@ static void CreateDefaultFramebuffer(RRenderDevice* device) {
 	rpinfo.use_depth = false;
 	rpinfo.viewport = { 0.0f, 0.0f, (Float32)device->wndsize.x, (Float32)device->wndsize.y };
 	device->default_renderpass = R_CreateRenderpass(device, &rpinfo);
-
+#if 0
 	for (size_t i = 0; i < device->backbuffer_count; i++) {
 		RResourceViewCreateInfo backbufferinfo = {};
 		backbufferinfo.type        = RG_RESOURCEVIEW_TYPE_BBV;
@@ -124,12 +124,13 @@ static void CreateDefaultFramebuffer(RRenderDevice* device) {
 		device->default_framebuffers[i] = R_CreateFramebuffer(device, &fbinfo);
 
 	}
+#endif
 }
 
 static void FreeDefaultFramebuffer(RRenderDevice* device) {
 	for (size_t i = 0; i < device->backbuffer_count; i++) {
 		R_DestroyFramebuffer(device->default_framebuffers[i]);
-		R_DestroyResourceView(device->default_backbuffers[i]);
+		//R_DestroyResourceView(device->default_backbuffers[i]);
 	}
 	R_DestroyRenderpass(device->default_renderpass);
 }
