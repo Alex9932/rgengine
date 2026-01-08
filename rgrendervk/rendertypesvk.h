@@ -266,4 +266,31 @@ static VkAccessFlagBits GetImageAccess(Uint32 usage) {
 	}
 }
 
+static VkBlendOp GetBlendOp(Uint32 op) {
+	switch (op) {
+	case RG_BLEND_OP_ADD:     return VK_BLEND_OP_ADD;
+	case RG_BLEND_OP_SUB:     return VK_BLEND_OP_SUBTRACT;
+	case RG_BLEND_OP_REV_SUB: return VK_BLEND_OP_REVERSE_SUBTRACT;
+	case RG_BLEND_OP_MIN:     return VK_BLEND_OP_MIN;
+	case RG_BLEND_OP_MAX:     return VK_BLEND_OP_MAX;
+	default:                  return VK_BLEND_OP_ADD;
+	}
+}
+
+static VkBlendFactor GetBlendFactor(Uint32 factor) {
+	switch (factor) {
+	case RG_BLEND_FACTOR_ZERO:                return VK_BLEND_FACTOR_ZERO;
+	case RG_BLEND_FACTOR_ONE:                 return VK_BLEND_FACTOR_ONE;
+	case RG_BLEND_FACTOR_SRC_COLOR:           return VK_BLEND_FACTOR_SRC_COLOR;
+	case RG_BLEND_FACTOR_DST_COLOR:           return VK_BLEND_FACTOR_DST_COLOR;
+	case RG_BLEND_FACTOR_ONE_MINUS_SRC_COLOR: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+	case RG_BLEND_FACTOR_ONE_MINUS_DST_COLOR: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+	case RG_BLEND_FACTOR_SRC_ALPHA:           return VK_BLEND_FACTOR_SRC_ALPHA;
+	case RG_BLEND_FACTOR_DST_ALPHA:           return VK_BLEND_FACTOR_DST_ALPHA;
+	case RG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	case RG_BLEND_FACTOR_ONE_MINUS_DST_ALPHA: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+	default:                                  return VK_BLEND_FACTOR_ONE;
+	}
+}
+
 #endif

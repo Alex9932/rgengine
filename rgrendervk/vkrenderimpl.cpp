@@ -105,7 +105,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
     appInfo.pApplicationName   = "test renderer"; // TODO: replace this
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName        = "rgEngine";
-    appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.engineVersion      = VK_MAKE_VERSION(RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH);
     appInfo.apiVersion         = vk_version;
 
 	VkInstanceCreateInfo createInfo = {};

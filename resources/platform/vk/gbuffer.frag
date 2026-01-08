@@ -40,7 +40,7 @@ void main() {
 	N = normalize(o_N);
 #endif
 
-	color.rgb = t_col * push.color.rgb;
+	color.rgb = t_col;// * push.color.rgb;
 	color.a = t_pbr.x;
 	normal.xyz = N;
 	normal.a = t_pbr.y;

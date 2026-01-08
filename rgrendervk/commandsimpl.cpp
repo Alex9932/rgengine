@@ -56,7 +56,9 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 
 	renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = cmdbuff->dev->vkextent;
+	//renderPassInfo.renderArea.extent = cmdbuff->dev->vkextent;
+	renderPassInfo.renderArea.extent.width  = viewport.width;
+	renderPassInfo.renderArea.extent.height = viewport.height;
 
 	vkCmdBeginRenderPass(cmdbuff->cmdbuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
