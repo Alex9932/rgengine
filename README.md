@@ -1,11 +1,12 @@
 ﻿![](https://raw.githubusercontent.com/Alex9932/rgengine/master/resources/platform/rgengine%20logo.png)
 # rgengine
 
-![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg?style=for-the-badge)
-![DirectX 11](https://img.shields.io/badge/DirectX-11-0078D7.svg?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
+![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)
+![Vulkan](https://img.shields.io/badge/Vulkan-1.3-0078D7.svg)
+![DirectX 11](https://img.shields.io/badge/DirectX-11-0078D7.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**rgengine** is a 3D game engine written in **C++**, featuring a modular architecture, **JavaScript scripting**, and a modern **DirectX 11** rendering pipeline.
+**rgengine** is a 3D game engine written in **C++**, featuring a modular architecture, **JavaScript scripting**, and a modern **Vulkan 1.3** and **DirectX 11** rendering pipelines.
 
 ---
 
@@ -20,8 +21,8 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
 
 - **Language:** C++
 - **Scripting:** JavaScript
-- **Rendering:** DirectX 11 (HLSL)
-- **Shaders:** HLSL
+- **Rendering:** Vulkan / DirectX 11
+- **Shaders:** GLSL / HLSL
 - **UI:** ImGui
 - **Platform:** Windows | Linux (Console tools only)
 
@@ -60,6 +61,7 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
 - Extended editor tools
 - Improved PBR pipeline
 - Vulkan backend with ray tracing support
+- Unified shader language
 
 ---
 
