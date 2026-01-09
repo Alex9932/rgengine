@@ -128,15 +128,15 @@ void R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage) {
 	VkImageLayout newLayout = GetImageLayout(usage);
 
 	// No need to change layout
-	if (image->layout == newLayout) { return; }
+	if (image->usage == usage) { return; }
 
-	VkPipelineStageFlagBits srcStage = GetImagePipelineStage(image->layout);
-	VkPipelineStageFlagBits dstStage = GetImagePipelineStage(newLayout);
+	VkPipelineStageFlagBits srcStage = GetImagePipelineStage(image->usage);
+	VkPipelineStageFlagBits dstStage = GetImagePipelineStage(usage);
 
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.srcAccessMask = GetImageAccess(image->layout);
-	barrier.dstAccessMask = GetImageAccess(newLayout);
+	barrier.srcAccessMask = GetImageAccess(image->usage);
+	barrier.dstAccessMask = GetImageAccess(usage);
 	barrier.oldLayout = image->layout;
 	barrier.newLayout = newLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -157,4 +157,5 @@ void R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage) {
 	vkCmdPipelineBarrier(cmdbuff->cmdbuffer, srcStage, dstStage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
 	image->layout = newLayout;
+	image->usage  = usage;
 }

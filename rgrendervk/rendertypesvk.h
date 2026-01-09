@@ -92,7 +92,7 @@ struct RImage {
 	Uint32         length;
 	RFormat        format;
 	VkImageLayout  layout;
-	Uint32 _offset;
+	Uint32         usage;
 };
 
 struct RCommandBuffer {
