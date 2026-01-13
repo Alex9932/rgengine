@@ -95,7 +95,7 @@ class Application : public BaseGame {
 		Application()  {
 			isClient = true;
 			isGraphics = true;
-			Render::SetRenderFlags(RG_RENDER_FULLSCREEN | RG_RENDER_USE3D);
+			Render::SetRenderFlags(0);
 
 			desc.color = { 1, 1, 1 };
 			desc.ambient = 0.45f;

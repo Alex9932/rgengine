@@ -2,6 +2,8 @@
 glslang.exe -V .\skinning.comp -o .\skinning.cs
 glslang.exe -V .\output.vert -o .\output.vs
 glslang.exe -V .\output.frag -o .\output.ps
+glslang.exe -V .\combine.vert -o .\combine.vs
+glslang.exe -V .\combine.frag -o .\combine.ps
 glslang.exe -V .\blur.vert -o .\blur.vs
 glslang.exe -V .\blur.frag -o .\blur.ps
 glslang.exe -V .\gbuffer.vert -o .\gbuffer.vs

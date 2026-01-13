@@ -10,6 +10,7 @@ namespace Engine {
 		void InitGBuffer(ivec2* wndsize);
 		void DestroyGBuffer();
 		void ResizeGBuffer(ivec2* wndsize);
+		void ReloadGBuffer(ivec2* wndsize);
 
 		RDescriptorSet* GetGBufferOutputSet();
 		RFramebuffer* GetGBufferFramebuffer();

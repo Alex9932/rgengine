@@ -3,6 +3,7 @@
 #include "window.h"
 #include "engine.h"
 #include "event.h"
+#include "input.h"
 
 #include "world.h"
 
@@ -53,16 +54,9 @@ namespace Engine {
 
         
 
-        static R3D_CameraInfo camera;
-
-        // Test
 		static Uint32 frameIndex = 0;
-        //static RResourceView* backbuffer[R_BUFFER_COUNT] = {};
-        //static RFramebuffer* framebuffer3d[R_BUFFER_COUNT] = {};
 
-		//static RImage* depthbuffer = NULL;
-		//static RResourceView* depthbuffer_rv = NULL;
-
+        static Bool                 isEditorMode           = false;
 
         static Bool                 isEntityCullingEnabled = false;
         static Bool                 isStaticCullingEnabled = true;
@@ -73,12 +67,21 @@ namespace Engine {
 
         static RenderSetupInfo      setupParams            = {};
 
+        static R3D_CameraInfo       camera;
         static Frustum              frustum                = {};
 
         ////////////////// R3D_RENDER //////////////////
 
         static R3D_RenderTaskInfo        renderTaskInfo    = {};
         static R3D_GlobalLightDescrition glightdescription = {};
+
+        static void ReloadShaders() {
+            rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
+            ReloadRenderAnimation();
+            ReloadRLighting(&wndSize);
+            ReloadPostProcess(&wndSize);
+            ReloadGBuffer(&wndSize);
+        }
 
         static bool _EventHandler(SDL_Event* event) {
 #if 0
@@ -105,6 +108,11 @@ namespace Engine {
                     //}
                     //default: { break; }
                 //}
+            }
+            else if (event->type == SDL_EVENT_KEY_DOWN) {
+                if (IsKeyDown(SDL_SCANCODE_LCTRL)) {
+                    ReloadShaders();
+                }
             }
 
             return true;
@@ -264,6 +272,7 @@ namespace Engine {
 
                 // Recreate swapchain, framebuffers and renderpasses
                 //CreateFramebuffers();
+                ResizeRImGui();
                 ResizeGBuffer(&wndSize);
                 ResizeRLighting(&wndSize);
                 ResizePostProcess(&wndSize);
@@ -428,7 +437,7 @@ namespace Engine {
             DoPostProcess();
 
             UpdateImGui();
-            DrawImGui();
+            DrawImGui(!isEditorMode);
 
 
 #if 0
@@ -545,7 +554,7 @@ namespace Engine {
 
         void GetInfo(RenderInfo* info) {
             renderctx.GetInfo(rdev, info);
-            info->r3d_renderResult = GetPostProcessOutputSet();
+            info->r3d_renderResult = GetPostProcessOutputImGuiSet();
         }
 
         ParticleSystem* GetParticleSystem() {
@@ -799,6 +808,7 @@ namespace Engine {
 
         void SetRenderFlags(Uint32 flags) {
             setupParams.flags = flags;
+            isEditorMode = RG_CHECK_FLAG(flags, RG_RENDER_EDITORMODE);
         }
 
     }

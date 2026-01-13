@@ -23,8 +23,8 @@ layout(push_constant) uniform PushConstants {
 } push;
 
 void main() {
-	//vec2 uv = vec2(o_uv.x, -o_uv.y);
-	vec2 uv = o_uv;
+	vec2 uv = vec2(o_uv.x, -o_uv.y);
+	//vec2 uv = o_uv;
 
 	vec3 t_col  = texture(sampler2D(t_albedo, smplr), uv).rgb;
 	vec3 t_norm = texture(sampler2D(t_normal, smplr), uv).rgb;
@@ -40,7 +40,7 @@ void main() {
 	N = normalize(o_N);
 #endif
 
-	color.rgb = t_col;// * push.color.rgb;
+	color.rgb = t_col * push.color.rgb;
 	color.a = t_pbr.x;
 	normal.xyz = N;
 	normal.a = t_pbr.y;

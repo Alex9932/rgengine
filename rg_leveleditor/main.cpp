@@ -208,7 +208,7 @@ class Application : public BaseGame {
 			//this->wndIcon = "";
 			this->wndLogo = "platform/editor.png";
 			this->imguiIni = "im_leveleditor.ini";
-			Render::SetRenderFlags(RG_RENDER_USE3D /*| RG_RENDER_NOLIGHT | RG_RENDER_NOPOSTPROCESS*/);
+			Render::SetRenderFlags(RG_RENDER_EDITORMODE /*| RG_RENDER_NOLIGHT | RG_RENDER_NOPOSTPROCESS*/);
 		}
 
 		~Application() {

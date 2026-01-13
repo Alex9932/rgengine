@@ -77,6 +77,11 @@ namespace Engine {
             ctx->DestroyShader(shader);
         }
 
+        void ReloadRenderAnimation() {
+            DestroyRenderAnimation();
+            InitRenderAnimation();
+        }
+
 		void DoAnimate() {
 
             RenderBackend* ctx = GetRenderContext();
@@ -98,26 +103,6 @@ namespace Engine {
                 dsinfo.startslot = 0;
                 dsinfo.sets = sets;
                 ctx->CmdBindDescriptorSets(cmdbuffer, &dsinfo);
-#if 0
-                RBindResourceViewInfo info[4] = {};
-                info[0].rv = bbuf->rv;
-                info[0].slot = 0;
-                info[0].target = RG_PIPELINE_TYPE_COMPUTE;
-                info[0].type = RG_RESOURCEVIEW_TYPE_SRV;
-                info[1].rv = mdl->i_srv_vtx;
-                info[1].slot = 1;
-                info[1].target = RG_PIPELINE_TYPE_COMPUTE;
-                info[1].type = RG_RESOURCEVIEW_TYPE_SRV;
-                info[2].rv = mdl->i_srv_wht;
-                info[2].slot = 2;
-                info[2].target = RG_PIPELINE_TYPE_COMPUTE;
-                info[2].type = RG_RESOURCEVIEW_TYPE_SRV;
-                info[3].rv = mdl->s_uav;
-                info[3].slot = 3;
-                info[3].target = RG_PIPELINE_TYPE_COMPUTE;
-                info[3].type = RG_RESOURCEVIEW_TYPE_UAV;
-                ctx->CmdBindResourceViews(cmdbuffer, 4, info);
-#endif
                 ctx->CmdDispatch(cmdbuffer, mdl->vCount, 1, 1);
             }
 

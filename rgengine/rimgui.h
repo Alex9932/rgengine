@@ -10,9 +10,9 @@ namespace Engine {
 
 		void InitRImGui();
 		void DestroyRImGui();
-
+		void ResizeRImGui();
 		void UpdateImGui();
-		void DrawImGui();
+		void DrawImGui(Uint32 drawOutput);
 
 		RG_DECLSPEC void RegisterImGuiDrawCallback(RenderImGuiCallback cb);
 		RG_DECLSPEC void FreeImGuiDrawCallback(RenderImGuiCallback cb);

@@ -148,10 +148,9 @@ namespace Engine {
 
 		}
 
-		void InitGBuffer(ivec2* wndsize) {
+		static void LoadShaders() {
 			RRenderDevice* dev = GetRenderDevice();
 			RenderBackend* ctx = GetRenderContext();
-
 			RShaderCreateInfo vsinfo = {};
 			vsinfo.isCompiled = true;
 			vsinfo.name = "gbuffer.vs";
@@ -163,24 +162,35 @@ namespace Engine {
 			psinfo.name = "gbuffer.ps";
 			psinfo.type = RG_SHADER_TYPE_PIXEL;
 			ps = ctx->CreateShader(dev, &psinfo);
+		}
 
+		static void DestroyShaders() {
+			RenderBackend* ctx = GetRenderContext();
+			ctx->DestroyShader(vs);
+			ctx->DestroyShader(ps);
+		}
+
+		void InitGBuffer(ivec2* wndsize) {
+			LoadShaders();
 			CreateBuffers(wndsize);
 			InitGBufferDraw();
 		}
 
 		void DestroyGBuffer() {
-			RenderBackend* ctx = GetRenderContext();
-
 			DestroyGBufferDraw();
 			FreeBuffers();
-
-			ctx->DestroyShader(vs);
-			ctx->DestroyShader(ps);
+			DestroyShaders();
 		}
 
 		void ResizeGBuffer(ivec2* wndsize) {
 			FreeBuffers();
 			CreateBuffers(wndsize);
+		}
+
+		void ReloadGBuffer(ivec2* wndsize) {
+			DestroyShaders();
+			LoadShaders();
+			ResizeGBuffer(wndsize);
 		}
 
 		RDescriptorSet* GetGBufferOutputSet() { return set; }

@@ -6,6 +6,7 @@ namespace Engine {
 
 		void InitRenderAnimation();
 		void DestroyRenderAnimation();
+		void ReloadRenderAnimation();
 		void DoAnimate();
 
 	}

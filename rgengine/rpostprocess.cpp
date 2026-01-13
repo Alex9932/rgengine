@@ -42,7 +42,8 @@ namespace Engine {
 		static RPipeline* pl_blur2;
 		static RPipeline* pl_blur3;
 
-		static void* set; // output image for ImGui
+		static void* imguiset; // output image for ImGui
+		static RDescriptorSet* set;
 
 		static RImage* rtarget = NULL;
 		static RFramebuffer* framebuffer = NULL;
@@ -68,7 +69,17 @@ namespace Engine {
 			cainfo.height = size->y;
 			rtarget = ctx->CreateImage(dev, &cainfo);
 
-			set = ctx->ImGui_AddTexture(dev, rtarget);
+			imguiset = ctx->ImGui_AddTexture(dev, rtarget);
+
+			RDescriptorSetBinding dsbinding = {};
+			dsbinding.binding = 0;
+			dsbinding.stage = RG_SHADER_TYPE_PIXEL;
+			dsbinding.type = RG_DESCRIPTOR_TYPE_IMAGE;
+			dsbinding.image = rtarget;
+			RDescriptorSetCreateInfo dsinfo = {};
+			dsinfo.bindings = &dsbinding;
+			dsinfo.binding_count = 1;
+			set = ctx->CreateDescriptorSet(dev, &dsinfo);
 
 			RRenderpassCreateInfo rpinfo = {};
 			rpinfo.rt_count = 1;
@@ -122,8 +133,8 @@ namespace Engine {
 
 
 			blur_p1 = { size->x, size->y };
-			blur_p2 = { size->x / 4, size->y / 4 };
-			blur_p3 = { size->x / 16, size->y / 16 };
+			blur_p2 = { size->x / 8, size->y / 8 };
+			blur_p3 = { size->x / 64, size->y / 64 };
 
 
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
@@ -255,8 +266,37 @@ namespace Engine {
 			ctx->DestroyFramebuffer(framebuffer);
 			ctx->DestroyRenderpass(renderpass);
 
-			ctx->ImGui_RemoveTexture(set);
+			ctx->ImGui_RemoveTexture(imguiset);
+			ctx->DestroyDescriptorSet(set);
 			ctx->DestroyImage(rtarget);
+		}
+
+		static void LoadShaders() {
+			RenderBackend* ctx = GetRenderContext();
+			RRenderDevice* dev = GetRenderDevice();
+			RShaderCreateInfo sinfo = {};
+			sinfo.isCompiled = true;
+			sinfo.type = RG_SHADER_TYPE_VERTEX;
+			sinfo.name = "combine.vs";
+			vs = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "combine.ps";
+			ps = ctx->CreateShader(dev, &sinfo);
+
+			sinfo.type = RG_SHADER_TYPE_VERTEX;
+			sinfo.name = "blur.vs";
+			vs_blur = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "blur.ps";
+			ps_blur = ctx->CreateShader(dev, &sinfo);
+		}
+
+		static void DestroyShaders() {
+			RenderBackend* ctx = GetRenderContext();
+			ctx->DestroyShader(vs_blur);
+			ctx->DestroyShader(ps_blur);
+			ctx->DestroyShader(vs);
+			ctx->DestroyShader(ps);
 		}
 
 		void InitPostProcess(ivec2* size) {
@@ -285,22 +325,6 @@ namespace Engine {
 			ibinfo.initialData = quad_inds;
 			ib = ctx->CreateBuffer(dev, &ibinfo);
 
-			RShaderCreateInfo sinfo = {};
-			sinfo.isCompiled = true;
-			sinfo.type = RG_SHADER_TYPE_VERTEX;
-			sinfo.name = "output.vs";
-			vs = ctx->CreateShader(dev, &sinfo);
-			sinfo.type = RG_SHADER_TYPE_PIXEL;
-			sinfo.name = "output.ps";
-			ps = ctx->CreateShader(dev, &sinfo);
-
-			sinfo.type = RG_SHADER_TYPE_VERTEX;
-			sinfo.name = "blur.vs";
-			vs_blur = ctx->CreateShader(dev, &sinfo);
-			sinfo.type = RG_SHADER_TYPE_PIXEL;
-			sinfo.name = "blur.ps";
-			ps_blur = ctx->CreateShader(dev, &sinfo);
-
 			RSamplerCreateInfo samplerinfo = {};
 			samplerinfo.addressModeU = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
 			samplerinfo.addressModeV = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
@@ -309,20 +333,16 @@ namespace Engine {
 			samplerinfo.maxAnisotropy = 1;
 			sampler = ctx->CreateSampler(dev, &samplerinfo);
 
+			LoadShaders();
 			CreateFramebuffer(size);
 		}
 
 		void DestroyPostProcess() {
 			RenderBackend* ctx = GetRenderContext();
 			DestroyFramebuffer();
-
-			ctx->DestroyShader(vs_blur);
-			ctx->DestroyShader(ps_blur);
-
+			DestroyShaders();
 			ctx->DestroyBuffer(vb);
 			ctx->DestroyBuffer(ib);
-			ctx->DestroyShader(vs);
-			ctx->DestroyShader(ps);
 			ctx->DestroySampler(sampler);
 			ctx->DestroyCommandBuffer(cmdbuffer);
 		}
@@ -330,6 +350,12 @@ namespace Engine {
 		void ResizePostProcess(ivec2* size) {
 			DestroyFramebuffer();
 			CreateFramebuffer(size);
+		}
+
+		void ReloadPostProcess(ivec2* size) {
+			DestroyShaders();
+			LoadShaders();
+			ResizePostProcess(size);
 		}
 
 		void DoPostProcess() {
@@ -353,7 +379,7 @@ namespace Engine {
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur1);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				RBindDescriptorSetsInfo info = {};
 				RDescriptorSet* gbufferset = GetRLightingOutputSet();
@@ -373,7 +399,7 @@ namespace Engine {
 				rpinfo.framebuffer = fb_blur1y;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur1);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur1x;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -391,7 +417,7 @@ namespace Engine {
 				rpinfo.renderpass = rp_blur2;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur2);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur1y;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -406,7 +432,7 @@ namespace Engine {
 				rpinfo.framebuffer = fb_blur2y;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur2);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur2x;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -424,7 +450,7 @@ namespace Engine {
 				rpinfo.renderpass = rp_blur3;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur3);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur2y;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -439,7 +465,7 @@ namespace Engine {
 				rpinfo.framebuffer = fb_blur3y;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur3);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur3x;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -457,7 +483,7 @@ namespace Engine {
 				rpinfo.renderpass = rp_blur2;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur2);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur3y;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -472,7 +498,7 @@ namespace Engine {
 				rpinfo.framebuffer = fb_blur2y;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur2);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur2x;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -491,7 +517,7 @@ namespace Engine {
 				rpinfo.renderpass = rp_blur1;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur1);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur2y;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -506,7 +532,7 @@ namespace Engine {
 				rpinfo.framebuffer = fb_blur1y;
 				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 				ctx->CmdBindPipeline(cmdbuffer, pl_blur1);
-				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 				info.sets = &ds_blur1x;
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
@@ -534,7 +560,7 @@ namespace Engine {
 			ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
 
 			ctx->CmdBindPipeline(cmdbuffer, pipeline);
-			ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 3);
+			ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
 			ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 
 			RBindDescriptorSetsInfo info = {};
@@ -559,7 +585,9 @@ namespace Engine {
 			ctx->SubmitCommandBuffer(&submitinfo);
 		}
 
-		void* GetPostProcessOutputSet() { return set; }
+		void* GetPostProcessOutputImGuiSet() { return imguiset; }
+		RDescriptorSet* GetPostProcessOutputSet() { return set; }
+		RImage* GetPostProcessOutputImage() { return rtarget; }
 
 	}
 }

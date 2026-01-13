@@ -270,6 +270,30 @@ namespace Engine {
 			ctx->DestroyImage(rtarget);
 		}
 
+		static void LoadShaders() {
+			RenderBackend* ctx = GetRenderContext();
+			RRenderDevice* dev = GetRenderDevice();
+
+			RShaderCreateInfo sinfo = {};
+			sinfo.isCompiled = true;
+			sinfo.type = RG_SHADER_TYPE_VERTEX;
+			sinfo.name = "accum.vs";
+			vs_accum = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "accum_point.ps";
+			ps_accum_point = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "accum_global.ps";
+			ps_accum_global = ctx->CreateShader(dev, &sinfo);
+		}
+
+		static void DestroyShaders() {
+			RenderBackend* ctx = GetRenderContext();
+			ctx->DestroyShader(vs_accum);
+			ctx->DestroyShader(ps_accum_point);
+			ctx->DestroyShader(ps_accum_global);
+		}
+
 		void InitRLighting(ivec2* size) {
 			RenderBackend* ctx = GetRenderContext();
 			RRenderDevice* dev = GetRenderDevice();
@@ -316,18 +340,6 @@ namespace Engine {
 			ibinfo.initialData = sphere_inds;
 			sphere_ib = ctx->CreateBuffer(dev, &ibinfo);
 
-			RShaderCreateInfo sinfo = {};
-			sinfo.isCompiled = true;
-			sinfo.type = RG_SHADER_TYPE_VERTEX;
-			sinfo.name = "accum.vs";
-			vs_accum = ctx->CreateShader(dev, &sinfo);
-			sinfo.type = RG_SHADER_TYPE_PIXEL;
-			sinfo.name = "accum_point.ps";
-			ps_accum_point = ctx->CreateShader(dev, &sinfo);
-			sinfo.type = RG_SHADER_TYPE_PIXEL;
-			sinfo.name = "accum_global.ps";
-			ps_accum_global = ctx->CreateShader(dev, &sinfo);
-
 			RSamplerCreateInfo samplerinfo = {};
 			samplerinfo.addressModeU = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
 			samplerinfo.addressModeV = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
@@ -336,16 +348,14 @@ namespace Engine {
 			samplerinfo.maxAnisotropy = 1;
 			sampler = ctx->CreateSampler(dev, &samplerinfo);
 
+			LoadShaders();
 			CreateFramebuffer(size);
 		}
 
 		void DestroyRLighting() {
 			RenderBackend* ctx = GetRenderContext();
 			DestroyFramebuffer();
-
-			ctx->DestroyShader(vs_accum);
-			ctx->DestroyShader(ps_accum_point);
-			ctx->DestroyShader(ps_accum_global);
+			DestroyShaders();
 
 			ctx->DestroyBuffer(quad_vb);
 			ctx->DestroyBuffer(quad_ib);
@@ -360,6 +370,12 @@ namespace Engine {
 		void ResizeRLighting(ivec2* size) {
 			DestroyFramebuffer();
 			CreateFramebuffer(size);
+		}
+
+		void ReloadRLighting(ivec2* size) {
+			DestroyShaders();
+			LoadShaders();
+			ResizeRLighting(size);
 		}
 
 		static void CalculateLight(vec4* dir, R3D_GlobalLightDescrition* glight) {

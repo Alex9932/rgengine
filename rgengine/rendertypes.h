@@ -47,7 +47,7 @@ enum TextureType {
 
 #define RFormat TextureType
 
-#define RG_RENDER_FULLSCREEN    1
+#define RG_RENDER_EDITORMODE    1
 #define RG_RENDER_USE3D         2
 #define RG_RENDER_NOPOSTPROCESS 4
 #define RG_RENDER_NOLIGHT       8

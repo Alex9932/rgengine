@@ -12,6 +12,7 @@ namespace Engine {
 		void InitRLighting(ivec2* size);
 		void DestroyRLighting();
 		void ResizeRLighting(ivec2* size);
+		void ReloadRLighting(ivec2* size);
 		void PushSourceRLighting(R3D_LightSource* light);
 		void DoRLighting();
 
