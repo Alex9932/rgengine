@@ -109,7 +109,7 @@ namespace Engine {
                     //default: { break; }
                 //}
             }
-            else if (event->type == SDL_EVENT_KEY_DOWN) {
+            else if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_R) {
                 if (IsKeyDown(SDL_SCANCODE_LCTRL)) {
                     ReloadShaders();
                 }
