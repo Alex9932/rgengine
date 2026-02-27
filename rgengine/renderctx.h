@@ -85,8 +85,6 @@ typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
 typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
 typedef RFramebuffer*   (*PFN_R_CREATEFRAMEBUFFER)(RRenderDevice*, RFramebufferCreateInfo*);
 typedef void            (*PFN_R_DESTROYFRAMEBUFFER)(RFramebuffer*);
-//typedef RResourceView*  (*PFN_R_CREATERESOURCEVIEW)(RRenderDevice*, RResourceViewCreateInfo*);
-//typedef void            (*PFN_R_DESTROYRESOURCEVIEW)(RResourceView*);
 typedef RDescriptorSet* (*PFN_R_CREATEDESCRIPTORSET)(RRenderDevice*, RDescriptorSetCreateInfo*);
 typedef void            (*PFN_R_DESTROYDESCRIPTORSET)(RDescriptorSet*);
 
@@ -111,7 +109,6 @@ typedef void            (*PFN_R_CMDENDRENDERPASS)(RCommandBuffer*);
 typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
 typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
-//typedef void            (*PFN_R_CMDBINDRESOURCEVIEWS)(RCommandBuffer*, Uint32, RBindResourceViewInfo*);
 typedef void            (*PFN_R_CMDBINDDESCRIPTORSETS)(RCommandBuffer*, RBindDescriptorSetsInfo*);
 typedef void            (*PFN_R_CMDBINDSAMPLER)(RCommandBuffer*, RSampler*, Uint32, Uint32);
 typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
@@ -160,9 +157,7 @@ namespace Engine {
 		PFN_R_BEGINCOMMANDBUFFER      BeginCommandBuffer;
 		PFN_R_ENDCOMMANDBUFFER        EndCommandBuffer;
 
-		// Resource view
-		//PFN_R_CREATERESOURCEVIEW      CreateResourceView;
-		//PFN_R_DESTROYRESOURCEVIEW     DestroyResourceView;
+		// Resource vie
 		PFN_R_CREATEDESCRIPTORSET     CreateDescriptorSet;
 		PFN_R_DESTROYDESCRIPTORSET    DestroyDescriptorSet;
 
@@ -188,7 +183,6 @@ namespace Engine {
 		PFN_R_CMDBINDPIPELINE         CmdBindPipeline;
 		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
 		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
-		//PFN_R_CMDBINDRESOURCEVIEWS    CmdBindResourceViews;
 		PFN_R_CMDBINDSAMPLER          CmdBindSampler;
 		PFN_R_CMDBINDDESCRIPTORSETS   CmdBindDescriptorSets;
 		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;

@@ -10,8 +10,19 @@ layout(push_constant) uniform PushConstants {
     layout(offset = 128) vec4 axis; // XY axis for blur, ZW - screen size
 } push;
 
-#define RADIUS 7
-#define THRESHOLD 0.8
+#define THRESHOLD 1.0
+#define KNEE 0.3
+#define SOFT_THRESHOLD 0.2
+
+float getHighlights(vec3 color) {
+    float brightness = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    float soft = brightness - THRESHOLD + KNEE;
+    soft = clamp(soft, 0.0, 2.0 * KNEE);
+    soft = soft * soft / (4.0 * KNEE);
+    float contribution = max(brightness - THRESHOLD, soft) / max(brightness, 0.0001);
+    
+    return contribution;
+}
 
 void main() {
 
@@ -23,14 +34,14 @@ void main() {
 
 	vec4 bColor = vec4(0.0);
 
-	for (int i = -RADIUS; i <= RADIUS; i++) {
+	for (int i = -7; i <= 7; i++) {
 		float weight = exp(-(i*i)/8.9) * 0.1974;
 		vec2 offset = ax * ts * float(i);
 		vec4 tc = texture(sampler2D(t_unit0, smplr), uv + offset);
 		
 		if(push.axis.x > 1) {
 			// If x axis is greater than 1, we are doing a apply threshold
-			if(tc.r < THRESHOLD && tc.g < THRESHOLD && tc.b < THRESHOLD) {
+			if(getHighlights(tc.rgb) < SOFT_THRESHOLD) {
 				weight = 0;
 			}
 		}

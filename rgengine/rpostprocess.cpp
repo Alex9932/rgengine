@@ -2,6 +2,7 @@
 
 #include "render.h"
 #include "rlighting.h"
+#include "rgbuffer.h"
 
 namespace Engine {
 	namespace Render {
@@ -41,6 +42,42 @@ namespace Engine {
 		static RPipeline* pl_blur1;
 		static RPipeline* pl_blur2;
 		static RPipeline* pl_blur3;
+
+		// SSGI / SSR
+
+		struct SSGIUniforms {
+			mat4 proj;
+			mat4 view;
+			mat4 invproj;
+			mat4 invview;
+			vec3 camerapos;
+			Float32 _padding0;
+			vec4 cpurnd;
+			//vec4 params; // x - intensity, y - max distance, z - bias, w - unused
+			//vec4 screensize; // x - width, y - height, z - 1/width, w - 1/height
+		} ssgi_uniforms;
+
+		static RBuffer* ub_ssgi; // Uniform buffer
+		static RDescriptorSet* ub_set_ssgi;
+
+		static RImage* rt_ssgi;
+		static RFramebuffer* fb_ssgi;
+		static RRenderpass* rp_ssgi;
+		static RDescriptorSet* ds_ssgi;
+		static RShader* vs_ssgi;
+		static RShader* ps_ssgi;
+		static RPipeline* pl_ssgi;
+		static ivec2 ssgi_size;
+
+		static RImage* rt_ssr;
+		static RFramebuffer* fb_ssr;
+		static RRenderpass* rp_ssr;
+		static RDescriptorSet* ds_ssr;
+		static RShader* vs_ssr;
+		static RShader* ps_ssr;
+		static RPipeline* pl_ssr;
+		static ivec2 ssr_size;
+
 
 		static void* imguiset; // output image for ImGui
 		static RDescriptorSet* set;
@@ -117,7 +154,15 @@ namespace Engine {
 			layout.bindings[2].binding = 0;
 			layout.bindings[2].stage = RG_SHADER_TYPE_PIXEL;
 			layout.bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
-			layout.binding_count = 3;
+			layout.bindings[3].set = 3;
+			layout.bindings[3].binding = 0;
+			layout.bindings[3].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[3].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[4].set = 4;
+			layout.bindings[4].binding = 0;
+			layout.bindings[4].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[4].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.binding_count = 5;
 
 			RPipelineCreateInfo plinfo = {};
 			plinfo.type = RG_PIPELINE_TYPE_GRAPHICS;
@@ -231,6 +276,156 @@ namespace Engine {
 			plinfo.renderpass = rp_blur3;
 			pl_blur3 = ctx->CreatePipeline(dev, &plinfo);
 
+			// SSGI
+
+			ssgi_size = { size->x / 2, size->y / 2 };
+
+			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
+			cainfo.width  = ssgi_size.x;
+			cainfo.height = ssgi_size.y;
+			rt_ssgi = ctx->CreateImage(dev, &cainfo);
+
+			binding = {};
+			ds_info = {};
+			ds_info.binding_count = 1;
+			ds_info.bindings = &binding;
+			binding.binding = 0;
+			binding.stage = RG_SHADER_TYPE_PIXEL;
+			binding.type = RG_DESCRIPTOR_TYPE_IMAGE;
+			binding.image = rt_ssgi;
+			ds_ssgi = ctx->CreateDescriptorSet(dev, &ds_info);
+
+			rpinfo.rt_formats[0] = RG_FORMAT_R16G16B16A16_FLOAT;
+			rpinfo.rt_count = 1;
+			rpinfo.use_depth = false;
+			rpinfo.viewport.x = 0;
+			rpinfo.viewport.y = 0;
+			rpinfo.viewport.width = ssgi_size.x;
+			rpinfo.viewport.height = ssgi_size.y;
+			rp_ssgi = ctx->CreateRenderpass(dev, &rpinfo);
+
+			fbinfo.rt_count = 1;
+			fbinfo.width = ssgi_size.x;
+			fbinfo.height = ssgi_size.y;
+			fbinfo.renderpass = rp_ssgi;
+			fbinfo.rts[0] = rt_ssgi;
+			fb_ssgi = ctx->CreateFramebuffer(dev, &fbinfo);
+
+			layout.bindings[0].set = 0;
+			layout.bindings[0].binding = 0;
+			layout.bindings[0].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[0].type = RG_DESCRIPTOR_TYPE_SAMPLER;
+			layout.bindings[1].set = 1;
+			layout.bindings[1].binding = 0;
+			layout.bindings[1].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[1].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[2].set = 1;
+			layout.bindings[2].binding = 1;
+			layout.bindings[2].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[3].set = 1;
+			layout.bindings[3].binding = 2;
+			layout.bindings[3].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[3].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[4].set = 1;
+			layout.bindings[4].binding = 3;
+			layout.bindings[4].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[4].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[5].set = 2;
+			layout.bindings[5].binding = 0;
+			layout.bindings[5].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[5].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[6].set = 3;
+			layout.bindings[6].binding = 0;
+			layout.bindings[6].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[6].type = RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layout.binding_count = 7;
+
+			plinfo.type = RG_PIPELINE_TYPE_GRAPHICS;
+			plinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
+			plinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+			plinfo.inputCount = 1;
+			plinfo.vertex_shader = vs_ssgi;
+			plinfo.pixel_shader = ps_ssgi;
+			plinfo.renderpass = rp_ssgi;
+			plinfo.descriptions = &description;
+			plinfo.layout = &layout;
+			pl_ssgi = ctx->CreatePipeline(dev, &plinfo);
+
+
+			ssr_size = { size->x / 2, size->y / 2 };
+			
+			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
+			cainfo.width = ssr_size.x;
+			cainfo.height = ssr_size.y;
+			rt_ssr = ctx->CreateImage(dev, &cainfo);
+
+			binding = {};
+			ds_info = {};
+			ds_info.binding_count = 1;
+			ds_info.bindings = &binding;
+			binding.binding = 0;
+			binding.stage = RG_SHADER_TYPE_PIXEL;
+			binding.type = RG_DESCRIPTOR_TYPE_IMAGE;
+			binding.image = rt_ssr;
+			ds_ssr = ctx->CreateDescriptorSet(dev, &ds_info);
+
+			rpinfo.rt_formats[0] = RG_FORMAT_R16G16B16A16_FLOAT;
+			rpinfo.rt_count = 1;
+			rpinfo.use_depth = false;
+			rpinfo.viewport.x = 0;
+			rpinfo.viewport.y = 0;
+			rpinfo.viewport.width = ssr_size.x;
+			rpinfo.viewport.height = ssr_size.y;
+			rp_ssr = ctx->CreateRenderpass(dev, &rpinfo);
+
+			fbinfo.rt_count = 1;
+			fbinfo.width = ssr_size.x;
+			fbinfo.height = ssr_size.y;
+			fbinfo.renderpass = rp_ssr;
+			fbinfo.rts[0] = rt_ssr;
+			fb_ssr = ctx->CreateFramebuffer(dev, &fbinfo);
+
+			layout.bindings[0].set = 0;
+			layout.bindings[0].binding = 0;
+			layout.bindings[0].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[0].type = RG_DESCRIPTOR_TYPE_SAMPLER;
+			layout.bindings[1].set = 1;
+			layout.bindings[1].binding = 0;
+			layout.bindings[1].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[1].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[2].set = 1;
+			layout.bindings[2].binding = 1;
+			layout.bindings[2].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[3].set = 1;
+			layout.bindings[3].binding = 2;
+			layout.bindings[3].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[3].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[4].set = 1;
+			layout.bindings[4].binding = 3;
+			layout.bindings[4].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[4].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[5].set = 2;
+			layout.bindings[5].binding = 0;
+			layout.bindings[5].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[5].type = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[6].set = 3;
+			layout.bindings[6].binding = 0;
+			layout.bindings[6].stage = RG_SHADER_TYPE_PIXEL;
+			layout.bindings[6].type = RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layout.binding_count = 7;
+
+			plinfo.type = RG_PIPELINE_TYPE_GRAPHICS;
+			plinfo.cullmode = RG_RENDERPASS_CULLMODE_NONE;
+			plinfo.fillmode = RG_RENDERPASS_FILLMODE_SOLID;
+			plinfo.inputCount = 1;
+			plinfo.vertex_shader = vs_ssr;
+			plinfo.pixel_shader = ps_ssr;
+			plinfo.renderpass = rp_ssr;
+			plinfo.descriptions = &description;
+			plinfo.layout = &layout;
+			pl_ssr = ctx->CreatePipeline(dev, &plinfo);
 		}
 
 		static void DestroyFramebuffer() {
@@ -266,6 +461,18 @@ namespace Engine {
 			ctx->DestroyFramebuffer(framebuffer);
 			ctx->DestroyRenderpass(renderpass);
 
+			ctx->DestroyDescriptorSet(ds_ssgi);
+			ctx->DestroyPipeline(pl_ssgi);
+			ctx->DestroyFramebuffer(fb_ssgi);
+			ctx->DestroyRenderpass(rp_ssgi);
+			ctx->DestroyImage(rt_ssgi);
+
+			ctx->DestroyDescriptorSet(ds_ssr);
+			ctx->DestroyPipeline(pl_ssr);
+			ctx->DestroyFramebuffer(fb_ssr);
+			ctx->DestroyRenderpass(rp_ssr);
+			ctx->DestroyImage(rt_ssr);
+
 			ctx->ImGui_RemoveTexture(imguiset);
 			ctx->DestroyDescriptorSet(set);
 			ctx->DestroyImage(rtarget);
@@ -289,12 +496,30 @@ namespace Engine {
 			sinfo.type = RG_SHADER_TYPE_PIXEL;
 			sinfo.name = "blur.ps";
 			ps_blur = ctx->CreateShader(dev, &sinfo);
+
+			sinfo.type = RG_SHADER_TYPE_VERTEX;
+			sinfo.name = "ssgi.vs";
+			vs_ssgi = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "ssgi.ps";
+			ps_ssgi = ctx->CreateShader(dev, &sinfo);
+
+			sinfo.type = RG_SHADER_TYPE_VERTEX;
+			sinfo.name = "ssr.vs";
+			vs_ssr = ctx->CreateShader(dev, &sinfo);
+			sinfo.type = RG_SHADER_TYPE_PIXEL;
+			sinfo.name = "ssr.ps";
+			ps_ssr = ctx->CreateShader(dev, &sinfo);
 		}
 
 		static void DestroyShaders() {
 			RenderBackend* ctx = GetRenderContext();
 			ctx->DestroyShader(vs_blur);
 			ctx->DestroyShader(ps_blur);
+			ctx->DestroyShader(vs_ssgi);
+			ctx->DestroyShader(ps_ssgi);
+			ctx->DestroyShader(vs_ssr);
+			ctx->DestroyShader(ps_ssr);
 			ctx->DestroyShader(vs);
 			ctx->DestroyShader(ps);
 		}
@@ -333,6 +558,26 @@ namespace Engine {
 			samplerinfo.maxAnisotropy = 1;
 			sampler = ctx->CreateSampler(dev, &samplerinfo);
 
+
+			RBufferCreateInfo binfo = {};
+			binfo.length = sizeof(SSGIUniforms);
+			binfo.type = RG_BUFFER_TYPE_CONSTANT;
+			binfo.usage = RG_BUFFER_USAGE_DYNAMIC;
+			binfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
+			binfo.stride = 1;
+			binfo.initialData = NULL;
+			ub_ssgi = ctx->CreateBuffer(dev, &binfo);
+
+			RDescriptorSetBinding binding = {};
+			RDescriptorSetCreateInfo ds_info = {};
+			ds_info.binding_count = 1;
+			ds_info.bindings = &binding;
+			binding.binding = 0;
+			binding.stage = RG_SHADER_TYPE_PIXEL;
+			binding.type = RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			binding.buffer = ub_ssgi;
+			ub_set_ssgi = ctx->CreateDescriptorSet(dev, &ds_info);
+
 			LoadShaders();
 			CreateFramebuffer(size);
 		}
@@ -343,6 +588,8 @@ namespace Engine {
 			DestroyShaders();
 			ctx->DestroyBuffer(vb);
 			ctx->DestroyBuffer(ib);
+			ctx->DestroyBuffer(ub_ssgi);
+			ctx->DestroyDescriptorSet(ub_set_ssgi);
 			ctx->DestroySampler(sampler);
 			ctx->DestroyCommandBuffer(cmdbuffer);
 		}
@@ -361,9 +608,31 @@ namespace Engine {
 		void DoPostProcess() {
 			RenderBackend* ctx = GetRenderContext();
 
+			R3D_CameraInfo* camera = GetCameraInfo();
+
+			ssgi_uniforms.proj = camera->projection;
+			ssgi_uniforms.view = camera->view;
+			mat4_inverse(&ssgi_uniforms.invproj, ssgi_uniforms.proj);
+			mat4_inverse(&ssgi_uniforms.invview, ssgi_uniforms.view);
+			ssgi_uniforms.camerapos = camera->position;
+			ssgi_uniforms.cpurnd.x = rgRandFloat();
+			ssgi_uniforms.cpurnd.y = rgRandFloat();
+			ssgi_uniforms.cpurnd.z = rgRandFloat();
+			ssgi_uniforms.cpurnd.w = rgRandFloat();
+
+			RUpdateBufferInfo ubinfo = {};
+			ubinfo.handle = ub_ssgi;
+			ubinfo.offset = 0;
+			ubinfo.length = sizeof(SSGIUniforms);
+			ubinfo.data = &ssgi_uniforms;
+			ctx->UpdateBuffer(&ubinfo);
+
+
+
 			ctx->ResetCommandBuffer(cmdbuffer);
 			ctx->BeginCommandBuffer(cmdbuffer);
 
+			// Blur passes
 			{
 				RRenderpassClearInfo clear = {};
 				clear.color[0] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -545,10 +814,99 @@ namespace Engine {
 
 			}
 
+			// SSGI pass
+#if 0
+			{
+				ctx->CmdUseImage(cmdbuffer, rt_ssgi, RG_IMAGE_USAGE_COLOR_ATTACHMENT);
+
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(0), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(1), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(2), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferDepth(), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetRLightingOutput(), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+
+				RRenderpassClearInfo clear = {};
+				clear.color[0] = { 0.0f, 0.0f, 0.0f, 1.0f };
+				RRenderpassBeginInfo rpinfo = {};
+				rpinfo.clearinfo = &clear;
+				rpinfo.framebuffer = fb_ssgi;
+				rpinfo.renderpass = rp_ssgi;
+				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
+
+				ctx->CmdBindPipeline(cmdbuffer, pl_ssgi);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
+				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
+				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
+
+				RBindDescriptorSetsInfo info = {};
+				RDescriptorSet* gbufferset = GetGBufferOutputSet();
+				info.sets = &gbufferset;
+				info.startslot = 1;
+				info.count = 1;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+				RDescriptorSet* lightset = GetRLightingOutputSet();
+				info.sets = &lightset;
+				info.startslot = 2;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+				info.sets = &ub_set_ssgi;
+				info.startslot = 3;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+
+				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
+
+				ctx->CmdEndRenderpass(cmdbuffer);
+			}
+#endif
+			// Reflection pass
+			{
+				ctx->CmdUseImage(cmdbuffer, rt_ssr, RG_IMAGE_USAGE_COLOR_ATTACHMENT);
+
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(0), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(1), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferImage(2), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetGBufferDepth(), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+				ctx->CmdUseImage(cmdbuffer, GetRLightingOutput(), RG_IMAGE_USAGE_SHADER_READ_ONLY);
+
+				RRenderpassClearInfo clear = {};
+				clear.color[0] = { 0.0f, 0.0f, 0.0f, 1.0f };
+				RRenderpassBeginInfo rpinfo = {};
+				rpinfo.clearinfo = &clear;
+				rpinfo.framebuffer = fb_ssr;
+				rpinfo.renderpass = rp_ssr;
+				ctx->CmdBeginRenderpass(cmdbuffer, &rpinfo);
+
+				ctx->CmdBindPipeline(cmdbuffer, pl_ssr);
+				ctx->CmdBindVertexBuffer(cmdbuffer, vb, 0, sizeof(Float32) * 2);
+				ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
+				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
+
+				RBindDescriptorSetsInfo info = {};
+				RDescriptorSet* gbufferset = GetGBufferOutputSet();
+				info.sets = &gbufferset;
+				info.startslot = 1;
+				info.count = 1;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+				RDescriptorSet* lightset = GetRLightingOutputSet();
+				info.sets = &lightset;
+				info.startslot = 2;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+				info.sets = &ub_set_ssgi;
+				info.startslot = 3;
+				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+
+				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
+
+				ctx->CmdEndRenderpass(cmdbuffer);
+			}
+
+			// Final combine pass
+
 			ctx->CmdUseImage(cmdbuffer, rtarget, RG_IMAGE_USAGE_COLOR_ATTACHMENT);
 
 			ctx->CmdUseImage(cmdbuffer, GetRLightingOutput(), RG_IMAGE_USAGE_SHADER_READ_ONLY);
 			ctx->CmdUseImage(cmdbuffer, rt_blur1y, RG_IMAGE_USAGE_SHADER_READ_ONLY);
+			ctx->CmdUseImage(cmdbuffer, rt_ssgi, RG_IMAGE_USAGE_SHADER_READ_ONLY);
+			ctx->CmdUseImage(cmdbuffer, rt_ssr, RG_IMAGE_USAGE_SHADER_READ_ONLY);
 
 			RRenderpassClearInfo clear = {};
 			clear.color[0] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -564,14 +922,21 @@ namespace Engine {
 			ctx->CmdBindIndexBuffer(cmdbuffer, ib, RG_INDEX_U16);
 
 			RBindDescriptorSetsInfo info = {};
-			RDescriptorSet* gbufferset = GetRLightingOutputSet();
-			info.sets = &gbufferset;
+			RDescriptorSet* sets[] = { GetRLightingOutputSet(), ds_blur1y, ds_ssgi };
+			info.sets = &sets[0];
 			info.startslot = 1;
 			info.count = 1;
 			ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 			info.sets = &ds_blur1y;
 			info.startslot = 2;
 			ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+			info.sets = &ds_ssgi;
+			info.startslot = 3;
+			ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+			info.sets = &ds_ssr;
+			info.startslot = 4;
+			ctx->CmdBindDescriptorSets(cmdbuffer, &info);
+
 			ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 
 			ctx->CmdDrawIndexed(cmdbuffer, 6, 0);

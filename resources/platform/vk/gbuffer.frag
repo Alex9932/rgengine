@@ -23,12 +23,17 @@ layout(push_constant) uniform PushConstants {
 } push;
 
 void main() {
-	vec2 uv = vec2(o_uv.x, -o_uv.y);
-	//vec2 uv = o_uv;
+	//vec2 uv = vec2(o_uv.x, -o_uv.y);
+	vec2 uv = o_uv;
 
-	vec3 t_col  = texture(sampler2D(t_albedo, smplr), uv).rgb;
+	vec4 t_col4 = texture(sampler2D(t_albedo, smplr), uv);
+	vec3 t_col  = t_col4.rgb;
 	vec3 t_norm = texture(sampler2D(t_normal, smplr), uv).rgb;
 	vec3 t_pbr  = texture(sampler2D(t_pbr,    smplr), uv).rgb;
+
+	if (t_col4.a < 0.001) {
+//		discard;
+	}
 
 	vec3 N = vec3(0);
 

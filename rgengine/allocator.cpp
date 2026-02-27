@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define RG_ALLOCATOR_FREE_ON_DESTROY 0
-#define RG_ALLOCATOR_DEBUG 1
+#define RG_ALLOCATOR_DEBUG 0
 
 void* rg_alloca(size_t size) {
     void* ptr = NULL;
