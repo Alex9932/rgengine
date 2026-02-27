@@ -29,27 +29,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -146,24 +146,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="buffer.cpp" />
+    <ClCompile Include="commandsimpl.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="dx11.cpp" />
-    <ClCompile Include="gbuffer.cpp" />
     <ClCompile Include="imgui_impl_dx11.cpp" />
-    <ClCompile Include="lightpass.cpp" />
-    <ClCompile Include="loader.cpp" />
-    <ClCompile Include="particleemitters.cpp" />
-    <ClCompile Include="particlepass.cpp" />
-    <ClCompile Include="postprocess.cpp" />
-    <ClCompile Include="queue.cpp" />
-    <ClCompile Include="r2d.cpp" />
-    <ClCompile Include="r3d.cpp" />
-    <ClCompile Include="rgrenderdx11.cpp" />
-    <ClCompile Include="shader.cpp" />
-    <ClCompile Include="shadowbuffer.cpp" />
-    <ClCompile Include="stack.cpp" />
-    <ClCompile Include="texture.cpp" />
+    <ClCompile Include="pipelineimpl.cpp" />
+    <ClCompile Include="resourcesimpl.cpp" />
+    <ClCompile Include="rgrenderimpl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="buffer.h" />
@@ -178,6 +166,7 @@
     <ClInclude Include="queue.h" />
     <ClInclude Include="r2d.h" />
     <ClInclude Include="r3d.h" />
+    <ClInclude Include="rendertypesdx.h" />
     <ClInclude Include="rgrenderdx11.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shadowbuffer.h" />

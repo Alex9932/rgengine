@@ -1,0 +1,103 @@
+#version 430 core
+
+struct R3D_Vertex {
+    float px, py, pz;
+    float nx, ny, nz;
+    float tx, ty, tz;
+    float u, v;
+//    vec3 pos;
+//    vec3 norm;
+//    vec3 tang;
+//    vec2 uv;
+};
+
+struct R3D_Weight {
+    vec4 weight;
+    ivec4 idx;
+};
+
+layout(set = 0, binding = 0, std140) readonly buffer MatrixBuffer {
+    mat4 matrices[];
+};
+
+layout(set = 1, binding = 0, std430) readonly buffer VertexBuffer {
+    R3D_Vertex vertices[];
+};
+
+layout(set = 1, binding = 1, std430) readonly buffer WeightBuffer {
+    R3D_Weight weights[];
+};
+
+layout(set = 1, binding = 2, std430) writeonly buffer OutputBuffer {
+    R3D_Vertex outputVertices[];
+};
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+#define MAX_BONES 1024
+
+#define ENABLE_SKINNING 1
+
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+
+    R3D_Vertex in_vtx = vertices[idx];
+    R3D_Weight in_wgt = weights[idx];
+
+    vec3 inpos  = vec3(in_vtx.px, in_vtx.py, in_vtx.pz);
+    vec3 innorm = vec3(in_vtx.nx, in_vtx.ny, in_vtx.nz);
+    vec3 intang = vec3(in_vtx.tx, in_vtx.ty, in_vtx.tz);
+
+    vec4 total_position = vec4(0.0);
+    vec3 total_normal   = vec3(0.0);
+    vec3 total_tangent  = vec3(0.0);
+
+    vec4 pos4 = vec4(inpos, 1.0);
+
+#if ENABLE_SKINNING
+
+    for(int i = 0; i < 4; i++) {
+        float w  = in_wgt.weight[i];
+        int   id = in_wgt.idx[i];
+
+        if (id == -1) { continue; }
+        if (id >= MAX_BONES) {
+            total_position = pos4;
+            total_normal   = innorm;
+            total_tangent  = intang;
+            break;
+        }
+
+        mat4 mat = matrices[id];
+        mat3 m3  = mat3(mat);
+
+        vec4 local_position = mat * pos4;
+        vec3 local_normal   = m3 * innorm;
+        vec3 local_tangent  = m3 * intang;
+
+        total_position += local_position * w;
+        total_normal   += local_normal   * w;
+        total_tangent  += local_tangent  * w;
+    }
+
+#else
+
+    total_position = pos4;
+    total_normal   = innorm;
+    total_tangent  = intang;
+
+#endif
+
+    outputVertices[idx].px = total_position.x;
+    outputVertices[idx].py = total_position.y;
+    outputVertices[idx].pz = total_position.z;
+    outputVertices[idx].nx = total_normal.x;
+    outputVertices[idx].ny = total_normal.y;
+    outputVertices[idx].nz = total_normal.z;
+    outputVertices[idx].tx = total_tangent.x;
+    outputVertices[idx].ty = total_tangent.y;
+    outputVertices[idx].tz = total_tangent.z;
+    outputVertices[idx].u  = in_vtx.u;
+    outputVertices[idx].v  = in_vtx.v;
+
+}

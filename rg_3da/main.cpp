@@ -1,4 +1,4 @@
-#if 1
+#if 0
 #if 0
 //#ifdef _WIN32
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") 

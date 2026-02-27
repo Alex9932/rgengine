@@ -30,26 +30,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -146,18 +146,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="commandsimpl.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="imgui_impl_vulkan.cpp" />
-    <ClCompile Include="r2d.cpp" />
-    <ClCompile Include="r3d.cpp" />
-    <ClCompile Include="rgrendervk.cpp" />
+    <ClCompile Include="pipelineimpl.cpp" />
+    <ClCompile Include="resourcesimpl.cpp" />
     <ClCompile Include="swapchain.cpp" />
-    <ClCompile Include="vk.cpp" />
+    <ClCompile Include="vkrenderimpl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui_impl_vulkan.h" />
     <ClInclude Include="r2d.h" />
     <ClInclude Include="r3d.h" />
+    <ClInclude Include="rendertypesvk.h" />
     <ClInclude Include="rgrendervk.h" />
     <ClInclude Include="swapchain.h" />
     <ClInclude Include="vk.h" />

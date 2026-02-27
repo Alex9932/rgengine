@@ -8,7 +8,6 @@
 #include "buffer.h"
 #include "texture.h"
 #include "queue.h"
-
 typedef struct R3DStats {
 	Uint32 texturesLoaded = 0;
 	Uint32 modelsLoaded = 0;
@@ -16,11 +15,7 @@ typedef struct R3DStats {
 	Uint32 dispatchCalls = 0;
 } R3DStats;
 
-enum ModelType {
-	R_MODEL_STATIC = 0,
-	R_MODEL_RIGGED = 1
-};
-
+#if 0
 typedef struct R3D_Material {
 	Texture* albedo;
 	Texture* normal;
@@ -65,6 +60,8 @@ typedef struct R3D_ParticleBuffer {
 	ID3D11ShaderResourceView* resourceView;
 	//ID3D11UnorderedAccessView* uav;
 } R3D_ParticleBuffer;
+
+#endif
 
 void InitializeR3D(ivec2* size);
 void DestroyR3D();

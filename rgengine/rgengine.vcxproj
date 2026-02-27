@@ -30,27 +30,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -149,6 +149,7 @@
     <ClCompile Include="font.cpp" />
     <ClCompile Include="freecameracontroller.cpp" />
     <ClCompile Include="frustum.cpp" />
+    <ClCompile Include="guiwnds.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\ImGuiFileDialog.cpp" />
     <ClCompile Include="imgui\ImGuizmo.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="lightsystem.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="lookatcameracontroller.cpp" />
+    <ClCompile Include="material.cpp" />
     <ClCompile Include="meshtool.cpp" />
     <ClCompile Include="objimporter.cpp" />
     <ClCompile Include="particlesystem.cpp" />
@@ -172,8 +174,12 @@
     <ClCompile Include="pm2exporter.cpp" />
     <ClCompile Include="pm2importer.cpp" />
     <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="queue.cpp" />
+    <ClCompile Include="ranimator.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="renderctx.cpp" />
+    <ClCompile Include="rgbuffer.cpp" />
+    <ClCompile Include="rgbufferdraw.cpp" />
     <ClCompile Include="rgmath.cpp" />
     <ClCompile Include="rgmatrix.cpp" />
     <ClCompile Include="rgphysics.cpp" />
@@ -181,12 +187,16 @@
     <ClCompile Include="rgstring.cpp" />
     <ClCompile Include="rgthread.cpp" />
     <ClCompile Include="rgvector.cpp" />
+    <ClCompile Include="rimgui.cpp" />
+    <ClCompile Include="rlighting.cpp" />
+    <ClCompile Include="rpostprocess.cpp" />
     <ClCompile Include="scriptengine.cpp" />
     <ClCompile Include="scriptruntime.cpp" />
     <ClCompile Include="soundbuffer.cpp" />
     <ClCompile Include="soundsource.cpp" />
     <ClCompile Include="soundsystem.cpp" />
     <ClCompile Include="staticobject.cpp" />
+    <ClCompile Include="texture.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="entity.cpp" />
@@ -212,6 +222,7 @@
     <ClInclude Include="font.h" />
     <ClInclude Include="freecameracontroller.h" />
     <ClInclude Include="frustum.h" />
+    <ClInclude Include="guiwnds.h" />
     <ClInclude Include="imgui\dirent\dirent.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
@@ -231,6 +242,7 @@
     <ClInclude Include="levelloader.h" />
     <ClInclude Include="lightsystem.h" />
     <ClInclude Include="lookatcameracontroller.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="meshtool.h" />
     <ClInclude Include="modelsystem.h" />
     <ClInclude Include="objimporter.h" />
@@ -239,17 +251,25 @@
     <ClInclude Include="pm2.h" />
     <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
+    <ClInclude Include="queue.h" />
+    <ClInclude Include="ranimator.h" />
     <ClInclude Include="renderctx.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="rgbuffer.h" />
+    <ClInclude Include="rgbufferdraw.h" />
     <ClInclude Include="rgentrypoint.h" />
     <ClInclude Include="rgphysics.h" />
     <ClInclude Include="rgthread.h" />
+    <ClInclude Include="rimgui.h" />
+    <ClInclude Include="rlighting.h" />
+    <ClInclude Include="rpostprocess.h" />
     <ClInclude Include="scriptengine.h" />
     <ClInclude Include="scriptruntime.h" />
     <ClInclude Include="soundbuffer.h" />
     <ClInclude Include="soundsource.h" />
     <ClInclude Include="soundsystem.h" />
     <ClInclude Include="staticobject.h" />
+    <ClInclude Include="texture.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="logger.h" />

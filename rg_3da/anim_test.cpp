@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 #define GAME_DLL
 #include <rgentrypoint.h>
@@ -6,6 +6,7 @@
 #include <engine.h>
 
 #include <render.h>
+#include <rimgui.h>
 #include <window.h>
 #include <modelsystem.h>
 
@@ -21,16 +22,7 @@
 // MMD tools
 #include <mmdimporter.h>
 
-#include <objimporter.h>
-
-
-
-/*
-
-
-
-
-*/
+#include <pm2importer.h>
 
 using namespace Engine;
 
@@ -62,12 +54,48 @@ static Bool Handler(SDL_Event* event) {
 
 }
 
+void DrawImGuiCallback() {
+
+	ImGui::Begin("Scene light");
+	ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
+	ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
+	ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
+	ImGui::SliderFloat("Turbidity", &desc.turbidity, 0, 5);
+	ImGui::ColorPicker3("Color", desc.color.array);
+	ImGui::End();
+
+
+	ImGui::Begin("Animation control");
+
+	if (ImGui::Combo("Animation", &val, items, IM_ARRAYSIZE(items))) {
+		if (val == 0) {
+			kmodel->GetAnimator()->PlayAnimation(NULL);
+		}
+		else {
+			Animation* animation = anim[val - 1];
+			animation->SetSpeed(1);
+			kmodel->GetAnimator()->PlayAnimation(animation);
+		}
+	}
+
+	Animation* anim = kmodel->GetAnimator()->GetCurrentAnimation();
+	Float32 speed = 1;
+	if (anim) {
+		speed = (Float32)anim->GetSpeed();
+	}
+	if (ImGui::SliderFloat("Animation speed", &speed, 0, 10)) {
+		if (anim) { anim->SetSpeed(speed); }
+	}
+
+	ImGui::End();
+}
+
 class Application : public BaseGame {
 	public:
 		Application()  {
 			isClient = true;
 			isGraphics = true;
-			Render::SetRenderFlags(RG_RENDER_FULLSCREEN | RG_RENDER_USE3D);
+			Render::SetRenderFlags(0);
 
 			desc.color = { 1, 1, 1 };
 			desc.ambient = 0.45f;
@@ -84,26 +112,6 @@ class Application : public BaseGame {
 
 			}
 
-			ImGui::Begin("Scene light");
-			ImGui::SliderFloat("Time", &desc.time, 0, 6.28);
-			ImGui::SliderFloat("Ambient", &desc.ambient, 0, 2);
-			ImGui::SliderFloat("Intensity", &desc.intensity, 0, 20);
-			ImGui::SliderFloat("Turbidity", &desc.turbidity, 0, 5);
-			ImGui::ColorPicker3("Color", desc.color.array);
-			ImGui::End();
-
-
-			ImGui::Begin("Animation control");
-
-			if (ImGui::Combo("Animation", &val, items, IM_ARRAYSIZE(items))) {
-				if (val == 0) {
-					kmodel->GetAnimator()->PlayAnimation(NULL);
-				} else {
-					kmodel->GetAnimator()->PlayAnimation(anim[val - 1]);
-				}
-			}
-
-			ImGui::End();
 
 			Render::SetGlobalLight(&desc);
 		
@@ -134,7 +142,7 @@ class Application : public BaseGame {
 			binfo.data   = kmodel->GetTransforms();
 			binfo.handle = kmodel->GetBufferHandle();
 			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
-			Render::R3D_UpdateBoneBuffer(&binfo);
+			Render::UpdateBoneBuffer(&binfo);
 
 			//vec3 camera_offset = { 0, 1.67f, 0 };
 			//vec3 camera_pos = player->GetTransform()->GetWorldPosition() + camera_offset;
@@ -144,14 +152,18 @@ class Application : public BaseGame {
 
 		void Initialize() {
 		
+			Render::RegisterImGuiDrawCallback(DrawImGuiCallback);
+
 			World* world = GetWorld();
 
 			// Create 3-rd person camera
 			camera = RG_NEW_CLASS(GetDefaultAllocator(), Camera)(world, 0.1f, 1000, rgToRadians(75), 1.777f);
+
 			//cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), LookatCameraController)(camera);
 
 			cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
-
+			cam_controller->SetAngles({ 0, 3.1415, 0 });
+			camera->GetTransform()->SetPosition({ 0.0f, 1.6f, -2.0f });
 
 			PMXImporter pmxImporter;
 			PMDImporter pmdImporter;
@@ -167,10 +179,27 @@ class Application : public BaseGame {
 #endif
 
 			R3DRiggedModelInfo info = {};
-			pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
-			R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&info);
-			pmdImporter.FreeRiggedModelData(&info);
-			kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
+
+			ImportModelInfo iminfo = {};
+			ModelExtraData  extra  = {};
+			iminfo.path  = "mmd_models";
+			//iminfo.file  = "Miku_Hatsune.pmd";
+			iminfo.file = "Rin_Kagamine.pmd";
+			iminfo.extra = &extra;
+			iminfo.info.as_rigged = &info;
+
+			//pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
+			pmdImporter.ImportRiggedModel(&iminfo);
+			R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&info);
+			//kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
+			kmodel = pmdImporter.ImportKinematicsModel(&iminfo);
+
+			//pmdImporter.FreeRiggedModelData(&info);
+			FreeModelInfo finfo = {};
+			finfo.extra = &extra;
+			finfo.userdata = iminfo.userdata;
+			finfo.info.as_rigged = &info;
+			pmdImporter.FreeRiggedModelData(&finfo);
 
 			// Load animations
 			anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);
@@ -192,29 +221,45 @@ class Application : public BaseGame {
 			// Create player entity
 			player = world->NewEntity();
 			player->SetAABB(&info.aabb);
-			player->AttachComponent(Render::GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
+			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
 			// Scale visual
 			player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 
 
-			// Level
+			// Level ground
 
+			PM2Importer pm2;
+			R3DStaticModelInfo sinfo = {};
+			pm2.ImportModel("gamedata/models/flatplane.pm2", &sinfo);
+			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&sinfo);
+			pm2.FreeModelData(&sinfo);
+
+			mat4 model = MAT4_IDENTITY();
+			world->NewStatic(level_mdl_handle, &model, &sinfo.aabb);
+
+#if 0
 			ObjImporter objImporter;
 			R3DStaticModelInfo l_info = {};
 			objImporter.ImportModel("gamedata/flatplane/untitled.obj", &l_info);
-			R3D_StaticModel* level_mdl_handle = Render::R3D_CreateStaticModel(&l_info);
+			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&l_info);
 			objImporter.FreeModelData(&l_info);
 
 
 			Entity* level = world->NewEntity();
 			level->SetAABB(&l_info.aabb);
-			level->AttachComponent(Render::GetModelSystem()->NewModelComponent(level_mdl_handle));
+			level->AttachComponent(GetModelSystem()->NewModelComponent(level_mdl_handle));
+#endif
 
 		}
 
 		void Quit() {
 		
 			GetWorld()->ClearWorld();
+
+
+			for (Uint32 i = 0; i < 9; i++) {
+				RG_DELETE(Animation, anim[i]);
+			}
 
 			//RG_DELETE_CLASS(GetDefaultAllocator(), LookatCameraController, cam_controller);
 			RG_DELETE_CLASS(GetDefaultAllocator(), FreeCameraController, cam_controller);

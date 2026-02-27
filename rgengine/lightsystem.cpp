@@ -43,7 +43,7 @@ namespace Engine {
 
 	PointLight* LightSystem::NewPointLight() {
 		LightSource* src = GetWorld()->NewLightSource();
-		src->source.type = RG_POINTLIGHT;
+		src->source.type = RG_LIGHT_POINT;
 		PointLight* comp = RG_NEW_CLASS(this->m_palloc, PointLight)(src);
 		this->m_pointlights.push_back(comp);
 		return comp;
@@ -64,7 +64,7 @@ namespace Engine {
 
 	SpotLight* LightSystem::NewSpotLight() {
 		LightSource* src = GetWorld()->NewLightSource();
-		src->source.type = RG_SPOTLIGHT;
+		src->source.type = RG_LIGHT_SPOT;
 		SpotLight* comp = RG_NEW_CLASS(this->m_salloc, SpotLight)(src);
 		this->m_spotlights.push_back(comp);
 		return comp;

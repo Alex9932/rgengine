@@ -1,0 +1,38 @@
+struct PSINPUT {
+	float4 position : SV_POSITION;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD0;
+};
+
+struct PSOUTPUT {
+	float4 color : SV_Target0;
+};
+
+cbuffer ConstBuffer : register(b0) {
+	float4 color;
+};
+
+Texture2D t_albedo : register(t0);
+Texture2D t_normal : register(t1);
+Texture2D t_pbr    : register(t2);
+SamplerState SampleType : register(s0);
+
+PSOUTPUT pmain(PSINPUT psin) {
+
+	float4 albd = t_albedo.Sample(SampleType, psin.uv);
+	float4 nrml = t_normal.Sample(SampleType, psin.uv);
+	float4 pbr  = t_pbr.Sample(SampleType, psin.uv);
+
+	if(albd.a < 0.8) {
+		//discard;
+	}
+
+	float3 col = {0, 0, 1};
+
+	PSOUTPUT pout;
+	pout.color.xyz = albd.xyz * color.xyz;
+	//pout.color.xyz = color.xyz;
+	pout.color.w = 1;
+	return pout;
+
+}

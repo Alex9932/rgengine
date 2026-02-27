@@ -4,15 +4,27 @@
 #include <vector>
 
 namespace Engine {
+	struct HandlerPair {
+        union {
+            void*           rawptr;
+		    EventHandler    pfn;
+            EventHandlerArg pfn_arg;
+        };
+		void*        user_data;
+	};
 
-    static std::vector<EventHandler> handlers;
+    static std::vector<HandlerPair> handlers;
 
     static SDL_Event event;
     static Uint32    rg_sdluserevent;
 
     static void UpdateHandlers(SDL_Event* event) {
         for (Uint32 i = 0; i < handlers.size(); ++i) {
-            handlers[i](event);
+            if (handlers[i].user_data) {
+                handlers[i].pfn_arg(event, handlers[i].user_data);
+            } else {
+                handlers[i].pfn(event);
+            }
         }
     }
 
@@ -24,6 +36,7 @@ namespace Engine {
 
     void Event_Destroy() {
         PushEvent(0xFFFFFFFF, RG_EVENT_STOP, NULL, NULL);
+        HandleEvents();
         handlers.clear();
     }
 
@@ -34,16 +47,30 @@ namespace Engine {
         }
     }
 
-    void RegisterEventHandler(EventHandler handler) {
-        handlers.push_back(handler);
+    static void _RegisterEventHandler(void* handler, void* userdata) {
+        HandlerPair pair = {};
+        pair.rawptr    = handler;
+        pair.user_data = userdata;
+        handlers.push_back(pair);
         PushEvent(0xFFFFFFFF, RG_EVENT_NEW_HANDLER, (void*)handler, NULL); // Handler function's pointer in first argument
     }
 
-    void FreeEventHandler(EventHandler handler) {
-        std::vector<EventHandler>::iterator it;
+    void RegisterEventHandler(EventHandler handler) {
+		_RegisterEventHandler((void*)handler, NULL);
+    }
+
+    void RegisterEventHandler(EventHandlerArg handler, void* userdata) {
+		_RegisterEventHandler((void*)handler, userdata);
+    }
+
+    void FreeEventHandler(void* handler) {
+        std::vector<HandlerPair>::iterator it;
         for (it = handlers.begin(); it != handlers.end(); it++) {
-            if (*it == handler) {
-                handlers.erase(it);
+            if ((*it).rawptr == handler) {
+                //handlers.erase(it);
+
+                *it = std::move(handlers.back());
+                handlers.pop_back();
                 break;
             }
         }

@@ -16,19 +16,19 @@ rgmain(EntryPoint)
 #else
 
 int main(int argc, char** argv) {
-	int _argc = 7;
+	int _argc = 8;
 	String _argv[] = {
 		argv[0], // exec path
-		//"-debug",
+		"-debug",
 		"-fsjson",
 		"fsgame.json",
 		"-render",
-		"rgrenderdx11.dll",
-		//"rgrendervk.dll",
+		//"rgrenderdx11.dll",
+		"rgrendervk.dll",
 		"-game",
 		//"rg_3da.dll"
-		//"rg_leveleditor.dll"
-		"rg_modeleditor.dll"
+		"rg_leveleditor.dll"
+		//"rg_modeleditor.dll"
 	};
 
 	ProcessArguments(_argc, _argv);

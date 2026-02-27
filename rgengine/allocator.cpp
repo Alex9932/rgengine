@@ -3,8 +3,8 @@
 #include "allocator.h"
 #include "engine.h"
 
-#define RG_ALLOC_FREE_ON_DESTROY 0
-#define RG_ALLOCATOR_DEBUG 1
+#define RG_ALLOCATOR_FREE_ON_DESTROY 0
+#define RG_ALLOCATOR_DEBUG 0
 
 void* rg_alloca(size_t size) {
     void* ptr = NULL;
@@ -115,7 +115,7 @@ namespace Engine {
     }
 
     STDAllocator::~STDAllocator() {
-#if RG_ALLOC_FREE_ON_DESTROY
+#if RG_ALLOCATOR_FREE_ON_DESTROY
         STDBlock b;
         for (Uint32 i = 0; i < blocks.size(); i++) {
             b = blocks[i];

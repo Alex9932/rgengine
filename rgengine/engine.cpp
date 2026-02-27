@@ -256,6 +256,10 @@ namespace Engine {
     }
 
     static void SignalHandler(int sig) {
+
+        PushEvent(0, RG_EVENT_SYSTEM_SIGNAL, (void*)sig, NULL);
+		HandleEvents(); // Intermediate event handling
+
         switch (sig) {
             case SIGINT:   { printf("SIGNAL: Interrupt\n"); Quit(); break; }
             case SIGILL:   { printf("SIGNAL: Illegal instruction\n"); break; }
@@ -490,6 +494,7 @@ namespace Engine {
             if (game_ptr->IsGraphics()) {
                 core_profiler->StartSection(profiles[7]);
                 Render::Update();
+                Window_Update();
             }
 
             core_profiler->StartSection(profiles[8]);
@@ -515,12 +520,9 @@ namespace Engine {
             RG_DELETE_CLASS(std_allocator, SoundSystem, soundsystem);
         }
 
-        if (game_ptr->IsGraphics()) {
-            RG_DELETE_CLASS(std_allocator, ModelSystem, modelSystem);
-            RG_DELETE_CLASS(std_allocator, LightSystem, lightSystem);
-            Window_Destroy();
-        }
-
+        // Save imgui path
+        char imguipath[512];
+        SDL_strlcpy(imguipath, GetGame()->imguiIni, 512);
         DestroyGameModule();
 
         Script_Destroy();
@@ -529,6 +531,12 @@ namespace Engine {
 
         RG_DELETE_CLASS(GetDefaultAllocator(), World, world);
         RG_DELETE_CLASS(GetDefaultAllocator(), RGPhysics, rgphysics);
+
+        if (game_ptr->IsGraphics()) {
+            RG_DELETE_CLASS(std_allocator, ModelSystem, modelSystem);
+            RG_DELETE_CLASS(std_allocator, LightSystem, lightSystem);
+            Window_Destroy(imguipath);
+        }
 
         Input_Destroy();
         Event_Destroy();

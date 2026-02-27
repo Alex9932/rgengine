@@ -191,6 +191,7 @@ namespace Engine {
 		LightSource* s = (LightSource*)m_allocLight->Allocate();
 		SDL_memset(s, 0, sizeof(LightSource));
 		s->uuid = GenerateUUID();
+		s->source.direction = {0, -1, 0};
 		this->m_lights.push_back(s);
 		return s;
 	}
@@ -233,7 +234,8 @@ namespace Engine {
 		m_allocEntity->DeallocateAll();
 		m_allocTransform->DeallocateAll();
 		m_allocLight->DeallocateAll();
-		//m_entities.clear();
+		m_entities.clear();
+		m_static.clear();
 	}
 
 }

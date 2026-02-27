@@ -9,6 +9,7 @@
 Uint8* RG_STB_load_from_file(String path, int* width, int* height, int* components, int required_components) {
     rgLogInfo(RG_LOG_SYSTEM, "Loading image: %s", path);
     Resource* res = Engine::GetResource(path);
+    // TODO: remove this if possible
     if (!res) {
         // Try to load default texture
         res = Engine::GetResource("platform/textures/def_diffuse.png");

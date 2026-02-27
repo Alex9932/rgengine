@@ -101,24 +101,23 @@ namespace Engine {
 
     }
 
-    void Window_Destroy() {
+    void Window_Destroy(String savepath) {
 
-        Render::DestroySubSystem();
-        Render::UnloadRenderer();
 
         FreeEventHandler(_EventHandler);
 
         // Save ImGui state
         char imcfgpath[512];
-        GetPath(imcfgpath, 512, RG_PATH_USERDATA, GetGame()->imguiIni);
+        GetPath(imcfgpath, 512, RG_PATH_USERDATA, savepath);
         size_t imini_len = 0;
         String imini = ImGui::SaveIniSettingsToMemory(&imini_len);
         FSWriter writer(imcfgpath);
 		writer.Write(imini, imini_len);
         writer.Flush();
-        
 
         ImGui_ImplSDL3_Shutdown();
+        Render::DestroySubSystem();
+        Render::UnloadRenderer();
         ImGui::DestroyContext(imctx);
 
         SDL_DestroyWindow(hwnd);
@@ -227,13 +226,11 @@ namespace Engine {
         imctx = ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO();
-
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ImGui_ImplSDL3_InitForOther(hwnd);
-
         SetupImGuiStyle();
         //ImGui::StyleColorsDark();
         
@@ -248,17 +245,16 @@ namespace Engine {
 
         RegisterEventHandler(_EventHandler);
 
-        ImGui_ImplSDL3_NewFrame();
+        //ImGui_ImplSDL3_NewFrame();
 
 
         SDL_SetWindowResizable(hwnd, true);
 
-        Render::InitializeContext(hwnd);
-        Render::InitSubSystem();
+        Render::InitSubSystem(hwnd);
 
         SDL_SetWindowIcon(hwnd, icn_surface.surface);
 
-        ImGui::NewFrame();
+        //ImGui::NewFrame();
 
 #ifdef WINDOWS_ICON
         HINSTANCE handle = ::GetModuleHandle(nullptr);
@@ -282,17 +278,17 @@ namespace Engine {
 
     void Window_Update() {
         // End frame
-        ImGui::EndFrame();
-        ImGui::Render();
+        //ImGui::EndFrame();
+        //ImGui::Render();
 
         //ImGuiIO& io = ImGui::GetIO();
         //io.DisplaySize.x = w_current_width;
         //io.DisplaySize.y = w_current_height;
 
         // Begin new frame & swap buffers
-        ImGui_ImplSDL3_NewFrame();
+        //ImGui_ImplSDL3_NewFrame();
         Render::SwapBuffers();
-        ImGui::NewFrame();
+        //ImGui::NewFrame();
 
         int w, h;
         SDL_GetWindowSize(hwnd, &w, &h);

@@ -6,21 +6,6 @@
 
 #include <SDL3/SDL_vulkan.h>
 
-#include "vk.h"
-
-static VkSurfaceKHR       vk_surface          = NULL;
-static VkSurfaceFormatKHR vk_swapchainformat  = {};
-static VkPresentModeKHR   vk_presentmode      = VK_PRESENT_MODE_IMMEDIATE_KHR;
-static VkExtent2D         vk_extent           = {};
-static VkSwapchainKHR     vk_swapchain        = NULL;
-static Uint32             vk_imagescount      = 0;
-static VkImage            vk_swapimages[16]   = {};
-static VkImageView        vk_imageviews[16]   = {};
-static VkFramebuffer      vk_framebuffers[16] = {};
-static Uint32             vk_presentqueue     = 0;
-
-static SDL_Window*        vk_hwnd             = NULL;
-
 static VkSurfaceFormatKHR ChooseFormat(VkSurfaceFormatKHR* formats, Uint32 count) {
 	VkSurfaceFormatKHR current;
 	for (Uint32 i = 0; i < count; i++) {
@@ -35,12 +20,12 @@ static VkSurfaceFormatKHR ChooseFormat(VkSurfaceFormatKHR* formats, Uint32 count
 static VkPresentModeKHR ChoosePresentMode(VkPresentModeKHR* modes, Uint32 count) {
 	// Find MAILBOX for high performance
 	for (Uint32 i = 0; i < count; i++) {
-		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) { return modes[i]; }
+		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) { return VK_PRESENT_MODE_MAILBOX_KHR; }
 	}
 
 	// OR IMMEDIATE
 	for (Uint32 i = 0; i < count; i++) {
-		if (modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) { return modes[i]; }
+		if (modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) { return VK_PRESENT_MODE_IMMEDIATE_KHR; }
 	}
 
 	// Kurwa! Nu vse pizdec nahuy...
@@ -60,47 +45,47 @@ static VkExtent2D ChooseExtent(VkSurfaceCapabilitiesKHR capabilities, SDL_Window
 	return extent;
 }
 
-static void MakeSwapchain() {
+static void MakeSwapchain(RRenderDevice* device) {
 
-	VkPhysicalDevice pdev = VK_GetPhysicalDevice();
-	VkDevice         dev = VK_GetDevice();
+	VkPhysicalDevice pdev = device->vkpdev;
+	VkDevice         dev  = device->vkdev;
 
 	// Create surface
-	SDL_Vulkan_CreateSurface(vk_hwnd, VK_GetInstance(), NULL, &vk_surface);
+	SDL_Vulkan_CreateSurface(device->hwnd, device->vkctx, device->vkalloc, &device->vksurface);
 
 	VkSurfaceCapabilitiesKHR capabilities = {};
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pdev, vk_surface, &capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pdev, device->vksurface, &capabilities);
 
 	// Get Formats & modes
 	Uint32 fcount = 0;
 	Uint32 mcount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(pdev, vk_surface, &fcount, NULL);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(pdev, vk_surface, &mcount, NULL);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(pdev, device->vksurface, &fcount, NULL);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(pdev, device->vksurface, &mcount, NULL);
 
 	VkSurfaceFormatKHR* formats = (VkSurfaceFormatKHR*)rg_malloc(sizeof(VkSurfaceFormatKHR) * fcount);
 	VkPresentModeKHR* modes = (VkPresentModeKHR*)rg_malloc(sizeof(VkPresentModeKHR) * mcount);
 
-	vkGetPhysicalDeviceSurfaceFormatsKHR(pdev, vk_surface, &fcount, formats);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(pdev, vk_surface, &mcount, modes);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(pdev, device->vksurface, &fcount, formats);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(pdev, device->vksurface, &mcount, modes);
 
-	vk_swapchainformat = ChooseFormat(formats, fcount);
-	vk_presentmode = ChoosePresentMode(modes, mcount);
+	device->vkswapchainformat = ChooseFormat(formats, fcount);
+	device->vkpresentmode = ChoosePresentMode(modes, mcount);
 
 	rg_free(formats);
 	rg_free(modes);
 
-	vk_extent = ChooseExtent(capabilities, vk_hwnd);
+	device->vkextent = ChooseExtent(capabilities, device->hwnd);
 
-	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain format: f=%d s=%d", vk_swapchainformat.format, vk_swapchainformat.colorSpace);
-	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain present: %d", vk_presentmode);
-	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain size: %dx%d", vk_extent.width, vk_extent.height);
+	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain format: f=%d s=%d", device->vkswapchainformat.format, device->vkswapchainformat.colorSpace);
+	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain present: %d", device->vkpresentmode);
+	rgLogInfo(RG_LOG_RENDER, "VK: Swapchain size: %dx%d", device->vkextent.width, device->vkextent.height);
 
 	// Image count
 
-	vk_imagescount = capabilities.minImageCount + 1;
+	device->vkimagescount = capabilities.minImageCount;// + 1;
 
-	if (capabilities.maxImageCount > 0 && vk_imagescount > capabilities.maxImageCount) {
-		vk_imagescount = capabilities.maxImageCount;
+	if (capabilities.maxImageCount > 0 && device->vkimagescount > capabilities.maxImageCount) {
+		device->vkimagescount = capabilities.maxImageCount;
 	}
 
 	// Present queue
@@ -109,28 +94,28 @@ static void MakeSwapchain() {
 	vkGetPhysicalDeviceQueueFamilyProperties(pdev, &qcount, nullptr);
 	for (Uint32 i = 0; i < qcount; i++) {
 		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(pdev, i, vk_surface, &presentSupport);
-		if (presentSupport) { vk_presentqueue = i; break; }
+		vkGetPhysicalDeviceSurfaceSupportKHR(pdev, i, device->vksurface, &presentSupport);
+		if (presentSupport) { device->vkpresentqueue = i; break; }
 	}
 
-	Uint32 queueFamilyIndices[] = { VK_GetQueueFamily(), vk_presentqueue };
+	Uint32 queueFamilyIndices[] = { device->vkqueuefamily, device->vkpresentqueue };
 
 	VkSwapchainCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = vk_surface;
-	createInfo.minImageCount = vk_imagescount;
-	createInfo.imageFormat = vk_swapchainformat.format;
-	createInfo.imageColorSpace = vk_swapchainformat.colorSpace;
-	createInfo.imageExtent = vk_extent;
+	createInfo.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface          = device->vksurface;
+	createInfo.minImageCount    = device->vkimagescount;
+	createInfo.imageFormat      = device->vkswapchainformat.format;
+	createInfo.imageColorSpace  = device->vkswapchainformat.colorSpace;
+	createInfo.imageExtent      = device->vkextent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 
-	if (VK_GetQueueFamily() != vk_presentqueue) {
+	if (device->vkqueuefamily != device->vkpresentqueue) {
 		// Different queues
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		createInfo.pQueueFamilyIndices   = queueFamilyIndices;
 	}
 	else {
 		// Same queue
@@ -139,91 +124,85 @@ static void MakeSwapchain() {
 
 	createInfo.preTransform = capabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = vk_presentmode;
+	createInfo.presentMode = device->vkpresentmode;
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
-	if (vkCreateSwapchainKHR(dev, &createInfo, nullptr, &vk_swapchain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(dev, &createInfo, device->vkalloc, &device->vkswapchain) != VK_SUCCESS) {
 		RG_ERROR_MSG("Vulkan swapchain error!");
 	}
 
 	Uint32 icount = 0;
-	vkGetSwapchainImagesKHR(dev, vk_swapchain, &icount, NULL);
-	vkGetSwapchainImagesKHR(dev, vk_swapchain, &icount, vk_swapimages);
-	if (icount != vk_imagescount) {
-		rgLogError(RG_LOG_RENDER, "Image count: created=%d needed=%d", icount, vk_imagescount);
+	vkGetSwapchainImagesKHR(dev, device->vkswapchain, &icount, NULL);
+	vkGetSwapchainImagesKHR(dev, device->vkswapchain, &icount, device->vkswapimages);
+	if (icount != device->vkimagescount) {
+		rgLogError(RG_LOG_RENDER, "Image count: created=%d needed=%d", icount, device->vkimagescount);
 		RG_ERROR_MSG("Vulkan swapchain images error!");
 	}
 
 	// Make VkImageView
-	for (size_t i = 0; i < vk_imagescount; i++) {
+	for (size_t i = 0; i < device->vkimagescount; i++) {
 		VkImageViewCreateInfo viewInfo = {};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = vk_swapimages[i];
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = vk_swapchainformat.format;
+		viewInfo.sType        = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image        = device->vkswapimages[i];
+		viewInfo.viewType     = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format       = device->vkswapchainformat.format;
 		viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel   = 0;
+		viewInfo.subresourceRange.levelCount     = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.subresourceRange.layerCount     = 1;
 
-		if (vkCreateImageView(dev, &viewInfo, nullptr, &vk_imageviews[i]) != VK_SUCCESS) {
+		if (vkCreateImageView(dev, &viewInfo, device->vkalloc, &device->vkimageviews[i]) != VK_SUCCESS) {
 			RG_ERROR_MSG("Vulkan swapchain imageview error!");
 		}
 	}
 
-	rgLogInfo(RG_LOG_RENDER, "Created %d swapchain images", vk_imagescount);
+	rgLogInfo(RG_LOG_RENDER, "Created %d swapchain images", device->vkimagescount);
 
 }
 
-void MakeSwapchainFramebuffer() {
-	VkDevice dev = VK_GetDevice();
+void MakeSwapchainFramebuffer(RRenderDevice* device) {
+	VkDevice dev = device->vkdev;
 
 	// Make VkFramebuffer
-	for (size_t i = 0; i < vk_imagescount; i++) {
-		VkImageView attachments[] = { vk_imageviews[i] };
+	for (size_t i = 0; i < device->vkimagescount; i++) {
+		VkImageView attachments[] = { device->vkimageviews[i] };
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass      = VK_GetRenderpass();
+		framebufferInfo.renderPass      = device->imguirenderpass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments    = attachments;
-		framebufferInfo.width           = vk_extent.width;
-		framebufferInfo.height          = vk_extent.height;
+		framebufferInfo.width           = device->vkextent.width;
+		framebufferInfo.height          = device->vkextent.height;
 		framebufferInfo.layers          = 1;
-		if (vkCreateFramebuffer(dev, &framebufferInfo, nullptr, &vk_framebuffers[i]) != VK_SUCCESS) {
+		if (vkCreateFramebuffer(dev, &framebufferInfo, device->vkalloc, &device->vkframebuffers[i]) != VK_SUCCESS) {
 			RG_ERROR_MSG("Vulkan swapchain framebuffer error!");
 		}
 	}
 }
 
-void CreateSwapchain(SDL_Window* hwnd) {
-	vk_hwnd = hwnd;
-	MakeSwapchain();
-
+void CreateSwapchain(RRenderDevice* dev) {
+	MakeSwapchain(dev);
 }
 
-void DestroySwapchain() {
-	VkDevice dev = VK_GetDevice();
-	for (size_t i = 0; i < vk_imagescount; i++) {
-		vkDestroyImageView(dev, vk_imageviews[i], nullptr);
+void DestroySwapchain(RRenderDevice* device) {
+	VkDevice dev = device->vkdev;
+	for (size_t i = 0; i < device->vkimagescount; i++) {
+		vkDestroyFramebuffer(dev, device->vkframebuffers[i], device->vkalloc);
+		vkDestroyImageView(dev, device->vkimageviews[i], device->vkalloc);
 	}
-	vkDestroySwapchainKHR(dev, vk_swapchain, nullptr);
+	vkDestroySwapchainKHR(dev, device->vkswapchain, device->vkalloc);
+	SDL_Vulkan_DestroySurface(device->vkctx, device->vksurface, device->vkalloc);
 }
 
-void ResizeSwapchain() {
-	vkDeviceWaitIdle(VK_GetDevice());
-	DestroySwapchain();
-	MakeSwapchain();
-	MakeSwapchainFramebuffer();
+void ResizeSwapchain(RRenderDevice* dev) {
+	vkDeviceWaitIdle(dev->vkdev);
+	DestroySwapchain(dev);
+	MakeSwapchain(dev);
+	MakeSwapchainFramebuffer(dev);
 }
-
-VkFramebuffer GetSwapchainFramebuffer(Uint32 idx) { return vk_framebuffers[idx]; }
-VkExtent2D GetSwapchainExtent() { return vk_extent; }
-Uint32 GetSwapchainImageCount() { return vk_imagescount; }
-VkSwapchainKHR GetSwapchain() { return vk_swapchain; }
-VkSurfaceFormatKHR GetSwapchainFormat() { return vk_swapchainformat; }

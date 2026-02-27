@@ -712,7 +712,7 @@ static void DrawAnimationTab(Uint32* uid) {
 			FS_SeparatePathFile(p, 256, f, 256, path); // and reuse it as file path
 			rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
 			if (rg_strenw(path, "vmd")) {
-				Animation* anim = vmd_importer.ImportAnimation(path, kmodel, true);
+				Animation* anim = vmd_importer.ImportAnimation(path, kmodel);
 				anims[animcount] = anim;
 				animcount++;
 			}

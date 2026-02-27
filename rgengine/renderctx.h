@@ -10,119 +10,137 @@
 
 #include "rendertypes.h"
 
+typedef SDL_Window*     (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
+typedef void            (*PFN_R_SETUP)();
 
- // Render core
-typedef SDL_Window*  (*PFN_R_SHOWWINDOW)(Uint32, Uint32); // Width, height
-typedef void         (*PFN_R_SETUP)(RenderSetupInfo*);
-typedef void         (*PFN_R_INITIALIZE)(SDL_Window*);
-typedef void         (*PFN_R_DESTROY)();
-typedef void         (*PFN_R_SWAPBUFFERS)();
-typedef void         (*PFN_R_GETINFO)(RenderInfo*);
+typedef RRenderDevice*  (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);                  // PFN_R_INITIALIZE
+typedef void            (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
+typedef void            (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
+typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*, RSwapBuffersInfo*);
 
-// R2D
-typedef R2D_Buffer*  (*PFN_R2D_CREATEBUFFER)(R2DCreateBufferInfo*);
-typedef void         (*PFN_R2D_DESTROYBUFFER)(R2D_Buffer*);
-typedef void         (*PFN_R2D_BUFFERDATA)(R2DBufferDataInfo*);
+typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
+typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);
+typedef void            (*PFN_R_IMGUI_NEWFRAME)(RRenderDevice*);
+typedef void*           (*PFN_R_IMGUI_ADDTEXTURE)(RRenderDevice*, RImage*);
+typedef void            (*PFN_R_IMGUI_REMOVETEXTURE)(void*);
 
-typedef R2D_Texture* (*PFN_R2D_CREATETEXTURE)(R2DCreateTextureInfo*);
-typedef R2D_Texture* (*PFN_R2D_CREATEMEMTEXTURE)(R2DCreateMemTextureInfo*);
-typedef void         (*PFN_R2D_DESTROYTEXTURE)(R2D_Texture*);
-typedef void         (*PFN_R2D_TEXTUREDATA)(R2DTextureDataInfo*);
+typedef RBuffer*        (*PFN_R_CREATEBUFFER)(RRenderDevice*, RBufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYBUFFER)(RBuffer*);
+typedef void            (*PFN_R_UPDATEBUFFER)(RUpdateBufferInfo*);
+typedef RImage*         (*PFN_R_CREATEIMAGE)(RRenderDevice*, RImageCreateInfo*);
+typedef void            (*PFN_R_DESTROYIMAGE)(RImage*);
+typedef RFramebuffer*   (*PFN_R_CREATEFRAMEBUFFER)(RRenderDevice*, RFramebufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYFRAMEBUFFER)(RFramebuffer*);
+typedef RDescriptorSet* (*PFN_R_CREATEDESCRIPTORSET)(RRenderDevice*, RDescriptorSetCreateInfo*);
+typedef void            (*PFN_R_DESTROYDESCRIPTORSET)(RDescriptorSet*);
 
-typedef void         (*PFN_R2D_PUSHMATRIX)(mat4*);
-typedef mat4*        (*PFN_R2D_POPMATRIX)();
-typedef void         (*PFN_R2D_RESETSTACK)();
+typedef RRenderpass*    (*PFN_R_CREATERENDERPASS)(RRenderDevice*, RRenderpassCreateInfo*);
+typedef void            (*PFN_R_DESTROYRENDERPASS)(RRenderpass*);
+typedef RPipeline*      (*PFN_R_CREATEPIPELINE)(RRenderDevice*, RPipelineCreateInfo*);
+typedef void            (*PFN_R_DESTROYPIPELINE)(RPipeline*);
+typedef RShader*        (*PFN_R_CREATESHADER)(RRenderDevice*, RShaderCreateInfo*);
+typedef void            (*PFN_R_DESTROYSHADER)(RShader*);
+typedef RSampler*       (*PFN_R_CREATESAMPLER)(RRenderDevice*, RSamplerCreateInfo*);
+typedef void            (*PFN_R_DESTROYSAMPLER)(RSampler*);
 
-typedef void         (*PFN_R2D_BEGIN)();
-typedef void         (*PFN_R2D_BIND)(R2DBindInfo*);
-typedef void         (*PFN_R2D_DRAW)(R2DDrawInfo*);
+typedef RCommandBuffer* (*PFN_R_CREATECOMMANDBUFFER)(RRenderDevice*, RCommandBufferCreateInfo*);
+typedef void            (*PFN_R_DESTROYCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_SUBMITCOMMANDBUFFER)(RCommandBufferSubmitInfo*);
+typedef void            (*PFN_R_RESETCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_BEGINCOMMANDBUFFER)(RCommandBuffer*);
+typedef void            (*PFN_R_ENDCOMMANDBUFFER)(RCommandBuffer*);
 
-// R3D
-typedef R3D_Material*       (*PFN_R3D_CREATEMATERIAL)(R3DCreateMaterialInfo*);
-typedef void                (*PFN_R3D_DESTROYMATERIAL)(R3D_Material*);
+typedef void            (*PFN_R_CMDBEGINRENDERPASS)(RCommandBuffer*, RRenderpassBeginInfo*);
+typedef void            (*PFN_R_CMDENDRENDERPASS)(RCommandBuffer*);
+typedef void            (*PFN_R_CMDBINDPIPELINE)(RCommandBuffer*, RPipeline*);
+typedef void            (*PFN_R_CMDBINDVERTEXBUFFER)(RCommandBuffer*, RBuffer*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDBINDINDEXBUFFER)(RCommandBuffer*, RBuffer*, IndexType);
+typedef void            (*PFN_R_CMDBINDDESCRIPTORSETS)(RCommandBuffer*, RBindDescriptorSetsInfo*);
+typedef void            (*PFN_R_CMDBINDSAMPLER)(RCommandBuffer*, RSampler*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDDRAWINDEXED)(RCommandBuffer*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDPUSHCONSTANTS)(RCommandBuffer*, void*, Uint32, Uint32);
+typedef void            (*PFN_R_CMDDISPATCH)(RCommandBuffer*, Uint32, Uint32, Uint32);
+typedef void            (*PFN_R_CMDUSEIMAGE)(RCommandBuffer*, RImage*, Uint32);
 
-typedef R3D_StaticModel*    (*PFN_R3D_CREATESTATICMODEL)(R3DStaticModelInfo*);
-typedef void                (*PFN_R3D_DESTROYSTATICMODEL)(R3D_StaticModel*);
-
-typedef R3D_RiggedModel*    (*PFN_R3D_CREATERIGGEDMODEL)(R3DRiggedModelInfo*);
-typedef void                (*PFN_R3D_DESTROYRIGGEDMODEL)(R3D_RiggedModel*);
-
-typedef R3D_BoneBuffer*     (*PFN_R3D_CREATEBONEBUFFER)(R3DCreateBufferInfo*);
-typedef void                (*PFN_R3D_DESTROYBONEBUFFER)(R3D_BoneBuffer*);
-typedef void                (*PFN_R3D_UPDATEBONEBUFFER)(R3DUpdateBufferInfo*);
-
-typedef R3D_AtlasHandle*    (*PFN_R3D_CREATEATLAS)(String);
-typedef void                (*PFN_R3D_DESTROYATLAS)(R3D_AtlasHandle*);
-
-typedef R3D_ParticleBuffer* (*PFN_R3D_CREATEPARTICLEBUFFER)(R3DCreateBufferInfo*);
-typedef void                (*PFN_R3D_DESTROYPARTICLEBUFFER)(R3D_ParticleBuffer*);
-typedef void                (*PFN_R3D_UPDATEPARTICLEBUFFER)(R3DUpdateBufferInfo*);
-
-typedef void                (*PFN_R3D_PUSHLIGHTSOURCE)(R3D_LightSource*);
-typedef void                (*PFN_R3D_PUSHMODEL)(R3D_PushModelInfo*);
-typedef void                (*PFN_R3D_SETCAMERA)(R3D_CameraInfo*);
-
-typedef void			    (*PFN_R3D_STARTRENDERTASK)(R3D_RenderTaskInfo*);
-
+typedef void            (*PFN_R_CMDIMGUIRENDERDRAWDATA)(RCommandBuffer*, void*);
 
 namespace Engine {
-
-	typedef struct Renderer {
+	typedef struct RenderBackend {
 
 		// Core
 		PFN_R_SHOWWINDOW              ShowWindow;
 		PFN_R_SETUP                   Setup;
-		PFN_R_INITIALIZE              Initialize;
-		PFN_R_DESTROY                 Destroy;
+		PFN_R_CREATEDEVICE            CreateDevice;
+		PFN_R_DESTROYDEVICE           DestroyDevice;
 		PFN_R_SWAPBUFFERS             SwapBuffers;
 		PFN_R_GETINFO                 GetInfo;
 
-		// R2D
-		PFN_R2D_CREATEBUFFER          R2D_CreateBuffer;
-		PFN_R2D_DESTROYBUFFER         R2D_DestroyBuffer;
-		PFN_R2D_BUFFERDATA            R2D_BufferData;
-		PFN_R2D_CREATETEXTURE         R2D_CreateTexture;
-		PFN_R2D_CREATEMEMTEXTURE      R2D_CreateMemTexture;
-		PFN_R2D_DESTROYTEXTURE        R2D_DestroyTexture;
-		PFN_R2D_TEXTUREDATA           R2D_TextureData;
-		PFN_R2D_PUSHMATRIX            R2D_PushMatrix;
-		PFN_R2D_POPMATRIX             R2D_PopMatrix;
-		PFN_R2D_RESETSTACK            R2D_ResetStack;
-		PFN_R2D_BEGIN                 R2D_Begin;
-		PFN_R2D_BIND                  R2D_Bind;
-		PFN_R2D_DRAW                  R2D_Draw;
+		// ImGUI
+		PFN_R_IMGUI_INIT              ImGui_Init;
+		PFN_R_IMGUI_SHUTDOWN          ImGui_Shutdown;
+		PFN_R_IMGUI_NEWFRAME          ImGui_NewFrame;
+		PFN_R_IMGUI_ADDTEXTURE        ImGui_AddTexture;
+		PFN_R_IMGUI_REMOVETEXTURE     ImGui_RemoveTexture;
 
-		// R3D
-		PFN_R3D_CREATEMATERIAL        R3D_CreateMaterial;
-		PFN_R3D_DESTROYMATERIAL       R3D_DestroyMaterial;
+		// Buffer
+		PFN_R_CREATEBUFFER            CreateBuffer;
+		PFN_R_DESTROYBUFFER           DestroyBuffer;
+		PFN_R_UPDATEBUFFER            UpdateBuffer;
 
-		PFN_R3D_CREATESTATICMODEL     R3D_CreateStaticModel;
-		PFN_R3D_DESTROYSTATICMODEL    R3D_DestroyStaticModel;
+		// Image
+		PFN_R_CREATEIMAGE			  CreateImage;
+		PFN_R_DESTROYIMAGE            DestroyImage;
 
-		PFN_R3D_CREATERIGGEDMODEL     R3D_CreateRiggedModel;
-		PFN_R3D_DESTROYRIGGEDMODEL    R3D_DestroyRiggedModel;
+		// Framebuffer
+		PFN_R_CREATEFRAMEBUFFER       CreateFramebuffer;
+		PFN_R_DESTROYFRAMEBUFFER      DestroyFramebuffer;
 
-		PFN_R3D_CREATEBONEBUFFER      R3D_CreateBoneBuffer;
-		PFN_R3D_DESTROYBONEBUFFER     R3D_DestroyBoneBuffer;
-		PFN_R3D_UPDATEBONEBUFFER      R3D_UpdateBoneBuffer;
+		// Command buffer
+		PFN_R_CREATECOMMANDBUFFER     CreateCommandBuffer;
+		PFN_R_DESTROYCOMMANDBUFFER    DestroyCommandBuffer;
+		PFN_R_SUBMITCOMMANDBUFFER     SubmitCommandBuffer;
+		PFN_R_RESETCOMMANDBUFFER      ResetCommandBuffer;
+		PFN_R_BEGINCOMMANDBUFFER      BeginCommandBuffer;
+		PFN_R_ENDCOMMANDBUFFER        EndCommandBuffer;
 
-		PFN_R3D_CREATEATLAS           R3D_CreateAtlas;
-		PFN_R3D_DESTROYATLAS          R3D_DestroyAtlas;
+		// Descriptor sets
+		PFN_R_CREATEDESCRIPTORSET     CreateDescriptorSet;
+		PFN_R_DESTROYDESCRIPTORSET    DestroyDescriptorSet;
 
-		PFN_R3D_CREATEPARTICLEBUFFER  R3D_CreateParticleBuffer;
-		PFN_R3D_DESTROYPARTICLEBUFFER R3D_DestroyParticleBuffer;
-		PFN_R3D_UPDATEPARTICLEBUFFER  R3D_UpdateParticleBuffer;
+		// Renderpass
+		PFN_R_CREATERENDERPASS		  CreateRenderpass;
+		PFN_R_DESTROYRENDERPASS		  DestroyRenderpass;
 
-		PFN_R3D_PUSHLIGHTSOURCE       R3D_PushLightSource;
-		PFN_R3D_PUSHMODEL             R3D_PushModel;
-		PFN_R3D_SETCAMERA             R3D_SetCamera;
+		// Pipeline
+		PFN_R_CREATEPIPELINE          CreatePipeline;
+		PFN_R_DESTROYPIPELINE         DestroyPipeline;
 
-		PFN_R3D_STARTRENDERTASK       R3D_StartRenderTask;
+		// Shader
+		PFN_R_CREATESHADER            CreateShader;
+		PFN_R_DESTROYSHADER           DestroyShader;
 
-	} Renderer;
+		// Sampler
+		PFN_R_CREATESAMPLER           CreateSampler;
+		PFN_R_DESTROYSAMPLER          DestroySampler;
 
-	void LoadRendererContext(Renderer* ctx, LibraryHandle handle);
-	void ClearRendererContext(Renderer* ctx);
+		// Commands
+		PFN_R_CMDBEGINRENDERPASS      CmdBeginRenderpass;
+		PFN_R_CMDENDRENDERPASS        CmdEndRenderpass;
+		PFN_R_CMDBINDPIPELINE         CmdBindPipeline;
+		PFN_R_CMDBINDVERTEXBUFFER     CmdBindVertexBuffer;
+		PFN_R_CMDBINDINDEXBUFFER      CmdBindIndexBuffer;
+		PFN_R_CMDBINDSAMPLER          CmdBindSampler;
+		PFN_R_CMDBINDDESCRIPTORSETS   CmdBindDescriptorSets;
+		PFN_R_CMDDRAWINDEXED          CmdDrawIndexed;
+		PFN_R_CMDPUSHCONSTANTS        CmdPushConstants;
+		PFN_R_CMDDISPATCH             CmdDispatch;
+		PFN_R_CMDIMGUIRENDERDRAWDATA  CmdImGuiRenderDrawData;
+		PFN_R_CMDUSEIMAGE             CmdUseImage;
+
+	} RenderBackend;
+
+	void LoadRendererContext(RenderBackend* ctx, LibraryHandle handle);
+	void ClearRendererContext(RenderBackend* ctx);
 
 }
 

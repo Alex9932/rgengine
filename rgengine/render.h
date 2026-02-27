@@ -8,6 +8,43 @@
 
 #define RG_EVENT_RENDER_VIEWPORT_RESIZE 0x00010001
 
+
+enum ModelType {
+	R_MODEL_STATIC = 0,
+	R_MODEL_RIGGED = 1
+};
+
+typedef struct R3D_StaticModel {
+    ModelType     type;
+    Uint32        mCount;
+    R3D_MeshInfo* info;
+    RBuffer*      vBuffer;
+    RBuffer*      iBuffer;
+    Uint32        iCount;
+    IndexType     iType;
+} R3D_StaticModel;
+
+typedef struct R3D_RiggedModel {
+    ModelType       type;
+    Uint32          vCount;
+    // Input data
+    RBuffer*        i_vertex;    // Input vertex data
+    RBuffer*        i_weight;    // Input weight data
+    //RResourceView*  i_srv_vtx; // Shader resource view for vertex input data
+    //RResourceView*  i_srv_wht; // Shader resource view for weight input data
+    // Output data
+    R3D_StaticModel s_model;     // Static model / output vertex data
+    //RResourceView*  s_uav;     // Unordered access view for vertex output data
+
+	RDescriptorSet* set;         // Descriptor set binds all buffers simultaneously
+} R3D_RiggedModel;
+
+typedef struct R3D_BoneBuffer {
+    RBuffer*       buffer;
+	RDescriptorSet* set;
+    //RResourceView* rv;
+} R3D_BoneBuffer;
+
 namespace Engine {
 
 	class ModelSystem;
@@ -21,25 +58,26 @@ namespace Engine {
 		RG_DECLSPEC Bool          IsRendererLoaded();
 		RG_DECLSPEC LibraryHandle GetHandle();
 
-		void InitSubSystem();
+		void InitSubSystem(SDL_Window* hwnd);
 		void DestroySubSystem();
 
+
 		SDL_Window* ShowWindow(Uint32 w, Uint32 h);
-		void InitializeContext(SDL_Window* hwnd);
+		//void InitializeContext();
 		void SwapBuffers();
 
-		Renderer* GetRenderContext();
-
-		// ImGui window
-		RG_DECLSPEC void DrawRendererStats();
-		RG_DECLSPEC void DrawProfilerStats();
+		RRenderDevice* GetRenderDevice();
+		RenderBackend* GetRenderContext();
 
 		RG_DECLSPEC void SetCamera(R3D_CameraInfo* info);
+
+		R3D_CameraInfo* GetCameraInfo();
 
 		RG_DECLSPEC void UpdateSystems();
 		RG_DECLSPEC void Update();
 
 		RG_DECLSPEC void SetGlobalLight(R3D_GlobalLightDescrition* desc);
+		RG_DECLSPEC R3D_GlobalLightDescrition* GetGlobalLight();
 		RG_DECLSPEC void GetInfo(RenderInfo* info);
 
 		RG_DECLSPEC ParticleSystem* GetParticleSystem();

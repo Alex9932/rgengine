@@ -6,10 +6,16 @@
 
 // Assimp
 #include <assimp/Importer.hpp>
+#include <assimp/BaseImporter.h>
+#include <assimp/IOStream.hpp>
+#include <assimp/IOSystem.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
 #include <meshtool.h>
+#include <filesystem.h>
+
+#include <cJSON.h>
 
 using namespace Engine;
 
@@ -57,6 +63,7 @@ struct ImportState {
 	Uint32 cur_idx = 0;
 	Uint32 cur_mesh = 0;
 	Uint32 boneCounter = 0;
+	Bool   isVRM = false;
 };
 
 void GeomImporter::FreeRiggedModelData(FreeModelInfo* info) {
@@ -73,15 +80,113 @@ void GeomImporter::FreeRiggedModelData(FreeModelInfo* info) {
 	ImportState* state = (ImportState*)info->userdata;
 	RG_DELETE(ImportState, state);
 
-	importer.FreeScene();
 	//SDL_memset(info, 0, sizeof(R3DRiggedModelInfo)); // Clear info
 }
 
-static const aiScene* LoadScene(String path, String file, char* m_errorstr) {
+struct GLBHeader {
+	Uint32 magic;
+	Uint32 version;
+	Uint32 length;
+};
+
+struct GLBChunkHeader {
+	Uint32 chunkLength;
+	Uint32 chunkType;
+};
+
+static void ParseJSONVRM(String jsonstr, BoneInfo* bones) {
+	cJSON* root = cJSON_Parse(jsonstr);
+	if (!root) { rgLogError(RG_LOG_SYSTEM, "Invalid JSON chunk!"); return; }
+	cJSON* extensions = cJSON_GetObjectItem(root, "extensions");
+	if (!extensions) { rgLogError(RG_LOG_SYSTEM, "No extensions found!"); return; }
+	cJSON* VRM = cJSON_GetObjectItem(extensions, "VRM");
+	if (!VRM) { rgLogError(RG_LOG_SYSTEM, "No VRM extension!"); return; }
+
+	cJSON* humanoid = cJSON_GetObjectItem(VRM, "humanoid");
+	if (!humanoid) { rgLogError(RG_LOG_SYSTEM, "Invalid VRM extension!"); return; }
+	cJSON* humanBones = cJSON_GetObjectItem(humanoid, "humanBones"); // Array
+	if (!humanBones) { rgLogError(RG_LOG_SYSTEM, "No \"humanBones\"!"); return; }
+
+	for (Sint32 i = 0; i < cJSON_GetArraySize(humanBones); i++) {
+		cJSON* humanBone = cJSON_GetArrayItem(humanBones, i); // Bone object
+		cJSON* obj_bone_name = cJSON_GetObjectItem(humanBone, "bone");
+		cJSON* obj_attach_to = cJSON_GetObjectItem(humanBone, "node");
+		cJSON* obj_use_defaults = cJSON_GetObjectItem(humanBone, "useDefaultValues");
+		String bone_name = cJSON_GetStringValue(obj_bone_name);
+		Sint32 attach_to = (Sint32)cJSON_GetNumberValue(obj_attach_to);
+		
+		SDL_snprintf(bones[attach_to].name, 32, "%s", bone_name);
+	}
+
+	//cJSON_Print(humanBones);
+	cJSON_Delete(root);
+}
+
+static void ProcessVRM(String path, BoneInfo* bones) {
+
+	FSReader reader(path);
+	//reader.IsStreamAvailable();
+
+	//FSMemoryInputStream stream(res->data, res->length);
+	GLBHeader hdr = {};
+	reader.Read(&hdr, sizeof(GLBHeader));
+
+	void* jsonptr = NULL;
+	GLBChunkHeader chunkhdr = {};
+	while (!reader.EndOfStream()) {
+		reader.Read(&chunkhdr, sizeof(GLBChunkHeader));
+		rgLogInfo(RG_LOG_SYSTEM, "GLB Chunk: Type: 0x%08X, Length: %d", chunkhdr.chunkType, chunkhdr.chunkLength);
+		chunkhdr.chunkLength;
+
+		if (chunkhdr.chunkType == 0x4E4F534A) {
+			jsonptr = rg_malloc(chunkhdr.chunkLength + 1);
+			SDL_memset(jsonptr, 0, chunkhdr.chunkLength + 1);
+			reader.Read(jsonptr, chunkhdr.chunkLength);
+			String jsonstr = (String)jsonptr;
+
+			ParseJSONVRM(jsonstr, bones);
+
+			//rgLogInfo(RG_LOG_SYSTEM, "JSON:\n%s", jsonstr);
+
+			//FSWriter writer("readed.json");
+			//writer.Write(jsonptr, chunkhdr.chunkLength);
+			//writer.Flush();
+			rg_free(jsonptr);
+			break;
+		}
+		else {
+			reader.Seek(chunkhdr.chunkLength, RG_FS_SEEK_CUR);
+		}
+	}
+
+
+}
+
+struct ImportSceneData {
+	Assimp::Importer importer;
+};
+
+void FreeScene(ImportSceneData* ptr) { // Use pointer in future if needed
+	ptr->importer.FreeScene();
+	delete(ptr);
+	//rg_free(ptr); ???
+}
+
+static const aiScene* LoadScene(ImportState* state, String path, String file, char* m_errorstr, size_t msglen, ImportSceneData** data) {
 	char fullpath[512];
 	SDL_snprintf(fullpath, 512, "%s/%s", path, file);
 
-	const aiScene* scene = importer.ReadFile(fullpath,
+	Assimp::Importer* cimporter = &importer;
+
+	if (data) {
+		*data = new(rg_malloc(sizeof(ImportSceneData))) ImportSceneData();
+		cimporter = &(*data)->importer;
+	}
+
+	const aiScene* scene;
+
+	Uint32 flags =
+		//aiProcess_ConvertToLeftHanded |
 		aiProcess_PopulateArmatureData |
 		aiProcess_RemoveRedundantMaterials |
 		aiProcess_JoinIdenticalVertices |
@@ -93,33 +198,60 @@ static const aiScene* LoadScene(String path, String file, char* m_errorstr) {
 		//aiProcess_GenSmoothNormals |
 		aiProcess_GenNormals |
 		aiProcess_CalcTangentSpace |
-		aiProcess_ValidateDataStructure
-	);
+		aiProcess_ValidateDataStructure;
 
-	//scene->
+
+	if (rg_strenw(file, "vrm")) {
+		// VRM files are actually GLTF (GLB) files with extra data
+		state->isVRM = true;
+		Resource* res = GetResource(fullpath);
+		scene = cimporter->ReadFileFromMemory(res->data, res->length, flags, "fake.glb");
+
+		FreeResource(res);
+
+	} else {
+		scene = cimporter->ReadFile(fullpath, flags);
+	}
+
 
 	if (!scene) {
-		String error = importer.GetErrorString();
-		SDL_snprintf(m_errorstr, 1024, "ASSIMP ERROR: %s", error);
+		String error = cimporter->GetErrorString();
+		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: %s", error);
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
-		return NULL;
+		return scene;
 	}
 
 	if (!scene->mRootNode) {
-		SDL_snprintf(m_errorstr, 1024, "ASSIMP ERROR: No root node!");
+		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: No root node!");
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
-		return NULL;
+		return scene;
 	}
 
 	if (RG_CHECK_FLAG(scene->mFlags, AI_SCENE_FLAGS_INCOMPLETE)) {
-		SDL_snprintf(m_errorstr, 1024, "ASSIMP ERROR: Scene incomplete");
+		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: Scene incomplete");
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
-		return NULL;
+		return scene;
 	}
 
 	rgLogInfo(RG_LOG_SYSTEM, "Model loaded: %s", fullpath);
 
+	// Extract textures
+	char texpath[128];
+	for (Uint32 i = 0; i < scene->mNumTextures; i++) {
+		aiTexture* tex = scene->mTextures[i];
+		//SDL_snprintf(texpath, 128, "%s/*%s", path, &tex->mFilename.C_Str()[1]);
+		SDL_snprintf(texpath, 128, "%s/%d", path, i);
+		FSWriter writer(texpath);
+		writer.Write(tex->pcData, tex->mWidth);
+		writer.Flush();
+	}
+
 	return scene;
+}
+
+const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data) {
+	ImportState state = {};
+	return LoadScene(&state, path, file, errorstr, msglen, data);
 }
 
 static Sint16 FindBone(ImportState* state, size_t bnamehash) {
@@ -186,6 +318,8 @@ static void LoadBoneWeights(ImportState* state, const aiMesh* mesh, Uint32 verte
 		for (Uint32 i = 0; i < numWeights; i++) {
 			Uint32 realvidx = weights[i].mVertexId + vertexoffset;
 			Float32 weight = weights[i].mWeight;
+
+			if (realvidx >= state->vertices.size()) { continue; }
 
 			Vertex* v = &state->vertices[realvidx];
 			Sint32 slot = ChooseBoneSlot(v, weight);
@@ -342,9 +476,10 @@ static void ProcessNode(ImportState* state, const aiNode* node) {
 
 void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 
-	const aiScene* scene = LoadScene(importinfo->path, importinfo->file, m_errorstr);
-
 	ImportState* state = RG_NEW(ImportState);
+	//ImportSceneData* data = NULL;
+	const aiScene* scene = LoadScene(state, importinfo->path, importinfo->file, m_errorstr, 1024, NULL);
+
 	importinfo->userdata = state;
 
 	state->info  = importinfo->info.as_rigged;
@@ -490,13 +625,23 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 		SDL_memset(minfo->texture, 0, 128);
 		SDL_memset(tex_normals[matidx].name, 0, 128);
 		if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
-			rgLogInfo(RG_LOG_SYSTEM, "Diffuse texture: %s\n", texPath.C_Str());
-			SDL_snprintf(minfo->texture, 128, "%s/%s", importinfo->path, texPath.C_Str());
+			String texstr = texPath.C_Str();
+			if (texstr[0] == '*') {
+				// Embedded texture
+				texstr = &texstr[1];
+			}
+			rgLogInfo(RG_LOG_SYSTEM, "Diffuse texture: %s\n", texstr);
+			SDL_snprintf(minfo->texture, 128, "%s/%s", importinfo->path, texstr);
 		}
 
 		if (material->GetTexture(aiTextureType_NORMALS, 0, &texPath) == AI_SUCCESS) {
-			rgLogInfo(RG_LOG_SYSTEM, "Normal map: %s\n", texPath.C_Str());
-			SDL_snprintf(tex_normals[matidx].name, 128, "%s/%s", importinfo->path, texPath.C_Str());
+			String texstr = texPath.C_Str();
+			if (texstr[0] == '*') {
+				// Embedded texture
+				texstr = &texstr[1];
+			}
+			rgLogInfo(RG_LOG_SYSTEM, "Normal map: %s\n", texstr);
+			SDL_snprintf(tex_normals[matidx].name, 128, "%s/%s", importinfo->path, texstr);
 		}
 		else if (material->GetTexture(aiTextureType_HEIGHT, 0, &texPath) == AI_SUCCESS) {
 			rgLogInfo(RG_LOG_SYSTEM, "Normal map (height map, old exporter?): %s\n", texPath.C_Str());
@@ -568,7 +713,6 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 	rg_free(tex_normals);
 	rg_free(mtl_array);
 	rg_free(matnames_all);
-
 }
 
 
@@ -650,16 +794,6 @@ static void BuildSkeleton(ImportState* is, LoadSkeletonState* state, Node* node,
 	}
 }
 
-Bool IsIdentity(const aiMatrix4x4& mat) {
-	if (mat.a1 == 1 && mat.a2 == 0 && mat.a3 == 0 && mat.a4 == 0 &&
-		mat.b1 == 0 && mat.b2 == 1 && mat.b3 == 0 && mat.b4 == 0 &&
-		mat.c1 == 0 && mat.c2 == 0 && mat.c3 == 1 && mat.c4 == 0 &&
-		mat.d1 == 0 && mat.d2 == 0 && mat.d3 == 0 && mat.d4 == 1) {
-		return true;
-	}
-	return false;
-}
-
 KinematicsModel* GeomImporter::LoadSkeleton(ImportModelInfo* info) {
 	LoadSkeletonState state = {};
 
@@ -684,6 +818,13 @@ KinematicsModel* GeomImporter::LoadSkeleton(ImportModelInfo* info) {
 
 	rg_free(state.nodes);
 
+	// Process VRM extra data
+	if (is->isVRM) {
+		char fullpath[512];
+		SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
+		ProcessVRM(fullpath, state.bones);
+	}
+
 
 	KinematicsModelCreateInfo mk_info = {};
 
@@ -695,25 +836,6 @@ KinematicsModel* GeomImporter::LoadSkeleton(ImportModelInfo* info) {
 	mk_info.buffer_handle = NULL;
 
 	mat4 globalTransform = MAT4_IDENTITY();
-
-#if 0
-	// Find root transform
-	aiNode* n = state.scene->mRootNode;
-	//while (n != NULL) {
-		for (Uint32 i = 0; i < n->mNumChildren; i++) {
-			aiNode* c = n->mChildren[i];
-			if (c->mNumMeshes != 0 || IsIdentity(c->mTransformation)) {
-
-				CopyMatrix(&globalTransform, c->mTransformation);
-				goto brk;
-			}
-			n = c;
-		}
-		
-	//}
-	brk:
-#endif
-
 	mat4_inverse(&mk_info.globalInv, globalTransform);
 	KinematicsModel* km = RG_NEW(KinematicsModel)(&mk_info);
 
