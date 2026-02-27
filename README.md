@@ -88,4 +88,4 @@ Screenshot from older version of rgengine
 
 ---
 
-*(c) 2018 - 2025 rgengine project*
+*(c) 2018 - 2026 rgengine project*
