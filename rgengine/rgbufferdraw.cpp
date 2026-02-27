@@ -147,7 +147,8 @@ namespace Engine {
 				// Bind material
 				if (useMaterial && current_mat != mat) {
 
-					vec4 color = { mat->color.r, mat->color.g, mat->color.b, 1 };
+					//vec4 color = { mat->color.r, mat->color.g, mat->color.b, 1 };
+					vec4 color = { 1, 1, 1, 1 };
 
 					ctx->CmdPushConstants(cmdbuffer, &color, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
 
