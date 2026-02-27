@@ -19,6 +19,7 @@
 
 #include <mmdimporter.h>
 
+
 #define ALBEDO_TEXTURE 0
 #define NORMAL_TEXTURE 1
 #define PBR_TEXTURE    2
@@ -300,20 +301,24 @@ static void CopyTextures(R3DRiggedModelInfo* mdlinfo, VertexBuffer* buffer, Stri
 	SDL_memcpy(mdlinfo->matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * mdlinfo->matCount);
 
 	char path[256];
+	char newmat[128];
 	for (Uint32 i = 0; i < info.matCount; i++) {
 		// Copy texture
 		Texture* tx      = buffer->textures[i * 3 + ALBEDO_TEXTURE];
 		Texture* tx_nrm  = buffer->textures[i * 3 + NORMAL_TEXTURE];
 		String   matname = model_extra.mat_names[i].name;
 
-		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, matname);
+		// Combine model and material names to get new texture name in gamedata to prevent name conflicts between models
+		SDL_snprintf(newmat, 128, "%s-%s.png", MDL_NAME, matname);
+
+		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, newmat);
 		CopyTexture(path, tx->tex_name);
 
-		SDL_snprintf(path, 256, "%s/textures/%s_norm.png", gamedata_path, matname);
+		SDL_snprintf(path, 256, "%s/textures/%s_norm.png", gamedata_path, newmat);
 		CopyTexture(path, tx_nrm->tex_name);
 
 		// Replace path to name
-		SDL_snprintf(mdlinfo->matInfo[i].texture, 128, "%s", matname);
+		SDL_snprintf(mdlinfo->matInfo[i].texture, 128, "%s", newmat);
 	}
 }
 
@@ -522,8 +527,17 @@ static void DrawMeshTab(Uint32* uid) {
 		if (ImGui::TreeNode("##xx", "[%d] %s", i, model_extra.mesh_names[i].name)) {
 			ImGui::Text("Index: %d (%d)", buffer->pairs[i].start, buffer->pairs[i].count);
 			Uint32 midx = buffer->mat[i];
-			ImGui::Text("Material: %d (%s)", midx, model_extra.mat_names[midx].name);
-			ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
+			if (ImGui::BeginCombo("Material", model_extra.mat_names[midx].name)) {
+
+				for (Uint32 j = 0; j < buffer->tcount; j++) {
+					if (ImGui::Selectable(model_extra.mat_names[j].name, midx == j)) {
+						buffer->mat[i] = j;
+					}
+				}
+
+				ImGui::EndCombo();
+			}
+			//ImGui::Checkbox("Flip UV", &buffer->pairs[i].flipuv);
 			if (ImGui::RadioButton("Select", meshSelected == i)) {
 				if (meshSelected == i) { meshSelected = -1; } // Remove selection
 				else { meshSelected = i; } // Set current
@@ -546,6 +560,9 @@ static void DrawMaterialsTab(Uint32* uid) {
 
 			Texture* tx;
 
+			String name  = "Null";
+			Uint32 tx_id = 0;
+
 			if (ImGui::BeginTable("MaterialTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0); ImGui::Text("Name");
@@ -557,7 +574,17 @@ static void DrawMaterialsTab(Uint32* uid) {
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
+
 				tx = buffer->textures[i * 3 + ALBEDO_TEXTURE];
+				if (tx) {
+					name  = tx->tex_name;
+					tx_id = tx->tex_id;
+				}
+				else {
+					name  = "Null";
+					tx_id = 0;
+				}
+
 				ImGui::Text("Albedo");
 				ImGui::PushID(i * 3 + ALBEDO_TEXTURE); // Same texture id
 				if (ImGui::Button("Replace texture")) {
@@ -565,7 +592,7 @@ static void DrawMaterialsTab(Uint32* uid) {
 				}
 				ImGui::PopID();
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				ImGui::Image((ImTextureID)tx_id, ImVec2(32, 32));
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
@@ -577,8 +604,8 @@ static void DrawMaterialsTab(Uint32* uid) {
 						dropEvent = DROP_NONE;
 					}
 					else {
-						ImGui::Text("Path: %s", tx->tex_name);
-						ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+						ImGui::Text("Path: %s", name);
+						ImGui::Image((ImTextureID)tx_id, ImVec2(256, 256));
 					}
 					ImGui::EndTooltip();
 				}
@@ -586,6 +613,15 @@ static void DrawMaterialsTab(Uint32* uid) {
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				tx = buffer->textures[i * 3 + NORMAL_TEXTURE];
+				if (tx) {
+					name = tx->tex_name;
+					tx_id = tx->tex_id;
+				}
+				else {
+					name = "Null";
+					tx_id = 0;
+				}
+
 				ImGui::Text("Normal map");
 				ImGui::PushID(i * 3 + NORMAL_TEXTURE); // Same texture id
 				if (ImGui::Button("Replace texture")) {
@@ -593,18 +629,28 @@ static void DrawMaterialsTab(Uint32* uid) {
 				}
 				ImGui::PopID();
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				ImGui::Image((ImTextureID)tx_id, ImVec2(32, 32));
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Text("Path: %s", tx->tex_name);
-					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+					ImGui::Text("Path: %s", name);
+					ImGui::Image((ImTextureID)tx_id, ImVec2(256, 256));
 					ImGui::EndTooltip();
 				}
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
+
 				tx = buffer->textures[i * 3 + PBR_TEXTURE];
+				if (tx) {
+					name = tx->tex_name;
+					tx_id = tx->tex_id;
+				}
+				else {
+					name = "Null";
+					tx_id = 0;
+				}
+
 				ImGui::Text("PBR");
 				ImGui::PushID(i * 3 + PBR_TEXTURE); // Same texture id
 				if (ImGui::Button("Replace texture")) {
@@ -612,23 +658,35 @@ static void DrawMaterialsTab(Uint32* uid) {
 				}
 				ImGui::PopID();
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Image((ImTextureID)tx->tex_id, ImVec2(32, 32));
+				ImGui::Image((ImTextureID)tx_id, ImVec2(32, 32));
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Text("Path: %s", tx->tex_name);
-					ImGui::Image((ImTextureID)tx->tex_id, ImVec2(256, 256));
+					ImGui::Text("Path: %s", name);
+					ImGui::Image((ImTextureID)tx_id, ImVec2(256, 256));
 					ImGui::EndTooltip();
 				}
 
 				ImGui::EndTable();
 			}
 
+#if 0
+			if (ImGui::Button("Remove")) {
+
+			}
+#endif
 			ImGui::TreePop();
 		}
+
 		ImGui::PopID();
 		(*uid)++;
 	}
+
+#if 0
+	if (ImGui::Button("New material")) {
+		buffer->tcount++;
+	}
+#endif
 }
 
 static void DrawSkeletonTab(Uint32* uid) {
@@ -748,6 +806,10 @@ static void DrawAnimationTab(Uint32* uid) {
 				kmodel->GetAnimator()->PlayAnimation(anim);
 			}
 
+			if (ImGui::Button("Export")) {
+
+			}
+
 			ImGui::TreePop();
 		}
 		ImGui::PopID();
@@ -857,6 +919,7 @@ public:
 		rstate = InitializeRenderer(DrawGUI);
 		RegisterEventHandler(CEventHandler);
 		RecalculateCameraProjection();
+
 	}
 
 	void Quit() {
@@ -894,8 +957,8 @@ BaseGame* Module_GetApplication() {
 #if 0
 
 
-//#include <zlib.h>
-//#include <allocator.h>
+#include <zlib.h>
+#include <allocator.h>
 //ProcessSFile("E:/.../TRAINS/TRAINSET/rz_VL10-1487/rz_vl10-1487b.s");
 //ProcessSFile("E:/.../TRAINS/TRAINSET/tsrLoco_VL8-1718/vl8-1718a.s");
 static void ProcessSFile(String file) {

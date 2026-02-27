@@ -185,11 +185,11 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 		for (Float64 time : keyframe_times) {
 
 			BoneKeyFrame keyframe = {};
-			//CopyVector(&keyframe.translation, InterpolatePosition(node, time));
+			CopyVector(&keyframe.translation, InterpolatePosition(node, time));
 			CopyVector(&keyframe.rotation, InterpolateRotation(node, time));
 			CopyVector(&keyframe.scale, InterpolateScaling(node, time));
 
-			//keyframe.translation = keyframe.translation - bone->offset_pos; // if needed
+			keyframe.translation = keyframe.translation - bone->offset_pos; // if needed
 
 			keyframe.timestamp = (Float32)time;
 			keyframe.interp_x  = { 0.5f, 0.5f, 0.5f, 0.5f };

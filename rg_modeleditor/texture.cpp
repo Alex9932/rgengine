@@ -59,6 +59,8 @@ Texture* GetTexture(String path) {
 }
 
 void FreeTexture(Texture* tx) {
+	if (!tx) { return; }
+
 	tx->refcount--;
 	if (tx->refcount == 0) {
 		rgLogInfo(RG_LOG_RENDER, "Delete texture %s", tx->tex_name);
