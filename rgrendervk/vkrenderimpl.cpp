@@ -14,6 +14,8 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
+#define R_VK_SEPARATE_QUEUES 0
+
 using namespace Engine;
 
 static Uint32 vk_version = VK_API_VERSION_1_3;
@@ -261,19 +263,41 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 			break;
 		}
 	}
+
+	// Use same queue by default
+	device->vktransferqueuefamily = device->vkqueuefamily;
+
+#if R_VK_SEPARATE_QUEUES
+	for (Uint32 i = 0; i < queueFamilyCount; i++) {
+		if (RG_CHECK_FLAG(fqueues[i].queueFlags, VK_QUEUE_TRANSFER_BIT) && i != device->vkqueuefamily) {
+			device->vktransferqueuefamily = i;
+			rgLogInfo(RG_LOG_RENDER, "Using %d transfer queue", device->vktransferqueuefamily);
+			break;
+		}
+	}
+#endif
 	rg_free(fqueues);
 
-	Float32 queuePriority = 1.0f;
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = device->vkqueuefamily;
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	Float32 queuePriority[] = { 1.0f, 1.0f };
+	VkDeviceQueueCreateInfo queueCreateInfo[2] = {};
+	queueCreateInfo[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo[0].queueFamilyIndex = device->vkqueuefamily;
+	queueCreateInfo[0].queueCount = 1;
+	queueCreateInfo[0].pQueuePriorities = queuePriority;
+	queueCreateInfo[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo[1].queueFamilyIndex = device->vktransferqueuefamily;
+	queueCreateInfo[1].queueCount = 1;
+	queueCreateInfo[1].pQueuePriorities = queuePriority;
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.queueCreateInfoCount = 2;
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfo;
+
+	if (device->vkqueuefamily == device->vktransferqueuefamily) {
+		queueCreateInfo[0].queueCount = 2;
+		deviceCreateInfo.queueCreateInfoCount = 1;
+	}
 
 	if (device->isAnisotropicEnabled) {
 		VkPhysicalDeviceFeatures enabledFeatures = {};
@@ -293,12 +317,23 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	vkGetDeviceQueue(device->vkdev, device->vkqueuefamily, 0, &device->vkqueue);
 
+	uint32_t transferIndex = 0;
+	if (device->vkqueuefamily == device->vktransferqueuefamily) {
+		transferIndex = 1;
+	}
+	vkGetDeviceQueue(device->vkdev, device->vktransferqueuefamily, transferIndex, &device->vktransferqueue);
+
 	// Command pool
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = device->vkqueuefamily;
 	if (vkCreateCommandPool(device->vkdev, &poolInfo, device->vkalloc, &device->vkcommandpool) != VK_SUCCESS) {
+		RG_ERROR_MSG("Vulkan command pool error!");
+	}
+
+	poolInfo.queueFamilyIndex = device->vktransferqueuefamily;
+	if (vkCreateCommandPool(device->vkdev, &poolInfo, device->vkalloc, &device->vktransfercommandpool) != VK_SUCCESS) {
 		RG_ERROR_MSG("Vulkan command pool error!");
 	}
 
@@ -474,6 +509,7 @@ void R_DestroyDevice(RRenderDevice* device) {
 	vkDestroyRenderPass(device->vkdev, device->imguirenderpass, device->vkalloc);
 
 	vkDestroyCommandPool(device->vkdev, device->vkcommandpool, device->vkalloc);
+	vkDestroyCommandPool(device->vkdev, device->vktransfercommandpool, device->vkalloc);
 	vkDestroyDescriptorPool(device->vkdev, device->vkdescriptorpool, device->vkalloc);
 
 	vmaDestroyAllocator(device->vmaallocator);

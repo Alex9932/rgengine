@@ -2,6 +2,8 @@
 #include <vma/vk_mem_alloc.h>
 #include "rendertypesvk.h"
 
+#include <mutex>
+
 static VkBufferUsageFlags GetBufferType(Uint16 type) {
 	VkBufferUsageFlags usage = 0;
 	if (type & RG_BUFFER_TYPE_VERTEX)     usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -38,16 +40,32 @@ static VmaMemoryUsage GetUsage(Uint8 usage, Uint8 access) {
 	return VMA_MEMORY_USAGE_AUTO;
 }
 
+static Uint32 GetMipmapLevels(Uint32 w, Uint32 h) {
+	Float32 x = SDL_max(w, h);
+	// log2(x) = ln(x) / ln(2)
+	return (Uint32)SDL_floorf(SDL_logf(x) / SDL_logf(2));
+}
+
+#include <mutex>
+static std::mutex t_lock;
 static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
+
 	RRenderDevice* dev = src->dev;
 	VkCommandBuffer cmdbuffer;
 
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool        = dev->vkcommandpool;
+	allocInfo.commandPool        = dev->vktransfercommandpool;
 	allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
+
+	Uint32 mipLevels = GetMipmapLevels(info->width, info->height);
+
+	t_lock.lock();
+
 	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, &cmdbuffer);
+
+
 	vkResetCommandBuffer(cmdbuffer, 0);
 
 	VkCommandBufferBeginInfo begininfo = {};
@@ -62,8 +80,8 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
 	barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex = dev->vktransferqueuefamily;
+	barrier.dstQueueFamilyIndex = dev->vktransferqueuefamily;
 	barrier.image               = dst->image;
 	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel   = 0;
@@ -94,7 +112,7 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 	region.imageExtent.height              = info->height;
 	region.imageExtent.depth               = 1;
 	vkCmdCopyBufferToImage(cmdbuffer, src->buffer, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
+#if 0
 	// Transition image layout to SHADER_READ_ONLY_OPTIMAL
 	barrier = {};
 	barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -102,8 +120,8 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 	barrier.dstAccessMask       = VK_ACCESS_SHADER_READ_BIT;
 	barrier.oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	barrier.newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex = dev->vktransferqueuefamily;
+	barrier.dstQueueFamilyIndex = dev->vkqueuefamily;
 	barrier.image               = dst->image;
 	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel   = 0;
@@ -117,6 +135,97 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 		0, NULL,
 		0, NULL,
 		1, &barrier);
+#endif
+
+	if (RG_CHECK_FLAG(info->flags, RG_IMAGE_FLAG_GENERATE_MIPMAPS)) {
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = dst->image;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+		int32_t mipWidth = info->width;
+		int32_t mipHeight = info->height;
+
+		for (Uint32 i = 1; i < mipLevels; i++) {
+
+			// Layout for SOURCE mip level
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			vkCmdPipelineBarrier(cmdbuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+				0, nullptr, 0, nullptr,
+				1, &barrier);
+
+			// Layout for DST mip level
+			barrier.subresourceRange.baseMipLevel = i;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			vkCmdPipelineBarrier(cmdbuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+				0, nullptr, 0, nullptr,
+				1, &barrier);
+
+			// Downscale image
+			VkImageBlit blit = {};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+			vkCmdBlitImage(cmdbuffer,
+				dst->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &blit, VK_FILTER_LINEAR);
+
+			// Restore SOURCE mip level layout for shader read
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.srcQueueFamilyIndex = dev->vktransferqueuefamily;
+			barrier.dstQueueFamilyIndex = dev->vkqueuefamily;
+
+			vkCmdPipelineBarrier(cmdbuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+				0, nullptr, 0, nullptr,
+				1, &barrier);
+
+			if (mipWidth > 1) mipWidth /= 2;
+			if (mipHeight > 1) mipHeight /= 2;
+		}
+
+	} else {
+		mipLevels = 1;
+	}
+
+	barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	barrier.srcQueueFamilyIndex = dev->vktransferqueuefamily;
+	barrier.dstQueueFamilyIndex = dev->vkqueuefamily;
+	vkCmdPipelineBarrier(cmdbuffer,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr, 0, nullptr,
+		1, &barrier);
 
 	vkEndCommandBuffer(cmdbuffer);
 
@@ -124,21 +233,25 @@ static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmdbuffer;
-	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
-	vkQueueWaitIdle(dev->vkqueue);
+	vkQueueSubmit(dev->vktransferqueue, 1, &submitInfo, NULL);
+	vkQueueWaitIdle(dev->vktransferqueue);
 
-	vkFreeCommandBuffers(dev->vkdev, dev->vkcommandpool, 1, &cmdbuffer);
+
+
+	vkFreeCommandBuffers(dev->vkdev, dev->vktransfercommandpool, 1, &cmdbuffer);
 	dst->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	dst->usage = RG_IMAGE_USAGE_SHADER_READ_ONLY;
+
+	t_lock.unlock();
 }
 
-static void CopyToBuffer(RBuffer* src, RBuffer* dst, RBufferCreateInfo* info) {
+static void CopyToBuffer(RBuffer* src, RBuffer* dst, size_t len) {
 	RRenderDevice* dev = src->dev;
 	VkCommandBuffer cmdbuffer;
 
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = dev->vkcommandpool;
+	allocInfo.commandPool = dev->vktransfercommandpool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, &cmdbuffer);
@@ -152,7 +265,7 @@ static void CopyToBuffer(RBuffer* src, RBuffer* dst, RBufferCreateInfo* info) {
 	VkBufferCopy copyRegion = {};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
-	copyRegion.size      = info->length;
+	copyRegion.size      = len;
 	vkCmdCopyBuffer(cmdbuffer, src->buffer, dst->buffer, 1, &copyRegion);
 
 	vkEndCommandBuffer(cmdbuffer);
@@ -161,9 +274,10 @@ static void CopyToBuffer(RBuffer* src, RBuffer* dst, RBufferCreateInfo* info) {
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmdbuffer;
-	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
-	vkQueueWaitIdle(dev->vkqueue);
-	vkFreeCommandBuffers(dev->vkdev, dev->vkcommandpool, 1, &cmdbuffer);
+	vkQueueSubmit(dev->vktransferqueue, 1, &submitInfo, NULL);
+
+	vkQueueWaitIdle(dev->vktransferqueue);
+	vkFreeCommandBuffers(dev->vkdev, dev->vktransfercommandpool, 1, &cmdbuffer);
 }
 
 RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
@@ -190,7 +304,7 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	vmaCreateBuffer(dev->vmaallocator, &bufferInfo, &allocCreateInfo, &buffer->buffer, &buffer->allocation, NULL);
 
 	if (info->initialData) {
-		if (info->access != RG_BUFFER_ACCESS_GPU_ONLY) {
+		//if (info->access != RG_BUFFER_ACCESS_GPU_ONLY) {
 			// For CPU_WRITE buffers
 			RUpdateBufferInfo updateInfo = {};
 			updateInfo.handle = buffer;
@@ -198,18 +312,18 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 			updateInfo.length = info->length;
 			updateInfo.data   = info->initialData;
 			R_UpdateBuffer(&updateInfo);
-		} else {
-			// For GPU_ONLY buffers
-			RBufferCreateInfo stagingInfo = {};
-			stagingInfo.length = info->length;
-			stagingInfo.type   = RG_BUFFER_TYPE_VK_TSRC;
-			stagingInfo.usage  = RG_BUFFER_USAGE_DYNAMIC;
-			stagingInfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
-			stagingInfo.initialData = info->initialData;
-			RBuffer* stagingBuffer = R_CreateBuffer(dev, &stagingInfo);
-			CopyToBuffer(stagingBuffer, buffer, info);
-			R_DestroyBuffer(stagingBuffer);
-		}
+		//} else {
+		//	// For GPU_ONLY buffers
+		//	RBufferCreateInfo stagingInfo = {};
+		//	stagingInfo.length = info->length;
+		//	stagingInfo.type   = RG_BUFFER_TYPE_VK_TSRC;
+		//	stagingInfo.usage  = RG_BUFFER_USAGE_DYNAMIC;
+		//	stagingInfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
+		//	stagingInfo.initialData = info->initialData;
+		//	RBuffer* stagingBuffer = R_CreateBuffer(dev, &stagingInfo);
+		//	CopyToBuffer(stagingBuffer, buffer, info);
+		//	R_DestroyBuffer(stagingBuffer);
+		//}
 	}
 
 	dev->buffersMemLen += buffer->length;
@@ -229,6 +343,18 @@ void R_UpdateBuffer(RUpdateBufferInfo* info) {
 
 	if (info->handle->access == RG_BUFFER_ACCESS_GPU_ONLY) {
 		// TODO: Make staging buffer and copy data
+
+			// For GPU_ONLY buffers
+		RBufferCreateInfo stagingInfo = {};
+		stagingInfo.length = info->length;
+		stagingInfo.type = RG_BUFFER_TYPE_VK_TSRC;
+		stagingInfo.usage = RG_BUFFER_USAGE_DYNAMIC;
+		stagingInfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
+		stagingInfo.initialData = info->data;
+		RBuffer* stagingBuffer = R_CreateBuffer(dev, &stagingInfo);
+		CopyToBuffer(stagingBuffer, info->handle, info->length);
+		R_DestroyBuffer(stagingBuffer);
+
 		return;
 	}
 
@@ -257,16 +383,20 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	imageInfo.extent.width  = info->width;
 	imageInfo.extent.height = info->height;
 	imageInfo.extent.depth  = 1;
-	imageInfo.mipLevels     = 1;
 	imageInfo.arrayLayers   = 1;
+	imageInfo.mipLevels     = 1;
 	imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.usage         = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	imageInfo.usage         = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
 		imageInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
 	else {
 		imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		if (RG_CHECK_FLAG(info->flags, RG_IMAGE_FLAG_GENERATE_MIPMAPS)) {
+			imageInfo.mipLevels = GetMipmapLevels(info->width, info->height);
+			//rgLogInfo(RG_LOG_RENDER, "[VK] Generate %d mipmaps for image %ld", imageInfo.mipLevels, image);
+		}
 	}
 	imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -402,26 +532,36 @@ void R_EndCommandBuffer(RCommandBuffer* buffer) {
 	vkEndCommandBuffer(buffer->cmdbuffer);
 }
 
+static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
+	static std::mutex func_lock;
+
+	VkSubmitInfo submitInfo = {};
+
+	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdbuffer;
+
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
+	submitInfo.pWaitDstStageMask = f;
+
+	func_lock.lock();
+	dev->cmdsemaphore++;
+	func_lock.unlock();
+
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
+	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
+	//vkQueueWaitIdle(dev->vkqueue);
+
+}
+
 void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	// TODO: Support semaphores and fences
 	RRenderDevice* dev = info->buffer->dev;
-	VkSubmitInfo submitInfo = {};
-	
-	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
-	
-	submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &info->buffer->cmdbuffer;
-
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores    = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
-	submitInfo.pWaitDstStageMask  = f;
-
-	dev->cmdsemaphore++;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores  = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
-	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
-	//vkQueueWaitIdle(dev->vkqueue);
+	SubmitCommandBuffer(dev, info->buffer->cmdbuffer);
 }
 
 #if 0
@@ -585,6 +725,7 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	sampInfo.sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampInfo.magFilter        = GetSamplerFilter(info->filterMode);
 	sampInfo.minFilter        = GetSamplerFilter(info->filterMode);
+	sampInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	sampInfo.addressModeU     = GetSamplerAddressMode(info->addressModeU);
 	sampInfo.addressModeV     = GetSamplerAddressMode(info->addressModeV);
 	sampInfo.addressModeW     = GetSamplerAddressMode(info->addressModeW);
@@ -596,7 +737,7 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	sampInfo.compareOp        = VK_COMPARE_OP_ALWAYS;
 	sampInfo.mipLodBias       = 0.0f;
 	sampInfo.minLod           = 0.0f;
-	sampInfo.maxLod           = 0.0f;
+	sampInfo.maxLod           = 8.0f;
 	vkCreateSampler(dev->vkdev, &sampInfo, dev->vkalloc, &sampler->sampler);
 
 	VkDescriptorSetLayoutBinding binding = {};

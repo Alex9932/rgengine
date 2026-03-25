@@ -19,10 +19,13 @@ struct RRenderDevice {
 	VkPhysicalDevice   vkpdev;
 	VkDevice           vkdev;
 	VkQueue            vkqueue;
+	VkQueue            vktransferqueue;
 	Uint32             vkqueuefamily;
+	Uint32             vktransferqueuefamily;
 
 	Uint32             cmdsemaphore;
 	VkCommandPool      vkcommandpool;
+	VkCommandPool      vktransfercommandpool;
 	VkCommandBuffer    vkswapcmdbuffer[2];
 	VkSemaphore        cmdbuffsemaphores[R_MAX_COMMANDBUFFERS_PER_FRAME];
 	
