@@ -15,6 +15,7 @@ extern "C" {
 	extern RG_DECLSPEC void            R_DestroyDevice(RRenderDevice* device);
 	extern RG_DECLSPEC void            R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info);
 	extern RG_DECLSPEC void            R_GetInfo(RRenderDevice* dev, RenderInfo* info);
+	extern RG_DECLSPEC void            R_WaitIdle(RRenderDevice* dev);
 
 	// ImGUI rendering backend functions
 	extern RG_DECLSPEC void            R_ImGui_Init(RRenderDevice* dev);

@@ -18,6 +18,7 @@ namespace Engine {
         ctx->DestroyDevice        = (PFN_R_DESTROYDEVICE)Engine::DL_GetProcAddress(handle, "R_DestroyDevice");
         ctx->SwapBuffers          = (PFN_R_SWAPBUFFERS)Engine::DL_GetProcAddress(handle, "R_SwapBuffers");
         ctx->GetInfo              = (PFN_R_GETINFO)Engine::DL_GetProcAddress(handle, "R_GetInfo");
+		ctx->WaitIdle             = (PFN_R_WAITIDLE)Engine::DL_GetProcAddress(handle, "R_WaitIdle");
 
 		// ImGUI
 		ctx->ImGui_Init           = (PFN_R_IMGUI_INIT)Engine::DL_GetProcAddress(handle, "R_ImGui_Init");

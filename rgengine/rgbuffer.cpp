@@ -76,22 +76,27 @@ namespace Engine {
 
 			RPipelineLayoutDescription layout = {};
 			layout.binding_count = 5;
+			layout.bindings[0].name    = "camera";
 			layout.bindings[0].set     = 0;
 			layout.bindings[0].binding = 0;
 			layout.bindings[0].stage   = RG_SHADER_TYPE_VERTEX;
 			layout.bindings[0].type    = RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layout.bindings[1].name    = "t_albedo";
 			layout.bindings[1].set     = 1;
 			layout.bindings[1].binding = 0;
 			layout.bindings[1].stage   = RG_SHADER_TYPE_PIXEL;
 			layout.bindings[1].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[2].name    = "t_normal";
 			layout.bindings[2].set     = 1;
 			layout.bindings[2].binding = 1;
 			layout.bindings[2].stage   = RG_SHADER_TYPE_PIXEL;
 			layout.bindings[2].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[3].name    = "t_pbr";
 			layout.bindings[3].set     = 1;
 			layout.bindings[3].binding = 2;
 			layout.bindings[3].stage   = RG_SHADER_TYPE_PIXEL;
 			layout.bindings[3].type    = RG_DESCRIPTOR_TYPE_IMAGE;
+			layout.bindings[4].name    = "smplr";
 			layout.bindings[4].set     = 2;
 			layout.bindings[4].binding = 0;
 			layout.bindings[4].stage   = RG_SHADER_TYPE_PIXEL;

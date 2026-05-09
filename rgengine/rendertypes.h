@@ -91,10 +91,16 @@ typedef struct RSwapBuffersInfo {
 #define RG_IMAGE_USAGE_TRANSFER_SRC     0x04
 #define RG_IMAGE_USAGE_TRANSFER_DST     0x05
 
+#define RG_IMAGE_FLAG_GENERATE_MIPMAPS  0x01
+
 typedef struct RImageCreateInfo {
 	RFormat format;
-	Uint32  width;
-	Uint32  height;
+	Uint16  width; // max 65536
+	Uint16  height;
+	Uint8   flags;
+	Uint8   _off1;
+	Uint16  _off2;
+	// TODO: add generate mipmaps
 	void*   initialData;
 } RImageCreateInfo;
 
@@ -160,12 +166,13 @@ typedef struct RPipelineInputDescription {
 #define RG_DESCRIPTOR_TYPE_STORAGE_BUFFER 0x04
 
 typedef struct RPipelineLayoutBinding {
-	Uint8 binding;
-	Uint8 type;
-	Uint8 stage;
+	String name;
+	Uint8  binding;
+	Uint8  type;
+	Uint8  stage;
 	union {
 		Uint8 _offset;
-		Uint8 set; // For future use
+		Uint8 set;
 	};
 } RPipelineLayoutBinding;
 
@@ -276,10 +283,11 @@ typedef struct RShaderCreateInfo {
 
 typedef struct RDescriptorSetBinding {
 	Uint8  binding; // Max 16 bindings per set
-	Uint8  type; // See RG_DESCRIPTOR_TYPE_
+	Uint8  type;    // See RG_DESCRIPTOR_TYPE_
 	Uint8  stage;
 	Uint8  _offset0;
 	Uint32 _offset1;
+	String name;
 	union {
 		RImage*  image;
 		RBuffer* buffer;

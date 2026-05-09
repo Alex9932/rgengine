@@ -385,7 +385,7 @@ namespace Engine {
 			vec3 d = {};
 			d.x = SDL_cosf(theta);
 			d.y = SDL_sinf(theta);
-			d.z = -0.25f;
+			d.z = 0.25f;
 			vec3 nd = d.normalize();
 			dir->x = nd.x;
 			dir->y = nd.y;

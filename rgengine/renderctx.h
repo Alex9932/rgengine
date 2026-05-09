@@ -17,6 +17,7 @@ typedef RRenderDevice*  (*PFN_R_CREATEDEVICE)(RRenderSetupInfo*);               
 typedef void            (*PFN_R_DESTROYDEVICE)(RRenderDevice*);                    // PFN_R_DESTROY
 typedef void            (*PFN_R_GETINFO)(RRenderDevice*, RenderInfo*);
 typedef void            (*PFN_R_SWAPBUFFERS)(RRenderDevice*, RSwapBuffersInfo*);
+typedef void            (*PFN_R_WAITIDLE)(RRenderDevice*);
 
 typedef void            (*PFN_R_IMGUI_INIT)(RRenderDevice*);
 typedef void            (*PFN_R_IMGUI_SHUTDOWN)(RRenderDevice*);
@@ -74,6 +75,7 @@ namespace Engine {
 		PFN_R_DESTROYDEVICE           DestroyDevice;
 		PFN_R_SWAPBUFFERS             SwapBuffers;
 		PFN_R_GETINFO                 GetInfo;
+		PFN_R_WAITIDLE                WaitIdle;
 
 		// ImGUI
 		PFN_R_IMGUI_INIT              ImGui_Init;

@@ -36,9 +36,9 @@ namespace Engine {
 				SDL_snprintf(pbr, 256, "platform/textures/def_pbr.png", GetGamedataPath());
 			}
 
-			material->albedo = GetTexture(albedo);
-			material->normal = GetTexture(normal);
-			material->pbr    = GetTexture(pbr);
+			material->albedo = GetTexture(albedo, NULL, NULL, RG_IMAGE_FLAG_GENERATE_MIPMAPS);
+			material->normal = GetTexture(normal, NULL, NULL, RG_IMAGE_FLAG_GENERATE_MIPMAPS);
+			material->pbr    = GetTexture(pbr, NULL, NULL, RG_IMAGE_FLAG_GENERATE_MIPMAPS);
 
 			material->descset = NULL;
 			material->color = info->color;
@@ -113,14 +113,17 @@ namespace Engine {
 			bindings[0].stage = RG_SHADER_TYPE_PIXEL;
 			bindings[0].type = RG_DESCRIPTOR_TYPE_IMAGE;
 			bindings[0].image = material->albedo->img;
+			bindings[0].name = "t_albedo";
 			bindings[1].binding = 1;
 			bindings[1].stage = RG_SHADER_TYPE_PIXEL;
 			bindings[1].type = RG_DESCRIPTOR_TYPE_IMAGE;
 			bindings[1].image = material->normal->img;
+			bindings[1].name = "t_normal";
 			bindings[2].binding = 2;
 			bindings[2].stage = RG_SHADER_TYPE_PIXEL;
 			bindings[2].type = RG_DESCRIPTOR_TYPE_IMAGE;
 			bindings[2].image = material->pbr->img;
+			bindings[2].name = "t_pbr";
 
 			RDescriptorSetCreateInfo dsinfo = {};
 			dsinfo.binding_count = 3;

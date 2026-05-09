@@ -55,6 +55,7 @@ namespace Engine {
 			binding.type = RG_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			binding.buffer = ubuffer;
 			binding.stage = RG_SHADER_TYPE_VERTEX;
+			binding.name = "camera";
 
 			RDescriptorSetCreateInfo dsinfo = {};
 			dsinfo.bindings = &binding;
