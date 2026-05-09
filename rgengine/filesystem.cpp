@@ -106,6 +106,7 @@ namespace Engine {
         _fs_find(&ffs, file);
         if (ffs.filesystem == NULL) { return NULL; }
         ResourceStream* res = (ResourceStream*)stream_res_pool_alloc->Allocate();
+        SDL_snprintf(res->file, 224, "%s", file);
         res->file_length = ffs.file.length;
         res->file_offset = ffs.file.offset;
         res->fs_handle = ffs.filesystem;
@@ -386,6 +387,7 @@ namespace Engine {
         if (!fptr) { return NULL; }
 
         stream = (ResourceStream*)stream_res_pool_alloc->Allocate();
+		SDL_snprintf(stream->file, 224, "%s", file);
         fseek(fptr, 0, SEEK_END);
         stream->file_length = ftell(fptr);
         rewind(fptr);

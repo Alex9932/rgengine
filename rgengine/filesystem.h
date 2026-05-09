@@ -37,6 +37,7 @@ typedef struct ResourceStream {
     Uint32 file_length;
     Uint32 file_offset; // Must be 0 if 'fs_handle' field == NULL
     Uint32 offset;
+    char   file[224];
 } ResourceStream;
 
 namespace Engine {
@@ -92,9 +93,9 @@ namespace Engine {
             RG_FORCE_INLINE Uint8  ReadU8() { Uint8 tmp;  Read(&tmp, sizeof(Uint8));  return tmp; }
             RG_FORCE_INLINE Sint8  ReadS8() { Sint8 tmp;  Read(&tmp, sizeof(Sint8));  return tmp; }
             RG_FORCE_INLINE Uint16 ReadU16() { Uint16 tmp; Read(&tmp, sizeof(Uint16)); return tmp; }
-            RG_FORCE_INLINE Uint16 ReadS16() { Sint16 tmp; Read(&tmp, sizeof(Sint16)); return tmp; }
+            RG_FORCE_INLINE Sint16 ReadS16() { Sint16 tmp; Read(&tmp, sizeof(Sint16)); return tmp; }
             RG_FORCE_INLINE Uint32 ReadU32() { Uint32 tmp; Read(&tmp, sizeof(Uint32)); return tmp; }
-            RG_FORCE_INLINE Uint32 ReadS32() { Sint32 tmp; Read(&tmp, sizeof(Sint32)); return tmp; }
+            RG_FORCE_INLINE Sint32 ReadS32() { Sint32 tmp; Read(&tmp, sizeof(Sint32)); return tmp; }
             RG_FORCE_INLINE Uint64 ReadU64() { Uint64 tmp; Read(&tmp, sizeof(Uint64)); return tmp; }
             RG_FORCE_INLINE Sint64 ReadS64() { Sint64 tmp; Read(&tmp, sizeof(Sint64)); return tmp; }
             RG_FORCE_INLINE float  ReadF32() { float tmp;  Read(&tmp, sizeof(float));  return tmp; }
@@ -108,7 +109,7 @@ namespace Engine {
         public:
             FSOutputStream() {}
             virtual ~FSOutputStream() {}
-            virtual void Write(void* ptr, size_t len) {}
+            virtual void Write(const void* ptr, size_t len) {}
             virtual void Flush() {}
             RG_FORCE_INLINE void WriteU8(Uint8 a) { Write(&a, sizeof(Uint8)); }
             RG_FORCE_INLINE void WriteS8(Sint8 a) { Write(&a, sizeof(Sint8)); }
@@ -134,8 +135,9 @@ namespace Engine {
             RG_DECLSPEC FSReader(String file);
             RG_DECLSPEC FSReader(ResourceStream* stream);
             RG_DECLSPEC virtual ~FSReader();
-            RG_DECLSPEC virtual size_t Read(void* ptr, size_t len);
+            RG_DECLSPEC size_t Read(void* ptr, size_t len) override;
 
+            RG_FORCE_INLINE String GetResourcePath() { return m_stream->file; }
             RG_FORCE_INLINE Bool IsStreamAvailable() { return m_stream != NULL; }
             RG_FORCE_INLINE size_t GetOffset() { return m_stream->offset; }
             RG_FORCE_INLINE ResourceStream* GetStream() { return m_stream; }
@@ -153,7 +155,7 @@ namespace Engine {
         public:
             RG_DECLSPEC FSWriter(String file);
             RG_DECLSPEC virtual ~FSWriter();
-            RG_DECLSPEC virtual void Write(const void* ptr, size_t len);
+            RG_DECLSPEC void Write(const void* ptr, size_t len) override;
             RG_DECLSPEC virtual void Flush();
             RG_FORCE_INLINE size_t GetOffset() { return m_offset; }
             RG_FORCE_INLINE FILE* GetHandle() { return m_handle; }
