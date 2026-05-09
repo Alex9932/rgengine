@@ -7,7 +7,9 @@ typedef void (*PFN_TEXTURELOADED)(void* userdata);
 
 typedef struct Texture {
 	RImage* img;
-	Uint32  isLoaded;
+	Uint8   isLoaded;
+	Uint8   flags;
+	Uint16  _off1;
 	Uint32  refcounter;
 } Texture;
 
@@ -17,7 +19,7 @@ namespace Engine {
 		void InitializeTextures();
 		void DestroyTextures();
 
-		Texture* GetTexture(String path, PFN_TEXTURELOADED callback = NULL, void* userdata = NULL);
+		Texture* GetTexture(String path, PFN_TEXTURELOADED callback = NULL, void* userdata = NULL, Uint16 flags = 0);
 		void FreeTexture(Texture* tex);
 
 		void DoLoadTextures();

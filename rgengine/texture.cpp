@@ -5,6 +5,8 @@
 #include "queue.h"
 #include "rgstb.h"
 
+#include "rgthread.h"
+
 #include <map>
 
 #define R_MAX_TEXTURES 64000
@@ -25,7 +27,7 @@ namespace Engine {
 		static std::map<Uint64, Texture*> texturescache;
 		static Queue* textureloadqueue = NULL;
 
-		static Texture* tx_while  = NULL;
+		static Texture* tx_white  = NULL;
 		static Texture* tx_normal = NULL;
 		static Texture* tx_pbr    = NULL;
 
@@ -41,6 +43,7 @@ namespace Engine {
 			imginfo.width = w;
 			imginfo.height = h;
 			imginfo.format = RG_FORMAT_R8G8B8A8_UNORM;
+			imginfo.flags = tptr->flags;
 			imginfo.initialData = data;
 
 			tptr->img = rctx->CreateImage(rdev, &imginfo);
@@ -50,10 +53,19 @@ namespace Engine {
 
 		}
 
-		static Texture* CreateTexture(String path, PFN_TEXTURELOADED loadcallback, void* userdata) {
+		static void DefferedLoadTexture(String path, Texture* tptr) {
+			Task task = {};
+			//task.proc = LoadTask;
+//			task.userdata = info;
+
+			ThreadDispatch(&task, RG_TASK_ASYNC);
+		}
+
+		static Texture* CreateTexture(String path, PFN_TEXTURELOADED loadcallback, void* userdata, Uint16 flags) {
 			Texture* tex = (Texture*)texturespool->Allocate();
 			tex->refcounter = 1;
 			tex->img = NULL;
+			tex->flags = flags;
 			tex->isLoaded = false;
 
 			TextureInfo* info = (TextureInfo*)texinfopool->Allocate();
@@ -78,20 +90,20 @@ namespace Engine {
 			texinfopool      = RG_NEW(PoolAllocator)("Texture Load Pool", R_MAX_LOADQUEUE, sizeof(TextureInfo));
 			textureloadqueue = RG_NEW(Queue)(R_MAX_LOADQUEUE);
 
-			tx_while = (Texture*)texturespool->Allocate();
-			tx_while->refcounter = 1;
+			tx_white = (Texture*)texturespool->Allocate();
+			tx_white->refcounter = 1;
 			tx_normal = (Texture*)texturespool->Allocate();
 			tx_normal->refcounter = 1;
 			tx_pbr = (Texture*)texturespool->Allocate();
 			tx_pbr->refcounter = 1;
 
-			ImmediateLoadTexture("platform/textures/def_diffuse.png", tx_while);
+			ImmediateLoadTexture("platform/textures/def_diffuse.png", tx_white);
 			ImmediateLoadTexture("platform/textures/def_normal.png", tx_normal);
 			ImmediateLoadTexture("platform/textures/def_pbr.png", tx_pbr);
 		}
 
 		void DestroyTextures() {
-			DestroyTexture(tx_while);
+			DestroyTexture(tx_white);
 			DestroyTexture(tx_normal);
 			DestroyTexture(tx_pbr);
 			RG_DELETE(PoolAllocator, texturespool);
@@ -99,7 +111,7 @@ namespace Engine {
 			RG_DELETE(Queue, textureloadqueue);
 		}
 
-		Texture* GetTexture(String path, PFN_TEXTURELOADED loadcallback, void* userdata) {
+		Texture* GetTexture(String path, PFN_TEXTURELOADED loadcallback, void* userdata, Uint16 flags) {
 			Uint64 hash = rgHash(path, SDL_strlen(path));
 			Texture* tex = NULL;
 			// Return loaded material
@@ -110,7 +122,7 @@ namespace Engine {
 			}
 
 			// Load new texture
-			tex = CreateTexture(path, loadcallback, userdata);
+			tex = CreateTexture(path, loadcallback, userdata, flags);
 			texturescache[hash] = tex;
 			return tex;
 		}
@@ -130,9 +142,9 @@ namespace Engine {
 			}
 		}
 
-		void DoLoadTextures() {
-			TextureInfo* info = (TextureInfo*)textureloadqueue->Pop();
-			if (!info) { return; } // No textures to load
+		static void LoadTask(void* userdata) {
+			TextureInfo* info = (TextureInfo*)userdata;
+			// TODO: add deffered texture loading
 			ImmediateLoadTexture(info->path, info->tex);
 			if (info->callback) {
 				info->callback(info->userdata);
@@ -140,7 +152,19 @@ namespace Engine {
 			texinfopool->Deallocate(info);
 		}
 
-		Texture* GetDefaultWhiteTexture()  { return tx_while; }
+		void DoLoadTextures() {
+			TextureInfo* info = (TextureInfo*)textureloadqueue->Pop();
+			if (!info) { return; } // No textures to load
+
+			Task task = {};
+			task.proc = LoadTask;
+			task.userdata = info;
+			if (!ThreadDispatch(&task, RG_TASK_ASYNC)) {
+				textureloadqueue->Push(info);
+			}
+		}
+
+		Texture* GetDefaultWhiteTexture()  { return tx_white; }
 		Texture* GetDefaultNormalTexture() { return tx_normal; }
 		Texture* GetDefaultPBRTexture()    { return tx_pbr; }
 
