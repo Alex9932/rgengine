@@ -427,7 +427,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	viewInfo.format                          = GetImageFormat(info->format);
 	viewInfo.subresourceRange.aspectMask     = aspect;
 	viewInfo.subresourceRange.baseMipLevel   = 0;
-	viewInfo.subresourceRange.levelCount     = 1;
+	viewInfo.subresourceRange.levelCount     = imageInfo.mipLevels;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount     = 1;
 	vkCreateImageView(dev->vkdev, &viewInfo, dev->vkalloc, &image->view);
@@ -484,14 +484,18 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 	fbInfo.width           = info->width;
 	fbInfo.height          = info->height;
 	fbInfo.layers          = 1;
-	vkCreateFramebuffer(dev->vkdev, &fbInfo, dev->vkalloc, &fb->framebuffer);
+	for (Uint32 i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+		vkCreateFramebuffer(dev->vkdev, &fbInfo, dev->vkalloc, &fb->framebuffer[i]);
+	}
 
 	return fb;
 }
 
 void R_DestroyFramebuffer(RFramebuffer* fb) {
 	RRenderDevice* dev = fb->dev;
-	vkDestroyFramebuffer(dev->vkdev, fb->framebuffer, dev->vkalloc);
+	for (Uint32 i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+		vkDestroyFramebuffer(dev->vkdev, fb->framebuffer[i], dev->vkalloc);
+	}
 	dev->allocator->Deallocate(fb);
 }
 
@@ -503,8 +507,8 @@ RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateIn
 	allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool        = dev->vkcommandpool;
 	allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, &buffer->cmdbuffer);
+	allocInfo.commandBufferCount = R_VK_FRAMES_IN_FLIGHT;
+	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, buffer->cmdbuffer);
 
 	rgLogInfo(RG_LOG_RENDER, "VK: Created commandbuffer (%x)", buffer->cmdbuffer);
 
@@ -513,23 +517,23 @@ RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateIn
 
 void R_DestroyCommandBuffer(RCommandBuffer* buffer) {
 	RRenderDevice* dev = buffer->dev;
-	vkFreeCommandBuffers(dev->vkdev, dev->vkcommandpool, 1, &buffer->cmdbuffer);
+	vkFreeCommandBuffers(dev->vkdev, dev->vkcommandpool, R_VK_FRAMES_IN_FLIGHT, buffer->cmdbuffer);
 	dev->allocator->Deallocate(buffer);
 }
 
 void R_ResetCommandBuffer(RCommandBuffer* buffer) {
-	vkResetCommandBuffer(buffer->cmdbuffer, 0);
+	vkResetCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage], 0);
 }
 
 void R_BeginCommandBuffer(RCommandBuffer* buffer) {
 	VkCommandBufferBeginInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	//info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(buffer->cmdbuffer, &info);
+	vkBeginCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage], &info);
 }
 
 void R_EndCommandBuffer(RCommandBuffer* buffer) {
-	vkEndCommandBuffer(buffer->cmdbuffer);
+	vkEndCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage]);
 }
 
 static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
@@ -544,7 +548,7 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 	submitInfo.pCommandBuffers = &cmdbuffer;
 
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
+	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
 	submitInfo.pWaitDstStageMask = f;
 
 	func_lock.lock();
@@ -552,7 +556,7 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 	func_lock.unlock();
 
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->cmdsemaphore];
+	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
 	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
 	//vkQueueWaitIdle(dev->vkqueue);
 
@@ -561,7 +565,7 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	// TODO: Support semaphores and fences
 	RRenderDevice* dev = info->buffer->dev;
-	SubmitCommandBuffer(dev, info->buffer->cmdbuffer);
+	SubmitCommandBuffer(dev, info->buffer->cmdbuffer[dev->vkcurrentimage]);
 }
 
 #if 0
@@ -735,7 +739,7 @@ RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	//sampInfo.unnormalizedCoordinates = VK_FALSE;
 	sampInfo.compareEnable    = VK_FALSE;
 	sampInfo.compareOp        = VK_COMPARE_OP_ALWAYS;
-	sampInfo.mipLodBias       = 0.0f;
+	sampInfo.mipLodBias       = -0.75f;
 	sampInfo.minLod           = 0.0f;
 	sampInfo.maxLod           = 8.0f;
 	vkCreateSampler(dev->vkdev, &sampInfo, dev->vkalloc, &sampler->sampler);
@@ -810,43 +814,48 @@ RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateIn
 	allocInfo.descriptorPool = dev->vkdescriptorpool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &ds->layout;
-	vkAllocateDescriptorSets(dev->vkdev, &allocInfo, &ds->set);
+	for (size_t i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+		vkAllocateDescriptorSets(dev->vkdev, &allocInfo, &ds->set[i]);
+	}
 
 	VkWriteDescriptorSet   writes[16]  = {};
 	VkDescriptorImageInfo  images[16]  = {};
 	VkDescriptorBufferInfo buffers[16] = {};
 
-	for (size_t i = 0; i < info->binding_count; i++) {
+	for (size_t j = 0; j < R_VK_FRAMES_IN_FLIGHT; j++) {
+		for (size_t i = 0; i < info->binding_count; i++) {
 
-		writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writes[i].dstSet = ds->set;
-		writes[i].dstBinding = info->bindings[i].binding;
-		writes[i].dstArrayElement = 0;
-		writes[i].descriptorCount = 1;
-		writes[i].descriptorType = GetDescriptorType(info->bindings[i].type);
+			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writes[i].dstSet = ds->set[j];
+			writes[i].dstBinding = info->bindings[i].binding;
+			writes[i].dstArrayElement = 0;
+			writes[i].descriptorCount = 1;
+			writes[i].descriptorType = GetDescriptorType(info->bindings[i].type);
 
-		if (info->bindings[i].type == RG_DESCRIPTOR_TYPE_IMAGE) {
-			images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			images[i].imageView   = info->bindings[i].image->view;
-			writes[i].pImageInfo = &images[i];
+			if (info->bindings[i].type == RG_DESCRIPTOR_TYPE_IMAGE) {
+				images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				images[i].imageView = info->bindings[i].image->view;
+				writes[i].pImageInfo = &images[i];
+			}
+			else {
+				buffers[i].buffer = info->bindings[i].buffer->buffer;
+				buffers[i].offset = 0;
+				buffers[i].range = VK_WHOLE_SIZE;
+				writes[i].pBufferInfo = &buffers[i];
+			}
+
 		}
-		else {
-			buffers[i].buffer = info->bindings[i].buffer->buffer;
-			buffers[i].offset = 0;
-			buffers[i].range  = VK_WHOLE_SIZE;
-			writes[i].pBufferInfo = &buffers[i];
-		}
-
+		vkUpdateDescriptorSets(dev->vkdev, info->binding_count, writes, 0, nullptr);
 	}
-	vkUpdateDescriptorSets(dev->vkdev, info->binding_count, writes, 0, nullptr);
-
 	return ds;
 }
 
 void R_DestroyDescriptorSet(RDescriptorSet* ds) {
 	RRenderDevice* dev = ds->dev;
 
-	vkFreeDescriptorSets(dev->vkdev, dev->vkdescriptorpool, 1, &ds->set);
+	vkQueueWaitIdle(dev->vkqueue);
+
+	vkFreeDescriptorSets(dev->vkdev, dev->vkdescriptorpool, R_VK_FRAMES_IN_FLIGHT, ds->set);
 	vkDestroyDescriptorSetLayout(dev->vkdev, ds->layout, dev->vkalloc);
 
 	dev->allocator->Deallocate(ds);

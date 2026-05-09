@@ -14,6 +14,8 @@
 #define R_MAX_COMMANDS_PER_BUFFER 256
 #define R_MAX_COMMANDBUFFERS_PER_FRAME 256
 
+#define R_VK_FRAMES_IN_FLIGHT 2
+
 struct RRenderDevice {
 	VkInstance         vkctx;
 	VkPhysicalDevice   vkpdev;
@@ -26,8 +28,9 @@ struct RRenderDevice {
 	Uint32             cmdsemaphore;
 	VkCommandPool      vkcommandpool;
 	VkCommandPool      vktransfercommandpool;
-	VkCommandBuffer    vkswapcmdbuffer[2];
-	VkSemaphore        cmdbuffsemaphores[R_MAX_COMMANDBUFFERS_PER_FRAME];
+	VkCommandBuffer    vkswapcmdbuffer[R_VK_FRAMES_IN_FLIGHT][2];
+	VkSemaphore        cmdbuffsemaphores[R_VK_FRAMES_IN_FLIGHT][R_MAX_COMMANDBUFFERS_PER_FRAME];
+	VkFence            vkflightfences[R_VK_FRAMES_IN_FLIGHT];
 	
 #if R_VKRENDER_DEBUG
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -43,13 +46,13 @@ struct RRenderDevice {
 	VkSwapchainKHR     vkswapchain;
 	VkPresentModeKHR   vkpresentmode;
 	Uint32             vkimagescount;
-	VkImage            vkswapimages[4];
-	VkImageView        vkimageviews[4];
-	VkFramebuffer      vkframebuffers[4];
+	VkImage            vkswapimages[R_VK_FRAMES_IN_FLIGHT];
+	VkImageView        vkimageviews[R_VK_FRAMES_IN_FLIGHT];
+	VkFramebuffer      vkframebuffers[R_VK_FRAMES_IN_FLIGHT];
 	Uint32             vkpresentqueue;
 	Uint32             vkcurrentimage;
-	VkSemaphore        vkeximagesemaphore;
-	VkSemaphore        vkpresentsemaphore;
+	VkSemaphore        vkeximagesemaphore[R_VK_FRAMES_IN_FLIGHT];
+	VkSemaphore        vkpresentsemaphore[R_VK_FRAMES_IN_FLIGHT];
 
 	VkRenderPass       imguirenderpass;
 
@@ -79,8 +82,8 @@ struct RRenderDevice {
 
 struct RBuffer {
 	RRenderDevice* dev;
-	VkBuffer       buffer;
-	VmaAllocation  allocation;
+	VkBuffer       buffer;// [R_VK_FRAMES_IN_FLIGHT] ;
+	VmaAllocation  allocation;// [R_VK_FRAMES_IN_FLIGHT] ;
 	Uint32         length;
 	Uint8          access;
 	Uint8          _off0;
@@ -100,13 +103,13 @@ struct RImage {
 
 struct RCommandBuffer {
 	RRenderDevice*  dev;
-	VkCommandBuffer cmdbuffer;
-	RPipeline*      pipeline; // Last binded pipeline
+	VkCommandBuffer cmdbuffer[R_VK_FRAMES_IN_FLIGHT];
+	RPipeline*      pipeline[R_VK_FRAMES_IN_FLIGHT]; // Last binded pipeline
 };
 
 struct RDescriptorSet {
 	RRenderDevice*  dev;
-	VkDescriptorSet set;
+	VkDescriptorSet set[R_VK_FRAMES_IN_FLIGHT];
 	VkDescriptorSetLayout layout;
 };
 
@@ -137,7 +140,7 @@ struct RFramebuffer {
 	Uint16         width;
 	Uint16         height;
 	Uint32         _offset;
-	VkFramebuffer  framebuffer;
+	VkFramebuffer  framebuffer[R_VK_FRAMES_IN_FLIGHT];
 };
 
 struct RRenderpass {
