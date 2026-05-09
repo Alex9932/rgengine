@@ -28,7 +28,7 @@ namespace Engine {
 
             RG_DECLSPEC void PlayAnimation(Animation* animation, Float32 transition);
 
-            RG_INLINE void PlayAnimation(Animation* animation) { PlayAnimation(animation, 0.175f); }
+            RG_INLINE void PlayAnimation(Animation* animation) { PlayAnimation(animation, 0.075f); }
             RG_INLINE Animation* GetCurrentAnimation() { return this->current_animation; }
     };
 

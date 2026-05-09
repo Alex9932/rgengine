@@ -64,6 +64,7 @@ struct ImportState {
 	Uint32 cur_mesh = 0;
 	Uint32 boneCounter = 0;
 	Bool   isVRM = false;
+	Bool   animationOnly = false;
 };
 
 void GeomImporter::FreeRiggedModelData(FreeModelInfo* info) {
@@ -185,20 +186,22 @@ static const aiScene* LoadScene(ImportState* state, String path, String file, ch
 
 	const aiScene* scene;
 
-	Uint32 flags =
-		//aiProcess_ConvertToLeftHanded |
-		aiProcess_PopulateArmatureData |
-		aiProcess_RemoveRedundantMaterials |
-		aiProcess_JoinIdenticalVertices |
-		//aiProcess_LimitBoneWeights |
-		//aiProcess_PreTransformVertices |
-		aiProcess_Triangulate |
-		aiProcess_FlipUVs |
-		//aiProcess_ForceGenNormals |
-		//aiProcess_GenSmoothNormals |
-		aiProcess_GenNormals |
-		aiProcess_CalcTangentSpace |
-		aiProcess_ValidateDataStructure;
+	Uint32 flags = aiProcess_ValidateDataStructure;
+	if (!state->animationOnly) {
+		flags |=
+			//aiProcess_ConvertToLeftHanded |
+			aiProcess_PopulateArmatureData |
+			aiProcess_RemoveRedundantMaterials |
+			aiProcess_JoinIdenticalVertices |
+			//aiProcess_LimitBoneWeights |
+			//aiProcess_PreTransformVertices |
+			aiProcess_Triangulate |
+			aiProcess_FlipUVs |
+			//aiProcess_ForceGenNormals |
+			//aiProcess_GenSmoothNormals |
+			aiProcess_GenNormals |
+			aiProcess_CalcTangentSpace;
+	}
 
 
 	if (rg_strenw(file, "vrm")) {
@@ -249,8 +252,9 @@ static const aiScene* LoadScene(ImportState* state, String path, String file, ch
 	return scene;
 }
 
-const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data) {
+const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data, Bool animOnly) {
 	ImportState state = {};
+	state.animationOnly = animOnly;
 	return LoadScene(&state, path, file, errorstr, msglen, data);
 }
 
@@ -359,22 +363,22 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 		//vt.v.pos = (t_inv * v_pos).xyz;
 		//vt.v.pos = (t * v_pos).xyz;
 
-		//t_vtx = transform * mesh->mVertices[i];
-		t_vtx = mesh->mVertices[i];
+		t_vtx = transform * mesh->mVertices[i];
+		//t_vtx = mesh->mVertices[i];
 		vt.v.pos.x = t_vtx.x;
 		vt.v.pos.y = t_vtx.y;
 		vt.v.pos.z = t_vtx.z;
 		if (mesh->HasNormals()) {
-			//t_nrm = normalmat * mesh->mNormals[i];
-			t_nrm = mesh->mNormals[i];
+			t_nrm = normalmat * mesh->mNormals[i];
+			//t_nrm = mesh->mNormals[i];
 			t_nrm.Normalize();
 			vt.v.norm.x = t_nrm.x;
 			vt.v.norm.y = t_nrm.y;
 			vt.v.norm.z = t_nrm.z;
 		}
 		if (mesh->HasTangentsAndBitangents()) {
-			//t_tan = normalmat * mesh->mTangents[i];
-			t_tan = mesh->mTangents[i];
+			t_tan = normalmat * mesh->mTangents[i];
+			//t_tan = mesh->mTangents[i];
 			t_tan.Normalize();
 			vt.v.tang.x = t_tan.x;
 			vt.v.tang.y = t_tan.y;

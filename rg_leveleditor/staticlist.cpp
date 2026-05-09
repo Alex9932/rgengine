@@ -32,12 +32,19 @@ static PMXImporter pmxImporter;
 
 static void OpenModel(String _path, R3DStaticModelInfo* info) {
 	char path[256];
+	char s_path[256];
+	char s_file[128];
 	SDL_memset(path, 0, 256);
 	FS_ReplaceSeparators(path, _path);
+	FS_SeparatePathFile(s_path, 256, s_file, 128, path);
 
 	rgLogInfo(RG_LOG_SYSTEM, "Model: %s", path);
 	if (rg_strenw(path, "pm2")) {
-		pm2Importer.ImportModel(path, info);
+		ImportModelInfo i = {};
+		i.path = s_path;
+		i.file = s_file;
+		i.info.as_static = info;
+		pm2Importer.ImportModel(&i);
 	}
 	//else if (rg_strenw(path, "obj")) {
 	//	objImporter.ImportModel(path, info);
@@ -142,7 +149,9 @@ void StaticList::Draw() {
 
 			} else {
 				R3D_StaticModel* hmdl = Render::CreateStaticModel(&model);
-				pm2Importer.FreeModelData(&model);
+				FreeModelInfo fminfo = {};
+				fminfo.info.as_static = &model;
+				pm2Importer.FreeModelData(&fminfo);
 
 				mat4 transform = MAT4_IDENTITY();
 
@@ -267,6 +276,9 @@ static void RecalculateStaticModels(R3DStaticModelInfo* dst, R3DStaticModelInfo*
 
 static void FreeStaticModels(R3DStaticModelInfo* mdls, Uint32 count) {
 	for (Uint32 i = 0; i < count; i++) {
-		pm2Importer.FreeModelData(&mdls[i]);
+		FreeModelInfo fminfo = {};
+		fminfo.info.as_static = &mdls[i];
+		pm2Importer.FreeModelData(&fminfo);
+		//pm2Importer.FreeModelData(&mdls[i]);
 	}
 }

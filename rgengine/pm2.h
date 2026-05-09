@@ -25,7 +25,10 @@ typedef struct PM2_Header {
 	Uint32 indices;
 	Uint8  flags;
 	Uint8  version;
-	Uint16 offset; // Mesh count in PM2 version >=2
+	union {
+		Uint16 mesh_count; // Mesh count in PM2 version >=2
+		Uint16 offset;     // Just memory offset for allignment in PM2 version 1
+	};
 } PM2_Header;
 
 typedef struct PM2_SkeletonHeader {
@@ -87,11 +90,18 @@ typedef struct PM2_Weight {
 	ivec4 boneids;
 } PM2_Weight;
 
-typedef struct PM2_Bone {
+// Do not use directly!
+// This structure represents a data format in PM2 file.
+#define PM2_BONE_FLAG_HAS_LIMITATION 0x0001
+typedef struct _PM2_Bone {
 	PM2_String name;
 	Sint16     parent;
+	Uint16     flags;
 	vec3       position;
-} PM2_Bone;
+	quat       rotation;
+	vec3       limitation;
+	mat4       offset;
+} _PM2_Bone;
 
 typedef struct PM2_IKChain {
 	Uint16  target;

@@ -23,6 +23,7 @@
 #include <mmdimporter.h>
 
 #include <pm2importer.h>
+#include <animimporter.h>
 
 using namespace Engine;
 
@@ -162,12 +163,15 @@ class Application : public BaseGame {
 			//cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), LookatCameraController)(camera);
 
 			cam_controller = RG_NEW_CLASS(GetDefaultAllocator(), FreeCameraController)(camera);
-			cam_controller->SetAngles({ 0, 3.1415, 0 });
-			camera->GetTransform()->SetPosition({ 0.0f, 1.6f, -2.0f });
+			//cam_controller->SetAngles({ 0, 3.1415, 0 });
+			camera->GetTransform()->SetPosition({ 0.0f, 1.6f, 2.0f });
 
 			PMXImporter pmxImporter;
 			PMDImporter pmdImporter;
 			VMDImporter vmdImporter;
+
+			PM2Importer pm2;
+			AnimImporter pm2anim;
 
 			// Load geometry
 #if 0
@@ -179,7 +183,7 @@ class Application : public BaseGame {
 #endif
 
 			R3DRiggedModelInfo info = {};
-
+#if 0
 			ImportModelInfo iminfo = {};
 			ModelExtraData  extra  = {};
 			iminfo.path  = "mmd_models";
@@ -200,11 +204,34 @@ class Application : public BaseGame {
 			finfo.userdata = iminfo.userdata;
 			finfo.info.as_rigged = &info;
 			pmdImporter.FreeRiggedModelData(&finfo);
+#else
+			ImportModelInfo iminfo = {};
+			ModelExtraData  extra = {};
+			iminfo.path = "gamedata/models";
+			iminfo.file = "fluorite.pm2";
+			iminfo.extra = &extra;
+			iminfo.info.as_rigged = &info;
+
+			pm2.ImportRiggedModel(&iminfo);
+			R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&info);
+			kmodel = pm2.LoadSkeleton(&iminfo);
+
+			FreeModelInfo finfo = {};
+			finfo.extra = &extra;
+			finfo.userdata = iminfo.userdata;
+			finfo.info.as_rigged = &info;
+			pm2.FreeRiggedModelData(&finfo);
+
+#endif
 
 			// Load animations
-			anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);
-			anim[1] = vmdImporter.ImportAnimation("vmd/player/walk.vmd", kmodel);
-			anim[2] = vmdImporter.ImportAnimation("vmd/player/run.vmd", kmodel);
+			anim[0] = pm2anim.ImportAnimation("gamedata/anims/fluorite-stand.anim");
+			anim[1] = pm2anim.ImportAnimation("gamedata/anims/fluorite-walk.anim");
+			anim[2] = pm2anim.ImportAnimation("gamedata/anims/fluorite-capoeira.anim");
+
+			//anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);
+			//anim[1] = vmdImporter.ImportAnimation("vmd/player/walk.vmd", kmodel);
+			//anim[2] = vmdImporter.ImportAnimation("vmd/player/run.vmd", kmodel);
 			anim[3] = vmdImporter.ImportAnimation("vmd/player/squat.vmd", kmodel);
 			anim[4] = vmdImporter.ImportAnimation("vmd/player/sneaking.vmd", kmodel);
 			anim[5] = vmdImporter.ImportAnimation("vmd/player/idle.vmd", kmodel);
@@ -223,16 +250,25 @@ class Application : public BaseGame {
 			player->SetAABB(&info.aabb);
 			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
 			// Scale visual
-			player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+			player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
 
 
 			// Level ground
 
-			PM2Importer pm2;
 			R3DStaticModelInfo sinfo = {};
-			pm2.ImportModel("gamedata/models/flatplane.pm2", &sinfo);
+			ImportModelInfo iminfo2 = {};
+			iminfo2.path = "gamedata/models";
+			//iminfo2.file = "flatplane.pm2";
+			//iminfo2.file = "Sponza.pm2";
+			iminfo2.file = "NewSponza_Main_glTF_003.pm2";
+			iminfo2.info.as_static = &sinfo;
+			pm2.ImportModel(&iminfo2);
 			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&sinfo);
-			pm2.FreeModelData(&sinfo);
+
+			FreeModelInfo fminfo = {};
+			fminfo.info.as_static = &sinfo;
+			pm2.FreeModelData(&fminfo);
 
 			mat4 model = MAT4_IDENTITY();
 			world->NewStatic(level_mdl_handle, &model, &sinfo.aabb);

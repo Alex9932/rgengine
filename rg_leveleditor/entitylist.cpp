@@ -34,9 +34,24 @@ static PMXImporter pmxImporter;
 
 static void ImportPM2(String path, Entity* ent) {
 	R3DStaticModelInfo info = {};
-	pm2Importer.ImportModel(path, &info);
+
+	char _path[512];
+	char _file[512];
+	FS_SeparatePathFile(_path, 512, _file, 512, path);
+
+	ImportModelInfo iminfo = {};
+	iminfo.info.as_static = &info;
+	iminfo.file = _file;
+	iminfo.path = _path;
+
+	pm2Importer.ImportModel(&iminfo);
 	R3D_StaticModel* hmdl = Render::CreateStaticModel(&info);
-	pm2Importer.FreeModelData(&info);
+
+	FreeModelInfo fminfo = {};
+	fminfo.info.as_static = &info;
+	fminfo.extra = iminfo.extra;
+	fminfo.userdata = iminfo.userdata;
+	pm2Importer.FreeModelData(&fminfo);
 	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
 }

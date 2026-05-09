@@ -11,7 +11,7 @@
 
 struct ImportSceneData;
 
-const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data);
+const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen, ImportSceneData** data, Bool animOnly = false);
 void FreeScene(ImportSceneData* ptr);
 
 class GeomImporter {

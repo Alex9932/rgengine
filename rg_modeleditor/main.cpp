@@ -16,6 +16,8 @@
 #include "anim_importer.h"
 #include <pm2exporter.h>
 #include <pm2importer.h>
+#include <animexporter.h>
+#include <animimporter.h>
 
 #include <mmdimporter.h>
 
@@ -53,6 +55,9 @@ static Float32 animationSpeed = 1;
 
 static PM2Importer pm2_import;
 static PM2Exporter pm2_export;
+
+static AnimExporter anim_export;
+static AnimImporter anim_importer;
 
 static GeomImporter geom_importer;
 static PMDImporter pmd_importer;
@@ -774,11 +779,16 @@ static void DrawAnimationTab(Uint32* uid) {
 				anims[animcount] = anim;
 				animcount++;
 			}
+			else if (rg_strenw(path, "anim")) {
+				Animation* anim = anim_importer.ImportAnimation(path);
+				anims[animcount] = anim;
+				animcount++;
+			}
 			else {
 				LoadAnimationInfo animinfo = {};
 				char errmsg[256] = {};
 				ImportSceneData* importerstate = NULL;
-				const aiScene* scene = LoadScene(p, f, errmsg, 256, &importerstate);
+				const aiScene* scene = LoadScene(p, f, errmsg, 256, &importerstate, true);
 				for (Uint32 i = 0; i < scene->mNumAnimations; i++) {
 					animinfo.scene = scene;
 					animinfo.km = kmodel;
@@ -798,16 +808,26 @@ static void DrawAnimationTab(Uint32* uid) {
 
 		ImGui::PushID(*uid);
 		if (ImGui::TreeNode("##xx", "[%d] %s", i, name)) {
-
+			// !! WARNING !! Cast const char* to char*, in actually this is not a problem because name is stored in Animation as char array, but be careful with this
+			ImGui::InputText("Name##anim", (char*)name, 128);
 			if (ImGui::Button("Play")) {
 				anim->SetSpeed(animationSpeed);
 				anim->SetRepeat(repeatAnim);
 
 				kmodel->GetAnimator()->PlayAnimation(anim);
 			}
-
+			ImGui::SameLine();
 			if (ImGui::Button("Export")) {
-
+				Animation* anim = kmodel->GetAnimator()->GetCurrentAnimation();
+				if (anim) {
+					char path[256];
+					String gamedata_path = GetGamedataPath();
+					SDL_snprintf(path, 256, "%s/anims/%s-%s.anim", gamedata_path, MDL_NAME, anim->GetName());
+					anim_export.ExportAnimation(path, anim);
+				}
+				else {
+					rgLogError(RG_LOG_SYSTEM, "No animation to export!");
+				}
 			}
 
 			ImGui::TreePop();

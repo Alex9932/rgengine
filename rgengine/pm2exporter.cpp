@@ -6,6 +6,10 @@
 
 // PM2 File structure
 
+// <PM2_String>
+//  Uint32 len;
+//  char string[len];
+
 // [Header]
 //  char   sig[4];    "PM2 "
 //  Uint32 materials; Materials count
@@ -25,7 +29,7 @@
 // 
 // [Materials] v4
 // {
-//  PM2_String texture; ( may be w/o normal map !!! albedo & pbr REQUIRED !!!)
+//  PM2_String texture; ( may be w/o normal or PBR maps !!! albedo REQUIRED !!!)
 //  vec3       color;
 // }
 
@@ -37,10 +41,10 @@
 
 // [Vertices]
 // {
-//  PM2_Vec3 position;
-//  PM2_Vec3 normal;
-//  PM2_Vec3 tangent;
-//  PM2_Vec2 uv;
+//  vec3 position;
+//  vec3 normal;
+//  vec3 tangent;
+//  vec2 uv;
 // }
 
 // [Indices]
@@ -59,16 +63,19 @@
 
 // [Weights]
 // {
-//  PM2_Vec4  weights;
-//  PM2_IVec4 boneids;
+//  vec4  weights;
+//  ivec4 boneids;
 // }
 
 // [Bone]
 // {
 //  PM2_String name;
 //  Sint32     parent;
-//  Uint32     type;
-//  PM2_Vec3   position;
+//  Uint16     flags; ( bit 0 - has limitation | PM2_BONE_FLAG_HAS_LIMITATION )
+//  vec3       position;
+//  quat       rotation;     
+//  vec3       limitation;
+//  mat4       offset; Inverse bind pose matrix
 // }
 
 // [Skeleton]
@@ -91,7 +98,7 @@
 //	IKChain[] chains;
 // }
 
-// Pbysics extension ( FOR FUTURE USE )
+// Physics extension ( FOR FUTURE USE )
 
 // [Rigid bodies]
 // ...
@@ -205,9 +212,17 @@ namespace Engine {
 
 		for (Uint32 i = 0; i < count; i++) {
 			WritePM2String(writer, bones[i].name);
-			writer->Write(&bones[i].parent, 4);
-			writer->Write(&i_null, 4); // bone flags
+			Sint16 parent = bones[i].parent;
+			Uint16 flags  = 0;
+			if (bones[i].has_limit) {
+				flags |= PM2_BONE_FLAG_HAS_LIMITATION;
+			}
+			writer->Write(&parent, 2);
+			writer->Write(&flags, 2);
 			writer->Write(&bones[i].offset_pos, sizeof(vec3));
+			writer->Write(&bones[i].offset_rot, sizeof(quat));
+			writer->Write(&bones[i].limitation, sizeof(vec3));
+			writer->Write(&bones[i].offset, sizeof(mat4));
 		}
 	}
 

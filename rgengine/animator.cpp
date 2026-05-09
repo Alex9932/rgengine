@@ -105,7 +105,7 @@ namespace Engine {
                 anim_dt = Df / delta;
             }
 
-#if RG_FORCE_LINEAR_INTERPOLATION
+#if RG_ANIMATION_FORCE_LINEAR_INTERPOLATION
             vec3 anim_pos = bone->offset_pos + frame1->translation.lerp(frame2->translation, (float)anim_dt);
             //vec3 anim_pos = frame1->translation.lerp(frame2->translation, (float)anim_dt);
             quat anim_rot = frame1->rotation.slerp(frame2->rotation, anim_dt);
