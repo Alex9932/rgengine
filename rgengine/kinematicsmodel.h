@@ -37,11 +37,12 @@ typedef struct IKList {
 
 typedef struct BoneInfo {
     mat4   offset;
-    Sint32 parent;
     quat   offset_rot;
     vec3   offset_pos;
-    bool   has_limit;
+    Sint32 parent;
     vec3   limitation;
+    bool   has_limit;
+    bool   _padding[3];
     char   name[32];
 } BoneInfo;
 
