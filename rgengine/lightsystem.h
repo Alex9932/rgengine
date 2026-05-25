@@ -20,9 +20,7 @@ namespace Engine {
 	class PointLight : public Component {
 		public:
 			PointLight(LightSource* src) : Component(Component_POINTLIGHT) { m_source = src; }
-			~PointLight() {}
-
-			virtual void Destroy();
+			~PointLight() override {}
 
 			RG_INLINE void Update(Float64 dt) {
 				if (m_ent) {
@@ -49,9 +47,7 @@ namespace Engine {
 	class SpotLight : public Component {
 		public:
 			SpotLight(LightSource* src) : Component(Component_SPOTLIGHT) { m_source = src; }
-			~SpotLight() {}
-
-			virtual void Destroy();
+			~SpotLight() override {}
 
 			RG_INLINE void Update(Float64 dt) {
 				if (this->m_ent) {

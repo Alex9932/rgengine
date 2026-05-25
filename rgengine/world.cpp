@@ -20,7 +20,9 @@ namespace Engine {
 	static void FreeComponents(Entity* ent) {
 		for (Uint32 i = 0; i < Component_MAXENUM; i++) {
 			Component* c = ent->GetComponent((ComponentType)i);
-			if (c) { c->Destroy(); }
+			// Mark component as "detached"
+			// Systems will delete detached components automatically
+			c->SetEntity(NULL);
 		}
 	}
 

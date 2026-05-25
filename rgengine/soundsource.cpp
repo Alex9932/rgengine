@@ -11,11 +11,8 @@ namespace Engine {
 		alGenSources(1, &m_source);
 	}
 
-	SoundSource::~SoundSource() { }
-
-	void SoundSource::Destroy() {
+	SoundSource::~SoundSource() {
 		alDeleteSources(1, &m_source);
-		Engine::GetSoundSystem()->DeleteSoundSource(this);
 	}
 
 	void SoundSource::Update(Float64 dt) {

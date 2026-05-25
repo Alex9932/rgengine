@@ -12,9 +12,8 @@ namespace Engine {
 	class SoundSource : public Component {
 		public:
 			SoundSource();
-			~SoundSource();
+			~SoundSource() override;
 
-			virtual void Destroy();
 			void Update(Float64 dt);
 
 			void SetPosition(const vec3& pos);

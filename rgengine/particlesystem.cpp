@@ -126,7 +126,7 @@ namespace Engine {
 			ParticleEmitter* emitter = m_emitters[i];
 			t.proc     = EmitterUpdater;
 			t.userdata = emitter;
-			ThreadDispatch(&t);
+			ThreadDispatch(&t, RG_TASK_FRAME);
 		}
 		
 	}

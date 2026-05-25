@@ -12,26 +12,28 @@ namespace Engine {
 		this->m_handle = model;
 	}
 
-	ModelComponent::~ModelComponent() { }
-
-	void ModelComponent::Destroy() {
+	ModelComponent::~ModelComponent() {
 		Render::DestroyStaticModel(GetHandle());
-		GetModelSystem()->DeleteModelComponent(this);
+
+		//GetModelSystem()->DeleteModelComponent(this);
 	}
+
+	//void ModelComponent::Destroy() { }
 
 	RiggedModelComponent::RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
 		this->m_handle = rmdl;
 		this->m_kmodel = kmdl;
 	}
 
-	RiggedModelComponent::~RiggedModelComponent() { }
-
-	void RiggedModelComponent::Destroy() {
+	RiggedModelComponent::~RiggedModelComponent() {
 		Render::DestroyBoneBuffer(m_kmodel->GetBufferHandle());
 		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
 		Render::DestroyRiggedModel(GetHandle());
-		GetModelSystem()->DeleteRiggedModelComponent(this);
+
+		//GetModelSystem()->DeleteRiggedModelComponent(this);
 	}
+
+	//void RiggedModelComponent::Destroy() { }
 
 
 	ModelSystem::ModelSystem() {
@@ -48,14 +50,40 @@ namespace Engine {
 
 		Float64 dt = GetDeltaTime();
 
+
+		// Pointers to components that should be deleted after loop, to avoid invalidating iterators
+		ModelComponent*       delete_mc  = NULL;
+		RiggedModelComponent* delete_rmc = NULL;
+
 		std::vector<ModelComponent*>::iterator it = this->m_modelComponents.begin();
 		for (; it != this->m_modelComponents.end(); it++) {
-			(*it)->Update(dt);
+			ModelComponent* mc = *it;
+			if (mc->GetEntity() == NULL) {
+				// Detached component, delete it
+				// THIS DELETE ONE COMPONENT PER FRAME!
+				delete_mc = mc;
+				continue;
+			}
+			mc->Update(dt);
 		}
 
 		std::vector<RiggedModelComponent*>::iterator rit = this->m_rmodelComponents.begin();
 		for (; rit != this->m_rmodelComponents.end(); rit++) {
-			(*rit)->Update(dt);
+			RiggedModelComponent* rmc = *rit;
+			if (rmc->GetEntity() == NULL) {
+				// Same as for model components
+				delete_rmc = rmc;
+				continue;
+			}
+			rmc->Update(dt);
+		}
+
+		// Delete marked components
+		if (delete_mc) {
+			DeleteModelComponent(delete_mc);
+		}
+		if (delete_rmc) {
+			DeleteRiggedModelComponent(delete_rmc);
 		}
 	}
 

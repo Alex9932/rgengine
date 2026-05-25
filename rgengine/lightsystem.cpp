@@ -8,14 +8,6 @@
 
 namespace Engine {
 
-	void PointLight::Destroy() {
-		GetLightSystem()->DeletePointLight(this);
-	}
-
-	void SpotLight::Destroy() {
-		GetLightSystem()->DeleteSpotLight(this);
-	}
-
 	LightSystem::LightSystem() {
 		this->m_palloc = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Pointlight pool", RG_LIGHTPOOL_SIZE, sizeof(PointLight));
 		this->m_salloc = RG_NEW_CLASS(GetDefaultAllocator(), PoolAllocator)("Spotlight pool", RG_LIGHTPOOL_SIZE, sizeof(SpotLight));
@@ -30,14 +22,37 @@ namespace Engine {
 
 		Float64 dt = GetDeltaTime();
 
+		PointLight* delete_pl = NULL;
+		SpotLight*  delete_sl = NULL;
+
 		std::vector<PointLight*>::iterator pit = this->m_pointlights.begin();
 		for (; pit != this->m_pointlights.end(); pit++) {
-			(*pit)->Update(dt);
+			PointLight* pl = *pit;
+			if (pl->GetEntity() == NULL) {
+				// Save last detached component, delete it after loop to avoid invalidating iterator
+				delete_pl = pl;
+				continue;
+			}
+			pl->Update(dt);
 		}
 
 		std::vector<SpotLight*>::iterator sit = this->m_spotlights.begin();
 		for (; sit != this->m_spotlights.end(); sit++) {
-			(*sit)->Update(dt);
+			SpotLight* sl = *sit;
+			if (sl->GetEntity() == NULL) {
+				// Same as for point lights
+				delete_sl = sl;
+				continue;
+			}
+			sl->Update(dt);
+		}
+		
+		// Delete marked components
+		if (delete_pl) {
+			DeletePointLight(delete_pl);
+		}
+		if (delete_sl) {
+			DeleteSpotLight(delete_sl);
 		}
 	}
 

@@ -157,9 +157,20 @@ namespace Engine {
 
 		}
 
+		SoundSource* delete_ss = NULL;
+
 		std::vector<SoundSource*>::iterator ssit = m_sourcecomponents.begin();
 		for (; ssit != m_sourcecomponents.end(); ssit++) {
-			(*ssit)->Update(dt);
+			SoundSource* ss = *ssit;
+			if (ss->GetEntity() == NULL) {
+				delete_ss = ss;
+				continue;
+			}
+			ss->Update(dt);
+		}
+
+		if (delete_ss) {
+			DeleteSoundSource(delete_ss);
 		}
 
 	}

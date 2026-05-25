@@ -34,11 +34,11 @@ namespace Engine {
 	class Component {
 		public:
 			Component(ComponentType type) {
-				this->m_ent  = NULL;
-				this->m_type = type;
+				this->m_ent   = NULL;
+				this->m_type  = type;
+				this->m_flags = 0;
 			}
-			~Component() {}
-			virtual void Destroy() {}
+			virtual ~Component() {}
 
 			RG_INLINE void    SetEntity(Entity* ent) { this->m_ent = ent; }
 			RG_INLINE Entity* GetEntity()            { return this->m_ent; }
@@ -60,12 +60,13 @@ namespace Engine {
             //UUID          m_entID;
 			Entity*	      m_ent;
             ComponentType m_type;
+			Uint32        m_flags; // For future use
 
 	};
 
 	// Base components
 
-	#define TAG_BUFFERSIZE 256
+	#define TAG_BUFFERSIZE 232 // 256 - 24 of base component class
 	class TagComponent : public Component {
 		private:
 			char m_string[TAG_BUFFERSIZE];
@@ -75,9 +76,9 @@ namespace Engine {
 				SDL_memset(this->m_string, 0, TAG_BUFFERSIZE);
 				SDL_strlcpy(this->m_string, tag, TAG_BUFFERSIZE);
 			}
-			~TagComponent() {}
+			~TagComponent() override { }
 
-			void Destroy() { RG_DELETE(TagComponent, this); }
+			//void Destroy() {  }
 
 			RG_INLINE void   SetString(String tag) { SDL_strlcpy(this->m_string, tag, TAG_BUFFERSIZE); }
 			RG_INLINE String GetString()           { return this->m_string; }
