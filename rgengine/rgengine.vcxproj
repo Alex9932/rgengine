@@ -138,6 +138,8 @@
     <ClCompile Include="allocator.cpp" />
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="animator.cpp" />
+    <ClCompile Include="animexporter.cpp" />
+    <ClCompile Include="animimporter.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="command.cpp" />
     <ClCompile Include="console.cpp" />
@@ -189,6 +191,7 @@
     <ClCompile Include="rgvector.cpp" />
     <ClCompile Include="rimgui.cpp" />
     <ClCompile Include="rlighting.cpp" />
+    <ClCompile Include="rmodelmanager.cpp" />
     <ClCompile Include="rpostprocess.cpp" />
     <ClCompile Include="scriptengine.cpp" />
     <ClCompile Include="scriptruntime.cpp" />
@@ -210,6 +213,8 @@
     <ClInclude Include="allocator.h" />
     <ClInclude Include="animation.h" />
     <ClInclude Include="animator.h" />
+    <ClInclude Include="animexporter.h" />
+    <ClInclude Include="animimporter.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="command.h" />
     <ClInclude Include="console.h" />
@@ -249,6 +254,7 @@
     <ClInclude Include="particlesystem.h" />
     <ClInclude Include="phcomponent.h" />
     <ClInclude Include="pm2.h" />
+    <ClInclude Include="pm2anim.h" />
     <ClInclude Include="pm2exporter.h" />
     <ClInclude Include="pm2importer.h" />
     <ClInclude Include="queue.h" />
@@ -262,6 +268,7 @@
     <ClInclude Include="rgthread.h" />
     <ClInclude Include="rimgui.h" />
     <ClInclude Include="rlighting.h" />
+    <ClInclude Include="rmodelmanager.h" />
     <ClInclude Include="rpostprocess.h" />
     <ClInclude Include="scriptengine.h" />
     <ClInclude Include="scriptruntime.h" />

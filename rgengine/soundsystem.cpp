@@ -45,6 +45,10 @@ namespace Engine {
 	}
 
 	SoundSystem::~SoundSystem() {
+		while (m_sourcecomponents.size() > 0) {
+			Update(0);
+		}
+
 		for (Uint32 i = 0; i < RG_SOURCEPOOL_SIZE; i++) {
 			alDeleteSources(1, &m_sourcepool[i].source);
 		}

@@ -94,6 +94,10 @@ namespace Engine {
 	}
 
 	ParticleSystem::~ParticleSystem() {
+		vec3 zero = { 0, 0, 0 };
+		while (m_emitters.size() > 0) {
+			UpdateComponents(&zero);
+		}
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, m_alloc);
 	}
 

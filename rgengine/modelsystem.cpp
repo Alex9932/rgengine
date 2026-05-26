@@ -42,6 +42,13 @@ namespace Engine {
 	}
 
 	ModelSystem::~ModelSystem() {
+		while (m_modelComponents.size() > 0) {
+			UpdateComponents();
+		}
+		while (m_rmodelComponents.size() > 0) {
+			UpdateComponents();
+		}
+
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_alloc);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_ralloc);
 	}

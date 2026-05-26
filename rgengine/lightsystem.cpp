@@ -14,6 +14,12 @@ namespace Engine {
 	}
 
 	LightSystem::~LightSystem() {
+		while (m_pointlights.size() > 0) {
+			UpdateComponents();
+		}
+		while (m_spotlights.size() > 0) {
+			UpdateComponents();
+		}
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_palloc);
 		RG_DELETE_CLASS(GetDefaultAllocator(), PoolAllocator, this->m_salloc);
 	}

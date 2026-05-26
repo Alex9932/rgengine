@@ -300,6 +300,15 @@
     <ClCompile Include="rpostprocess.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="animexporter.cpp">
+      <Filter>Source Files\importer</Filter>
+    </ClCompile>
+    <ClCompile Include="animimporter.cpp">
+      <Filter>Source Files\importer</Filter>
+    </ClCompile>
+    <ClCompile Include="rmodelmanager.cpp">
+      <Filter>Source Files\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rgtypes.h">
@@ -543,6 +552,18 @@
       <Filter>Header Files\render</Filter>
     </ClInclude>
     <ClInclude Include="rpostprocess.h">
+      <Filter>Header Files\render</Filter>
+    </ClInclude>
+    <ClInclude Include="animexporter.h">
+      <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="animimporter.h">
+      <Filter>Header Files\importer</Filter>
+    </ClInclude>
+    <ClInclude Include="pm2anim.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="rmodelmanager.h">
       <Filter>Header Files\render</Filter>
     </ClInclude>
   </ItemGroup>
