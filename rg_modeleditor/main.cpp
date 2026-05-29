@@ -275,6 +275,8 @@ static void CopyTexture(String dst, String src) {
 	fclose(fsrc);
 #endif
 
+	if (!src) return;
+
 	FSReader fsrc(src);
 	FSWriter fdst(dst);
 
@@ -303,11 +305,11 @@ static void CopyTexture(String dst, String src) {
 static void CopyTextures(R3DRiggedModelInfo* mdlinfo, VertexBuffer* buffer, String gamedata_path) {
 
 	// Make copy of materials array (need for replace full texture path to texture name in gamedata)
-	SDL_memcpy(mdlinfo->matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * mdlinfo->matCount);
+	//SDL_memcpy(mdlinfo->matInfo, info.matInfo, sizeof(R3D_MaterialInfo) * info.matCount);
 
 	char path[256];
 	char newmat[128];
-	for (Uint32 i = 0; i < info.matCount; i++) {
+	for (Uint32 i = 0; i < mdlinfo->matCount; i++) {
 		// Copy texture
 		Texture* tx      = buffer->textures[i * 3 + ALBEDO_TEXTURE];
 		Texture* tx_nrm  = buffer->textures[i * 3 + NORMAL_TEXTURE];
@@ -316,14 +318,19 @@ static void CopyTextures(R3DRiggedModelInfo* mdlinfo, VertexBuffer* buffer, Stri
 		// Combine model and material names to get new texture name in gamedata to prevent name conflicts between models
 		SDL_snprintf(newmat, 128, "%s-%s.png", MDL_NAME, matname);
 
-		SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, newmat);
-		CopyTexture(path, tx->tex_name);
+		if (tx) {
+			SDL_snprintf(path, 256, "%s/textures/%s.png", gamedata_path, newmat);
+			CopyTexture(path, tx->tex_name);
+		}
 
-		SDL_snprintf(path, 256, "%s/textures/%s_norm.png", gamedata_path, newmat);
-		CopyTexture(path, tx_nrm->tex_name);
+		if (tx_nrm) {
+			SDL_snprintf(path, 256, "%s/textures/%s_norm.png", gamedata_path, newmat);
+			CopyTexture(path, tx_nrm->tex_name);
+		}
 
 		// Replace path to name
 		SDL_snprintf(mdlinfo->matInfo[i].texture, 128, "%s", newmat);
+		mdlinfo->matInfo[i].color = buffer->colors[i];
 	}
 }
 
@@ -336,7 +343,12 @@ static void SaveModelStatic() {
 
 	// Copy data
 	R3DRiggedModelInfo mdlinfo = info;
+	mdlinfo.matCount = buffer->tcount;
+	for (Uint32 i = 0; i < mdlinfo.mCount; i++) {
+		mdlinfo.mInfo[i].materialIdx = buffer->mat[i];
+	}
 	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
+
 	CopyTextures(&mdlinfo, buffer, gamedata_path);
 
 
@@ -359,6 +371,10 @@ static void SaveModelRigged() {
 
 	// Copy data
 	R3DRiggedModelInfo mdlinfo = info;
+	mdlinfo.matCount = buffer->tcount;
+	for (Uint32 i = 0; i < mdlinfo.mCount; i++) {
+		mdlinfo.mInfo[i].materialIdx = buffer->mat[i];
+	}
 	mdlinfo.matInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * mdlinfo.matCount);
 	CopyTextures(&mdlinfo, buffer, gamedata_path);
 
@@ -687,9 +703,14 @@ static void DrawMaterialsTab(Uint32* uid) {
 		(*uid)++;
 	}
 
-#if 0
+#if 1
 	if (ImGui::Button("New material")) {
+		buffer->textures[buffer->tcount] = NULL;
+		buffer->textures[buffer->tcount + 1] = NULL;
+		buffer->textures[buffer->tcount + 2] = NULL;
 		buffer->tcount++;
+		model_extra.mat_names = (NameField*)rg_realloc(model_extra.mat_names, sizeof(NameField) * buffer->tcount);
+		SDL_snprintf(model_extra.mat_names[buffer->tcount - 1].name, 128, "Material %d", buffer->tcount - 1);
 	}
 #endif
 }
