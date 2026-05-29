@@ -7,6 +7,8 @@
 #include "engine.h"
 
 #include "render.h"
+#include "rmodelmanager.h"
+
 #include "modelsystem.h"
 #include "lightsystem.h"
 
@@ -22,7 +24,7 @@ namespace Engine {
 			Component* c = ent->GetComponent((ComponentType)i);
 			// Mark component as "detached"
 			// Systems will delete detached components automatically
-			c->SetEntity(NULL);
+			if (c) { c->SetEntity(NULL); }
 		}
 	}
 
@@ -227,7 +229,7 @@ namespace Engine {
 
 		for (size_t i = 0; i < m_static.size(); i++) {
 			R3D_StaticModel* hmdl = m_static[i]->GetModelHandle();
-			Render::DestroyStaticModel(hmdl);
+			FreeStaticModel(hmdl);
 			RG_DELETE_CLASS(m_allocStatic, StaticObject, m_static[i]);
 		}
 

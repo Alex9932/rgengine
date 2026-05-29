@@ -89,6 +89,7 @@ namespace Engine {
 				for (auto it = materialcache.begin(); it != materialcache.end(); ) {
 					if (it->second == hmat) {
 						materialcache.erase(it++);
+						break;
 					} else {
 						++it;
 					}

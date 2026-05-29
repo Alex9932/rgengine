@@ -33,14 +33,14 @@ void main() {
 	vec4 u2 = texture(sampler2D(t_unit2, smplr), uv); // ssgi
 	vec4 u3 = texture(sampler2D(t_unit3, smplr), uv); // ssr
 
-	vec3 lColor;
-	//lColor = pow(u0.rgb, vec3(1.0 / 2.2)); // And apply gamma correction
+	vec3 lColor = vec3(0);
+//	lColor = pow(u0.rgb, vec3(1.0 / 2.2)); // And apply gamma correction
 	lColor = u0.rgb;
 	lColor += u3.rgb; // Add reflection
 	lColor += u1.rgb; // Add blurred image on top
 
 //	lColor = u3.rgb;
 
-	color.rgb = lColor;//saturateColor(toneMapACES(lColor), 1.05);
+	color.rgb = lColor;//saturateColor(toneMapACES(lColor), 1.02);
 	color.a = 1;
 }

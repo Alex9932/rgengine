@@ -51,7 +51,7 @@ typedef struct KinematicsModelCreateInfo {
     Uint32          ik_count;
     BoneInfo*       bones_info;
     IKList*         ik_info;
-    R3D_BoneBuffer* buffer_handle;
+    //R3D_BoneBuffer* buffer_handle;
     mat4            globalInv;
 } KinematicsModelCreateInfo;
 
@@ -59,7 +59,7 @@ namespace Engine {
 
     class KinematicsModel {
         private:
-            R3D_BoneBuffer* handle;
+            //R3D_BoneBuffer* handle;
             Animator* animator;
             Uint32 bone_count;
             Uint32 iklist_count;
@@ -73,6 +73,8 @@ namespace Engine {
             RG_DECLSPEC KinematicsModel(KinematicsModelCreateInfo* info);
             RG_DECLSPEC virtual ~KinematicsModel();
 
+            RG_DECLSPEC void MakeAnimator();
+
             RG_DECLSPEC void RebuildSkeleton();
             RG_DECLSPEC void RecalculateTransform();
             RG_DECLSPEC void RebuildIK(IKList* ik);
@@ -84,14 +86,15 @@ namespace Engine {
             RG_INLINE Uint32 GetBoneCount() { return this->bone_count; }
             RG_INLINE Bone* GetBones()      { return this->bones; }
             RG_INLINE mat4* GetTransforms() { return this->bone_transform; }
-            RG_INLINE mat4* GetGlovalInv()  { return &this->globalInv; }
+            RG_INLINE mat4* GetGlobalInv()  { return &this->globalInv; }
 
-            RG_INLINE R3D_BoneBuffer* GetBufferHandle() { return this->handle; }
+            //RG_INLINE R3D_BoneBuffer* GetBufferHandle() { return this->handle; }
 
             RG_INLINE IKList* GetIKLists()    { return this->iklist; }
             RG_INLINE Uint32 GetIKListCount() { return this->iklist_count; }
 
             RG_INLINE Animator* GetAnimator() { return this->animator; }
+            RG_INLINE void SetAnimator(Animator* anim) { this->animator = anim; }
 
             RG_DECLSPEC void SolveCCDIK();
             RG_DECLSPEC void SolveCCDIKOne(Uint32 id);

@@ -72,6 +72,7 @@ namespace Engine {
         static R3D_GlobalLightDescrition glightdescription = {};
 
         static void ReloadShaders() {
+            renderctx.WaitIdle(rdev);
             rgLogInfo(RG_LOG_RENDER, "Reloading shaders...");
             ReloadRenderAnimation();
             ReloadRLighting(&wndSize);
@@ -420,6 +421,12 @@ namespace Engine {
             for (Uint32 i = 0; i < world->GetStaticCount(); i++) {
                 StaticObject* staticobj = world->GetStaticObject(i);
                 R3D_StaticModel* staticmdl = staticobj->GetModelHandle();
+
+                if (isStaticCullingEnabled) {
+                    Bool inFrustum = AABBInFrustum(&frustum, staticobj->GetAABB());
+                    if (!inFrustum) { continue; }
+                }
+
 				DrawGBufferStatic(staticmdl, staticobj->GetMatrix());
             }
 
@@ -560,6 +567,7 @@ namespace Engine {
             if (!isRendererLoaded) { return NULL; }
 
             R3D_StaticModel* staticmdl = (R3D_StaticModel*)renderalloc->Allocate(sizeof(R3D_StaticModel));
+            staticmdl->refcounter = 1;
 			staticmdl->type = R_MODEL_STATIC;
             staticmdl->mCount = info->mCount;
 			staticmdl->info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
@@ -618,6 +626,7 @@ namespace Engine {
             rigmdl->type   = R_MODEL_RIGGED;
 			rigmdl->vCount = info->vCount;
 
+            rigmdl->s_model.refcounter = 1;
             rigmdl->s_model.mCount = info->mCount;
             rigmdl->s_model.info = (R3D_MeshInfo*)renderalloc->Allocate(sizeof(R3D_MeshInfo) * info->mCount);
 

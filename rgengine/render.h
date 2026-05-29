@@ -22,6 +22,8 @@ typedef struct R3D_StaticModel {
     RBuffer*      iBuffer;
     Uint32        iCount;
     IndexType     iType;
+	Uint32        refcounter;
+	Uint32        _padding;
 } R3D_StaticModel;
 
 typedef struct R3D_RiggedModel {

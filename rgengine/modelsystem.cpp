@@ -3,32 +3,40 @@
 #include "engine.h"
 #include "render.h"
 #include "kinematicsmodel.h"
+#include "rmodelmanager.h"
 
 #define RG_MODELPOOL_SIZE 4096
 
 namespace Engine {
 
-	ModelComponent::ModelComponent(R3D_StaticModel* model) : Component(Component_MODELCOMPONENT) {
-		this->m_handle = model;
+	ModelComponent::ModelComponent(String model) : Component(Component_MODELCOMPONENT) {
+		this->m_handle = GetStaticModel(model);
 	}
 
 	ModelComponent::~ModelComponent() {
-		Render::DestroyStaticModel(GetHandle());
-
+		FreeStaticModel(this->m_handle);
+		//Render::DestroyStaticModel(GetHandle());
 		//GetModelSystem()->DeleteModelComponent(this);
 	}
 
 	//void ModelComponent::Destroy() { }
 
-	RiggedModelComponent::RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
-		this->m_handle = rmdl;
-		this->m_kmodel = kmdl;
+	RiggedModelComponent::RiggedModelComponent(String kmdl) : Component(Component_RIGGEDMODELCOMPONENT) {
+		this->m_handle = GetRiggedModel(kmdl);
+		this->m_kmodel = GetUniqueKinematicsModel(this->m_handle);
+
+		R3DCreateBufferInfo binfo = {};
+		binfo.len = sizeof(mat4) * this->m_kmodel->GetBoneCount();
+		binfo.initialData = NULL;
+		this->m_bonebuffer = Render::CreateBoneBuffer(&binfo);
 	}
 
 	RiggedModelComponent::~RiggedModelComponent() {
-		Render::DestroyBoneBuffer(m_kmodel->GetBufferHandle());
-		RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
-		Render::DestroyRiggedModel(GetHandle());
+		Render::DestroyBoneBuffer(this->m_bonebuffer);
+		FreeUniqueKinematicsModel(this->m_kmodel);
+		FreeRiggedModel(this->m_handle);
+		//RG_DELETE_CLASS(GetDefaultAllocator(), KinematicsModel, m_kmodel);
+		//Render::DestroyRiggedModel(GetHandle());
 
 		//GetModelSystem()->DeleteRiggedModelComponent(this);
 	}
@@ -94,7 +102,7 @@ namespace Engine {
 		}
 	}
 
-	ModelComponent* ModelSystem::NewModelComponent(R3D_StaticModel* model) {
+	ModelComponent* ModelSystem::NewModelComponent(String model) {
 		ModelComponent* comp = RG_NEW_CLASS(this->m_alloc, ModelComponent)(model);
 		this->m_modelComponents.push_back(comp);
 		return comp;
@@ -113,8 +121,8 @@ namespace Engine {
 		}
 	}
 
-	RiggedModelComponent* ModelSystem::NewRiggedModelComponent(R3D_RiggedModel* model, KinematicsModel* kmodel) {
-		RiggedModelComponent* comp = RG_NEW_CLASS(this->m_ralloc, RiggedModelComponent)(model, kmodel);
+	RiggedModelComponent* ModelSystem::NewRiggedModelComponent(String model) {
+		RiggedModelComponent* comp = RG_NEW_CLASS(this->m_ralloc, RiggedModelComponent)(model);
 		this->m_rmodelComponents.push_back(comp);
 		return comp;
 	}

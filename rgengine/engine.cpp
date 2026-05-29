@@ -7,7 +7,7 @@
 
 #define DLL_EXPORT
 
-#define RG_PRINTFPS 0
+#define RG_PRINTFPS 1
 
 #define RG_WND_ICON "platform/icon.png"
 #define RG_WND_LOGO "platform/logo.png"
@@ -354,7 +354,7 @@ namespace Engine {
 
         int ver = SDL_GetVersion();
 
-        rgLogInfo(RG_LOG_SYSTEM, "Engine version: %d.%d.%d, Build: %d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH, RG_BUILD);
+        rgLogInfo(RG_LOG_SYSTEM, "Engine version: %d.%d.%d", RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH);
         rgLogInfo(RG_LOG_SYSTEM, "SDL version: %d.%d.%d", SDL_VERSIONNUM_MAJOR(ver), SDL_VERSIONNUM_MINOR(ver), SDL_VERSIONNUM_MICRO(ver));
 
         char CPUBrandString[64] = {};
@@ -384,6 +384,10 @@ namespace Engine {
         Filesystem_Initialize(fsjson);
 
         if (game_ptr->IsGraphics()) {
+            if (!SDL_Init(SDL_INIT_VIDEO) || !SDL_Init(SDL_INIT_AUDIO)) {
+                rgLogError(RG_LOG_SYSTEM, "SDL: %s", SDL_GetError());
+            }
+
             if (lib_renderer == NULL) {
                 RG_ERROR_MSG("No renderer!");
             }

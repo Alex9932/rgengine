@@ -34,13 +34,19 @@ namespace Engine {
             this->iklist[i] = info->ik_info[i];
         }
 
-        this->handle = info->buffer_handle;
+        //this->handle = info->buffer_handle;
         this->animator = RG_NEW_CLASS(Engine::GetDefaultAllocator(), Animator)(this);
         RebuildSkeleton();
     }
 
     KinematicsModel::~KinematicsModel() {
         RG_DELETE_CLASS(Engine::GetDefaultAllocator(), Animator, this->animator);
+    }
+
+    void KinematicsModel::MakeAnimator() {
+		if (!this->animator) {
+            this->animator = RG_NEW_CLASS(Engine::GetDefaultAllocator(), Animator)(this);
+        }
     }
 
     void KinematicsModel::RebuildSkeleton() {

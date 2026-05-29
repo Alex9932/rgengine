@@ -837,7 +837,7 @@ KinematicsModel* GeomImporter::LoadSkeleton(ImportModelInfo* info) {
 
 	mk_info.ik_count = 0;
 	mk_info.ik_info = NULL;
-	mk_info.buffer_handle = NULL;
+	//mk_info.buffer_handle = NULL;
 
 	mat4 globalTransform = MAT4_IDENTITY();
 	mat4_inverse(&mk_info.globalInv, globalTransform);

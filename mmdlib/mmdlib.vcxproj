@@ -24,6 +24,7 @@
     <ProjectGuid>{78818f2a-77ce-430a-928d-0b67fa080724}</ProjectGuid>
     <RootNamespace>mmdlib</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>libmmd</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

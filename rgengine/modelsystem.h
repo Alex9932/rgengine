@@ -12,7 +12,7 @@ namespace Engine {
 
 	class ModelComponent : public Component {
 		public:
-			ModelComponent(R3D_StaticModel* model);
+			ModelComponent(String model);
 			~ModelComponent() override;
 			//virtual void Destroy();
 
@@ -24,15 +24,17 @@ namespace Engine {
 
 	class RiggedModelComponent : public Component {
 		public:
-			RiggedModelComponent(R3D_RiggedModel* rmdl, KinematicsModel* kmdl);
+			RiggedModelComponent(String model);
 			~RiggedModelComponent() override;
 			//virtual void Destroy();
 
 			RG_INLINE R3D_RiggedModel* GetHandle()			{ return this->m_handle; }
+			RG_INLINE R3D_BoneBuffer*  GeBoneBuffer()       { return this->m_bonebuffer; }
 			RG_INLINE KinematicsModel* GetKinematicsModel() { return this->m_kmodel; }
 
 		private:
 			R3D_RiggedModel* m_handle;
+			R3D_BoneBuffer*  m_bonebuffer;
 			KinematicsModel* m_kmodel;
 
 	};
@@ -45,10 +47,10 @@ namespace Engine {
 
 			RG_DECLSPEC void UpdateComponents();
 
-			RG_DECLSPEC ModelComponent* NewModelComponent(R3D_StaticModel* model);
+			RG_DECLSPEC ModelComponent* NewModelComponent(String model);
 			RG_DECLSPEC void DeleteModelComponent(ModelComponent* comp);
 
-			RG_DECLSPEC RiggedModelComponent* NewRiggedModelComponent(R3D_RiggedModel* model, KinematicsModel* kmodel);
+			RG_DECLSPEC RiggedModelComponent* NewRiggedModelComponent(String model);
 			RG_DECLSPEC void DeleteRiggedModelComponent(RiggedModelComponent* comp);
 
 			RG_INLINE ModelComponent* GetModelComponent(Uint32 idx) { return m_modelComponents[idx]; }

@@ -23,6 +23,7 @@
 
 RG_DECLSPEC void* rg_alloca(size_t size);
 RG_DECLSPEC void* rg_malloc(size_t size);
+RG_DECLSPEC void* rg_realloc(void* ptr, size_t size);
 RG_DECLSPEC void  rg_free(void* ptr);
 
 typedef struct STDBlock {

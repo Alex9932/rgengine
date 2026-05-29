@@ -94,7 +94,7 @@ namespace Engine {
             ctx->CmdBindPipeline(cmdbuffer, pipeline);
             for (Uint32 i = 0; i < mdlsystem->GetRiggedModelCount(); i++) {
                 RiggedModelComponent* com = mdlsystem->GetRiggedModelComponent(i);
-                R3D_BoneBuffer* bbuf = com->GetKinematicsModel()->GetBufferHandle();
+                R3D_BoneBuffer* bbuf = com->GeBoneBuffer();
                 R3D_RiggedModel* mdl = com->GetHandle();
 
                 RDescriptorSet* sets[2] = { bbuf->set, mdl->set };

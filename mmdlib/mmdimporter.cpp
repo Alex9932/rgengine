@@ -86,7 +86,7 @@ static void LoadPMDMaterials(pmd_file* pmd, String path, R3D_MaterialInfo** info
 	R3D_MaterialInfo* matsInfo = (R3D_MaterialInfo*)rg_malloc(sizeof(R3D_MaterialInfo) * pmd->material_count);
 	R3D_MatMeshInfo*  mmInfo   = (R3D_MatMeshInfo*)rg_malloc(sizeof(R3D_MatMeshInfo) * pmd->material_count);
 
-	Float32 colorMul = 2;
+	Float32 colorMul = 1;
 
 	Uint32 idx_offset = 0;
 
@@ -319,10 +319,10 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
 	}
 
 	// Bone buffer
-	R3DCreateBufferInfo binfo = {};
-	binfo.len         = sizeof(mat4) * pmd->bones_count;
-	binfo.initialData = NULL;
-	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
+	//R3DCreateBufferInfo binfo = {};
+	//binfo.len         = sizeof(mat4) * pmd->bones_count;
+	//binfo.initialData = NULL;
+	//R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
 
 	// Kinematics model
 	KinematicsModelCreateInfo info = {};
@@ -330,7 +330,7 @@ KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
 	info.bones_info    = bones_info;
 	info.ik_count      = ik;
 	info.ik_info       = ik_links;
-	info.buffer_handle = bone_buffer;
+	//info.buffer_handle = bone_buffer;
 	info.globalInv     = MAT4_IDENTITY();
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);
@@ -631,10 +631,10 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* imi
 	}
 
 	// Bone buffer
-	R3DCreateBufferInfo binfo = {};
-	binfo.len = sizeof(mat4) * pmx->bone_count;
-	binfo.initialData = NULL;
-	R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
+	//R3DCreateBufferInfo binfo = {};
+	//binfo.len = sizeof(mat4) * pmx->bone_count;
+	//binfo.initialData = NULL;
+	//R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
 
 	// Kinematics model
 	KinematicsModelCreateInfo info = {};
@@ -642,7 +642,7 @@ Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* imi
 	info.bones_info    = bones_info;
 	info.ik_count      = ik;
 	info.ik_info       = ik_links;
-	info.buffer_handle = bone_buffer;
+	//info.buffer_handle = bone_buffer;
 	info.globalInv     = MAT4_IDENTITY();
 	KinematicsModel* kmodel = RG_NEW_CLASS(GetDefaultAllocator(), KinematicsModel)(&info);
 	//KinematicsModel* kmodel = new KinematicsModel(&info);

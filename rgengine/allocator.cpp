@@ -51,6 +51,19 @@ void* rg_malloc(size_t size) {
     return NULL;
 }
 
+void* rg_realloc(void* ptr, size_t size) {
+    if (size > 0x7FFFFFFF) {
+        RG_ERROR_MSG("OUT OF MEMORY!");
+        return NULL;
+    }
+    void* nptr = realloc(ptr, size);
+    if (nptr) {
+        return nptr;
+    }
+    RG_ERROR_MSG("OUT OF MEMORY!");
+    return NULL;
+}
+
 void rg_free(void* ptr) {
     //Uint32* ptr32 = (Uint32*)((size_t)ptr - 8);
     //if (ptr32[0] != 0x1234CDEF) {

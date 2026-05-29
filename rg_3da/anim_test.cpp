@@ -19,11 +19,9 @@
 #include <event.h>
 #include <input.h>
 
-// MMD tools
-#include <mmdimporter.h>
-
-#include <pm2importer.h>
 #include <animimporter.h>
+
+#include <rmodelmanager.h>
 
 using namespace Engine;
 
@@ -33,7 +31,6 @@ static FreeCameraController*   cam_controller = NULL;
 //static LookatCameraController* cam_controller = NULL;
 
 static Entity*                 player         = NULL;
-static KinematicsModel*        kmodel         = NULL;
 
 static R3D_GlobalLightDescrition desc = {};
 
@@ -67,6 +64,10 @@ void DrawImGuiCallback() {
 
 
 	ImGui::Begin("Animation control");
+
+
+	RiggedModelComponent* rmc = player->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+	KinematicsModel* kmodel = rmc->GetKinematicsModel();
 
 	if (ImGui::Combo("Animation", &val, items, IM_ARRAYSIZE(items))) {
 		if (val == 0) {
@@ -132,17 +133,19 @@ class Application : public BaseGame {
 			cam.rotation   = camera->GetTransform()->GetRotation();
 			Render::SetCamera(&cam);
 		
+			RiggedModelComponent* rmc = player->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+			KinematicsModel* km = rmc->GetKinematicsModel();
 			// Calculate skeleton
-			kmodel->GetAnimator()->Update(GetDeltaTime());
-			kmodel->RebuildSkeleton();
-			kmodel->SolveCCDIK();
-			kmodel->RecalculateTransform();
+			km->GetAnimator()->Update(GetDeltaTime());
+			km->RebuildSkeleton();
+			km->SolveCCDIK();
+			km->RecalculateTransform();
 
 			R3DUpdateBufferInfo binfo = {};
 			binfo.offset = 0;
-			binfo.data   = kmodel->GetTransforms();
-			binfo.handle = kmodel->GetBufferHandle();
-			binfo.length = sizeof(mat4) * kmodel->GetBoneCount();
+			binfo.data   = km->GetTransforms();
+			binfo.handle = rmc->GeBoneBuffer();
+			binfo.length = sizeof(mat4) * km->GetBoneCount();
 			Render::UpdateBoneBuffer(&binfo);
 
 			//vec3 camera_offset = { 0, 1.67f, 0 };
@@ -166,102 +169,41 @@ class Application : public BaseGame {
 			//cam_controller->SetAngles({ 0, 3.1415, 0 });
 			camera->GetTransform()->SetPosition({ 0.0f, 1.6f, 2.0f });
 
-			PMXImporter pmxImporter;
-			PMDImporter pmdImporter;
-			VMDImporter vmdImporter;
-
-			PM2Importer pm2;
 			AnimImporter pm2anim;
 
 			// Load geometry
-#if 0
-			R3DRiggedModelInfo info = {};
-			pmxImporter.ImportRiggedModel("pmx/gumiv3/GUMI_V3.pmx", &info);
-			R3D_RiggedModel* mdl_handle = Render::R3D_CreateRiggedModel(&info);
-			pmxImporter.FreeRiggedModelData(&info);
-			kmodel = pmxImporter.ImportKinematicsModel("pmx/gumiv3/GUMI_V3.pmx");
-#endif
 
-			R3DRiggedModelInfo info = {};
-#if 0
-			ImportModelInfo iminfo = {};
-			ModelExtraData  extra  = {};
-			iminfo.path  = "mmd_models";
-			//iminfo.file  = "Miku_Hatsune.pmd";
-			iminfo.file = "Rin_Kagamine.pmd";
-			iminfo.extra = &extra;
-			iminfo.info.as_rigged = &info;
 
-			//pmdImporter.ImportRiggedModel("mmd_models/Miku_Hatsune.pmd", &info);
-			pmdImporter.ImportRiggedModel(&iminfo);
-			R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&info);
-			//kmodel = pmdImporter.ImportKinematicsModel("mmd_models/Miku_Hatsune.pmd");
-			kmodel = pmdImporter.ImportKinematicsModel(&iminfo);
-
-			//pmdImporter.FreeRiggedModelData(&info);
-			FreeModelInfo finfo = {};
-			finfo.extra = &extra;
-			finfo.userdata = iminfo.userdata;
-			finfo.info.as_rigged = &info;
-			pmdImporter.FreeRiggedModelData(&finfo);
-#else
-			ImportModelInfo iminfo = {};
-			ModelExtraData  extra = {};
-			iminfo.path = "gamedata/models";
-			iminfo.file = "fluorite.pm2";
-			iminfo.extra = &extra;
-			iminfo.info.as_rigged = &info;
-
-			pm2.ImportRiggedModel(&iminfo);
-			R3D_RiggedModel* mdl_handle = Render::CreateRiggedModel(&info);
-			kmodel = pm2.LoadSkeleton(&iminfo);
-
-			FreeModelInfo finfo = {};
-			finfo.extra = &extra;
-			finfo.userdata = iminfo.userdata;
-			finfo.info.as_rigged = &info;
-			pm2.FreeRiggedModelData(&finfo);
-
-#endif
+			// Create player entity
+			player = world->NewEntity();
+			//player->SetAABB(&info.aabb);
+			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("Gilberta"));
+			// Scale visual
+			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+			player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
 
 			// Load animations
 			anim[0] = pm2anim.ImportAnimation("gamedata/anims/fluorite-stand.anim");
 			anim[1] = pm2anim.ImportAnimation("gamedata/anims/fluorite-walk.anim");
 			anim[2] = pm2anim.ImportAnimation("gamedata/anims/fluorite-capoeira.anim");
 
-			//anim[0] = vmdImporter.ImportAnimation("vmd/player/stand.vmd", kmodel);
-			//anim[1] = vmdImporter.ImportAnimation("vmd/player/walk.vmd", kmodel);
-			//anim[2] = vmdImporter.ImportAnimation("vmd/player/run.vmd", kmodel);
-			anim[3] = vmdImporter.ImportAnimation("vmd/player/squat.vmd", kmodel);
-			anim[4] = vmdImporter.ImportAnimation("vmd/player/sneaking.vmd", kmodel);
-			anim[5] = vmdImporter.ImportAnimation("vmd/player/idle.vmd", kmodel);
-			anim[6] = vmdImporter.ImportAnimation("vmd/player/idle_1.vmd", kmodel);
-			anim[7] = vmdImporter.ImportAnimation("vmd/player/idle_2.vmd", kmodel);
-			anim[8] = vmdImporter.ImportAnimation("vmd/player/idle_3.vmd", kmodel);
-
-			for (Uint32 i = 0; i < 9; i++) {
+			for (Uint32 i = 0; i <3; i++) {
 				anim[i]->SetRepeat(true);
 			}
 
 			//kmodel->GetAnimator()->PlayAnimation(anim[0]);
 
-			// Create player entity
-			player = world->NewEntity();
-			player->SetAABB(&info.aabb);
-			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent(mdl_handle, kmodel));
-			// Scale visual
-			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
 
 
 			// Level ground
-
+#if 0
 			R3DStaticModelInfo sinfo = {};
 			ImportModelInfo iminfo2 = {};
 			iminfo2.path = "gamedata/models";
-			//iminfo2.file = "flatplane.pm2";
+			iminfo2.file = "flatplane.pm2";
 			//iminfo2.file = "Sponza.pm2";
-			iminfo2.file = "NewSponza_Main_glTF_003.pm2";
+			//iminfo2.file = "NewSponza_Main_glTF_003.pm2";
+			//iminfo2.file = "table_drugoy.pm2";
 			iminfo2.info.as_static = &sinfo;
 			pm2.ImportModel(&iminfo2);
 			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&sinfo);
@@ -269,22 +211,28 @@ class Application : public BaseGame {
 			FreeModelInfo fminfo = {};
 			fminfo.info.as_static = &sinfo;
 			pm2.FreeModelData(&fminfo);
-
-			mat4 model = MAT4_IDENTITY();
-			world->NewStatic(level_mdl_handle, &model, &sinfo.aabb);
-
-#if 0
-			ObjImporter objImporter;
-			R3DStaticModelInfo l_info = {};
-			objImporter.ImportModel("gamedata/flatplane/untitled.obj", &l_info);
-			R3D_StaticModel* level_mdl_handle = Render::CreateStaticModel(&l_info);
-			objImporter.FreeModelData(&l_info);
-
-
-			Entity* level = world->NewEntity();
-			level->SetAABB(&l_info.aabb);
-			level->AttachComponent(GetModelSystem()->NewModelComponent(level_mdl_handle));
 #endif
+			//R3D_StaticModel* level_mdl_handle = GetStaticModel("Sponza");
+			R3D_StaticModel* level_mdl_handle = GetStaticModel("NewSponza_Main_glTF_003");
+			//R3D_StaticModel* level_mdl_handle = GetStaticModel("flatplane");
+			mat4 model = MAT4_IDENTITY();
+			AABB aabb = { { -99999, -99999, -99999 }, { 99999, 99999, 99999 } };
+			world->NewStatic(level_mdl_handle, &model, &aabb);
+
+			Float32 ox = -6;
+			Float32 oz = -15;
+			for (Uint32 i = 0; i < 49; i++) {
+				R3D_StaticModel* level_mdl_handle = GetStaticModel("table_drugoy");
+				mat4 model = MAT4_IDENTITY();
+				Float32 x = ox + (Float32)(i % 7) * 2;
+				Float32 z = oz + (Float32)(i / 7) * 2;
+				Float32 rx = 0;// rgRandFloat() * 2 * RG_PI;
+				Float32 ry = rgRandFloat() * 2 * RG_PI;
+				Float32 rz = 0;// rgRandFloat() * 2 * RG_PI;
+				mat4_model(&model, { x, 0, z }, { rx, ry, rz }, { 1, 1, 1 });
+				aabb = { { x, 0, z }, { x + 2, 2, z + 2 } };
+				world->NewStatic(level_mdl_handle, &model, &aabb);
+			}
 
 		}
 
@@ -293,7 +241,7 @@ class Application : public BaseGame {
 			GetWorld()->ClearWorld();
 
 
-			for (Uint32 i = 0; i < 9; i++) {
+			for (Uint32 i = 0; i < 3; i++) {
 				RG_DELETE(Animation, anim[i]);
 			}
 

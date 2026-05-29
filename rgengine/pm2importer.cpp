@@ -392,11 +392,6 @@ namespace Engine {
     KinematicsModel* PM2Importer::LoadSkeleton(ImportModelInfo* info) {
         SkeletonData* sdata = (SkeletonData*)info->userdata;
 
-        R3DCreateBufferInfo binfo = {};
-        binfo.len = sizeof(mat4) * sdata->bone_count;
-        binfo.initialData = NULL;
-        R3D_BoneBuffer* bone_buffer = Render::CreateBoneBuffer(&binfo);
-
         KinematicsModelCreateInfo mk_info = {};
 
         mk_info.bone_count    = sdata->bone_count;
@@ -404,7 +399,7 @@ namespace Engine {
 		// TODO: IK chains
         mk_info.ik_count      = 0;
         mk_info.ik_info       = NULL;
-        mk_info.buffer_handle = bone_buffer;
+        //mk_info.buffer_handle = bone_buffer;
         mk_info.globalInv     = MAT4_IDENTITY();
 
         return RG_NEW(KinematicsModel)(&mk_info);
