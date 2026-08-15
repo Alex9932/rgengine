@@ -16,8 +16,16 @@ namespace Engine {
 		private:
 			Camera* m_camptr = NULL;
 			vec3    m_dir    = {};
-			Float32 m_speed  = 0;
 			vec3    m_angles = {};
+			vec2    m_smouse = {};
+			Float32 m_roll   = 0;
+
+		public:
+			Float32 m_accel             = 20.0f;
+			Float32 m_friction          = 18.0f;
+			Float32 m_mouse_smooth_rate = 25.0f;
+			Float32 m_roll_speed        = 8.0f;
+			Float32 m_rmax              = 0.025f;
 
 	};
 }
