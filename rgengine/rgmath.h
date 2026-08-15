@@ -46,13 +46,13 @@ RG_DECLSPEC quat quat_axisAngle(const vec4& v);
 
 RG_DECLSPEC Float32 rgRandFloat();
 
-#define rgToRadians(x) (x * (RG_PI / 180.0f))
-#define rgToDegrees(x) (x * (180.0f / RG_PI))
+#define rgToRadians(x) ((x) * (RG_PI / 180.0f))
+#define rgToDegrees(x) ((x) * (180.0f / RG_PI))
 
 // API compatibility
 #define rgToRadiansD rgToRadians
 #define rgToDegreesD rgToDegrees
 
-#define rgLerp(x, y, dt) ((x * dt) + (y * (1.0 - dt)))
+#define rgLerp(x, y, dt) ((x * (1.0 - dt)) + (y * dt))
 
 #endif

@@ -1,5 +1,6 @@
 #define DLL_EXPORT
 #include "rgmatrix.h"
+#include "rgmath.h"
 
 #define RG_GLM_DEBUG 0
 
@@ -14,32 +15,36 @@
 #undef near
 
 void mat4_ortho(mat4* mat, float l, float r, float b, float t, float n, float f) {
-    mat->m00 = 2 / (r - l); mat->m01 = 0;           mat->m02 = 0;            mat->m03 = -((r + l) / (r - l));
-    mat->m10 = 0;           mat->m11 = 2 / (t - b); mat->m12 = 0;            mat->m13 = -((t + b) / (t - b));
-    mat->m20 = 0;           mat->m21 = 0;           mat->m22 = -2 / (f - n); mat->m23 = -((f + n) / (f - n));
-    mat->m30 = 0;           mat->m31 = 0;           mat->m32 = 0;            mat->m33 = 1;
+    mat->m00 = 2.0f / (r - l); mat->m01 = 0.0f;           mat->m02 = 0.0f;            mat->m03 = -((r + l) / (r - l));
+    mat->m10 = 0.0f;           mat->m11 = 2.0f / (t - b); mat->m12 = 0.0f;            mat->m13 = -((t + b) / (t - b));
+    mat->m20 = 0.0f;           mat->m21 = 0.0f;           mat->m22 = -2.0f / (f - n); mat->m23 = -((f + n) / (f - n));
+    mat->m30 = 0.0f;           mat->m31 = 0.0f;           mat->m32 = 0.0f;            mat->m33 = 1.0f;
 }
 
 void mat4_frustum(mat4* mat, float fov, float aspect, float near, float far) {
-    float tg = SDL_tanf(fov / 2);
-    float m00 = 1.0f / (aspect * tg);
-    float m11 = 1.0f / tg;
+    // Right handed, Z [0, 1]
     float far_near = far - near;
-    float a = -(far + near) / (far_near);
-    float b = -(2 * far * near) / (far_near);
-    mat->m00 = m00; mat->m01 = 0;   mat->m02 = 0; mat->m03 = 0;
-    mat->m10 = 0;   mat->m11 = m11; mat->m12 = 0; mat->m13 = 0;
-    mat->m20 = 0;   mat->m21 = 0;   mat->m22 = a; mat->m23 = b;
-    mat->m30 = 0;   mat->m31 = 0;   mat->m32 = -1; mat->m33 = 0;
+    float tg = SDL_tanf(fov * 0.5f);
+    float a = 1.0f / (aspect * tg);
+    float b = 1.0f / tg;
+    float c = -far / far_near;
+    float d = -(far * near) / far_near;
+    float s = -1;
+    mat->m00 = a; mat->m01 = 0; mat->m02 = 0; mat->m03 = 0;
+    mat->m10 = 0; mat->m11 = b; mat->m12 = 0; mat->m13 = 0;
+    mat->m20 = 0; mat->m21 = 0; mat->m22 = c; mat->m23 = d;
+    mat->m30 = 0; mat->m31 = 0; mat->m32 = s; mat->m33 = 0;
 }
 
 void mat4_view(mat4* dst, const vec3& pos, const vec3& rot) {
     mat4 m_translate;
-    mat4 m_rotate;
-    vec3 invPos = { -pos.x, -pos.y, -pos.z };
-    mat4_rotate(&m_rotate, rot);
-    mat4_translate(&m_translate, invPos);
-    *dst = m_rotate * m_translate;
+    //mat4 m_rotate;
+    //vec3 invPos = { -pos.x, -pos.y, -pos.z };
+    //mat4_rotate(&m_rotate, rot);
+    //mat4_translate(&m_translate, invPos);
+    //*dst = m_rotate * m_translate;
+    mat4_model(&m_translate, pos, rot, { 1, 1, 1 });
+    mat4_inverse(dst, m_translate);
 }
 
 void mat4_model(mat4* dst, const vec3& pos, const vec3& rot, const vec3& scale) {
@@ -80,28 +85,28 @@ void mat4_transpose(mat4* dst, const mat4& src) {
 void mat4_rotatex(mat4* mat, float angle) {
     float s = SDL_sinf(angle);
     float c = SDL_cosf(angle);
-    mat->m00 = 1; mat->m01 = 0; mat->m02 = 0;  mat->m03 = 0;
+    mat->m00 = 1; mat->m01 = 0; mat->m02 =  0; mat->m03 = 0;
     mat->m10 = 0; mat->m11 = c; mat->m12 = -s; mat->m13 = 0;
-    mat->m20 = 0; mat->m21 = s; mat->m22 = c; mat->m23 = 0;
-    mat->m30 = 0; mat->m31 = 0; mat->m32 = 0;  mat->m33 = 1;
+    mat->m20 = 0; mat->m21 = s; mat->m22 =  c; mat->m23 = 0;
+    mat->m30 = 0; mat->m31 = 0; mat->m32 =  0; mat->m33 = 1;
 }
 
 void mat4_rotatey(mat4* mat, float angle) {
     float s = SDL_sinf(angle);
     float c = SDL_cosf(angle);
-    mat->m00 = c; mat->m01 = 0; mat->m02 = s; mat->m03 = 0;
-    mat->m10 = 0; mat->m11 = 1; mat->m12 = 0; mat->m13 = 0;
+    mat->m00 =  c; mat->m01 = 0; mat->m02 = s; mat->m03 = 0;
+    mat->m10 =  0; mat->m11 = 1; mat->m12 = 0; mat->m13 = 0;
     mat->m20 = -s; mat->m21 = 0; mat->m22 = c; mat->m23 = 0;
-    mat->m30 = 0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
+    mat->m30 =  0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
 }
 
 void mat4_rotatez(mat4* mat, float angle) {
     float s = SDL_sinf(angle);
     float c = SDL_cosf(angle);
     mat->m00 = c; mat->m01 = -s; mat->m02 = 0; mat->m03 = 0;
-    mat->m10 = s; mat->m11 = c; mat->m12 = 0; mat->m13 = 0;
-    mat->m20 = 0; mat->m21 = 0; mat->m22 = 1; mat->m23 = 0;
-    mat->m30 = 0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
+    mat->m10 = s; mat->m11 =  c; mat->m12 = 0; mat->m13 = 0;
+    mat->m20 = 0; mat->m21 =  0; mat->m22 = 1; mat->m23 = 0;
+    mat->m30 = 0; mat->m31 =  0; mat->m32 = 0; mat->m33 = 1;
 }
 
 // x - yaw, y - pitch, z - roll
@@ -110,8 +115,9 @@ void mat4_rotate(mat4* mat, const vec3& angles) {
     mat4_rotatex(&rx, angles.x);
     mat4_rotatey(&ry, angles.y);
     mat4_rotatez(&rz, angles.z);
-    ryz = rz * ry;
-    *mat = rx * ryz;
+    //ryz = ry * rz;
+    //*mat = ryz * rx;
+    *mat = ry * rx * rz;
 }
 
 void mat4_translate(mat4* mat, const vec3& pos) {
@@ -121,27 +127,9 @@ void mat4_translate(mat4* mat, const vec3& pos) {
     mat->m30 = 0; mat->m31 = 0; mat->m32 = 0; mat->m33 = 1;
 }
 
-// TODO: fix this
-void mat4_fromquat(mat4* mat, const quat& q) {
-
-#if 0
-    Float32 m1 = 1 - 2*q.y*q.y - 2*q.z*q.z;
-    Float32 m2 = 2*q.x*q.y + 2*q.z*q.w;
-    Float32 m3 = 2*q.x*q.z - 2*q.y*q.w;
-
-    Float32 m4 = 2*q.x*q.y - 2*q.z*q.w;
-    Float32 m5 = 1 - 2*q.x*q.x - 2*q.z*q.z;
-    Float32 m6 = 2*q.y*q.z + 2*q.x*q.w;
-
-    Float32 m7 = 2*q.x*q.z - 2*q.y*q.w;
-    Float32 m8 = 2*q.y*q.z - 2*q.x*q.w;
-    Float32 m9 = 1 - 2*q.x*q.x - 2*q.y*q.y;
-
-    mat->m00 = m1; mat->m01 = m4; mat->m02 = m7; mat->m03 = 0;
-    mat->m10 = m2; mat->m11 = m5; mat->m12 = m8; mat->m13 = 0;
-    mat->m20 = m3; mat->m21 = m6; mat->m22 = m9; mat->m23 = 0;
-    mat->m30 = 0;  mat->m31 = 0;  mat->m32 = 0;  mat->m33 = 1;
-#else
+void mat4_fromquat(mat4* mat, const quat& n) {
+    quat q1 = n;
+    quat q = q1.normalize();
     mat->m00 = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
     mat->m10 = 2.0f * (q.x * q.y + q.w * q.z);
     mat->m20 = 2.0f * (q.x * q.z - q.w * q.y);
@@ -158,11 +146,10 @@ void mat4_fromquat(mat4* mat, const quat& q) {
     mat->m13 = 0.0f;
     mat->m23 = 0.0f;
     mat->m33 = 1.0f;
-#endif
 }
 
 void mat4_inverse(mat4* dst, const mat4& src) {
-    float* m = (float*)src.m;
+    const float* m = src.m;
     float* _dest = (float*)dst;
     float inv[16];
     inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
@@ -182,10 +169,17 @@ void mat4_inverse(mat4* dst, const mat4& src) {
     inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11] - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5];
     inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10] + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
 
-    float det = 1.0 / (m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12]);
+    float det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+    if (SDL_fabsf(det) < 1e-8f) {
+        *dst = MAT4_IDENTITY();
+        return;
+    }
+
+    float invd = 1.0f / det;
 
     for (size_t i = 0; i < 16; i++) {
-        _dest[i] = inv[i] * det;
+        _dest[i] = inv[i] * invd;
     }
 }
 
@@ -259,7 +253,6 @@ void mat4ToQuat(quat* dest, const mat4& matrix) {
 
 #if !RG_GLM_DEBUG
 
-#if 1
 void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& matrix) {
     vec3 _x = { matrix.m00, matrix.m10, matrix.m20 };
     vec3 _y = { matrix.m01, matrix.m11, matrix.m21 };
@@ -270,7 +263,11 @@ void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& m
 
     float det = mat4_determinant(matrix);
 
-    if (det < 0) { sx = -sx; }
+    if (det < 0) {
+        sx = -sx;
+        sy = -sy;
+        sz = -sz;
+    }
 
     if (position) {
         position->x = matrix.m03;
@@ -306,35 +303,7 @@ void mat4_decompose(vec3* position, quat* quaternion, vec3* scale, const mat4& m
         scale->z = sz;
     }
 }
-#endif
 
-#if 0
-void mat4ToQuat(quat* dest, const mat4& matrix) {
-    Float32 x = 0, y = 0, z = 0, w = 1;
-
-    Float32 diagonal = matrix.m00 + matrix.m11 + matrix.m22;
-    Float32 root = 0;
-
-    if (diagonal > 0) {
-        Float32 s = 0.5f / SDL_sqrtf(diagonal + 1.0f);
-        w = 0.25f / s;
-        x = (matrix.m21 - matrix.m12) * s;
-        y = (matrix.m02 - matrix.m20) * s;
-        z = (matrix.m10 - matrix.m01) * s;
-    }
-    else {
-
-    }
-
-
-    dest->x = x;
-    dest->y = y;
-    dest->z = z;
-    dest->w = w;
-}
-#endif
-
-#if 1
 void mat4ToQuat(quat* dest, const mat4& matrix) {
 
     float w, x, y, z;
@@ -374,6 +343,5 @@ void mat4ToQuat(quat* dest, const mat4& matrix) {
     dest->z = z;
     dest->w = w;    
 }
-#endif
 
 #endif

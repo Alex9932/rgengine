@@ -6,9 +6,9 @@
 union mat3 {
     float m[9];
     float m2[3][3];
-    vec3 rows[3];
+    vec3 cols[3];
 
-    RG_INLINE vec3 operator*(const vec3& v) {
+    RG_INLINE vec3 operator*(const vec3& v) const {
         vec3 r;
         r.x = v.x * m[0] + v.y * m[3] + v.z * m[6];
         r.y = v.x * m[1] + v.y * m[4] + v.z * m[7];
@@ -16,8 +16,8 @@ union mat3 {
         return r;
     }
 
-    // TODO
-    RG_INLINE mat3 operator*(const mat3& mat) {
+    // TODO: implement or delete (mat3 is rarely used)
+    RG_INLINE mat3 operator*(const mat3& mat) const {
         mat3 r = {};
         return r;
     }
@@ -39,19 +39,19 @@ union mat4 {
     };
     float m[16];
     float m2[4][4];
-    vec4 rows[4];
+    vec4 cols[4];
 
-    RG_INLINE vec4 operator*(const vec4& v) {
+    RG_INLINE vec4 operator*(const vec4& v) const {
         vec4 r;
 #if RG_SIMD
         __m128 vX = _mm_shuffle_ps(v.m, v.m, 0x00);
         __m128 vY = _mm_shuffle_ps(v.m, v.m, 0x55);
         __m128 vZ = _mm_shuffle_ps(v.m, v.m, 0xAA);
         __m128 vW = _mm_shuffle_ps(v.m, v.m, 0xFF);
-        __m128 _r = _mm_mul_ps(vX, this->rows[0].m);
-        _r = _mm_add_ps(_r, _mm_mul_ps(vY, this->rows[1].m));
-        _r = _mm_add_ps(_r, _mm_mul_ps(vZ, this->rows[2].m));
-        _r = _mm_add_ps(_r, _mm_mul_ps(vW, this->rows[3].m));
+        __m128 _r = _mm_mul_ps(vX, this->cols[0].m);
+        _r = _mm_add_ps(_r, _mm_mul_ps(vY, this->cols[1].m));
+        _r = _mm_add_ps(_r, _mm_mul_ps(vZ, this->cols[2].m));
+        _r = _mm_add_ps(_r, _mm_mul_ps(vW, this->cols[3].m));
         r.m = _r;
 #else
         r.x = v.x * m[0] + v.y * m[4] + v.z * m[8] + v.w * m[12];
@@ -62,24 +62,19 @@ union mat4 {
         return r;
     }
 
-    RG_INLINE vec3 operator*(const vec3& v) {
-        vec4 v4 = {v.x, v.y, v.z, 0};
-        vec4 r4 = (*this) * v4;
+    RG_INLINE vec3 operator*(const vec3& v) const {
+        vec4 v4 = {v.x, v.y, v.z, 1};
+        vec4 r4 = *this * v4;
         vec3 r  = {r4.x, r4.y, r4.z};
         return r;
     }
 
-    RG_INLINE mat4 operator*(const mat4& mat) {
+    RG_INLINE mat4 operator*(const mat4& mat) const {
         mat4 r;
-        //r.rows[0] = (mat4&)mat * rows[0];
-        //r.rows[1] = (mat4&)mat * rows[1];
-        //r.rows[2] = (mat4&)mat * rows[2];
-        //r.rows[3] = (mat4&)mat * rows[3];
-        r.rows[0] = (mat4&)*this * mat.rows[0];
-        r.rows[1] = (mat4&)*this * mat.rows[1];
-        r.rows[2] = (mat4&)*this * mat.rows[2];
-        r.rows[3] = (mat4&)*this * mat.rows[3];
-
+        r.cols[0] = *this * mat.cols[0];
+        r.cols[1] = *this * mat.cols[1];
+        r.cols[2] = *this * mat.cols[2];
+        r.cols[3] = *this * mat.cols[3];
         return r;
     }
 };

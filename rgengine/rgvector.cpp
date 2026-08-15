@@ -1,7 +1,66 @@
 #define DLL_EXPORT
 #include "rgvector.h"
 
-vec3 quat::toEuler() {
+quat quat::nlerp(const quat& q, float t) const {
+    quat r;
+
+    float dot = w * q.w + x * q.x + y * q.y + z * q.z;
+    float blendI = 1.0f - t;
+    if (dot < 0) {
+        r.w = blendI * w + t * -q.w;
+        r.x = blendI * x + t * -q.x;
+        r.y = blendI * y + t * -q.y;
+        r.z = blendI * z + t * -q.z;
+    }
+    else {
+        r.w = blendI * w + t * q.w;
+        r.x = blendI * x + t * q.x;
+        r.y = blendI * y + t * q.y;
+        r.z = blendI * z + t * q.z;
+    }
+
+    return r.normalize();
+}
+
+quat quat::slerp(const quat& q, float t) const {
+
+    quat bq = q;
+    float d = x * bq.x + y * bq.y + z * bq.z + w * bq.w;
+    float s = 1.0f - t;
+    if (d < 0.0f) {
+        bq.x = -bq.x;
+        bq.y = -bq.y;
+        bq.z = -bq.z;
+        bq.w = -bq.w;
+        d = -d;
+    }
+
+    d = SDL_clamp(d, -1.0f, 1.0f);
+
+    if (d > 0.9995f) {
+        quat r;
+        r.x = x * s + bq.x * t;
+        r.y = y * s + bq.y * t;
+        r.z = z * s + bq.z * t;
+        r.w = w * s + bq.w * t;
+        return r;
+    }
+
+    float theta = SDL_acosf(d);
+    float sintheta = SDL_sinf(theta);
+
+    s = SDL_sinf(s * theta) / sintheta;
+    t = SDL_sinf(t * theta) / sintheta;
+
+    quat r;
+    r.x = x * s + bq.x * t;
+    r.y = y * s + bq.y * t;
+    r.z = z * s + bq.z * t;
+    r.w = w * s + bq.w * t;
+    return r;
+}
+
+vec3 quat::toEuler() const {
     vec3 r;
     float sqw = w * w;
     float sqx = x * x;

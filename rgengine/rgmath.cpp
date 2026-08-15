@@ -70,13 +70,13 @@ static const Uint32 crc32_table[] = {
   0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
 };
 
-static mat3 MAT3IDENTITY = {
+static const mat3 MAT3IDENTITY = {
     1, 0, 0,
     0, 1, 0,
     0, 0, 1,
 };
 
-static mat4 MAT4IDENTITY = {
+static const mat4 MAT4IDENTITY = {
     1, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 1, 0,
@@ -87,22 +87,22 @@ mat3 MAT3_IDENTITY() { return MAT3IDENTITY; }
 mat4 MAT4_IDENTITY() { return MAT4IDENTITY; }
 
 Uint32 rgCRC32(const void* data, Uint32 len) {
-    Uint8* buf = (Uint8*)data;
+    const Uint8* buf = (const Uint8*)data;
     Uint32 crc = 0xFFFFFFFF;
     while (len--) {
         crc = (crc << 8) ^ crc32_table[((crc >> 24) ^ *buf) & 255];
         buf++;
     }
-    return crc;
+    return crc ^ 0xFFFFFFFF;
 }
 
 size_t rgHash(const void* data, size_t len) {
     std::hash<Uint8> hasher;
     size_t hash = 0;
 
-    Uint8* buf = (Uint8*)data;
+    const Uint8* buf = (const Uint8*)data;
     for (size_t i = 0; i < len; i++) {
-        hash ^= hasher(buf[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);;
+        hash ^= hasher(buf[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
     }
 
     return hash;
@@ -134,6 +134,7 @@ vec3 vec3_mulquat(const vec3& v, const quat& q) {
 }
 
 void vec3_rotate(vec3* dst, const vec3& vector, const vec3& angles) {
+#if 0
     mat4 view_matrix = MAT4_IDENTITY();
     mat4 rx, ry, rz, ryz;
 
@@ -144,9 +145,15 @@ void vec3_rotate(vec3* dst, const vec3& vector, const vec3& angles) {
     view_matrix = ryz * rx;
 
     *dst = (view_matrix * vector).normalize();
+#endif
+    mat4 rot;
+    mat4_rotate(&rot, angles);
+    *dst = rot * vector;
 }
 
 quat quat_axisAngle(const vec4& axis_angle) {
+    vec3 axis = axis_angle.xyz.normalize();
+
     quat dest;
     float half = axis_angle.w / 2.0f;
     float s = SDL_sinf(half);
