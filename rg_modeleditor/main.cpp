@@ -705,9 +705,9 @@ static void DrawMaterialsTab(Uint32* uid) {
 
 #if 1
 	if (ImGui::Button("New material")) {
-		buffer->textures[buffer->tcount] = NULL;
-		buffer->textures[buffer->tcount + 1] = NULL;
-		buffer->textures[buffer->tcount + 2] = NULL;
+		buffer->textures[buffer->tcount * 3 + ALBEDO_TEXTURE] = NULL;
+		buffer->textures[buffer->tcount * 3 + NORMAL_TEXTURE] = NULL;
+		buffer->textures[buffer->tcount * 3 + PBR_TEXTURE]    = NULL;
 		buffer->tcount++;
 		model_extra.mat_names = (NameField*)rg_realloc(model_extra.mat_names, sizeof(NameField) * buffer->tcount);
 		SDL_snprintf(model_extra.mat_names[buffer->tcount - 1].name, 128, "Material %d", buffer->tcount - 1);
@@ -830,7 +830,7 @@ static void DrawAnimationTab(Uint32* uid) {
 		ImGui::PushID(*uid);
 		if (ImGui::TreeNode("##xx", "[%d] %s", i, name)) {
 			// !! WARNING !! Cast const char* to char*, in actually this is not a problem because name is stored in Animation as char array, but be careful with this
-			ImGui::InputText("Name##anim", (char*)name, 128);
+			ImGui::InputText("Name##anim", (char*)name, 64);
 			if (ImGui::Button("Play")) {
 				anim->SetSpeed(animationSpeed);
 				anim->SetRepeat(repeatAnim);

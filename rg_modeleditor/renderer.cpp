@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl_glext.h>
 #include <engine.h>
+#include <input.h>
 #include <rgstb.h>
 #include "texture.h"
 #include "vertexbuffer.h"
@@ -255,6 +256,58 @@ static void CheckOpenGL() {
 		(profile == SDL_GL_CONTEXT_PROFILE_CORE) ? "Core" : "Compatibility");
 }
 
+static int MakeShaderProgram() {
+	//Load shaders
+
+	GLint success;
+	GLchar infoLog[1024];
+
+	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &txt_VertexShader, NULL);
+	glCompileShader(vertexShader);
+
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(vertexShader, 1024, NULL, infoLog);
+		rgLogError(RG_LOG_RENDER, "Vertex shader error: %s", infoLog);
+		glDeleteShader(vertexShader);
+		return 1;
+	}
+
+	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &txt_PixelShader, NULL);
+	glCompileShader(fragmentShader);
+
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(fragmentShader, 1024, NULL, infoLog);
+		rgLogError(RG_LOG_RENDER, "Pixel shader error: %s", infoLog);
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		return 1;
+	}
+
+	staticstate.shader = glCreateProgram();
+	glAttachShader(staticstate.shader, vertexShader);
+	glAttachShader(staticstate.shader, fragmentShader);
+	glLinkProgram(staticstate.shader);
+
+	glGetProgramiv(staticstate.shader, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(staticstate.shader, 1024, NULL, infoLog);
+		rgLogError(RG_LOG_RENDER, "Linking error: %s", infoLog);
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		glDeleteProgram(staticstate.shader);
+		return 1;
+	}
+
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	return 0;
+}
+
 RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	SDL_memset(&staticstate, 0, sizeof(RenderState));
@@ -326,8 +379,6 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 	// Check OpenGL Context
 	CheckOpenGL();
 
-	glEnable(GL_DEPTH_TEST);
-
 	rgLogInfo(RG_LOG_RENDER, "Renderer: %s", glGetString(GL_RENDERER));
 
 	//glEnable(GL_DEBUG_OUTPUT);
@@ -381,44 +432,7 @@ RenderState* InitializeRenderer(GuiDrawCallback guicb) {
 
 	InitializeTextures();
 
-	//Load shaders
-
-	GLint success;
-	GLchar infoLog[1024];
-
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &txt_VertexShader, NULL);
-	glCompileShader(vertexShader);
-
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 1024, NULL, infoLog);
-		rgLogError(RG_LOG_RENDER, "Vertex shader error: %s", infoLog);
-	}
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &txt_PixelShader, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 1024, NULL, infoLog);
-		rgLogError(RG_LOG_RENDER, "Pixel shader error: %s", infoLog);
-	}
-
-	staticstate.shader = glCreateProgram();
-	glAttachShader(staticstate.shader, vertexShader);
-	glAttachShader(staticstate.shader, fragmentShader);
-	glLinkProgram(staticstate.shader);
-
-	glGetProgramiv(staticstate.shader, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(staticstate.shader, 1024, NULL, infoLog);
-		rgLogError(RG_LOG_RENDER, "Linking error: %s", infoLog);
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	MakeShaderProgram();
 
 	buffer = GetVertexbuffer();
 
@@ -546,7 +560,7 @@ static void DrawSkeleton(RenderState* state) {
 	updbuffinfo.i_len = sizeof(Uint16) * idx * 2;
 	RUpdateVBuffer(&updbuffinfo);
 
-
+	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(skel_buffer.vao);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, axis_texture);
@@ -560,6 +574,21 @@ void CalculateModelMatrix(RenderState* state, mat4* m) {
 
 void DoRender(RenderState* state, Engine::Camera* camera) {
 
+	// Reload shader (Ctrl + Shift + S)
+	if (Engine::IsKeyDown(SDL_SCANCODE_LCTRL) &&
+		Engine::IsKeyDown(SDL_SCANCODE_LSHIFT) &&
+		Engine::IsKeyDown(SDL_SCANCODE_S)) {
+		GLuint oldprog = staticstate.shader;
+		if (MakeShaderProgram() != 0) {
+			// Error, restore old program
+			staticstate.shader = oldprog;
+		}
+		else {
+			// Success, free old program
+			glDeleteProgram(staticstate.shader);
+		}
+	}
+
 	mat4 proj = *camera->GetProjection();
 	mat4 view = *camera->GetView();
 	mat4 model;
@@ -571,8 +600,11 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	glClearColor(0.015f, 0.015f, 0.015f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 
-	//if (state->wireframe) {
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	if (RG_CHECK_FLAG(state->flags, FLAG_WIREFRAME)) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	} else {

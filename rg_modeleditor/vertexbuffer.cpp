@@ -102,7 +102,7 @@ void FreeVBuffer(VertexBuffer* buffer) {
 		if (t) { FreeTexture(t); }
 	}
 
-	FreeAllTextures();
+	//FreeAllTextures();
 }
 
 void DrawBuffer(RenderState* state, VertexBuffer* ptr) {
