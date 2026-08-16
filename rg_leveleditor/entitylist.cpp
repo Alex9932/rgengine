@@ -38,7 +38,7 @@ static void ImportPM2(String path, Entity* ent) {
 	char _path[512];
 	char _file[512];
 	FS_SeparatePathFile(_path, 512, _file, 512, path);
-
+#if 0
 	ImportModelInfo iminfo = {};
 	iminfo.info.as_static = &info;
 	iminfo.file = _file;
@@ -54,6 +54,13 @@ static void ImportPM2(String path, Entity* ent) {
 	pm2Importer.FreeModelData(&fminfo);
 	ent->AttachComponent(GetModelSystem()->NewModelComponent(hmdl));
 	ent->SetAABB(&info.aabb);
+#endif
+	_file[SDL_strlen(_file) - 4] = '\0';
+
+	info.aabb.min = { -10, -10, -10 };
+	info.aabb.max = {  10,  10,  10 };
+	ent->AttachComponent(GetModelSystem()->NewModelComponent(_file));
+	ent->SetAABB(&info.aabb);
 }
 #if 0
 static void ImportOBJ(String path, Entity* ent) {
@@ -66,6 +73,7 @@ static void ImportOBJ(String path, Entity* ent) {
 }
 #endif
 
+#if 0
 static void ImportPMD(String path, Entity* ent) {
 
 	char _path[512] = {};
@@ -127,6 +135,7 @@ static void ImportPMX(String path, Entity* ent) {
 	ent->AttachComponent(GetModelSystem()->NewRiggedModelComponent(hmdl, kmdl));
 	ent->SetAABB(&info.aabb);
 }
+#endif
 
 static void OpenModel(String _path, Entity* ent) {
 	char path[256];
@@ -157,12 +166,14 @@ static void OpenModel(String _path, Entity* ent) {
 	//else if (rg_strenw(path, "obj")) {
 	//	ImportOBJ(path, ent);
 	//}
+#if 0
 	else if (rg_strenw(path, "pmd")) {
 		ImportPMD(path, ent);
 	}
 	else if (rg_strenw(path, "pmx")) {
 		ImportPMX(path, ent);
 	}
+#endif
 }
 
 EntityList::EntityList(Viewport* vp) : UIComponent("Entity list") {
