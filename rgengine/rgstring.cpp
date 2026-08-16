@@ -45,7 +45,7 @@ namespace Engine {
 	Bool rg_streql(String left, String right) {
 		size_t lenpre = SDL_strlen(left);
 		size_t lenstr = SDL_strlen(right);
-		return ((lenstr == lenpre) && (SDL_memcmp(left, right, lenpre) == 0)) ? true : false;
+		return (lenstr == lenpre) && (SDL_memcmp(left, right, lenpre) == 0);
 	}
 
 	Bool rg_strstw(String left, String right) {

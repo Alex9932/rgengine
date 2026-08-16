@@ -4,7 +4,6 @@
 
 namespace Engine {
 
-
 	LookatCameraController::LookatCameraController(Camera* camera) {
 		m_camptr = camera;
 		m_center = { 0, 1, 0 };
@@ -44,9 +43,9 @@ namespace Engine {
 			Float64 dy = GetMouseDY();
 
 			m_angles.x -= dx * sens * 2;
-			m_angles.y += dy * sens * 2;
+			m_angles.y -= dy * sens * 2;
 
-			vec3 rot = { m_angles.y, -m_angles.x, 0};
+			vec3 rot = { m_angles.y, m_angles.x, 0};
 			camTransform->SetRotation(rot);
 
 		}
@@ -58,12 +57,7 @@ namespace Engine {
 			mat4 view_matrix = MAT4_IDENTITY();
 
 			vec3 rot = m_camptr->GetTransform()->GetRotation();
-			mat4 rx, ry, rz, ryz;
-			mat4_rotatex(&rx, -rot.x);
-			mat4_rotatey(&ry, -rot.y);
-			mat4_rotatez(&rz, -rot.z);
-			ryz = rz * ry;
-			view_matrix = ryz * rx;
+			mat4_rotate(&view_matrix, rot);
 
 			vec3 rotated_fwd = view_matrix * cam_fwd;
 			vec3 rotated_up = view_matrix * cam_up;
@@ -85,7 +79,7 @@ namespace Engine {
 		vec3 camera_coord;
 
 		camera_coord.x = SDL_sinf(m_angles.x) * SDL_cosf(m_angles.y) * m_length;
-		camera_coord.y = SDL_sinf(m_angles.y) * m_length;
+		camera_coord.y = SDL_sinf(m_angles.y) * -m_length;
 		camera_coord.z = SDL_cosf(m_angles.x) * SDL_cosf(m_angles.y) * m_length;
 
 		camTransform->SetPosition(m_center + camera_coord);

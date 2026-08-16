@@ -27,7 +27,6 @@ namespace Engine {
 	static void PCall(RGScriptState* state, String str) {
 		if (js_pcall(state->J, 0)) {
 			rgLogError(RG_LOG_SCRIPT, "EE Script runtime error %s:%s", str, js_tostring(state->J, -1));
-			js_pop(state->J, 1);
 			return;
 		}
 	}

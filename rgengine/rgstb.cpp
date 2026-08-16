@@ -8,16 +8,16 @@
 
 Uint8* RG_STB_load_from_file(String path, int* width, int* height, int* components, int required_components) {
     rgLogInfo(RG_LOG_SYSTEM, "Loading image: %s", path);
-    rgLogInfo(RG_LOG_SYSTEM, "+-> Reading file", path);
+    //rgLogInfo(RG_LOG_SYSTEM, "+-> Reading file", path);
     Resource* res = Engine::GetResource(path);
     // TODO: remove this if possible
     if (!res) {
         // Try to load default texture
         res = Engine::GetResource("platform/textures/def_diffuse.png");
     }
-    rgLogInfo(RG_LOG_SYSTEM, "+-> Decode", path);
+    //rgLogInfo(RG_LOG_SYSTEM, "+-> Decode", path);
     Uint8* data = stbi_load_from_memory((stbi_uc*)res->data, res->length, width, height, components, required_components);
-    rgLogInfo(RG_LOG_SYSTEM, "+-> Free resource", path);
+    //rgLogInfo(RG_LOG_SYSTEM, "+-> Free resource", path);
     Engine::FreeResource(res);
     //    rgLogInfo(RG_LOG_SYSTEM, " Image -> %dx%d %d", *width, *height, *components);
     return data;

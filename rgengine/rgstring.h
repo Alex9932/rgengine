@@ -11,16 +11,17 @@
 
 namespace Engine {
 
-	RG_DECLSPEC String GetCategoryStr(int category);
-	RG_DECLSPEC String GetPriorityStr(SDL_LogPriority priority);
-	RG_DECLSPEC String GetCpuNameStr(int cores);
-
 	RG_DECLSPEC Bool rg_streql(String left, String right); // Is strings equal
 	RG_DECLSPEC Bool rg_strstw(String left, String right); // Starts with
 	RG_DECLSPEC Bool rg_strenw(String left, String right); // Ends with
 
 	RG_DECLSPEC Sint32 rg_strcharats(String str, char c); // Return char position from start of string
 	RG_DECLSPEC Sint32 rg_strcharate(String str, char c); // Return char position from end of string
+
+	// Private (no export)
+	String GetCategoryStr(int category);
+	String GetPriorityStr(SDL_LogPriority priority);
+	String GetCpuNameStr(int cores);
 
 }
 
