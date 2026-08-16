@@ -46,7 +46,6 @@ static Uint32 GetMipmapLevels(Uint32 w, Uint32 h) {
 	return (Uint32)SDL_floorf(SDL_logf(x) / SDL_logf(2));
 }
 
-#include <mutex>
 static std::mutex t_lock;
 static void CopyToImage(RBuffer* src, RImage* dst, RImageCreateInfo* info) {
 
@@ -249,6 +248,8 @@ static void CopyToBuffer(RBuffer* src, RBuffer* dst, size_t len) {
 	RRenderDevice* dev = src->dev;
 	VkCommandBuffer cmdbuffer;
 
+	t_lock.lock();
+
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = dev->vktransfercommandpool;
@@ -278,6 +279,9 @@ static void CopyToBuffer(RBuffer* src, RBuffer* dst, size_t len) {
 
 	vkQueueWaitIdle(dev->vktransferqueue);
 	vkFreeCommandBuffers(dev->vkdev, dev->vktransfercommandpool, 1, &cmdbuffer);
+
+	t_lock.unlock();
+
 }
 
 RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
@@ -510,8 +514,6 @@ RCommandBuffer* R_CreateCommandBuffer(RRenderDevice* dev, RCommandBufferCreateIn
 	allocInfo.commandBufferCount = R_VK_FRAMES_IN_FLIGHT;
 	vkAllocateCommandBuffers(dev->vkdev, &allocInfo, buffer->cmdbuffer);
 
-	rgLogInfo(RG_LOG_RENDER, "VK: Created commandbuffer (%x)", buffer->cmdbuffer);
-
 	return buffer;
 }
 
@@ -539,6 +541,7 @@ void R_EndCommandBuffer(RCommandBuffer* buffer) {
 static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 	static std::mutex func_lock;
 
+	func_lock.lock();
 	VkSubmitInfo submitInfo = {};
 
 	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
@@ -551,14 +554,13 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
 	submitInfo.pWaitDstStageMask = f;
 
-	func_lock.lock();
 	dev->cmdsemaphore++;
-	func_lock.unlock();
 
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
 	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
 	//vkQueueWaitIdle(dev->vkqueue);
+	func_lock.unlock();
 
 }
 

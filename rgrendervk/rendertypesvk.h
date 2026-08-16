@@ -14,7 +14,7 @@
 #define R_MAX_COMMANDS_PER_BUFFER 256
 #define R_MAX_COMMANDBUFFERS_PER_FRAME 256
 
-#define R_VK_FRAMES_IN_FLIGHT 2
+#define R_VK_FRAMES_IN_FLIGHT 4 // Max frames in flight
 
 struct RRenderDevice {
 	VkInstance         vkctx;
@@ -50,6 +50,7 @@ struct RRenderDevice {
 	VkImageView        vkimageviews[R_VK_FRAMES_IN_FLIGHT];
 	VkFramebuffer      vkframebuffers[R_VK_FRAMES_IN_FLIGHT];
 	Uint32             vkpresentqueue;
+	Uint32             vkcurrentframe;
 	Uint32             vkcurrentimage;
 	VkSemaphore        vkeximagesemaphore[R_VK_FRAMES_IN_FLIGHT];
 	VkSemaphore        vkpresentsemaphore[R_VK_FRAMES_IN_FLIGHT];

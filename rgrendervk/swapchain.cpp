@@ -62,6 +62,7 @@ static void MakeSwapchain(RRenderDevice* device) {
 	vkGetPhysicalDeviceSurfaceFormatsKHR(pdev, device->vksurface, &fcount, NULL);
 	vkGetPhysicalDeviceSurfacePresentModesKHR(pdev, device->vksurface, &mcount, NULL);
 
+	// TODO: Use renderer's allocator
 	VkSurfaceFormatKHR* formats = (VkSurfaceFormatKHR*)rg_malloc(sizeof(VkSurfaceFormatKHR) * fcount);
 	VkPresentModeKHR* modes = (VkPresentModeKHR*)rg_malloc(sizeof(VkPresentModeKHR) * mcount);
 
@@ -82,11 +83,12 @@ static void MakeSwapchain(RRenderDevice* device) {
 
 	// Image count
 
-	device->vkimagescount = capabilities.minImageCount;// + 1;
-
-	if (capabilities.maxImageCount > 0 && device->vkimagescount > capabilities.maxImageCount) {
-		device->vkimagescount = capabilities.maxImageCount;
-	}
+	device->vkimagescount = capabilities.minImageCount + 1;
+	device->vkimagescount = SDL_min(device->vkimagescount, R_VK_FRAMES_IN_FLIGHT);
+	//Uint32 maximages = SDL_min(capabilities.maxImageCount, R_VK_FRAMES_IN_FLIGHT);
+	//if (capabilities.maxImageCount > 0 && device->vkimagescount > maximages) {
+	//	device->vkimagescount = maximages;
+	//}
 
 	// Present queue
 

@@ -116,7 +116,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "test renderer"; // TODO: replace this
+	appInfo.pApplicationName = "rgEngine";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "rgEngine";
 	appInfo.engineVersion = VK_MAKE_VERSION(RG_VERSION_MAJ, RG_VERSION_MIN, RG_VERSION_PATCH);
@@ -419,7 +419,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	VkFenceCreateInfo fenceInfo = {};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	for (size_t i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+	for (size_t i = 0; i < device->vkimagescount; i++) {
 		if (vkCreateSemaphore(device->vkdev, &semaphoreInfo, device->vkalloc, &device->vkpresentsemaphore[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(device->vkdev, &semaphoreInfo, device->vkalloc, &device->vkeximagesemaphore[i]) != VK_SUCCESS ||
 			vkCreateFence(device->vkdev, &fenceInfo, NULL, &device->vkflightfences[i]) != VK_SUCCESS) {
@@ -427,7 +427,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		}
 	}
 
-	for (size_t j = 0; j < R_VK_FRAMES_IN_FLIGHT; j++) {
+	for (size_t j = 0; j < device->vkimagescount; j++) {
 		for (Uint32 i = 0; i < R_MAX_COMMANDBUFFERS_PER_FRAME; i++) {
 			if (vkCreateSemaphore(device->vkdev, &semaphoreInfo, device->vkalloc, &device->cmdbuffsemaphores[j][i]) != VK_SUCCESS) {
 				RG_ERROR_MSG("Semaphore error!");
@@ -444,12 +444,11 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	samplerInfo.addressModeW = RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE;
 	device->defaultsampler = R_CreateSampler(device, &samplerInfo);
 
-	device->vkcurrentimage = 0;
+	device->vkcurrentframe = 0;
 
-	vkWaitForFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentimage], VK_TRUE, UINT64_MAX);
-	vkResetFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentimage]);
-	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore[device->vkcurrentimage], VK_NULL_HANDLE, &device->vkcurrentimage);
-
+	vkWaitForFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentframe], VK_TRUE, UINT64_MAX);
+	vkResetFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentframe]);
+	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore[device->vkcurrentframe], VK_NULL_HANDLE, &device->vkcurrentimage);
 
 
 	VkCommandBufferAllocateInfo allocInfo = {};
@@ -457,15 +456,15 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	allocInfo.commandPool = device->vkcommandpool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 2;
-	for (size_t i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+	for (size_t i = 0; i < device->vkimagescount; i++) {
 		vkAllocateCommandBuffers(device->vkdev, &allocInfo, device->vkswapcmdbuffer[i]);
 	}
 
-	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0], 0);
+	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0], 0);
 	VkCommandBufferBeginInfo begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0], &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0], &begininfo);
 
 	for (Uint32 i = 0; i < device->vkimagescount; i++) {
 		// Transition image layout to COLOR_ATTACHMENT
@@ -483,7 +482,7 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentimage][0],
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentframe][0],
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			0,
@@ -492,18 +491,18 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 			1, &barrier);
 	}
 
-	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0]);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0]);
 
 	VkPipelineStageFlags f[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentimage][0];
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentframe][0];
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore[device->vkcurrentimage];
+	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore[device->vkcurrentframe];
 	submitInfo.pWaitDstStageMask = f;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[device->vkcurrentimage][0];
+	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[device->vkcurrentframe][0];
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
 	vkQueueWaitIdle(device->vkqueue);
 	device->cmdsemaphore = 0;
@@ -528,7 +527,7 @@ void R_DestroyDevice(RRenderDevice* device) {
 	R_WaitIdle(device);
 	R_DestroySampler(device->defaultsampler);
 
-	for (Uint32 i = 0; i < R_VK_FRAMES_IN_FLIGHT; i++) {
+	for (Uint32 i = 0; i < device->vkimagescount; i++) {
 		vkDestroySemaphore(device->vkdev, device->vkeximagesemaphore[i], device->vkalloc);
 		vkDestroySemaphore(device->vkdev, device->vkpresentsemaphore[i], device->vkalloc);
 		vkFreeCommandBuffers(device->vkdev, device->vkcommandpool, 2, device->vkswapcmdbuffer[i]);
@@ -569,11 +568,11 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	// Wait render end
 	//vkDeviceWaitIdle(device->vkdev);
 
-	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0], 0);
+	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0], 0);
 	VkCommandBufferBeginInfo begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0], &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0], &begininfo);
 #if 1
 	{
 		// Transition image layout to PRESENT
@@ -591,7 +590,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentimage][0],
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentframe][0],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			0,
@@ -600,15 +599,15 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 			1, &barrier);
 	}
 #endif
-	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][0]);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][0]);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentimage][0];
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentframe][0];
 
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores    = &device->cmdbuffsemaphores[device->vkcurrentimage][device->cmdsemaphore];
+	submitInfo.pWaitSemaphores    = &device->cmdbuffsemaphores[device->vkcurrentframe][device->cmdsemaphore];
 
 	VkPipelineStageFlags f[] = {
 		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
@@ -616,8 +615,8 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	submitInfo.pWaitDstStageMask = f;
 
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &device->vkpresentsemaphore[device->vkcurrentimage];
-	vkQueueSubmit(device->vkqueue, 1, &submitInfo, device->vkflightfences[device->vkcurrentimage]);
+	submitInfo.pSignalSemaphores = &device->vkpresentsemaphore[device->vkcurrentframe];
+	vkQueueSubmit(device->vkqueue, 1, &submitInfo, device->vkflightfences[device->vkcurrentframe]);
 	//vkQueueWaitIdle(device->vkqueue);
 
 	VkSwapchainKHR swapchain[] = { device->vkswapchain };
@@ -625,7 +624,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	VkPresentInfoKHR pinfo = {};
 	pinfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	pinfo.waitSemaphoreCount = 1;
-	pinfo.pWaitSemaphores    = &device->vkpresentsemaphore[device->vkcurrentimage];
+	pinfo.pWaitSemaphores    = &device->vkpresentsemaphore[device->vkcurrentframe];
 	pinfo.swapchainCount     = 1;
 	pinfo.pSwapchains        = swapchain;
 	pinfo.pImageIndices      = &device->vkcurrentimage;
@@ -642,25 +641,25 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
 		// Resize requested!
 		ResizeSwapchain(device);
-		device->vkcurrentimage = 0;
+		device->vkcurrentframe = 0;
 	}
 	else {
-		device->vkcurrentimage++;
-		device->vkcurrentimage = device->vkcurrentimage % device->vkimagescount;
+		device->vkcurrentframe++;
+		device->vkcurrentframe = device->vkcurrentframe % device->vkimagescount;
 	}
 
-	vkWaitForFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentimage], VK_TRUE, UINT64_MAX);
-	vkResetFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentimage]);
+	vkWaitForFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentframe], VK_TRUE, UINT64_MAX);
+	vkResetFences(device->vkdev, 1, &device->vkflightfences[device->vkcurrentframe]);
 
-	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore[device->vkcurrentimage], VK_NULL_HANDLE, &device->vkcurrentimage);
+	vkAcquireNextImageKHR(device->vkdev, device->vkswapchain, UINT64_MAX, device->vkeximagesemaphore[device->vkcurrentframe], VK_NULL_HANDLE, &device->vkcurrentimage);
 
 	// Wait next image
 
-	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][1], 0);
+	vkResetCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][1], 0);
 	begininfo = {};
 	begininfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][1], &begininfo);
+	vkBeginCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][1], &begininfo);
 
 	{
 		// Transition image layout to COLOR_ATTACHMENT
@@ -678,7 +677,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentimage][1],
+		vkCmdPipelineBarrier(device->vkswapcmdbuffer[device->vkcurrentframe][1],
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			0,
@@ -687,17 +686,17 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 			1, &barrier);
 	}
 
-	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentimage][1]);
+	vkEndCommandBuffer(device->vkswapcmdbuffer[device->vkcurrentframe][1]);
 	submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentimage][1];
+	submitInfo.pCommandBuffers = &device->vkswapcmdbuffer[device->vkcurrentframe][1];
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore[device->vkcurrentimage];
+	submitInfo.pWaitSemaphores = &device->vkeximagesemaphore[device->vkcurrentframe];
 	submitInfo.pWaitDstStageMask = f;
 
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[device->vkcurrentimage][0];
+	submitInfo.pSignalSemaphores = &device->cmdbuffsemaphores[device->vkcurrentframe][0];
 
 	vkQueueSubmit(device->vkqueue, 1, &submitInfo, NULL);
 	//vkQueueWaitIdle(device->vkqueue);
