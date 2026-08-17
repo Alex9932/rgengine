@@ -35,7 +35,7 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 		scissor.extent.height = info->framebuffer->height;
 
 		renderPassInfo.renderPass      = info->renderpass->renderpass;
-		renderPassInfo.framebuffer     = info->framebuffer->framebuffer[cmdbuff->dev->vkcurrentimage];
+		renderPassInfo.framebuffer     = info->framebuffer->framebuffer[cmdbuff->dev->vkcurrentframe];
 		renderPassInfo.clearValueCount = rt_count;
 		renderPassInfo.pClearValues    = clearColor;
 	} else {
@@ -49,7 +49,7 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 		scissor.extent.height = viewport.height;
 
 		renderPassInfo.renderPass      = cmdbuff->dev->imguirenderpass;
-		renderPassInfo.framebuffer     = cmdbuff->dev->vkframebuffers[cmdbuff->dev->vkcurrentimage];
+		renderPassInfo.framebuffer     = cmdbuff->dev->vkframebuffers[cmdbuff->dev->vkcurrentframe];
 		renderPassInfo.clearValueCount = 0;
 		renderPassInfo.pClearValues    = NULL;
 	}
@@ -60,56 +60,56 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 	renderPassInfo.renderArea.extent.width  = viewport.width;
 	renderPassInfo.renderArea.extent.height = viewport.height;
 
-	vkCmdBeginRenderPass(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	viewport.minDepth = 0;
 	viewport.maxDepth = 1;
-	vkCmdSetViewport(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], 0, 1, &viewport);
+	vkCmdSetViewport(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], 0, 1, &viewport);
 
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	vkCmdSetScissor(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], 0, 1, &scissor);
+	vkCmdSetScissor(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], 0, 1, &scissor);
 }
 
 void R_CmdEndRenderpass(RCommandBuffer* cmdbuff) {
-	vkCmdEndRenderPass(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage]);
+	vkCmdEndRenderPass(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe]);
 }
 
 void R_CmdBindPipeline(RCommandBuffer* cmdbuff, RPipeline* pl) {
-	cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage] = pl;
-	vkCmdBindPipeline(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], pl->type, pl->pipeline);
+	cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe] = pl;
+	vkCmdBindPipeline(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], pl->type, pl->pipeline);
 }
 
 void R_CmdBindVertexBuffer(RCommandBuffer* cmdbuff, RBuffer* vb, Uint32 slot, Uint32 stride) {
 	const VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], slot, 1, &vb->buffer, &offset);
+	vkCmdBindVertexBuffers(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], slot, 1, &vb->buffer, &offset);
 }
 
 void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize) {
-	vkCmdBindIndexBuffer(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], ib->buffer, 0, GetVkIndexType(isize));
+	vkCmdBindIndexBuffer(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], ib->buffer, 0, GetVkIndexType(isize));
 }
 
 void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* info) {
 	for (Uint32 i = 0; i < info->count; i++) {
 		vkCmdBindDescriptorSets(
-			cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage],
-			cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage]->type,
-			cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage]->layout,
-			info->startslot + i, 1, &info->sets[i]->set[cmdbuff->dev->vkcurrentimage],
+			cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe],
+			cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->type,
+			cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->layout,
+			info->startslot + i, 1, &info->sets[i]->set[cmdbuff->dev->vkcurrentframe],
 			0, NULL);
 	}
 }
 
 void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage) {
 	vkCmdBindDescriptorSets(
-		cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage],
-		cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage]->type,
-		cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage]->layout,
+		cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe],
+		cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->type,
+		cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->layout,
 		slot, 1, &sampler->descSet, 0, NULL);
 }
 
 void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart) {
-	vkCmdDrawIndexed(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], idxcount, 1, idxstart, 0, 0);
+	vkCmdDrawIndexed(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], idxcount, 1, idxstart, 0, 0);
 	cmdbuff->dev->draw_calls++;
 }
 
@@ -118,15 +118,15 @@ void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint
 	if (stage == RG_SHADER_TYPE_PIXEL) {
 		offset = 128;
 	}
-	vkCmdPushConstants(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], cmdbuff->pipeline[cmdbuff->dev->vkcurrentimage]->layout, GetShaderStage(stage), offset, size, buffer);
+	vkCmdPushConstants(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->layout, GetShaderStage(stage), offset, size, buffer);
 }
 
 void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData) {
-	ImGui_ImplVulkan_RenderDrawData((ImDrawData*)drawData, cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], NULL);
+	ImGui_ImplVulkan_RenderDrawData((ImDrawData*)drawData, cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], NULL);
 }
 
 void R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 gc_x, Uint32 gc_y, Uint32 gc_z) {
-	vkCmdDispatch(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], gc_x, gc_y, gc_z);
+	vkCmdDispatch(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], gc_x, gc_y, gc_z);
 	cmdbuff->dev->dispatch_calls++;
 }
 
@@ -160,7 +160,7 @@ void R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage) {
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount     = 1;
 
-	vkCmdPipelineBarrier(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentimage], srcStage, dstStage, 0, 0, NULL, 0, NULL, 1, &barrier);
+	vkCmdPipelineBarrier(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], srcStage, dstStage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
 	image->layout = newLayout;
 	image->usage  = usage;

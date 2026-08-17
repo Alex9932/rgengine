@@ -524,18 +524,18 @@ void R_DestroyCommandBuffer(RCommandBuffer* buffer) {
 }
 
 void R_ResetCommandBuffer(RCommandBuffer* buffer) {
-	vkResetCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage], 0);
+	vkResetCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentframe], 0);
 }
 
 void R_BeginCommandBuffer(RCommandBuffer* buffer) {
 	VkCommandBufferBeginInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	//info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage], &info);
+	vkBeginCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentframe], &info);
 }
 
 void R_EndCommandBuffer(RCommandBuffer* buffer) {
-	vkEndCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentimage]);
+	vkEndCommandBuffer(buffer->cmdbuffer[buffer->dev->vkcurrentframe]);
 }
 
 static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
@@ -551,13 +551,13 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 	submitInfo.pCommandBuffers = &cmdbuffer;
 
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
+	submitInfo.pWaitSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentframe][dev->cmdsemaphore];
 	submitInfo.pWaitDstStageMask = f;
 
 	dev->cmdsemaphore++;
 
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentimage][dev->cmdsemaphore];
+	submitInfo.pSignalSemaphores = &dev->cmdbuffsemaphores[dev->vkcurrentframe][dev->cmdsemaphore];
 	vkQueueSubmit(dev->vkqueue, 1, &submitInfo, NULL);
 	//vkQueueWaitIdle(dev->vkqueue);
 	func_lock.unlock();
@@ -567,7 +567,7 @@ static void SubmitCommandBuffer(RRenderDevice* dev, VkCommandBuffer cmdbuffer) {
 void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 	// TODO: Support semaphores and fences
 	RRenderDevice* dev = info->buffer->dev;
-	SubmitCommandBuffer(dev, info->buffer->cmdbuffer[dev->vkcurrentimage]);
+	SubmitCommandBuffer(dev, info->buffer->cmdbuffer[dev->vkcurrentframe]);
 }
 
 #if 0
