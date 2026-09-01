@@ -48,9 +48,7 @@ namespace Engine {
 
         static RCommandBuffer*      cmdbuffer              = NULL;
 
-        static Bool isWindowResized = false;
-
-        
+        static Bool                 isWindowResized        = false;
 
         static Bool                 isEditorMode           = false;
 
@@ -642,15 +640,7 @@ namespace Engine {
             RBufferCreateInfo vbinfo = {};
             vbinfo.access = RG_BUFFER_ACCESS_GPU_ONLY;
             vbinfo.usage  = RG_BUFFER_USAGE_DEFAULT;
-
-            // We MUST use the RG_BUFFER_TYPE_VERTEX flag for d3d11 backend
-            // its working perfectly on Nvidia drivers without this flag LoL
-			// TODO: Add another buffer with this flag for copy data and rendering (bind as vertex buffer)
-            //vbinfo.type   = RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
-
-            // For Vulkan just use this flag
             vbinfo.type   = RG_BUFFER_TYPE_VERTEX | RG_BUFFER_TYPE_SHADER_RES | RG_BUFFER_TYPE_UNORDERED | RG_BUFFER_TYPE_STRUCTURED;
-            
             vbinfo.stride = sizeof(R3D_Vertex);
             vbinfo.length = sizeof(R3D_Vertex) * info->vCount;
             //vbinfo.initialData = info->vertices; // Not needed (generated dynamicly by compute shader)

@@ -21,9 +21,15 @@
     <ClCompile Include="rfs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rsl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rfs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rsl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

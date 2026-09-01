@@ -19,7 +19,6 @@ namespace Engine {
             // Shader
 
             RShaderCreateInfo csinfo = {};
-            csinfo.isCompiled = true;
             csinfo.name = "skinning.cs";
             csinfo.type = RG_SHADER_TYPE_COMPUTE;
             shader = ctx->CreateShader(dev, &csinfo);

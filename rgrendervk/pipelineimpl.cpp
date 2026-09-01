@@ -355,15 +355,10 @@ RShader* R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info) {
 	RShader* shader = (RShader*)dev->allocator->Allocate(sizeof(RShader));
 	shader->dev = dev;
 
-	if (!info->isCompiled) {
-		rgLogError(RG_LOG_RENDER, "Shader %s MUST be compiled!", info->name);
-		return NULL;
-	}
-
 	char path[256];
 	char file[256];
-	Engine::GetPath(path, 256, RG_PATH_SYSTEM, R_RENDERER_SHORTNAME);
-	SDL_snprintf(file, 256, "%s/%s", path, info->name);
+	Engine::GetPath(path, 256, RG_PATH_SYSTEM, "shaders");
+	SDL_snprintf(file, 256, "%s/%s/%s", path, R_RENDERER_SHORTNAME, info->name);
 
 	Resource* v_res = Engine::GetResource(file);
 

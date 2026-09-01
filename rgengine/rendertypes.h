@@ -276,7 +276,7 @@ typedef struct RRenderpassBeginInfo {
 typedef struct RShaderCreateInfo {
 	String name; // Loaded from "platform/&renderername&/"
 	Uint8  type; // Vertex, pixel, compute, etc.
-	Uint8  isCompiled;
+	Uint8  _offset0;
 	Uint16 _offset1;
 	Uint32 _offset2;
 } RShaderCreateInfo;

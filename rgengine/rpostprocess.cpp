@@ -482,7 +482,6 @@ namespace Engine {
 			RenderBackend* ctx = GetRenderContext();
 			RRenderDevice* dev = GetRenderDevice();
 			RShaderCreateInfo sinfo = {};
-			sinfo.isCompiled = true;
 			sinfo.type = RG_SHADER_TYPE_VERTEX;
 			sinfo.name = "combine.vs";
 			vs = ctx->CreateShader(dev, &sinfo);

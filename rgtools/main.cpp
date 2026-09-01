@@ -7,17 +7,17 @@
 
 // Tools
 #include "rfs.h"
-
-// Implement pack/unpack .rfs archives !!!FIRST!!!
+#include "rsl.h"
 
 #ifdef RG_PLATFORM_WINDOWS
-#define RG_TOOL_VERSION "1.1 (Windows version)"
+#define RG_TOOL_VERSION "1.2 (Windows version)"
 #else
-#define RG_TOOL_VERSION "1.1 (Linux version)"
+#define RG_TOOL_VERSION "1.2 (Linux version)"
 #endif
 
 #define RG_TOOL_NONE 0x00
-#define RG_TOOL_RFS  0x01
+#define RG_TOOL_RFS  0x01 // Resource package
+#define RG_TOOL_RSL  0x02 // Shader tool
 
 #define RG_MODE_NONE   0x00
 #define RG_MODE_PACK   0x01
@@ -35,17 +35,16 @@ static void printHelp() {
 	printf("rgtools\n\n");
 	printf("Usages:\n");
 	printf(" -fs                 -> Work with .rfs archive\n");
-	printf(" -mdl                -> Work with models (NOT IMPLEMENTED YET)\n\n");
+	printf(" -sl                 -> Work with shaders (translate spir-v to hlsl (DXBC SM5.0) + resource map)\n\n");
 	printf("Operators:\n");
 	printf(" -i  ( --input     ) -> Set input file / dir.\n");
 	printf(" -o  ( --output    ) -> Set output file / dir.\n");
 	printf(" -p  ( --pack      ) -> Set pack mode.\n");
 	printf(" -u  ( --unpack    ) -> Set unpack mode.\n\n");
-	printf(" -pm2                -> Converts model to pm2 format (NOT IMPLEMENTED YET)\n");
 	printf("Examples:\n");
 	printf("rgtools -fs --pack -i ./gamedata -o gamedata.rfs => pack gamedata's content to rfs archive\n");
 	printf("rgtools -fs --unpack -i gamedata.rfs -o ./gamedata => unpack content from gamedata.rfs archive\n");
-	printf("rgtools -mdl -pm2 -i model.obj -o model.pm2 => convert .obj model to .pm2\n");
+	printf("rgtools -sl -i shader.spv -o shader.dxbc => recompile SPIR-V shader to DXBC SM5.0 for D3D11\n");
 }
 
 static void printSum() {
@@ -64,6 +63,10 @@ static int parseArgs(int argc, String argv[]) {
 		// Tool
 		if (Engine::rg_streql(arg, "-fs")) {
 			tool = RG_TOOL_RFS;
+		}
+		if (Engine::rg_streql(arg, "-sl")) {
+			tool = RG_TOOL_RSL;
+			mode = RG_MODE_PACK; // No mode used for shader tool
 		}
 
 		// Mode
@@ -109,6 +112,10 @@ int main(int argc, char** argv) {
 				} else {
 					printf("Invalid mode!\n");
 				}
+				break;
+			}
+			case RG_TOOL_RSL: {
+				rsl_build(input, output);
 				break;
 			}
 			default: {

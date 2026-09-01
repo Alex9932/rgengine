@@ -1,0 +1,37 @@
+#version 100
+#shader vertex
+
+// Input vertex data
+input {
+	vec3 v_pos  : POSITION;
+	vec3 v_norm : NORMAL;
+	vec2 v_uv   : VPOS;
+}
+
+// Output structure (vertex shader -> pixel shader)
+output {
+	vec4 o_pos  : SV_POSITION;
+	vec4 o_norm : NORMAL;
+	vec2 o_uv   : TEXCOORD0;
+}
+
+// Represent uniform buffer
+uniform {
+	mat4 viewproj;
+	mat4 mdl;
+}
+
+// Entry point
+void main() {
+
+	// Transform normal to world space
+	vec4 N = model * vec4(v_norm, 0);
+	o_norm = N.xyz;
+
+	// Copy texture coords
+	o_uv = v_uv;
+
+	// Apply vertex transformation
+	o_pos = viewproj * model * vec4(v_pos, 1);
+
+}

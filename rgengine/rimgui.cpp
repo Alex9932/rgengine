@@ -96,7 +96,6 @@ namespace Engine {
             ib = ctx->CreateBuffer(dev, &ibinfo);
 
             RShaderCreateInfo sinfo = {};
-            sinfo.isCompiled = true;
             sinfo.type = RG_SHADER_TYPE_VERTEX;
             sinfo.name = "output.vs";
             vs = ctx->CreateShader(dev, &sinfo);

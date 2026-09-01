@@ -49,7 +49,7 @@ void R_CmdBeginRenderpass(RCommandBuffer* cmdbuff, RRenderpassBeginInfo* info) {
 		scissor.extent.height = viewport.height;
 
 		renderPassInfo.renderPass      = cmdbuff->dev->imguirenderpass;
-		renderPassInfo.framebuffer     = cmdbuff->dev->vkframebuffers[cmdbuff->dev->vkcurrentframe];
+		renderPassInfo.framebuffer     = cmdbuff->dev->vkframebuffers[cmdbuff->dev->vkcurrentimage];
 		renderPassInfo.clearValueCount = 0;
 		renderPassInfo.pClearValues    = NULL;
 	}

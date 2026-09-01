@@ -31,7 +31,7 @@ void main() {
 	vec3 t_norm = texture(sampler2D(t_normal, smplr), uv).rgb;
 	vec3 t_pbr  = texture(sampler2D(t_pbr,    smplr), uv).rgb;
 
-	if (t_col4.a < 0.9) {
+	if (t_col4.a < 0.3) {
 		discard;
 	}
 
@@ -46,6 +46,7 @@ void main() {
 #endif
 
 	color.rgb = t_col * push.color.rgb;
+	//color.a = t_col4.a;//t_pbr.x;
 	color.a = t_pbr.x;
 	normal.xyz = N;
 	normal.a = t_pbr.y;

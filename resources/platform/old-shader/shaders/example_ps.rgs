@@ -1,0 +1,36 @@
+#version 100
+#shader pixel
+
+// Input data form prewious stage
+input {
+	vec4 i_pos  : SV_POSITION;
+	vec4 i_norm : NORMAL;
+	vec2 i_uv   : TEXCOORD0;
+}
+
+// Output pixel color
+output {
+	vec4 o_color : SV_TARGET0;
+}
+
+// Represent constant buffer
+constant {
+	vec4 color;
+}
+
+// Textures and samplers block
+sampler {
+	texture2d t_unit0 : register(t0);
+	sampler s_type : register(s0);
+}
+
+// Entry point
+void main() {
+
+	// Get texture color
+	vec4 t_color = t_unit0.Sample(s_type, i_uv);
+
+	// Apply final color
+	o_color = color * t_color;
+
+}

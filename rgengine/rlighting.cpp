@@ -275,7 +275,6 @@ namespace Engine {
 			RRenderDevice* dev = GetRenderDevice();
 
 			RShaderCreateInfo sinfo = {};
-			sinfo.isCompiled = true;
 			sinfo.type = RG_SHADER_TYPE_VERTEX;
 			sinfo.name = "accum.vs";
 			vs_accum = ctx->CreateShader(dev, &sinfo);

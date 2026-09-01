@@ -71,8 +71,9 @@ PSOUTPUT pmain(PSINPUT psin, bool isFrontFace: SV_IsFrontFace) {
 	uv.y = psin.vpos.z * mult;
 
 	float cloud = CloudShape(uv, T);
-
-	float4 result = float4(1, 1, 1, cloud);
+	
+	//float4 result = float4(1, 1, 1, cloud);
+	float4 result = float4(1, 1, 1, 0);
 
 	PSOUTPUT pout;
 	pout.albedo     = result;    // Albedo
