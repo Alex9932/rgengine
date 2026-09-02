@@ -291,6 +291,7 @@ typedef struct RDescriptorSetBinding {
 	union {
 		RImage*  image;
 		RBuffer* buffer;
+		void* resource;
 	};
 } RDescriptorSetBinding;
 

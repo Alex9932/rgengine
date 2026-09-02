@@ -107,7 +107,7 @@ static RImage* GetBackBufferImage(RRenderDevice* dev, Uint32 i, Uint16 width, Ui
 	image->height = height;
 
 	//HRESULT t = dev->dxswapchain->GetBuffer(info->var, IID_ID3D11Texture2D, (void**)&backbufferTex);
-	HRESULT t = dev->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&image->image);
+	HRESULT t = dev->dxswapchain->GetBuffer(i, IID_ID3D11Texture2D, (void**)&image->image);
 	RG_ASSERT_MSG(SUCCEEDED(t), "Unable to get swapchain buffers");
 
 	//t = dev->dxdev->CreateRenderTargetView(backbufferTex, NULL, &rv->rtv);
@@ -296,7 +296,7 @@ static Bool firstswap = true;
 void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
-		device->dxswapchain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+		device->dxswapchain->Present(0, 0);
 
 		device->currentframe++;
 		device->currentframe = device->currentframe % device->backbuffer_count;

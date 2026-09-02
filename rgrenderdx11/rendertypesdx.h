@@ -102,11 +102,17 @@ struct RCommand {
 struct RCommandBuffer {
 	RRenderDevice* dev;
 	Engine::LinearAllocator* pool;
+	RPipeline* pipeline;
 	Uint32 commands_recorded;
+	Uint32 max_commands;
 };
 
 #if 0
 
+#define R_DX_RESOURCEVIEW_RTV 0x1
+#define R_DX_RESOURCEVIEW_DSV 0x2
+#define R_DX_RESOURCEVIEW_SRV 0x3
+#define R_DX_RESOURCEVIEW_UAV 0x4
 struct RResourceView {
 	RRenderDevice* dev;
 	union {
@@ -123,22 +129,23 @@ struct RResourceView {
 };
 #endif
 
-#define R_DX_RESOURCEVIEW_RTV 0x1
-#define R_DX_RESOURCEVIEW_DSV 0x2
-#define R_DX_RESOURCEVIEW_SRV 0x3
-#define R_DX_RESOURCEVIEW_UAV 0x4
-
 struct RDescriptorEntry {
+	// Resource
 	union {
-		ID3D11RenderTargetView* rtv;
-		ID3D11DepthStencilView* dsv;
-		ID3D11ShaderResourceView* srv;
-		ID3D11UnorderedAccessView* uav;
+		RImage* image;
+		RBuffer* buffer;
+		void* resource;
+	};
+	// View
+	union {
+		ID3D11ShaderResourceView* srv; // Texture / Structured buffer
+		ID3D11UnorderedAccessView* uav; // Random access R/W buffers
+		void* view_handle; // Dummy handle (Can be NULL for constant buffers)
 	};
 	Uint32 _offset1;
 	Uint16 _offset2;
 	Uint8 binding;
-	Uint8 type; // R_DX_RESOURCEVIEW_
+	Uint8 type; // RG_DESCRIPTOR_TYPE_
 };
 
 struct RDescriptorSet {
