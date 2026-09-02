@@ -528,7 +528,7 @@ namespace Engine {
 			RRenderDevice* dev = GetRenderDevice();
 
 			RCommandBufferCreateInfo cmdbuffinfo = {};
-			cmdbuffinfo.maxcmds = 128;
+			cmdbuffinfo.maxcmds = 256;
 			cmdbuffer = ctx->CreateCommandBuffer(dev, &cmdbuffinfo);
 
 			RBufferCreateInfo vbinfo = {};
@@ -658,7 +658,7 @@ namespace Engine {
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				// x = 2 - for apply threshold
 				vec4 axis = { 2.0f, 0.0f, (Float32)blur_p1.x, (Float32)blur_p1.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -673,7 +673,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 0.0f, 1.0f, (Float32)blur_p1.x, (Float32)blur_p1.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -691,7 +691,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 1.0f, 0.0f, (Float32)blur_p2.x, (Float32)blur_p2.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -706,7 +706,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 0.0f, 1.0f, (Float32)blur_p2.x, (Float32)blur_p2.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -724,7 +724,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 1.0f, 0.0f, (Float32)blur_p3.x, (Float32)blur_p3.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -739,7 +739,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 0.0f, 1.0f, (Float32)blur_p3.x, (Float32)blur_p3.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -757,7 +757,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 1.0f, 0.0f, (Float32)blur_p2.x, (Float32)blur_p2.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -772,7 +772,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 0.0f, 1.0f, (Float32)blur_p2.x, (Float32)blur_p2.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -791,7 +791,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 1.0f, 0.0f, (Float32)blur_p1.x, (Float32)blur_p1.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 
@@ -806,7 +806,7 @@ namespace Engine {
 				ctx->CmdBindDescriptorSets(cmdbuffer, &info);
 				ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 				axis = { 0.0f, 1.0f, (Float32)blur_p1.x, (Float32)blur_p1.y };
-				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &axis, sizeof(vec4));
 				ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 				ctx->CmdEndRenderpass(cmdbuffer);
 

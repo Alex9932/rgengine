@@ -19,7 +19,8 @@ layout(set = 1, binding = 2) uniform texture2D t_pbr;
 layout(set = 2, binding = 0) uniform sampler smplr;
 
 layout(push_constant) uniform PushConstants {
-    layout(offset = 128) vec4 color;
+	mat4 model;
+    vec4 color;
 } push;
 
 void main() {

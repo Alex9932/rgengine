@@ -18,6 +18,7 @@ layout(set = 0, binding = 0, std140) uniform Camera {
 
 layout(push_constant) uniform PushConstants {
     mat4 model;
+	vec4 color;
 } push;
 
 void main() {

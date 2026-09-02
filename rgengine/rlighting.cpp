@@ -300,7 +300,7 @@ namespace Engine {
 			light_queue = RG_NEW(Queue)(RG_RENDER_MAX_LIGHTS);
 
 			RCommandBufferCreateInfo cmdbuffinfo = {};
-			cmdbuffinfo.maxcmds = 128;
+			cmdbuffinfo.maxcmds = 256;
 			cmdbuffer = ctx->CreateCommandBuffer(dev, &cmdbuffinfo);
 
 			RBufferCreateInfo vbinfo = {};
@@ -448,21 +448,23 @@ namespace Engine {
 
 				mvp = vp * model;
 
-				struct ps_data {
+				struct pc_data {
+					mat4 mat;
 					vec4 camera; // w - light type (1 - point, 2 - spot)
 					vec4 dir;    // xyz - spotlight direction, alpha - light radius (intensity)
 					vec4 color;  // alpha - inner cone
 					vec4 pos;    // alpha - outer cone
 				} data;
 
-
+				data.mat    = mvp;
 				data.camera = { camera->position.x, camera->position.y, camera->position.z, (Float32)light->type };
 				data.dir    = { light->direction.x, light->direction.y, light->direction.z, light->intensity };
 				data.color  = { light->color.r, light->color.g, light->color.b, light->innerCone };
 				data.pos    = { light->position.x, light->position.y, light->position.z, light->outerCone };
 
-				ctx->CmdPushConstants(cmdbuffer, &mvp, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
-				ctx->CmdPushConstants(cmdbuffer, &data, sizeof(ps_data), RG_SHADER_TYPE_PIXEL);
+				//ctx->CmdPushConstants(cmdbuffer, &mvp, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
+				//ctx->CmdPushConstants(cmdbuffer, &data, sizeof(ps_data), RG_SHADER_TYPE_PIXEL);
+				ctx->CmdPushConstants(cmdbuffer, &data, sizeof(pc_data));
 
 				// draw point lights here
 				ctx->CmdDrawIndexed(cmdbuffer, sizeof(sphere_inds) / sizeof(Uint16), 0);
@@ -478,7 +480,8 @@ namespace Engine {
 			ctx->CmdBindSampler(cmdbuffer, sampler, 0, RG_SHADER_TYPE_PIXEL);
 
 			mvp = MAT4_IDENTITY();
-			struct ps_data {
+			struct pc_data {
+				mat4 mat;
 				vec4 camera;    // w - light type (always 0)
 				vec4 dir;       // alpha - light intensity
 				vec4 color;     // alpha - ambient
@@ -487,12 +490,14 @@ namespace Engine {
 			R3D_GlobalLightDescrition* glight = GetGlobalLight();
 			CalculateLight(&data.dir, glight);
 
+			data.mat    = mvp;
 			data.camera = { camera->position.x, camera->position.y, camera->position.z, (Float32)RG_LIGHT_GLOBAL };
-			data.dir.w = glight->intensity;
-			data.color = { glight->color.r, glight->color.g, glight->color.b, glight->ambient };
+			data.dir.w  = glight->intensity;
+			data.color  = { glight->color.r, glight->color.g, glight->color.b, glight->ambient };
 
-			ctx->CmdPushConstants(cmdbuffer, &mvp, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
-			ctx->CmdPushConstants(cmdbuffer, &data, sizeof(ps_data), RG_SHADER_TYPE_PIXEL);
+			//ctx->CmdPushConstants(cmdbuffer, &mvp, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
+			//ctx->CmdPushConstants(cmdbuffer, &data, sizeof(ps_data), RG_SHADER_TYPE_PIXEL);
+			ctx->CmdPushConstants(cmdbuffer, &data, sizeof(pc_data));
 
 			ctx->CmdDrawIndexed(cmdbuffer, 6, 0);
 

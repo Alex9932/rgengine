@@ -113,12 +113,14 @@ void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart)
 	cmdbuff->dev->draw_calls++;
 }
 
-void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage) {
+void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size) {
 	Uint32 offset = 0;
-	if (stage == RG_SHADER_TYPE_PIXEL) {
-		offset = 128;
-	}
-	vkCmdPushConstants(cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe], cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe]->layout, GetShaderStage(stage), offset, size, buffer);
+//	if (stage == RG_SHADER_TYPE_PIXEL) {
+//		offset = 128;
+//	}
+	RPipeline* pl = cmdbuff->pipeline[cmdbuff->dev->vkcurrentframe];
+	VkCommandBuffer cbuf = cmdbuff->cmdbuffer[cmdbuff->dev->vkcurrentframe];
+	vkCmdPushConstants(cbuf, pl->layout, GetShaderStage(pl->stages), offset, size, buffer);
 }
 
 void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData) {

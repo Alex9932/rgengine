@@ -132,7 +132,7 @@ struct RPipeline {
 	VkPipeline            pipeline;
 	VkPipelineLayout      layout;
 	Uint32                bindings;
-	Uint32                _offset;
+	Uint32                stages;
 	VkDescriptorSetLayout dslayout[16]; // max 16 attachments to pipeline
 };
 

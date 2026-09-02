@@ -25,7 +25,7 @@ namespace Engine {
 			RenderBackend* ctx = GetRenderContext();
 
 			RCommandBufferCreateInfo cmdbuffinfo = {};
-			cmdbuffinfo.maxcmds = 128;
+			cmdbuffinfo.maxcmds = 2048;
 			cmdbuffer = ctx->CreateCommandBuffer(dev, &cmdbuffinfo);
 
 			RSamplerCreateInfo samplerinfo = {};
@@ -124,6 +124,11 @@ namespace Engine {
 			ctx->SubmitCommandBuffer(&submitinfo);
 		}
 
+		struct PushConstant {
+			mat4 mat;
+			vec4 color;
+		};
+
 		void DrawGBufferStatic(R3D_StaticModel* mdl, mat4* transform) {
 			RenderBackend* ctx = GetRenderContext();
 
@@ -134,7 +139,10 @@ namespace Engine {
 			ctx->CmdBindVertexBuffer(cmdbuffer, mdl->vBuffer, 0, sizeof(R3D_Vertex));
 			ctx->CmdBindIndexBuffer(cmdbuffer, mdl->iBuffer, mdl->iType);
 
-			ctx->CmdPushConstants(cmdbuffer, transform, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
+			PushConstant pc = {};
+
+			pc.mat = *transform;
+			//ctx->CmdPushConstants(cmdbuffer, transform, sizeof(mat4), RG_SHADER_TYPE_VERTEX);
 
 			for (Uint32 i = 0; i < mdl->mCount; i++) {
 				R3D_MeshInfo* minfo = &mdl->info[i];
@@ -148,10 +156,11 @@ namespace Engine {
 				// Bind material
 				if (useMaterial && current_mat != mat) {
 
-					//vec4 color = { mat->color.r, mat->color.g, mat->color.b, 1 };
-					vec4 color = { 1, 1, 1, 1 };
+					//pc.color = { mat->color.r, mat->color.g, mat->color.b, 1 };
+					pc.color = { 1, 1, 1, 1 };
 
-					ctx->CmdPushConstants(cmdbuffer, &color, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+					//ctx->CmdPushConstants(cmdbuffer, &color, sizeof(vec4), RG_SHADER_TYPE_PIXEL);
+					ctx->CmdPushConstants(cmdbuffer, &pc, sizeof(PushConstant));
 
 					// Bind textures
 

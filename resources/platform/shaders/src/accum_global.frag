@@ -12,7 +12,8 @@ layout(set = 1, binding = 2) uniform texture2D t_unit2;
 layout(set = 1, binding = 3) uniform texture2D t_unit3; // depth
 
 layout(push_constant) uniform PushConstants {
-    layout(offset = 128) vec4 camera;
+	mat4 mvp;
+    vec4 camera;
 	vec4 light_direction;
 	vec4 light_color;
 } push;

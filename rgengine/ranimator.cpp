@@ -64,7 +64,7 @@ namespace Engine {
             // Command buffer
 
             RCommandBufferCreateInfo cmdbuffinfo = {};
-            cmdbuffinfo.maxcmds = 128;
+            cmdbuffinfo.maxcmds = 256;
             cmdbuffer = ctx->CreateCommandBuffer(dev, &cmdbuffinfo);
 
         }

@@ -7,7 +7,7 @@ layout(set = 0, binding = 0) uniform sampler smplr;
 layout(set = 1, binding = 0) uniform texture2D t_unit0;
 
 layout(push_constant) uniform PushConstants {
-    layout(offset = 128) vec4 axis; // XY axis for blur, ZW - screen size
+    vec4 axis; // XY axis for blur, ZW - screen size
 } push;
 
 #define THRESHOLD 1.0

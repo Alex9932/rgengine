@@ -274,7 +274,7 @@ typedef struct RRenderpassBeginInfo {
 #define RG_SHADER_TYPE_COMPUTE   0x20
 
 typedef struct RShaderCreateInfo {
-	String name; // Loaded from "platform/&renderername&/"
+	String name; // Loaded from "platform/shaders/&renderername&/%name%"
 	Uint8  type; // Vertex, pixel, compute, etc.
 	Uint8  _offset0;
 	Uint16 _offset1;

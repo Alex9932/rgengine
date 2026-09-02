@@ -72,7 +72,7 @@ namespace Engine {
             RenderBackend* ctx = GetRenderContext();
 
             RCommandBufferCreateInfo cmdbuffinfo = {};
-            cmdbuffinfo.maxcmds = 128;
+            cmdbuffinfo.maxcmds = 256;
             cmdbuffer = ctx->CreateCommandBuffer(dev, &cmdbuffinfo);
 
             ctx->ImGui_Init(dev);

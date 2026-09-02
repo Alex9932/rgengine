@@ -6,6 +6,9 @@ layout(location = 1) out vec4 o_4pos;
 
 layout(push_constant) uniform PushConstants {
     mat4 mvp;
+    vec4 camera;
+	vec4 light_direction;
+	vec4 light_color;
 } push;
 
 void main() {

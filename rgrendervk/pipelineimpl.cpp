@@ -125,25 +125,24 @@ static void MakePipelineLayout(RRenderDevice* dev, RPipelineCreateInfo* info, RP
 	}
 	//info->layout->binding_count
 	
-	VkPushConstantRange graphicsPushConstants[2] = {};
+	VkPushConstantRange graphicsPushConstants = {};
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-	graphicsPushConstants[0].offset = 0;
-	graphicsPushConstants[0].size   = 128; // 128 bytes max
-	graphicsPushConstants[1].offset = 128;
-	graphicsPushConstants[1].size   = 128; // 128 bytes max
+	graphicsPushConstants.offset = 0;
+	graphicsPushConstants.size   = 128; // 128 bytes max
 	if (info->type == RG_PIPELINE_TYPE_GRAPHICS) {
-		graphicsPushConstants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		graphicsPushConstants[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		pipelineLayoutInfo.pushConstantRangeCount = 2;
+		graphicsPushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		if (info->geometry_shader) {
+			graphicsPushConstants.stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
 	} else if (info->type == RG_PIPELINE_TYPE_COMPUTE) {
-		graphicsPushConstants[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		graphicsPushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 	}
+	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount      = max_sets;
 	pipelineLayoutInfo.pSetLayouts         = pl->dslayout;
-	pipelineLayoutInfo.pPushConstantRanges = graphicsPushConstants;
+	pipelineLayoutInfo.pPushConstantRanges = &graphicsPushConstants;
 
 	vkCreatePipelineLayout(dev->vkdev, &pipelineLayoutInfo, dev->vkalloc, &pl->layout);
 
@@ -165,7 +164,7 @@ static void MakeComputePipeline(RRenderDevice* dev, RPipelineCreateInfo* info, R
 	pipelineInfo.basePipelineIndex  = -1;
 
 	VkResult r = vkCreateComputePipelines(dev->vkdev, NULL, 1, &pipelineInfo, dev->vkalloc, &pl->pipeline);
-
+	pl->stages = RG_SHADER_TYPE_COMPUTE;
 	if (r != VK_SUCCESS) {
 		rgLogError(RG_LOG_RENDER, "VK compute pipeline creation error");
 	}
@@ -319,6 +318,11 @@ static void MakeGraphicsPipeline(RRenderDevice* dev, RPipelineCreateInfo* info, 
 	pipelineInfo.basePipelineIndex   = -1;
 
 	VkResult r = vkCreateGraphicsPipelines(dev->vkdev, NULL, 1, &pipelineInfo, dev->vkalloc, &pl->pipeline);
+
+	pl->stages = RG_SHADER_TYPE_VERTEX | RG_SHADER_TYPE_PIXEL;
+	if (info->geometry_shader) {
+		pl->stages |= RG_SHADER_TYPE_GEOMETRY;
+	}
 
 	if (r != VK_SUCCESS) {
 		rgLogError(RG_LOG_RENDER, "VK graphics pipeline creation error");

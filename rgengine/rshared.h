@@ -57,7 +57,7 @@ extern "C" {
 	extern RG_DECLSPEC void            R_CmdBindDescriptorSets(RCommandBuffer* cmdbuffer, RBindDescriptorSetsInfo* info);
 	extern RG_DECLSPEC void            R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage);
 	extern RG_DECLSPEC void            R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart);
-	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage);
+	extern RG_DECLSPEC void            R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size);
 
 	extern RG_DECLSPEC void            R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage);
 	extern RG_DECLSPEC void            R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* drawData);

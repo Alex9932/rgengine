@@ -13,7 +13,7 @@ layout(set = 1, binding = 3) uniform texture2D t_unit3; // depth
 layout(set = 2, binding = 0) uniform texture2D t_unit4; // calculated light
 
 layout(push_constant) uniform PushConstants {
-    layout(offset = 128) vec4 camera;
+    vec4 camera;
 	vec4 light_direction;
 	vec4 light_color;
 } push;
