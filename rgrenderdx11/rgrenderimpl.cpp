@@ -28,7 +28,7 @@ SDL_Window* R_ShowWindow(Uint32 w, Uint32 h) {
 }
 
 void R_Setup() {
-	RG_ERROR_MSG("Direct3D 11 renderer is not support new rendering system!");
+	//RG_ERROR_MSG("Direct3D 11 renderer is not support new rendering system!");
 }
 
 static IDXGIAdapter* SelectAdapter(RRenderDevice* device) {
@@ -98,6 +98,25 @@ static Bool _EventHandler(SDL_Event* event, void* data) {
 	return true;
 }
 
+static RImage* GetBackBufferImage(RRenderDevice* dev, Uint32 i, Uint16 width, Uint16 height, RFormat format) {
+
+	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
+	image->dev = dev;
+	image->format = format;
+	image->width  = width;
+	image->height = height;
+
+	//HRESULT t = dev->dxswapchain->GetBuffer(info->var, IID_ID3D11Texture2D, (void**)&backbufferTex);
+	HRESULT t = dev->dxswapchain->GetBuffer(0, IID_ID3D11Texture2D, (void**)&image->image);
+	RG_ASSERT_MSG(SUCCEEDED(t), "Unable to get swapchain buffers");
+
+	//t = dev->dxdev->CreateRenderTargetView(backbufferTex, NULL, &rv->rtv);
+	//RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
+	//backbufferTex->Release();
+
+	return image;
+}
+
 static void CreateDefaultFramebuffer(RRenderDevice* device) {
 
 	RRenderpassCreateInfo rpinfo = {};
@@ -107,19 +126,13 @@ static void CreateDefaultFramebuffer(RRenderDevice* device) {
 	rpinfo.use_depth = false;
 	rpinfo.viewport = { 0.0f, 0.0f, (Float32)device->wndsize.x, (Float32)device->wndsize.y };
 	device->default_renderpass = R_CreateRenderpass(device, &rpinfo);
-#if 0
+#if 1
 	for (size_t i = 0; i < device->backbuffer_count; i++) {
-		RResourceViewCreateInfo backbufferinfo = {};
-		backbufferinfo.type        = RG_RESOURCEVIEW_TYPE_BBV;
-		backbufferinfo.buffer_type = RG_RESOURCEVIEW_IMAGE;
-		backbufferinfo.var         = 0;
-		device->default_backbuffers[i] = R_CreateResourceView(device, &backbufferinfo);
-
 		RFramebufferCreateInfo fbinfo = {};
 		fbinfo.width      = (Uint16)device->wndsize.x;
 		fbinfo.height     = (Uint16)device->wndsize.y;
 		fbinfo.rt_count   = 1;
-		fbinfo.rts[0]     = device->default_backbuffers[i];
+		fbinfo.rts[0]     = GetBackBufferImage(device, i, fbinfo.width, fbinfo.height, RG_FORMAT_R8G8B8A8_UNORM);// device->default_backbuffers[i];
 		fbinfo.renderpass = device->default_renderpass;
 		device->default_framebuffers[i] = R_CreateFramebuffer(device, &fbinfo);
 
@@ -217,8 +230,8 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	pc_info.length = 128;
 	pc_info.type   = RG_BUFFER_TYPE_CONSTANT;
 	pc_info.usage  = RG_BUFFER_USAGE_DYNAMIC;
-	device->pc_vertex = R_CreateBuffer(device, &pc_info);
-	device->pc_pixel  = R_CreateBuffer(device, &pc_info);
+	device->pushconstant = R_CreateBuffer(device, &pc_info);
+	//device->pc_pixel  = R_CreateBuffer(device, &pc_info);
 
 	RG_ASSERT_MSG(device->dxdev, "Unable to initialize direct3d: D3D11Device");
 	RG_ASSERT_MSG(device->dxctx, "Unable to initialize direct3d: D3D11DeviceContext");
@@ -240,8 +253,8 @@ void R_DestroyDevice(RRenderDevice* device) {
 
 	Engine::FreeEventHandler(_EventHandler);
 
-	R_DestroyBuffer(device->pc_vertex);
-	R_DestroyBuffer(device->pc_pixel);
+	R_DestroyBuffer(device->pushconstant);
+	//R_DestroyBuffer(device->pc_pixel);
 
 #if R_DXRENDER_DEBUG
 	device->dxdbginfoqueue->Release();
@@ -261,11 +274,29 @@ void R_DestroyDevice(RRenderDevice* device) {
 	RG_DELETE(STDAllocator, alloc);
 }
 
+void R_WaitIdle(RRenderDevice* device) {
+	D3D11_QUERY_DESC queryDesc;
+	queryDesc.Query = D3D11_QUERY_EVENT;
+	queryDesc.MiscFlags = 0;
+
+	ID3D11Query* pEventQuery = NULL;
+	device->dxdev->CreateQuery(&queryDesc, &pEventQuery);
+	device->dxctx->End(pEventQuery);
+	device->dxctx->Flush();
+
+	while (device->dxctx->GetData(pEventQuery, NULL, 0, 0) == S_FALSE) {
+		//Yield();
+		Sleep(1);
+	}
+
+	pEventQuery->Release();
+}
+
 static Bool firstswap = true;
 void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
-		device->dxswapchain->Present(0, 0);
+		device->dxswapchain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
 
 		device->currentframe++;
 		device->currentframe = device->currentframe % device->backbuffer_count;
@@ -320,4 +351,24 @@ void R_ImGui_NewFrame(RRenderDevice* dev) {
 	ImGui_ImplDX11_NewFrame();
 }
 
+void* R_ImGui_AddTexture(RRenderDevice* dev, RImage* image) {
+	ID3D11ShaderResourceView* srv = NULL;
 
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = GetFormat(image->format);
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = -1;
+
+	dev->dxdev->CreateShaderResourceView(image->image, &srvDesc, &srv);
+	//dev->dxctx->GenerateMips(srv);
+
+	return srv;
+}
+
+void R_ImGui_RemoveTexture(void* handle) {
+	if (!handle) { return; }
+	ID3D11ShaderResourceView* srv = (ID3D11ShaderResourceView*)handle;
+	srv->Release();
+}

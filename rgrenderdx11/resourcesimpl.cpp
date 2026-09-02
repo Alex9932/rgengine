@@ -134,13 +134,15 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 
 	if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
 		textureDesc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+		textureDesc.MipLevels = 1;
 	} else {
 		textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
 		textureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	}
 
 	textureDesc.CPUAccessFlags = 0;
-	dev->dxdev->CreateTexture2D(&textureDesc, NULL, &image->image);
+	HRESULT r = dev->dxdev->CreateTexture2D(&textureDesc, NULL, &image->image);
+	//if(r != )
 
 	dev->imageMemLen += info->width * info->height * GetFormatSize(info->format);
 
@@ -272,6 +274,53 @@ void R_DestroyResourceView(RResourceView* rv) {
 	dev->allocator->Deallocate(rv);
 }
 #endif
+
+RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* info) {
+	RFramebuffer* fb = (RFramebuffer*)dev->allocator->Allocate(sizeof(RFramebuffer));
+	fb->dev = dev;
+	fb->width = info->width;
+	fb->height = info->height;
+	fb->rtv_count = info->rt_count;
+	fb->dsv = NULL;
+
+	// Make RTVs
+
+	HRESULT t;
+	for (Uint32 i = 0; i < fb->rtv_count; i++) {
+		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc = {};
+		renderTargetViewDesc.Format = GetFormat(info->rts[i]->format);
+		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		renderTargetViewDesc.Texture2D.MipSlice = 0;
+		t = dev->dxdev->CreateRenderTargetView(info->rts[i]->image, &renderTargetViewDesc, &fb->rtv[i]);
+		RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
+		//fb->rtv[i] = info->rts[i]->image;
+	}
+	if (info->dsv) {
+		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+		depthStencilViewDesc.Format = GetFormat(info->dsv->format);
+		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		depthStencilViewDesc.Texture2D.MipSlice = 0;
+		t = dev->dxdev->CreateDepthStencilView(info->dsv->image, &depthStencilViewDesc, &fb->dsv);
+		//RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
+		//fb->dsv = info->dsv->dsv;
+	}
+	return fb;
+}
+
+void R_DestroyFramebuffer(RFramebuffer* fb) {
+	RRenderDevice* dev = fb->dev;
+
+	// Destroy RTVs
+	for (Uint32 i = 0; i < fb->rtv_count; i++) {
+		fb->rtv[i]->Release();
+	}
+	if (fb->dsv) {
+		fb->dsv->Release();
+	}
+
+	dev->allocator->Deallocate(fb);
+}
+
 RSampler* R_CreateSampler(RRenderDevice* dev, RSamplerCreateInfo* info) {
 	RSampler* sampler = (RSampler*)dev->allocator->Allocate(sizeof(RSampler));
 	sampler->dev = dev;
@@ -297,4 +346,37 @@ void R_DestroySampler(RSampler* sampler) {
 	RRenderDevice* dev = sampler->dev;
 	sampler->state->Release();
 	dev->allocator->Deallocate(sampler);
+}
+
+RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateInfo* info) {
+	RDescriptorSet* set = (RDescriptorSet*)dev->allocator->Allocate(sizeof(RDescriptorSet));
+	set->dev = dev;
+
+	// Make ResourceViews
+
+
+
+
+	return set;
+}
+
+void R_DestroyDescriptorSet(RDescriptorSet* ds) {
+	RRenderDevice* dev = ds->dev;
+
+	for (Uint32 i = 0; i < ds->entry_count; i++) {
+		if (ds->entrys[i].type == R_DX_RESOURCEVIEW_RTV) {
+			ds->entrys[i].rtv->Release();
+		}
+		if (ds->entrys[i].type == R_DX_RESOURCEVIEW_DSV) {
+			ds->entrys[i].dsv->Release();
+		}
+		if (ds->entrys[i].type == R_DX_RESOURCEVIEW_SRV) {
+			ds->entrys[i].srv->Release();
+		}
+		if (ds->entrys[i].type == R_DX_RESOURCEVIEW_UAV) {
+			ds->entrys[i].uav->Release();
+		}
+	}
+
+	dev->allocator->Deallocate(ds);
 }

@@ -29,9 +29,9 @@ struct RRenderDevice {
 	ID3D11InfoQueue*     dxdbginfoqueue;
 #endif
 
-	// Pipeline constant buffers
-	RBuffer*             pc_vertex;
-	RBuffer*             pc_pixel;
+	// Pipeline constant buffer
+	RBuffer*             pushconstant;
+	//RBuffer*             pc_pixel;
 
 	SDL_Window*          hwnd;
 	ivec2                wndsize;
@@ -73,7 +73,7 @@ struct RImage {
 #define R_CMD_BIND_PIPELINE      0x0011
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
-#define R_CMD_BIND_RESOURCEVIEWS 0x0014
+#define R_CMD_BIND_DESCRIPTORSET 0x0014
 #define R_CMD_BIND_SAMPLER       0x0015
 
 #define R_CMD_PUSHCONSTANTS      0x0016
@@ -105,10 +105,7 @@ struct RCommandBuffer {
 	Uint32 commands_recorded;
 };
 
-#define R_DX_RESOURCEVIEW_RTV 0x1
-#define R_DX_RESOURCEVIEW_DSV 0x2
-#define R_DX_RESOURCEVIEW_SRV 0x3
-#define R_DX_RESOURCEVIEW_UAV 0x4
+#if 0
 
 struct RResourceView {
 	RRenderDevice* dev;
@@ -123,6 +120,31 @@ struct RResourceView {
 	Uint8 _offset0;
 	Uint16 _offset1;
 	Uint32 _offset2;
+};
+#endif
+
+#define R_DX_RESOURCEVIEW_RTV 0x1
+#define R_DX_RESOURCEVIEW_DSV 0x2
+#define R_DX_RESOURCEVIEW_SRV 0x3
+#define R_DX_RESOURCEVIEW_UAV 0x4
+
+struct RDescriptorEntry {
+	union {
+		ID3D11RenderTargetView* rtv;
+		ID3D11DepthStencilView* dsv;
+		ID3D11ShaderResourceView* srv;
+		ID3D11UnorderedAccessView* uav;
+	};
+	Uint32 _offset1;
+	Uint16 _offset2;
+	Uint8 binding;
+	Uint8 type; // R_DX_RESOURCEVIEW_
+};
+
+struct RDescriptorSet {
+	RRenderDevice* dev;
+	RDescriptorEntry entrys[16];
+	Uint32 entry_count;
 };
 
 struct RPipeline {
@@ -161,8 +183,8 @@ struct RShader {
 	Uint8  type;
 	Bool   isCompiled;
 	Uint16 _offset1;
-	Uint32 _offset2;
-	ID3D10Blob* buffer;
+	Uint32 buffer_size;
+	void* buffer;
 	union {
 		ID3D11VertexShader*   vs; // Vertex
 		ID3D11PixelShader*    ps; // Pixel
@@ -177,6 +199,7 @@ struct RSampler {
 };
 
 static DXGI_FORMAT GetFormat(RFormat format) {
+#if 0
 	switch (format) {
 		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
 		case RG_FORMAT_R8_UNORM:        return DXGI_FORMAT_R8_UNORM;
@@ -189,9 +212,26 @@ static DXGI_FORMAT GetFormat(RFormat format) {
 		case RG_FORMAT_D32:             return DXGI_FORMAT_R32_TYPELESS;
 		default: return DXGI_FORMAT_UNKNOWN;
 	}
+#endif
+	switch (format) {
+		case RG_FORMAT_R8_UNORM:           return DXGI_FORMAT_R8_UNORM;
+		case RG_FORMAT_R8G8B8A8_UNORM:     return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case RG_FORMAT_R32_FLOAT:          return DXGI_FORMAT_R32_FLOAT;
+		case RG_FORMAT_R32G32B32A32_FLOAT: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		case RG_FORMAT_R32G32B32_FLOAT:    return DXGI_FORMAT_R32G32B32_FLOAT;
+		case RG_FORMAT_R32G32_FLOAT:       return DXGI_FORMAT_R32G32_FLOAT;
+		case RG_FORMAT_D24S8:              return DXGI_FORMAT_R24G8_TYPELESS;// DXGI_FORMAT_D24_UNORM_S8_UINT;
+		case RG_FORMAT_D32:                return DXGI_FORMAT_R32_TYPELESS;// DXGI_FORMAT_D32_FLOAT;
+		case RG_FORMAT_R16_FLOAT:          return DXGI_FORMAT_R16_FLOAT;
+		case RG_FORMAT_R16G16_FLOAT:       return DXGI_FORMAT_R16G16_FLOAT;
+		case RG_FORMAT_R16G16B16_FLOAT:    return DXGI_FORMAT_R16G16B16A16_FLOAT; // NO RGB 16F Format
+		case RG_FORMAT_R16G16B16A16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
+		default:                           return DXGI_FORMAT_UNKNOWN;
+	}
 }
 
 static Uint32 GetFormatSize(RFormat format) {
+#if 0
 	switch (format) {
 		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
 		case RG_FORMAT_R8_UNORM:        return 1;
@@ -203,6 +243,22 @@ static Uint32 GetFormatSize(RFormat format) {
 		case RG_FORMAT_R32G32B32_FLOAT: return 32;
 		case RG_FORMAT_D32:             return 4;
 		default: return 1;
+	}
+#endif
+	switch (format) {
+		case RG_FORMAT_R8_UNORM:           return 1;
+		case RG_FORMAT_R8G8B8A8_UNORM:     return 4;
+		case RG_FORMAT_R32_FLOAT:          return 4;
+		case RG_FORMAT_R32G32B32A32_FLOAT: return 16;
+		case RG_FORMAT_R32G32B32_FLOAT:    return 12;
+		case RG_FORMAT_R32G32_FLOAT:       return 8;
+		case RG_FORMAT_D24S8:              return 4;
+		case RG_FORMAT_D32:                return 4;
+		case RG_FORMAT_R16_FLOAT:          return 2;
+		case RG_FORMAT_R16G16_FLOAT:       return 4;
+		case RG_FORMAT_R16G16B16_FLOAT:    return 8; // No RGB 16F
+		case RG_FORMAT_R16G16B16A16_FLOAT: return 8;
+		default:                           return 1;
 	}
 }
 

@@ -1,31 +1,9 @@
 #include <rshared.h>
 #include "rendertypesdx.h"
 #include <filesystem.h>
-#include <d3dcompiler.h>
-
 #if 0
-RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* info) {
-	RFramebuffer* fb = (RFramebuffer*)dev->allocator->Allocate(sizeof(RFramebuffer));
-	fb->dev = dev;
-	fb->width = info->width;
-	fb->height = info->height;
-	fb->rtv_count = info->rt_count;
-	fb->dsv = NULL;
-	for (Uint32 i = 0; i < fb->rtv_count; i++) {
-		fb->rtv[i] = info->rts[i]->rtv;
-	}
-	if (info->dsv) {
-		fb->dsv = info->dsv->dsv;
-	}
-	return fb;
-}
+#include <d3dcompiler.h>
 #endif
-
-void R_DestroyFramebuffer(RFramebuffer* fb) {
-	RRenderDevice* dev = fb->dev;
-
-	dev->allocator->Deallocate(fb);
-}
 
 RRenderpass* R_CreateRenderpass(RRenderDevice* dev, RRenderpassCreateInfo* info) {
 	RRenderpass* rp = (RRenderpass*)dev->allocator->Allocate(sizeof(RRenderpass));
@@ -57,7 +35,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 			layoutDescriptions[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 			layoutDescriptions[i].InstanceDataStepRate = 0;
 		}
-		dev->dxdev->CreateInputLayout(layoutDescriptions, info->inputCount, info->vertex_shader->buffer->GetBufferPointer(), info->vertex_shader->buffer->GetBufferSize(), &pl->layout);
+		dev->dxdev->CreateInputLayout(layoutDescriptions, info->inputCount, info->vertex_shader->buffer, info->vertex_shader->buffer_size, &pl->layout);
 		pl->vs = info->vertex_shader->vs;
 		pl->ps = info->pixel_shader->ps;
 		if (info->geometry_shader) {
@@ -72,7 +50,12 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		blendDesc.AlphaToCoverageEnable = false;
 		blendDesc.IndependentBlendEnable = false;
 
-		for (Uint32 i = 0; i < info->renderpass->rt_count; i++) {
+		RRenderpass* rp = info->renderpass;
+		if (!rp) {
+			rp = dev->default_renderpass;
+		}
+
+		for (Uint32 i = 0; i < rp->rt_count; i++) {
 #if R_DXRENDER_DEBUG
 			if (info->rts[i]->type != R_DX_RESOURCEVIEW_RTV) {
 				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(rts[%d]) must be a RG_RESOURCEVIEW_TYPE_RTV or RG_RESOURCEVIEW_TYPE_BBV in RRenderpass creation!", i);
@@ -117,7 +100,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		depthStencilDesc.DepthEnable = false;
 		depthStencilDesc.StencilEnable = false;
 
-		if (info->renderpass->use_depth) {
+		if (rp->use_depth) {
 			rasterDesc.DepthClipEnable = true;
 
 #if R_DXRENDER_DEBUG
@@ -171,12 +154,16 @@ void R_DestroyPipeline(RPipeline* pl) {
 static void LoadCompiledShader(RShader* shader, String file) {
 	Resource* v_res = Engine::GetResource(file);
 
+	shader->buffer = shader->dev->allocator->Allocate(v_res->length);
+	SDL_memcpy(shader->buffer, v_res->data, v_res->length);
+	shader->buffer_size = v_res->length;
+
 	HRESULT res = 0;
 	switch (shader->type) {
-		case RG_SHADER_TYPE_VERTEX:   { res = shader->dev->dxdev->CreateVertexShader(v_res->data, v_res->length, NULL, &shader->vs); break; }
-		case RG_SHADER_TYPE_PIXEL:    { res = shader->dev->dxdev->CreatePixelShader(v_res->data, v_res->length, NULL, &shader->ps); break; }
-		case RG_SHADER_TYPE_GEOMETRY: { res = shader->dev->dxdev->CreateGeometryShader(v_res->data, v_res->length, NULL, &shader->gs); break; }
-		case RG_SHADER_TYPE_COMPUTE:  { res = shader->dev->dxdev->CreateComputeShader(v_res->data, v_res->length, NULL, &shader->cs); break; }
+		case RG_SHADER_TYPE_VERTEX:   { res = shader->dev->dxdev->CreateVertexShader(shader->buffer, shader->buffer_size, NULL, &shader->vs); break; }
+		case RG_SHADER_TYPE_PIXEL:    { res = shader->dev->dxdev->CreatePixelShader(shader->buffer, shader->buffer_size, NULL, &shader->ps); break; }
+		case RG_SHADER_TYPE_GEOMETRY: { res = shader->dev->dxdev->CreateGeometryShader(shader->buffer, shader->buffer_size, NULL, &shader->gs); break; }
+		case RG_SHADER_TYPE_COMPUTE:  { res = shader->dev->dxdev->CreateComputeShader(shader->buffer, shader->buffer_size, NULL, &shader->cs); break; }
 		default: break;
 	}
 	if (res) {
@@ -186,6 +173,7 @@ static void LoadCompiledShader(RShader* shader, String file) {
 	Engine::FreeResource(v_res);
 }
 
+#if 0
 static void LoadShaderFromSource(RShader* shader, String file) {
 	ID3D10Blob* errmsg = 0;
 	HRESULT     result;
@@ -200,19 +188,19 @@ static void LoadShaderFromSource(RShader* shader, String file) {
 		case RG_SHADER_TYPE_VERTEX: {
 			shader_type = "vertex";
 			shader_version = "vs_5_0";
-			shader_entrypoint = "vmain";
+			shader_entrypoint = "main";
 			break;
 		}
 		case RG_SHADER_TYPE_PIXEL: {
 			shader_type = "pixel";
 			shader_version = "ps_5_0";
-			shader_entrypoint = "pmain";
+			shader_entrypoint = "main";
 			break;
 		}
 		case RG_SHADER_TYPE_GEOMETRY: {
 			shader_type = "geometry";
 			shader_version = "gs_5_0";
-			shader_entrypoint = "gmain";
+			shader_entrypoint = "main";
 			break;
 		}
 		case RG_SHADER_TYPE_COMPUTE: {
@@ -253,24 +241,19 @@ static void LoadShaderFromSource(RShader* shader, String file) {
 	_ret:
 	Engine::FreeResource(v_res);
 }
+#endif
 
 RShader* R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info) {
 	RShader* shader = (RShader*)dev->allocator->Allocate(sizeof(RShader));
 	shader->dev  = dev;
 	shader->type = info->type;
-	shader->isCompiled = info->isCompiled;
 
 	char path[256];
 	char file[256];
-	Engine::GetPath(path, 256, RG_PATH_SYSTEM, R_RENDERER_SHORTNAME);
-	SDL_snprintf(file, 256, "%s/%s", path, info->name);
+	Engine::GetPath(path, 256, RG_PATH_SYSTEM, "shaders");
+	SDL_snprintf(file, 256, "%s/%s/%s", path, R_RENDERER_SHORTNAME, info->name);
 
-	if (info->isCompiled) {
-		LoadCompiledShader(shader, file);
-	}
-	else {
-		LoadShaderFromSource(shader, file);
-	}
+	LoadCompiledShader(shader, file);
 
 	return shader;
 }
@@ -284,6 +267,7 @@ void R_DestroyShader(RShader* shader) {
 		case RG_SHADER_TYPE_COMPUTE:  { shader->cs->Release(); break; }
 		default: break;
 	}
-	shader->buffer->Release();
+	//shader->buffer->Release();
+	dev->allocator->Deallocate(shader->buffer);
 	dev->allocator->Deallocate(shader);
 }

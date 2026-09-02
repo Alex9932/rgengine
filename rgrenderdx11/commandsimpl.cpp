@@ -168,19 +168,29 @@ static RG_INLINE void CMD_BindResourceViewsImpl(RCommandBuffer* buffer, RCommand
 }
 #endif
 
+static RG_INLINE void CMD_BindDescriptorSetImpl(RCommandBuffer* buffer, RCommand* cmd) {
+
+}
+
 static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	RSampler* sampler = (RSampler*)cmd->handle;
 	Uint32 slot = cmd->data0;
+	// Pixel shader only (unified with Vulkan backend)
+	// TODO: Mark "stage" as deprecated?
+#if 0
 	Uint32 stage = cmd->data1;
 	if (stage == RG_SHADER_TYPE_VERTEX) {
 		buffer->dev->dxctx->VSSetSamplers(slot, 1, &sampler->state);
 	}
 	else if (stage == RG_SHADER_TYPE_PIXEL) {
+#endif
 		buffer->dev->dxctx->PSSetSamplers(slot, 1, &sampler->state);
+#if 0
 	}
 	else if (stage == RG_SHADER_TYPE_COMPUTE) {
 		buffer->dev->dxctx->CSSetSamplers(slot, 1, &sampler->state);
 	}
+#endif
 }
 
 static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
@@ -192,6 +202,7 @@ static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 	// For DX11, we can use constant buffers. Here we would ideally have a pre-allocated constant buffer to update.
 	ID3D11Buffer* d3d11buffer = NULL;
 	Uint8 access = 0;
+#if 0
 	if (stage == RG_SHADER_TYPE_VERTEX) {
 		d3d11buffer = buffer->dev->pc_vertex->buffer;
 		access = buffer->dev->pc_vertex->access;
@@ -200,6 +211,10 @@ static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 		d3d11buffer = buffer->dev->pc_pixel->buffer;
 		access = buffer->dev->pc_pixel->access;
 	}
+#endif
+
+	d3d11buffer = buffer->dev->pushconstant->buffer;
+	access = buffer->dev->pushconstant->access;
 
 	// Update constant buffer
 
@@ -220,6 +235,7 @@ static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 
 	// Bind constant buffer
 	// !! USED SLOT 0 FOR PUSH CONSTANTS !!
+	// TODO: Rewrute this using resource mappings (binding 0xFF)
 	if (stage == RG_SHADER_TYPE_VERTEX) {
 		buffer->dev->dxctx->VSSetConstantBuffers(0, 1, &d3d11buffer);
 	}
@@ -262,7 +278,7 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
-			//case R_CMD_BIND_RESOURCEVIEWS: { CMD_BindResourceViewsImpl(buffer, cmd); break; }
+			case R_CMD_BIND_DESCRIPTORSET: { CMD_BindDescriptorSetImpl(buffer, cmd); break; }
 			case R_CMD_BIND_SAMPLER:       { CMD_BindSamplerImpl(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
@@ -287,6 +303,9 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 static RG_INLINE RCommand* AllocateNextCommand(RCommandBuffer* cmdbuff) {
 	RCommand* cmd = (RCommand*)cmdbuff->pool->Allocate(sizeof(RCommand));
 	cmdbuff->commands_recorded++;
+	if (!cmd) {
+		__debugbreak();
+	}
 	return cmd;
 }
 
@@ -357,6 +376,12 @@ void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResource
 }
 #endif
 
+void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* info) {
+	RCommand* cmd = AllocateNextCommand(cmdbuff);
+	cmd->cmd = R_CMD_BIND_DESCRIPTORSET;
+
+}
+
 void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	cmd->cmd    = R_CMD_BIND_SAMPLER;
@@ -381,10 +406,10 @@ void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart)
 	cmd->data1 = idxstart;
 }
 
-void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size, Uint32 stage) {
+void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size) {
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	cmd->cmd = R_CMD_PUSHCONSTANTS;
-	cmd->_off0 = stage; // Use "unused" field to store pipeline stage
+	//cmd->_off0 = stage; // Use "unused" field to store pipeline stage
 	cmd->_off1 = size;  // Use "unused" field to store size
 	SDL_memcpy(cmd->buffer, buffer, SDL_min(size, 128)); // Copy max 128 bytes
 }
@@ -404,4 +429,9 @@ void R_CmdDispatch(RCommandBuffer* cmdbuff, Uint32 groupcount_x, Uint32 groupcou
 	cmd->data0 = groupcount_x;
 	cmd->data1 = groupcount_y;
 	cmd->data2 = groupcount_z;
+}
+
+void R_CmdUseImage(RCommandBuffer* cmdbuff, RImage* image, Uint32 usage) {
+	// NOP
+	return;
 }
