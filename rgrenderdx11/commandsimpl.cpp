@@ -46,8 +46,19 @@ static RG_INLINE DXGI_FORMAT GetIndexType(IndexType type) {
 	}
 }
 
-static RG_INLINE void MapResource(Uint8* reg, Uint8* slot, Uint8 set, Uint8 binding, RPipeline* pl) {
+static RG_INLINE DXResourceMapping* GetResourceMapping(Uint16 resid, RPipeline* pl) {
 	// Use lookup table
+	//Uint8 set     = (resid & 0xFF00) >> 8;
+	//Uint8 binding = (resid & 0x00FF);
+
+	for (Uint32 i = 0; i < pl->bindings; i++) {
+		if (pl->map_table[i].idx == resid) {
+			return &pl->map_table[i];
+		}
+	}
+
+	return NULL;
+
 }
 
 static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -138,48 +149,56 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 	buffer->dev->dxctx->IASetIndexBuffer(ib->buffer, GetIndexType(indexFormat), 0);
 	buffer->dev->dxctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
-#if 0
-static RG_INLINE void BindResourceView(RBindResourceViewInfo* info) {
-	if(info->target == RG_PIPELINE_TYPE_COMPUTE) {
-		// Compute pipeline
-		if (info->type == R_DX_RESOURCEVIEW_SRV) {
-			// Bind SRV
-			info->rv->dev->dxctx->CSSetShaderResources(info->slot, 1, &info->rv->srv);
-		} else if (info->type == R_DX_RESOURCEVIEW_UAV) {
-			// Bind UAV
-			info->rv->dev->dxctx->CSSetUnorderedAccessViews(info->slot, 1, &info->rv->uav, NULL);
-		}
-	} else {
-		// Graphics pipeline
-		if (info->type == R_DX_RESOURCEVIEW_SRV) {
-			// Bind SRV
-			info->rv->dev->dxctx->PSSetShaderResources(info->slot, 1, &info->rv->srv);
-		} else if (info->type == R_DX_RESOURCEVIEW_UAV) {
-			rgLogError(RG_LOG_RENDER, "R_DX11: Binding UAV resource views to graphics pipeline is not implemented yet.");
-#if 0
-			// Bind UAV
-			info->rv->dev->dxctx->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, info->slot, 1, &info->rv->uav, NULL);
-#endif
-		}
-	}
-}
 
-static RG_INLINE void CMD_BindResourceViewsImpl(RCommandBuffer* buffer, RCommand* cmd) {
-	Uint32 count = cmd->_off0;
-	RBindResourceViewInfo* infos = (RBindResourceViewInfo*)cmd->buffer;
-	for (Uint32 i = 0; i < count; i++) {
-		BindResourceView(&infos[i]);
-	}
-}
-#endif
+static RG_INLINE void CMD_BindDescriptorImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	//RDescriptorEntry* entry = (RDescriptorEntry*)cmd->buffer;
+	//Uint8 stage = (cmd->_off0 & 0xF000) >> 12; // Upper 4 bits
+	//Uint8 reg   = (cmd->_off0 & 0x0F00) >> 8;  // Middle 4 bits
+	//Uint8 slot  = (cmd->_off0 & 0x00FF);       // Lower 8 bits
 
-static RG_INLINE void CMD_BindDescriptorSetImpl(RCommandBuffer* buffer, RCommand* cmd) {
-	RDescriptorEntry* entry = (RDescriptorEntry*)cmd->buffer;
-	Uint8 stage = (cmd->_off0 & 0xF000) >> 12; // Upper 4 bits
-	Uint8 reg   = (cmd->_off0 & 0x0F00) >> 8;  // Middle 4 bits
-	Uint8 slot  = (cmd->_off0 & 0x00FF);       // Lower 8 bits
+	RRenderDevice* dev = buffer->dev;
 
+	Uint8 stage = (Uint8)cmd->_off1;
+	Uint8 type  = (cmd->_off0 & 0xFF00) >> 8;
+	Uint8 slot  = (cmd->_off0 & 0x00FF);
 	
+	if (stage == DXRM_STAGE_VERTEX) {
+		switch (type) {
+			case DX_RESOURCE_TYPE_TEXTURE:        { dev->dxctx->VSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_SAMPLER:        { dev->dxctx->VSSetSamplers(slot, 1, (ID3D11SamplerState**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_CONSTANTBUFFER: { dev->dxctx->VSSetConstantBuffers(slot, 1, &((RBuffer*)cmd->handle)->buffer); break; }
+			case DX_RESOURCE_TYPE_STORAGE_SRV:    { dev->dxctx->VSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			// dev->dxctx->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, info->slot, 1, &info->rv->uav, NULL);
+			//case DX_RESOURCE_TYPE_STORAGE_UAV:    { dev->dxctx->VSSetUnorderedAccessViews(slot, 1, (ID3D11UnorderedAccessView**)&cmd->handle, NULL); break; }
+		}
+	} else if (stage == DXRM_STAGE_GEOMETRY) {
+		switch (type) {
+			case DX_RESOURCE_TYPE_TEXTURE:        { dev->dxctx->GSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_SAMPLER:        { dev->dxctx->GSSetSamplers(slot, 1, (ID3D11SamplerState**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_CONSTANTBUFFER: { dev->dxctx->GSSetConstantBuffers(slot, 1, &((RBuffer*)cmd->handle)->buffer); break; }
+			case DX_RESOURCE_TYPE_STORAGE_SRV:    { dev->dxctx->GSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			// dev->dxctx->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, info->slot, 1, &info->rv->uav, NULL);
+			//case DX_RESOURCE_TYPE_STORAGE_UAV:    { dev->dxctx->GSSetUnorderedAccessViews(slot, 1, (ID3D11UnorderedAccessView**)&cmd->handle, NULL); break; }
+		}
+	} else if (stage == DXRM_STAGE_PIXEL) {
+		switch (type) {
+			case DX_RESOURCE_TYPE_TEXTURE:        { dev->dxctx->PSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_SAMPLER:        { dev->dxctx->PSSetSamplers(slot, 1, (ID3D11SamplerState**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_CONSTANTBUFFER: { dev->dxctx->PSSetConstantBuffers(slot, 1, &((RBuffer*)cmd->handle)->buffer); break; }
+			case DX_RESOURCE_TYPE_STORAGE_SRV:    { dev->dxctx->PSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			// dev->dxctx->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, info->slot, 1, &info->rv->uav, NULL);
+			//case DX_RESOURCE_TYPE_STORAGE_UAV:    { dev->dxctx->PSSetUnorderedAccessViews(slot, 1, (ID3D11UnorderedAccessView**)&cmd->handle, NULL); break; }
+		}
+	} else if (stage == DXRM_STAGE_COMPUTE) {
+		switch (type) {
+			case DX_RESOURCE_TYPE_TEXTURE:        { dev->dxctx->CSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_SAMPLER:        { dev->dxctx->CSSetSamplers(slot, 1, (ID3D11SamplerState**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_CONSTANTBUFFER: { dev->dxctx->CSSetConstantBuffers(slot, 1, &((RBuffer*)cmd->handle)->buffer); break; }
+			case DX_RESOURCE_TYPE_STORAGE_SRV:    { dev->dxctx->CSSetShaderResources(slot, 1, (ID3D11ShaderResourceView**)&cmd->handle); break; }
+			case DX_RESOURCE_TYPE_STORAGE_UAV:    { dev->dxctx->CSSetUnorderedAccessViews(slot, 1, (ID3D11UnorderedAccessView**)&cmd->handle, NULL); break; }
+		}
+	}
+
 }
 
 static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -203,31 +222,16 @@ static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd)
 #endif
 }
 
-static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
+static RG_INLINE void CMD_UpdatePushConstants(RCommandBuffer* buffer, RCommand* cmd) {
+	RRenderDevice* dev = buffer->dev;
 	void* data = cmd->buffer;
-	//Uint32 size = cmd->_off1; // Size stored in unused field
-	//Uint16 stage = cmd->_off0;
-	Uint32 size  = cmd->_off1;
 
-	// For DX11, we can use constant buffers. Here we would ideally have a pre-allocated constant buffer to update.
-	ID3D11Buffer* d3d11buffer = NULL;
-	Uint8 access = 0;
-#if 0
-	if (stage == RG_SHADER_TYPE_VERTEX) {
-		d3d11buffer = buffer->dev->pc_vertex->buffer;
-		access = buffer->dev->pc_vertex->access;
-	}
-	else if (stage == RG_SHADER_TYPE_PIXEL) {
-		d3d11buffer = buffer->dev->pc_pixel->buffer;
-		access = buffer->dev->pc_pixel->access;
-	}
-#endif
+	Uint8 size  = cmd->_off1;
 
-	d3d11buffer = buffer->dev->pushconstant->buffer;
-	access = buffer->dev->pushconstant->access;
+	ID3D11Buffer* d3d11buffer = dev->pushconstant->buffer;
+	Uint8         access      = dev->pushconstant->access;
 
 	// Update constant buffer
-
 	if (access == RG_BUFFER_ACCESS_GPU_ONLY) {
 		// Use UpdateSubresource
 		// !! WARN: No partial updates supported here !!
@@ -242,13 +246,22 @@ static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 			buffer->dev->dxctx->Unmap(d3d11buffer, 0);
 		}
 	}
+}
+
+static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
+	RRenderDevice* dev = buffer->dev;
+	void* data = cmd->buffer;
+
+	Uint8 slot  = (cmd->_off0 & 0x00FF);
+	Uint8 stage = (cmd->_off0 & 0xFF00) >> 8;
 
 	// Bind constant buffer
-	// !! USED SLOT 0 FOR PUSH CONSTANTS !!
-	// TODO: Rewrute this using resource mappings (binding 0xFF)
-	buffer->dev->dxctx->VSSetConstantBuffers(0, 1, &d3d11buffer);
-	buffer->dev->dxctx->PSSetConstantBuffers(0, 1, &d3d11buffer);
-
+	switch (stage) {
+		case DXRM_STAGE_VERTEX:   { dev->dxctx->VSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
+		case DXRM_STAGE_GEOMETRY: { dev->dxctx->GSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
+		case DXRM_STAGE_PIXEL:    { dev->dxctx->PSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
+		case DXRM_STAGE_COMPUTE:  { dev->dxctx->CSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
+	}
 }
 
 static RG_INLINE void CMD_DrawImGuiImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -284,8 +297,9 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_PIPELINE:      { CMD_BindPipelineImpl(buffer, cmd); break; }
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
-			case R_CMD_BIND_DESCRIPTORSET: { CMD_BindDescriptorSetImpl(buffer, cmd); break; }
+			case R_CMD_BIND_DESCRIPTOR:    { CMD_BindDescriptorImpl(buffer, cmd); break; }
 			case R_CMD_BIND_SAMPLER:       { CMD_BindSamplerImpl(buffer, cmd); break; }
+			case R_CMD_UPDPUSHCONSTANTS:   { CMD_UpdatePushConstants(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
 			//case R_CMD_DRAW:               { CMD_DrawImpl(buffer, cmd); break; }
@@ -376,18 +390,6 @@ void R_CmdBindIndexBuffer(RCommandBuffer* cmdbuff, RBuffer* ib, IndexType isize)
 	cmd->data0  = isize;
 }
 
-#if 0
-void R_CmdBindResourceViews(RCommandBuffer* cmdbuff, Uint32 count, RBindResourceViewInfo* views) {
-	RCommand* cmd = AllocateNextCommand(cmdbuff);
-	cmd->cmd = R_CMD_BIND_RESOURCEVIEWS;
-	if (count >= 8) {
-		rgLogError(RG_LOG_RENDER, "DX11 Renderer: R_CmdBindResourceViews supports max 8 resource views!");
-	}
-	cmd->_off0 = count; // Store count in unused field
-	SDL_memcpy(cmd->buffer, views, sizeof(RBindResourceViewInfo) * count);
-}
-#endif
-
 void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* info) {
 	for (size_t i = 0; i < info->count; i++) {
 
@@ -395,19 +397,45 @@ void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* i
 		Uint8 setid = info->startslot + i;
 
 		for (size_t j = 0; j < set->entry_count; j++) {
+			RDescriptorEntry* entry = &set->entrys[j];
+			Uint8 binding = entry->binding;
+			Uint16 idx = ((Uint16)setid << 8) | binding;
+			
+			DXResourceMapping* table = GetResourceMapping(idx, cmdbuff->pipeline);
+			if (!table) { continue; } // No bind point
 
-			RCommand* cmd = AllocateNextCommand(cmdbuff);
-			if (!cmd) { return; }
-			cmd->cmd = R_CMD_BIND_DESCRIPTORSET;
+			RCommand* cmd = NULL;
+			for (Uint32 k = 0; k < DXRM_STAGE_MAX; k++) {
+				DXRM* mapping = &table->mappings[k];
+				if (!mapping->valid) { continue; }
 
-			Uint8 binding = set->entrys[j].binding;
-			// Map resource
-			Uint8 reg = 0;
-			Uint8 slot = 0;
-			MapResource(&reg, &slot, setid, binding, cmdbuff->pipeline);
+				AllocateNextCommand(cmdbuff);
+				if (!cmd) { return; }
+				cmd->cmd = R_CMD_BIND_DESCRIPTOR;
 
-			cmd->_off0 = ((Uint16)reg << 8) | slot;
-			SDL_memcpy(cmd->buffer, &set->entrys[i], sizeof(RDescriptorEntry));
+				Uint16 type = mapping->type;
+
+				if (mapping->type == DX_RESOURCE_TYPE_TEXTURE) {
+					cmd->handle = entry->srv;
+				}
+				//else if (mapping->type == DX_RESOURCE_TYPE_SAMPLER) { // Skip this (samplers is bound other way)
+				else if (mapping->type == DX_RESOURCE_TYPE_CONSTANTBUFFER) {
+					cmd->handle = entry->buffer;
+				}
+				else if (mapping->type == DX_RESOURCE_TYPE_STORAGEBUFFER &&
+					RG_CHECK_FLAG(entry->buffer->type, RG_BUFFER_TYPE_UNORDERED)) {
+					cmd->handle = entry->uav;
+					type = DX_RESOURCE_TYPE_STORAGE_UAV;
+				}
+				else if (mapping->type == DX_RESOURCE_TYPE_STORAGEBUFFER &&
+					RG_CHECK_FLAG(entry->buffer->type, RG_BUFFER_TYPE_STRUCTURED)) {
+					cmd->handle = entry->srv;
+					type = DX_RESOURCE_TYPE_STORAGE_SRV;
+				}
+
+				cmd->_off0 = (type << 8) | mapping->slot; // Resource type | slot
+				cmd->_off1 = k; // Pipeline stage
+			}
 		}
 	}
 }
@@ -439,12 +467,29 @@ void R_CmdDrawIndexed(RCommandBuffer* cmdbuff, Uint32 idxcount, Uint32 idxstart)
 }
 
 void R_CmdPushConstants(RCommandBuffer* cmdbuff, void* buffer, Uint32 size) {
+
+	// Update buffer
 	RCommand* cmd = AllocateNextCommand(cmdbuff);
 	if (!cmd) { return; }
-	cmd->cmd = R_CMD_PUSHCONSTANTS;
-	//cmd->_off0 = stage; // Use "unused" field to store pipeline stage
-	cmd->_off1 = size;  // Use "unused" field to store size
+	cmd->cmd = R_CMD_UPDPUSHCONSTANTS;
+	cmd->_off1 = size;
 	SDL_memcpy(cmd->buffer, buffer, SDL_min(size, 128)); // Copy max 128 bytes
+
+	// Bind resource
+	Uint16 idx = 0x00FF; // Push constant address (set = 0, binding = 0xFF)
+	DXResourceMapping* table = GetResourceMapping(idx, cmdbuff->pipeline);
+	if (!table) { return; } // No bind point
+
+	for (Uint32 i = 0; i < DXRM_STAGE_MAX; i++) {
+		DXRM* mapping = &table->mappings[i];
+		if (!mapping->valid) { continue; }
+
+		cmd = AllocateNextCommand(cmdbuff);
+		if (!cmd) { return; }
+		cmd->cmd = R_CMD_PUSHCONSTANTS;
+		cmd->_off0 = (i << 8) | mapping->slot; // Stage | Slot
+	}
+
 }
 
 void R_CmdImGuiRenderDrawData(RCommandBuffer* cmdbuff, void* data) {

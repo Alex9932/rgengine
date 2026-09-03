@@ -73,10 +73,11 @@ struct RImage {
 #define R_CMD_BIND_PIPELINE      0x0011
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
-#define R_CMD_BIND_DESCRIPTORSET 0x0014
+#define R_CMD_BIND_DESCRIPTOR    0x0014
 #define R_CMD_BIND_SAMPLER       0x0015
 
-#define R_CMD_PUSHCONSTANTS      0x0016
+#define R_CMD_UPDPUSHCONSTANTS   0x0016
+#define R_CMD_PUSHCONSTANTS      0x0017
 
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022
@@ -154,10 +155,40 @@ struct RDescriptorSet {
 	Uint32 entry_count;
 };
 
+enum DXRM_STAGE {
+	DXRM_STAGE_VERTEX   = 0x00,
+	DXRM_STAGE_GEOMETRY = 0x01,
+	DXRM_STAGE_PIXEL    = 0x02,
+	DXRM_STAGE_COMPUTE  = 0x03,
+	DXRM_STAGE_MAX      = 0x04
+};
+#define DX_RESOURCE_TYPE_PUSHCONSTANT_BINDING 0xFF // For runtime mapping
+
+#define DX_RESOURCE_TYPE_PUSHCONSTANT   0x00 // b (raw buffer) max 255
+#define DX_RESOURCE_TYPE_TEXTURE        0x01 // t (SRV)
+#define DX_RESOURCE_TYPE_SAMPLER        0x02 // s (SAMPLER)
+#define DX_RESOURCE_TYPE_CONSTANTBUFFER 0x03 // b (raw buffer)
+#define DX_RESOURCE_TYPE_STORAGEBUFFER  0x04 // t/u SRV/UAV
+#define DX_RESOURCE_TYPE_STORAGE_SRV    0x05 // t (SRV)
+#define DX_RESOURCE_TYPE_STORAGE_UAV    0x06 // u (UAV)
+
+struct DXRM {
+	Uint8 valid;
+	Uint8 type;
+	Uint8 slot;
+	Uint8 _padding;
+};
+
+struct DXResourceMapping {
+	Uint16 idx; // HI - set, LOW - binding
+	DXRM mappings[DXRM_STAGE_MAX];
+};
+
 struct RPipeline {
 	RRenderDevice*        dev;
 	Uint32 	              type;
-	Uint32 	              _off0;
+	Uint32 	              bindings;
+	DXResourceMapping*    map_table;
 	ID3D11InputLayout*    layout;
 	ID3D11VertexShader*   vs; // Vertex
 	ID3D11PixelShader*    ps; // Pixel
@@ -185,11 +216,18 @@ struct RRenderpass {
 	RRect          viewport;
 };
 
+struct MappingEntry {
+	uint8_t set;     // Native Vulkan set
+	uint8_t binding; // Native Vulkan binding
+	uint8_t reg;     // Resource register
+	uint8_t slot;    // Resource slot
+};
+
 struct RShader {
 	RRenderDevice* dev;
 	Uint8  type;
-	Bool   isCompiled;
-	Uint16 _offset1;
+	Uint16 _padding;
+	Uint16 mapping_count;
 	Uint32 buffer_size;
 	void* buffer;
 	union {
@@ -198,6 +236,7 @@ struct RShader {
 		ID3D11GeometryShader* gs; // Geometry
 		ID3D11ComputeShader*  cs; // Compute
 	};
+	MappingEntry* mapping_entrys;
 };
 
 struct RSampler {

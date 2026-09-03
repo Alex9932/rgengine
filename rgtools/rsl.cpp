@@ -6,13 +6,13 @@
 #include <spirv_cross/spirv_hlsl.hpp>
 #include <d3dcompiler.h>
 
-#define RESOURCE_PUSHCONSTANT_BINDING 0xFF // For runtime mapping
+#define DX_RESOURCE_TYPE_PUSHCONSTANT_BINDING 0xFF // For runtime mapping
 
-#define RESOURCE_PUSHCONSTANT   0x00 // b (255)
-#define RESOURCE_TEXTURE        0x01 // t
-#define RESOURCE_SAMPLER        0x02 // s
-#define RESOURCE_CONSTANTBUFFER 0x03 // b
-#define RESOURCE_STORAGEBUFFER  0x04 // t/u (SRV/UAV)
+#define DX_RESOURCE_TYPE_PUSHCONSTANT   0x00 // b (255)
+#define DX_RESOURCE_TYPE_TEXTURE        0x01 // t
+#define DX_RESOURCE_TYPE_SAMPLER        0x02 // s
+#define DX_RESOURCE_TYPE_CONSTANTBUFFER 0x03 // b
+#define DX_RESOURCE_TYPE_STORAGEBUFFER  0x04 // t/u (SRV/UAV)
 
 struct MappingEntry {
 	uint8_t set;     // Native Vulkan set
@@ -73,14 +73,14 @@ void rsl_build(String in, String out) {
 		uint32_t assigned_slot = 0;
 
 		switch (type) {
-			case RESOURCE_CONSTANTBUFFER: { // b
+			case DX_RESOURCE_TYPE_CONSTANTBUFFER: { // b
 				assigned_slot = next_b_slot++;
 				hlsl_binding.cbv.register_space = 0;
 				hlsl_binding.cbv.register_binding = assigned_slot;
 				compiler.add_hlsl_resource_binding(hlsl_binding);
 				break;
 			}
-			case RESOURCE_PUSHCONSTANT: { // b
+			case DX_RESOURCE_TYPE_PUSHCONSTANT: { // b
 				assigned_slot = next_b_slot++;
 				hlsl_binding.cbv.register_space = 0;
 				hlsl_binding.cbv.register_binding = assigned_slot;
@@ -95,21 +95,21 @@ void rsl_build(String in, String out) {
 				compiler.add_hlsl_resource_binding(hlsl_binding);
 				break;
 			}
-			case RESOURCE_TEXTURE: { // t
+			case DX_RESOURCE_TYPE_TEXTURE: { // t
 				assigned_slot = next_t_slot++;
 				hlsl_binding.srv.register_space = 0;
 				hlsl_binding.srv.register_binding = assigned_slot;
 				compiler.add_hlsl_resource_binding(hlsl_binding);
 				break;
 			}
-			case RESOURCE_SAMPLER: { // s
+			case DX_RESOURCE_TYPE_SAMPLER: { // s
 				assigned_slot = next_s_slot++;
 				hlsl_binding.sampler.register_space = 0;
 				hlsl_binding.sampler.register_binding = assigned_slot;
 				compiler.add_hlsl_resource_binding(hlsl_binding);
 				break;
 			}
-			case RESOURCE_STORAGEBUFFER: { // t/u
+			case DX_RESOURCE_TYPE_STORAGEBUFFER: { // t/u
 				auto flags = compiler.get_buffer_block_flags(res_id);
 				bool is_readonly = flags.get(spv::DecorationNonWritable);
 
@@ -140,7 +140,7 @@ void rsl_build(String in, String out) {
 	for (const auto& res : resources.uniform_buffers) {
 		uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 		uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-		RemapResource(res.id, RESOURCE_CONSTANTBUFFER, set, binding); // b
+		RemapResource(res.id, DX_RESOURCE_TYPE_CONSTANTBUFFER, set, binding); // b
 	}
 
 	// Push constant
@@ -148,27 +148,27 @@ void rsl_build(String in, String out) {
 	//for (const auto& res : resources.push_constant_buffers) {
 	//	RemapResource(res.id, RESOURCE_PUSHCONSTANT, 0, RESOURCE_PUSHCONSTANT_BINDING); // b (next empty slot)
 	//}
-	RemapResource(resources.push_constant_buffers[0].id, RESOURCE_PUSHCONSTANT, 0, RESOURCE_PUSHCONSTANT_BINDING); // b (next empty slot)
+	RemapResource(resources.push_constant_buffers[0].id, DX_RESOURCE_TYPE_PUSHCONSTANT, 0, DX_RESOURCE_TYPE_PUSHCONSTANT_BINDING); // b (next empty slot)
 
 	// Textures
 	for (const auto& res : resources.separate_images) {
 		uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 		uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-		RemapResource(res.id, RESOURCE_TEXTURE, set, binding); // t
+		RemapResource(res.id, DX_RESOURCE_TYPE_TEXTURE, set, binding); // t
 	}
 
 	// Samplers
 	for (const auto& res : resources.separate_samplers) {
 		uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 		uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-		RemapResource(res.id, RESOURCE_SAMPLER, set, binding); // s
+		RemapResource(res.id, DX_RESOURCE_TYPE_SAMPLER, set, binding); // s
 	}
 
 	// Storage buffers
 	for (const auto& res : resources.storage_buffers) {
 		uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 		uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-		RemapResource(res.id, RESOURCE_STORAGEBUFFER, set, binding); // t/u
+		RemapResource(res.id, DX_RESOURCE_TYPE_STORAGEBUFFER, set, binding); // t/u
 	}
 
 	std::string s = compiler.compile();

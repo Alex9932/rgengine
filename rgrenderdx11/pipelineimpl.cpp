@@ -19,10 +19,28 @@ void R_DestroyRenderpass(RRenderpass* rp) {
 	dev->allocator->Deallocate(rp);
 }
 
+static void AddMappings(Uint32* resources, RShader* shader, RPipeline* pl) {
+	for (Uint32 i = 0; i < shader->mapping_count; i++) {
+		MappingEntry* entry = &shader->mapping_entrys[i];
+		Uint16 idx = ((Uint16)entry->set << 8) | entry->binding;// Logical address (set << 8 | binding)
+		Uint32 id = *resources;
+		pl->map_table[id].idx = idx;
+		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].valid = 1;
+		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].type = entry->reg;
+		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].slot = entry->slot;
+		*resources = id + 1;
+	}
+}
+
 RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 	RPipeline* pl = (RPipeline*)dev->allocator->Allocate(sizeof(RPipeline));
 	pl->dev = dev;
 	pl->type = info->type;
+	pl->vs = NULL;
+	pl->gs = NULL;
+	pl->ps = NULL;
+	pl->cs = NULL;
+
 	if (info->type == RG_PIPELINE_TYPE_GRAPHICS) {
 		D3D11_INPUT_ELEMENT_DESC layoutDescriptions[16];
 		for (Uint32 i = 0; i < info->inputCount; i++) {
@@ -40,8 +58,6 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		pl->ps = info->pixel_shader->ps;
 		if (info->geometry_shader) {
 			pl->gs = info->geometry_shader->gs;
-		} else {
-			pl->gs = NULL;
 		}
 
 		pl->depth_stencil_state = NULL;
@@ -134,6 +150,17 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		pl->cs = info->compute_shader->cs;
 	}
 
+	// Build mapping table
+	pl->bindings = 0;
+	pl->map_table = (DXResourceMapping*)dev->allocator->Allocate(sizeof(DXResourceMapping) * 64); // Reserve table for 64 entrys
+	SDL_memset(pl->map_table, 0, sizeof(DXResourceMapping) * 64);
+
+	Uint32 resources = 0;
+	if (pl->vs) { AddMappings(&resources, info->vertex_shader, pl); }
+	if (pl->gs) { AddMappings(&resources, info->geometry_shader, pl); }
+	if (pl->ps) { AddMappings(&resources, info->pixel_shader, pl); }
+	if (pl->cs) { AddMappings(&resources, info->compute_shader, pl); }
+
 	return pl;
 }
 
@@ -148,10 +175,21 @@ void R_DestroyPipeline(RPipeline* pl) {
 			pl->depth_stencil_state->Release();
 		}
 	}
+	dev->allocator->Deallocate(pl->map_table);
 	dev->allocator->Deallocate(pl);
 }
 
-static void LoadCompiledShader(RShader* shader, String file) {
+RShader* R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info) {
+	RShader* shader = (RShader*)dev->allocator->Allocate(sizeof(RShader));
+	shader->dev  = dev;
+	shader->type = info->type;
+
+	char path[256];
+	char file[256];
+	Engine::GetPath(path, 256, RG_PATH_SYSTEM, "shaders");
+	SDL_snprintf(file, 256, "%s/%s/%s", path, R_RENDERER_SHORTNAME, info->name);
+
+	// Read shader code
 	Resource* v_res = Engine::GetResource(file);
 
 	shader->buffer = shader->dev->allocator->Allocate(v_res->length);
@@ -171,89 +209,14 @@ static void LoadCompiledShader(RShader* shader, String file) {
 	}
 
 	Engine::FreeResource(v_res);
-}
 
-#if 0
-static void LoadShaderFromSource(RShader* shader, String file) {
-	ID3D10Blob* errmsg = 0;
-	HRESULT     result;
-
-	Resource* v_res = Engine::GetResource(file);
-
-	String shader_type;
-	String shader_version;
-	String shader_entrypoint;
-
-	switch (shader->type) {
-		case RG_SHADER_TYPE_VERTEX: {
-			shader_type = "vertex";
-			shader_version = "vs_5_0";
-			shader_entrypoint = "main";
-			break;
-		}
-		case RG_SHADER_TYPE_PIXEL: {
-			shader_type = "pixel";
-			shader_version = "ps_5_0";
-			shader_entrypoint = "main";
-			break;
-		}
-		case RG_SHADER_TYPE_GEOMETRY: {
-			shader_type = "geometry";
-			shader_version = "gs_5_0";
-			shader_entrypoint = "main";
-			break;
-		}
-		case RG_SHADER_TYPE_COMPUTE: {
-			shader_type = "compute";
-			shader_version = "cs_5_0";
-			shader_entrypoint = "main";
-			break;
-		}
-		default: {
-			shader_type = "unknown";
-			shader_version = "?";
-			shader_entrypoint = "main";
-			break;
-		}
-	}
-
-	result = D3DCompile(v_res->data, v_res->length, shader_type, NULL, NULL, shader_entrypoint, shader_version, D3D10_SHADER_ENABLE_STRICTNESS, 0, &shader->buffer, &errmsg);
-	if (FAILED(result)) {
-		rgLogError(RG_LOG_RENDER, "Error code: %x\n", result);
-		if (errmsg) {
-			char err[256];
-			SDL_memset(err, 0, 256);
-			size_t len = SDL_min(errmsg->GetBufferSize(), 255);
-			SDL_memcpy(err, errmsg->GetBufferPointer(), len);
-			rgLogError(RG_LOG_RENDER, "DX11 Shader compile: %s\n", err);
-			goto _ret;
-		}
-	}
-
-	switch (shader->type) {
-		case RG_SHADER_TYPE_VERTEX:   { shader->dev->dxdev->CreateVertexShader(shader->buffer->GetBufferPointer(), shader->buffer->GetBufferSize(), NULL, &shader->vs); break; }
-		case RG_SHADER_TYPE_PIXEL:    { shader->dev->dxdev->CreatePixelShader(shader->buffer->GetBufferPointer(), shader->buffer->GetBufferSize(), NULL, &shader->ps); break; }
-		case RG_SHADER_TYPE_GEOMETRY: { shader->dev->dxdev->CreateGeometryShader(shader->buffer->GetBufferPointer(), shader->buffer->GetBufferSize(), NULL, &shader->gs); break; }
-		case RG_SHADER_TYPE_COMPUTE:  { shader->dev->dxdev->CreateComputeShader(shader->buffer->GetBufferPointer(), shader->buffer->GetBufferSize(), NULL, &shader->cs); break; }
-		default: break;
-	}
-
-	_ret:
+	// Read resource mappings
+	SDL_snprintf(file, 256, "%s/%s/%s.map", path, R_RENDERER_SHORTNAME, info->name);
+	v_res = Engine::GetResource(file);
+	shader->mapping_count = v_res->length / sizeof(MappingEntry);
+	shader->mapping_entrys = (MappingEntry*)dev->allocator->Allocate(sizeof(MappingEntry) * shader->mapping_count);
+	SDL_memcpy(shader->mapping_entrys, v_res->data, sizeof(MappingEntry) * shader->mapping_count);
 	Engine::FreeResource(v_res);
-}
-#endif
-
-RShader* R_CreateShader(RRenderDevice* dev, RShaderCreateInfo* info) {
-	RShader* shader = (RShader*)dev->allocator->Allocate(sizeof(RShader));
-	shader->dev  = dev;
-	shader->type = info->type;
-
-	char path[256];
-	char file[256];
-	Engine::GetPath(path, 256, RG_PATH_SYSTEM, "shaders");
-	SDL_snprintf(file, 256, "%s/%s/%s", path, R_RENDERER_SHORTNAME, info->name);
-
-	LoadCompiledShader(shader, file);
 
 	return shader;
 }
@@ -268,6 +231,7 @@ void R_DestroyShader(RShader* shader) {
 		default: break;
 	}
 	//shader->buffer->Release();
+	dev->allocator->Deallocate(shader->mapping_entrys);
 	dev->allocator->Deallocate(shader->buffer);
 	dev->allocator->Deallocate(shader);
 }
