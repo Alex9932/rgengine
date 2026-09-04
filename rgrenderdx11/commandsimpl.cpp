@@ -409,7 +409,7 @@ void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* i
 				DXRM* mapping = &table->mappings[k];
 				if (!mapping->valid) { continue; }
 
-				AllocateNextCommand(cmdbuff);
+				cmd = AllocateNextCommand(cmdbuff);
 				if (!cmd) { return; }
 				cmd->cmd = R_CMD_BIND_DESCRIPTOR;
 

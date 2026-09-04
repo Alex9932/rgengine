@@ -19,18 +19,37 @@ void R_DestroyRenderpass(RRenderpass* rp) {
 	dev->allocator->Deallocate(rp);
 }
 
-static void AddMappings(Uint32* resources, RShader* shader, RPipeline* pl) {
+static void AddMappings(Uint32* resources, Uint32 stage, RShader* shader, RPipeline* pl) {
 	for (Uint32 i = 0; i < shader->mapping_count; i++) {
 		MappingEntry* entry = &shader->mapping_entrys[i];
 		Uint16 idx = ((Uint16)entry->set << 8) | entry->binding;// Logical address (set << 8 | binding)
 		Uint32 id = *resources;
 		pl->map_table[id].idx = idx;
-		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].valid = 1;
-		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].type = entry->reg;
-		pl->map_table[id].mappings[DXRM_STAGE_VERTEX].slot = entry->slot;
+		pl->map_table[id].mappings[stage].valid = 1;
+		pl->map_table[id].mappings[stage].type = entry->reg;
+		pl->map_table[id].mappings[stage].slot = entry->slot;
 		*resources = id + 1;
 	}
 }
+
+static String semantic_names[] = {
+	"TEXCOORD0",
+	"TEXCOORD1",
+	"TEXCOORD2",
+	"TEXCOORD3",
+	"TEXCOORD4",
+	"TEXCOORD5",
+	"TEXCOORD6",
+	"TEXCOORD7",
+	"TEXCOORD8",
+	"TEXCOORD9",
+	"TEXCOORD10",
+	"TEXCOORD11",
+	"TEXCOORD12",
+	"TEXCOORD13",
+	"TEXCOORD14",
+	"TEXCOORD15"
+};
 
 RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 	RPipeline* pl = (RPipeline*)dev->allocator->Allocate(sizeof(RPipeline));
@@ -44,8 +63,9 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 	if (info->type == RG_PIPELINE_TYPE_GRAPHICS) {
 		D3D11_INPUT_ELEMENT_DESC layoutDescriptions[16];
 		for (Uint32 i = 0; i < info->inputCount; i++) {
-			layoutDescriptions[i].SemanticName = info->descriptions[i].name;
-			layoutDescriptions[i].SemanticIndex = 0;
+			//layoutDescriptions[i].SemanticName = info->descriptions[i].name;
+			layoutDescriptions[i].SemanticName = "TEXCOORD";// semantic_names[i];
+			layoutDescriptions[i].SemanticIndex = i;
 			layoutDescriptions[i].Format = GetFormat(info->descriptions[i].format);//(DXGI_FORMAT)info->descriptions[i].format;
 			layoutDescriptions[i].InputSlot = info->descriptions[i].inputSlot;
 			if (i == 0) { layoutDescriptions[i].AlignedByteOffset = 0; }
@@ -72,7 +92,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		}
 
 		for (Uint32 i = 0; i < rp->rt_count; i++) {
-#if R_DXRENDER_DEBUG
+#if 0//R_DXRENDER_DEBUG
 			if (info->rts[i]->type != R_DX_RESOURCEVIEW_RTV) {
 				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(rts[%d]) must be a RG_RESOURCEVIEW_TYPE_RTV or RG_RESOURCEVIEW_TYPE_BBV in RRenderpass creation!", i);
 			}
@@ -119,7 +139,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		if (rp->use_depth) {
 			rasterDesc.DepthClipEnable = true;
 
-#if R_DXRENDER_DEBUG
+#if 0//R_DXRENDER_DEBUG
 			if (info->dsv->type != R_DX_RESOURCEVIEW_DSV) {
 				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(dst) must be a RG_RESOURCEVIEW_TYPE_DSV in RRenderpass creation!");
 			}
@@ -155,11 +175,10 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 	pl->map_table = (DXResourceMapping*)dev->allocator->Allocate(sizeof(DXResourceMapping) * 64); // Reserve table for 64 entrys
 	SDL_memset(pl->map_table, 0, sizeof(DXResourceMapping) * 64);
 
-	Uint32 resources = 0;
-	if (pl->vs) { AddMappings(&resources, info->vertex_shader, pl); }
-	if (pl->gs) { AddMappings(&resources, info->geometry_shader, pl); }
-	if (pl->ps) { AddMappings(&resources, info->pixel_shader, pl); }
-	if (pl->cs) { AddMappings(&resources, info->compute_shader, pl); }
+	if (pl->vs) { AddMappings(&pl->bindings, DXRM_STAGE_VERTEX,   info->vertex_shader, pl); }
+	if (pl->gs) { AddMappings(&pl->bindings, DXRM_STAGE_GEOMETRY, info->geometry_shader, pl); }
+	if (pl->ps) { AddMappings(&pl->bindings, DXRM_STAGE_PIXEL,    info->pixel_shader, pl); }
+	if (pl->cs) { AddMappings(&pl->bindings, DXRM_STAGE_COMPUTE,  info->compute_shader, pl); }
 
 	return pl;
 }

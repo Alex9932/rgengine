@@ -8,7 +8,7 @@
 #define R_RENDERER_NAME      "DirectX 11"
 #define R_RENDERER_SHORTNAME "dx11"
 
-#define R_DXRENDER_DEBUG 0
+#define R_DXRENDER_DEBUG 1
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
 
@@ -245,20 +245,6 @@ struct RSampler {
 };
 
 static DXGI_FORMAT GetFormat(RFormat format) {
-#if 0
-	switch (format) {
-		//case RG_FORMAT_UNKNOWN:         return DXGI_FORMAT_UNKNOWN;
-		case RG_FORMAT_R8_UNORM:        return DXGI_FORMAT_R8_UNORM;
-		case RG_FORMAT_R8G8B8A8_UNORM:  return DXGI_FORMAT_R8G8B8A8_UNORM;
-		case RG_FORMAT_R32_FLOAT:       return DXGI_FORMAT_R32_FLOAT;
-		case RG_TEXTURE_F32_RGBA:       return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		case RG_FORMAT_D24S8:           return DXGI_FORMAT_D24_UNORM_S8_UINT;
-		case RG_FORMAT_R32G32_FLOAT:    return DXGI_FORMAT_R32G32_FLOAT;
-		case RG_FORMAT_R32G32B32_FLOAT: return DXGI_FORMAT_R32G32B32_FLOAT;
-		case RG_FORMAT_D32:             return DXGI_FORMAT_R32_TYPELESS;
-		default: return DXGI_FORMAT_UNKNOWN;
-	}
-#endif
 	switch (format) {
 		case RG_FORMAT_R8_UNORM:           return DXGI_FORMAT_R8_UNORM;
 		case RG_FORMAT_R8G8B8A8_UNORM:     return DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -273,6 +259,14 @@ static DXGI_FORMAT GetFormat(RFormat format) {
 		case RG_FORMAT_R16G16B16_FLOAT:    return DXGI_FORMAT_R16G16B16A16_FLOAT; // NO RGB 16F Format
 		case RG_FORMAT_R16G16B16A16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
 		default:                           return DXGI_FORMAT_UNKNOWN;
+	}
+}
+
+static DXGI_FORMAT GetFormatView(RFormat format) {
+	switch (format) {
+		case RG_FORMAT_D24S8: return DXGI_FORMAT_D24_UNORM_S8_UINT;
+		case RG_FORMAT_D32:   return DXGI_FORMAT_D32_FLOAT;
+		default:              return GetFormat(format);
 	}
 }
 
