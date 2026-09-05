@@ -18,10 +18,8 @@ struct RRenderDevice {
 	IDXGISwapChain*      dxswapchain;
 	Uint32               currentframe;
 	Uint32               backbuffer_count;
-	//ID3D11Texture2D*     backbuffers[8];
 
 	RRenderpass*         default_renderpass;
-	//RResourceView*       default_backbuffers[8];
 	RFramebuffer*        default_framebuffers[8];
 
 #if R_DXRENDER_DEBUG
@@ -75,10 +73,9 @@ struct RImage {
 #define R_CMD_BIND_VERTEX_BUFFER 0x0012
 #define R_CMD_BIND_INDEX_BUFFER  0x0013
 #define R_CMD_BIND_DESCRIPTOR    0x0014
-#define R_CMD_BIND_SAMPLER       0x0015
 
+#define R_CMD_PUSHCONSTANTS      0x0015
 #define R_CMD_UPDPUSHCONSTANTS   0x0016
-#define R_CMD_PUSHCONSTANTS      0x0017
 
 #define R_CMD_DRAW_IMGUI         0x0021
 #define R_CMD_DRAW               0x0022

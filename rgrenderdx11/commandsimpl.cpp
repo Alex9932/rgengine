@@ -62,11 +62,18 @@ static RG_INLINE DXResourceMapping* GetResourceMapping(Uint16 resid, RPipeline* 
 }
 
 static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
+	RRenderDevice* dev = buffer->dev;
 	RRenderpass* rp = (RRenderpass*)cmd->handle;
 	Uint64 fb_ptr = *((Uint64*)&cmd->buffer[0]);
 	RFramebuffer* fb = (RFramebuffer*)fb_ptr;
 	RRenderpassClearInfo* clearinfo = (RRenderpassClearInfo*)&cmd->buffer[8];
-	RRenderDevice* dev = buffer->dev;
+
+	// Reset resource binding
+	ID3D11ShaderResourceView* nullSRV[16] = {};
+	dev->dxctx->VSSetShaderResources(0, 16, nullSRV);
+	dev->dxctx->GSSetShaderResources(0, 16, nullSRV);
+	dev->dxctx->PSSetShaderResources(0, 16, nullSRV);
+	dev->dxctx->CSSetShaderResources(0, 16, nullSRV);
 
 	// Set render targets, clear, etc.
 
@@ -97,7 +104,6 @@ static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* 
 }
 
 static RG_INLINE void CMD_EndRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
-
 }
 
 static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -105,7 +111,6 @@ static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd
 	RPipeline* pl = (RPipeline*)cmd->handle;
 
 	if (pl->type == RG_PIPELINE_TYPE_GRAPHICS) {
-
 
 		dev->dxctx->OMSetDepthStencilState(pl->depth_stencil_state, 1);
 		dev->dxctx->RSSetState(pl->raster_state);
@@ -127,8 +132,10 @@ static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd
 
 		buffer->dev->dxctx->CSSetShader(NULL, NULL, 0);
 
-		ID3D11UnorderedAccessView* uav = NULL;
-		buffer->dev->dxctx->CSSetUnorderedAccessViews(0, 1, &uav, NULL);
+		ID3D11ShaderResourceView* nullSRV[16] = {};
+		ID3D11UnorderedAccessView* uav[8] = {};
+		buffer->dev->dxctx->CSSetShaderResources(0, 16, nullSRV);
+		buffer->dev->dxctx->CSSetUnorderedAccessViews(0, 8, uav, NULL);
 
 	} else {
 		// Bind compute pipeline
@@ -215,30 +222,6 @@ static RG_INLINE void CMD_BindDescriptorImpl(RCommandBuffer* buffer, RCommand* c
 	DX11_PollInfoQueue(dev);
 #endif
 
-}
-
-static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd) {
-	RSampler* sampler = (RSampler*)cmd->handle;
-	Uint32 slot = cmd->data0;
-	// Pixel shader only (unified with Vulkan backend)
-	// TODO: Mark "stage" as deprecated?
-#if 0
-	Uint32 stage = cmd->data1;
-	if (stage == RG_SHADER_TYPE_VERTEX) {
-		buffer->dev->dxctx->VSSetSamplers(slot, 1, &sampler->state);
-	}
-	else if (stage == RG_SHADER_TYPE_PIXEL) {
-#endif
-		buffer->dev->dxctx->PSSetSamplers(slot, 1, &sampler->state);
-#if 0
-	}
-	else if (stage == RG_SHADER_TYPE_COMPUTE) {
-		buffer->dev->dxctx->CSSetSamplers(slot, 1, &sampler->state);
-	}
-#endif
-#if R_DXRENDER_DEBUG
-	DX11_PollInfoQueue(buffer->dev);
-#endif
 }
 
 static RG_INLINE void CMD_UpdatePushConstants(RCommandBuffer* buffer, RCommand* cmd) {
@@ -329,7 +312,6 @@ void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {
 			case R_CMD_BIND_VERTEX_BUFFER: { CMD_BindVertexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_INDEX_BUFFER:  { CMD_BindIndexBufferImpl(buffer, cmd); break; }
 			case R_CMD_BIND_DESCRIPTOR:    { CMD_BindDescriptorImpl(buffer, cmd); break; }
-			case R_CMD_BIND_SAMPLER:       { CMD_BindSamplerImpl(buffer, cmd); break; }
 			case R_CMD_UPDPUSHCONSTANTS:   { CMD_UpdatePushConstants(buffer, cmd); break; }
 			case R_CMD_PUSHCONSTANTS:      { CMD_PushConstants(buffer, cmd); break; }
 			case R_CMD_DRAW_IMGUI:         { CMD_DrawImGuiImpl(buffer, cmd); break; }
@@ -471,13 +453,25 @@ void R_CmdBindDescriptorSets(RCommandBuffer* cmdbuff, RBindDescriptorSetsInfo* i
 	}
 }
 
-void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage) {
-	RCommand* cmd = AllocateNextCommand(cmdbuff);
-	if (!cmd) { return; }
-	cmd->cmd    = R_CMD_BIND_SAMPLER;
-	cmd->handle = sampler;
-	cmd->data0  = slot;
-	cmd->data1  = stage;
+void R_CmdBindSampler(RCommandBuffer* cmdbuff, RSampler* sampler, Uint32 slot, Uint32 stage_UNUSED) {
+	Uint16 idx = (((Uint16)slot & 0x00FF) << 8) | ((Uint16)0); // set << 8 | binding (binding always == 0)
+
+	DXResourceMapping* table = GetResourceMapping(idx, cmdbuff->pipeline);
+	if (!table) { return; } // No bind point
+
+	RCommand* cmd = NULL;
+	for (Uint32 k = 0; k < DXRM_STAGE_MAX; k++) {
+		DXRM* mapping = &table->mappings[k];
+		if (!mapping->valid) { continue; }
+
+		cmd = AllocateNextCommand(cmdbuff);
+		if (!cmd) { return; }
+
+		cmd->cmd = R_CMD_BIND_DESCRIPTOR;
+		cmd->handle = sampler->state;
+		cmd->_off1 = k;
+		cmd->_off0 = ((Uint16)DX_RESOURCE_TYPE_SAMPLER << 8) | mapping->slot;
+	}
 }
 
 /*

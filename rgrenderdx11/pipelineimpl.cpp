@@ -24,11 +24,18 @@ static void AddMappings(Uint32* resources, Uint32 stage, RShader* shader, RPipel
 		MappingEntry* entry = &shader->mapping_entrys[i];
 		Uint16 idx = ((Uint16)entry->set << 8) | entry->binding;// Logical address (set << 8 | binding)
 		Uint32 id = *resources;
+		for (Uint32 i = 0; i < id; i++) {
+			if (pl->map_table[i].idx == idx) {
+				id = i;
+			}
+		}
+		if (id == *resources) {
+			*resources = id + 1;
+		}
 		pl->map_table[id].idx = idx;
 		pl->map_table[id].mappings[stage].valid = 1;
 		pl->map_table[id].mappings[stage].type = entry->reg;
 		pl->map_table[id].mappings[stage].slot = entry->slot;
-		*resources = id + 1;
 	}
 }
 
@@ -78,7 +85,7 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(rts[%d]) must be a RG_RESOURCEVIEW_TYPE_RTV or RG_RESOURCEVIEW_TYPE_BBV in RRenderpass creation!", i);
 			}
 #endif
-			blendDesc.RenderTarget[i].BlendEnable = true;
+			blendDesc.RenderTarget[i].BlendEnable = false;
 			blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
 			blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 			blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;

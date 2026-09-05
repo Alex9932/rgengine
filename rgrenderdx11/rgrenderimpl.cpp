@@ -207,6 +207,13 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 #endif
 	D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, 2, D3D11_SDK_VERSION, &scd, &device->dxswapchain, &device->dxdev, NULL, &device->dxctx);
 
+	ID3D10Multithread* mt = nullptr;
+	device->dxctx->QueryInterface(__uuidof(ID3D10Multithread), (void**)&mt);
+	if (mt) {
+		mt->SetMultithreadProtected(TRUE);
+		mt->Release();
+	}
+
 	// Get actual backbuffer count
 	DXGI_SWAP_CHAIN_DESC scDesc;
 	device->dxswapchain->GetDesc(&scDesc);
