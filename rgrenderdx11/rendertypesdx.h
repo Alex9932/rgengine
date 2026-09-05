@@ -29,7 +29,6 @@ struct RRenderDevice {
 
 	// Pipeline constant buffer
 	RBuffer*             pushconstant;
-	//RBuffer*             pc_pixel;
 
 	SDL_Window*          hwnd;
 	ivec2                wndsize;
@@ -39,6 +38,8 @@ struct RRenderDevice {
 
 	Uint64 buffersMemLen;
 	Uint64 imageMemLen;
+	Uint32 draw_calls;
+	Uint32 dispatch_calls;
 	Uint32 flags;
 
 	char cardName[128];
@@ -323,6 +324,33 @@ static D3D11_TEXTURE_ADDRESS_MODE GetAddressMode(Uint8 addressMode) {
 		case RG_SAMPLER_ADDRESSMODE_MIRRORED:      return D3D11_TEXTURE_ADDRESS_MIRROR;
 		case RG_SAMPLER_ADDRESSMODE_CLAMP_TO_EDGE: return D3D11_TEXTURE_ADDRESS_CLAMP;
 		default:                                   return D3D11_TEXTURE_ADDRESS_WRAP;
+	}
+}
+
+static D3D11_BLEND_OP GetBlendOp(Uint32 op) {
+	switch (op) {
+		case RG_BLEND_OP_ADD:     return D3D11_BLEND_OP_ADD;
+		case RG_BLEND_OP_SUB:     return D3D11_BLEND_OP_SUBTRACT;
+		case RG_BLEND_OP_REV_SUB: return D3D11_BLEND_OP_REV_SUBTRACT;
+		case RG_BLEND_OP_MIN:     return D3D11_BLEND_OP_MIN;
+		case RG_BLEND_OP_MAX:     return D3D11_BLEND_OP_MAX;
+		default:                  return D3D11_BLEND_OP_ADD;
+	}
+}
+
+static D3D11_BLEND GetBlendFactor(Uint32 factor) {
+	switch (factor) {
+		case RG_BLEND_FACTOR_ZERO:                return D3D11_BLEND_ZERO;
+		case RG_BLEND_FACTOR_ONE:                 return D3D11_BLEND_ONE;
+		case RG_BLEND_FACTOR_SRC_COLOR:           return D3D11_BLEND_SRC_COLOR;
+		case RG_BLEND_FACTOR_DST_COLOR:           return D3D11_BLEND_DEST_COLOR;
+		case RG_BLEND_FACTOR_ONE_MINUS_SRC_COLOR: return D3D11_BLEND_INV_SRC_COLOR;
+		case RG_BLEND_FACTOR_ONE_MINUS_DST_COLOR: return D3D11_BLEND_INV_DEST_COLOR;
+		case RG_BLEND_FACTOR_SRC_ALPHA:           return D3D11_BLEND_SRC_ALPHA;
+		case RG_BLEND_FACTOR_DST_ALPHA:           return D3D11_BLEND_DEST_ALPHA;
+		case RG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
+		case RG_BLEND_FACTOR_ONE_MINUS_DST_ALPHA: return D3D11_BLEND_INV_DEST_ALPHA;
+		default:                                  return D3D11_BLEND_ONE;
 	}
 }
 

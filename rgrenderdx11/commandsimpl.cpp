@@ -47,10 +47,6 @@ static RG_INLINE DXGI_FORMAT GetIndexType(IndexType type) {
 }
 
 static RG_INLINE DXResourceMapping* GetResourceMapping(Uint16 resid, RPipeline* pl) {
-	// Use lookup table
-	//Uint8 set     = (resid & 0xFF00) >> 8;
-	//Uint8 binding = (resid & 0x00FF);
-
 	for (Uint32 i = 0; i < pl->bindings; i++) {
 		if (pl->map_table[i].idx == resid) {
 			return &pl->map_table[i];
@@ -58,7 +54,6 @@ static RG_INLINE DXResourceMapping* GetResourceMapping(Uint16 resid, RPipeline* 
 	}
 
 	return NULL;
-
 }
 
 static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -282,6 +277,7 @@ static RG_INLINE void CMD_DrawIndexdImpl(RCommandBuffer* buffer, RCommand* cmd) 
 	Uint32 idxcount = cmd->data0;
 	Uint32 idxstart = cmd->data1;
 	buffer->dev->dxctx->DrawIndexed(idxcount, idxstart, 0);
+	buffer->dev->draw_calls++;
 #if R_DXRENDER_DEBUG
 	DX11_PollInfoQueue(buffer->dev);
 #endif
@@ -292,6 +288,7 @@ static RG_INLINE void CMD_DispatchImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	Uint32 groupcount_y = cmd->data1;
 	Uint32 groupcount_z = cmd->data2;
 	buffer->dev->dxctx->Dispatch(groupcount_x, groupcount_y, groupcount_z);
+	buffer->dev->dispatch_calls++;
 #if R_DXRENDER_DEBUG
 	DX11_PollInfoQueue(buffer->dev);
 #endif

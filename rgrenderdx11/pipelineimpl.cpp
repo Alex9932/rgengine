@@ -80,20 +80,14 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 		}
 
 		for (Uint32 i = 0; i < rp->rt_count; i++) {
-#if 0//R_DXRENDER_DEBUG
-			if (info->rts[i]->type != R_DX_RESOURCEVIEW_RTV) {
-				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(rts[%d]) must be a RG_RESOURCEVIEW_TYPE_RTV or RG_RESOURCEVIEW_TYPE_BBV in RRenderpass creation!", i);
-			}
-#endif
-			blendDesc.RenderTarget[i].BlendEnable = false;
-			blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-			blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-			blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
-			blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ONE;
+			blendDesc.RenderTarget[i].BlendEnable    = info->blendstates[i].blendEnable;
+			blendDesc.RenderTarget[i].BlendOp        = GetBlendOp(info->blendstates[i].colorBlendOp);
+			blendDesc.RenderTarget[i].SrcBlend       = GetBlendFactor(info->blendstates[i].srcColorFactor);
+			blendDesc.RenderTarget[i].DestBlend      = GetBlendFactor(info->blendstates[i].dstColorFactor);
+			blendDesc.RenderTarget[i].BlendOpAlpha   = GetBlendOp(info->blendstates[i].alphaBlendOp);;
+			blendDesc.RenderTarget[i].SrcBlendAlpha  = GetBlendFactor(info->blendstates[i].srcAlphaFactor);
+			blendDesc.RenderTarget[i].DestBlendAlpha = GetBlendFactor(info->blendstates[i].dstAlphaFactor);
 			blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
 		}
 
 		dev->dxdev->CreateBlendState(&blendDesc, &pl->blend_state);
@@ -126,12 +120,6 @@ RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 
 		if (rp->use_depth) {
 			rasterDesc.DepthClipEnable = true;
-
-#if 0//R_DXRENDER_DEBUG
-			if (info->dsv->type != R_DX_RESOURCEVIEW_DSV) {
-				rgLogError(RG_LOG_RENDER, "DX11 Renderer: RResourceView->type(dst) must be a RG_RESOURCEVIEW_TYPE_DSV in RRenderpass creation!");
-			}
-#endif
 
 			// Make depth-stencil state
 			depthStencilDesc.DepthEnable = true;

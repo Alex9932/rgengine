@@ -164,6 +164,11 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	device->allocator = alloc;
 	device->hwnd      = info->hwnd;
 
+	device->draw_calls     = 0;
+	device->dispatch_calls = 0;
+	device->imageMemLen    = 0;
+	device->buffersMemLen  = 0;
+
 	SDL_SetWindowTitle(device->hwnd, "rgEngine - D3D11");
 	Engine::RegisterEventHandler(_EventHandler, device);
 
@@ -285,6 +290,9 @@ void R_DestroyDevice(RRenderDevice* device) {
 }
 
 void R_WaitIdle(RRenderDevice* device) {
+
+	return;
+
 	D3D11_QUERY_DESC queryDesc;
 	queryDesc.Query = D3D11_QUERY_EVENT;
 	queryDesc.MiscFlags = 0;
@@ -331,6 +339,9 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 		device->wndresized = false;
 	}
 
+	device->draw_calls = 0;
+	device->dispatch_calls = 0;
+
 #if R_DXRENDER_DEBUG
 	DX11_PollInfoQueue(device);
 #endif
@@ -339,6 +350,11 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
 	info->render_name = R_RENDERER_NAME;
 	info->renderer    = dev->cardName;
+
+	info->buffers_memory = dev->buffersMemLen;
+	info->textures_memory = dev->imageMemLen;
+	info->r3d_draw_calls = dev->draw_calls;
+	info->r3d_dispatch_calls = dev->dispatch_calls;
 }
 
 //////////////////////////////////////////////////////////
