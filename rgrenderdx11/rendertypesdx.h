@@ -53,7 +53,8 @@ struct RBuffer {
 	Uint8          access;
 	Uint8          usage;
 	Uint16         type;
-	Uint32 _offset2;
+	Uint16         stride;
+	Uint16 _offset;
 };
 
 struct RImage {
@@ -262,11 +263,19 @@ static DXGI_FORMAT GetFormat(RFormat format) {
 	}
 }
 
-static DXGI_FORMAT GetFormatView(RFormat format) {
+static DXGI_FORMAT GetFormatRT(RFormat format) {
 	switch (format) {
-		case RG_FORMAT_D24S8: return DXGI_FORMAT_D24_UNORM_S8_UINT;
-		case RG_FORMAT_D32:   return DXGI_FORMAT_D32_FLOAT;
-		default:              return GetFormat(format);
+	case RG_FORMAT_D24S8: return DXGI_FORMAT_D24_UNORM_S8_UINT;
+	case RG_FORMAT_D32:   return DXGI_FORMAT_D32_FLOAT;
+	default:              return GetFormat(format);
+	}
+}
+
+static DXGI_FORMAT GetFormatSRV(RFormat format) {
+	switch (format) {
+	case RG_FORMAT_D24S8: return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	case RG_FORMAT_D32:   return DXGI_FORMAT_R32_FLOAT;
+	default:              return GetFormat(format);
 	}
 }
 
@@ -319,5 +328,9 @@ static D3D11_TEXTURE_ADDRESS_MODE GetAddressMode(Uint8 addressMode) {
 		default:                                   return D3D11_TEXTURE_ADDRESS_WRAP;
 	}
 }
+
+#if R_DXRENDER_DEBUG
+void DX11_PollInfoQueue(RRenderDevice* device);
+#endif
 
 #endif

@@ -32,25 +32,6 @@ static void AddMappings(Uint32* resources, Uint32 stage, RShader* shader, RPipel
 	}
 }
 
-static String semantic_names[] = {
-	"TEXCOORD0",
-	"TEXCOORD1",
-	"TEXCOORD2",
-	"TEXCOORD3",
-	"TEXCOORD4",
-	"TEXCOORD5",
-	"TEXCOORD6",
-	"TEXCOORD7",
-	"TEXCOORD8",
-	"TEXCOORD9",
-	"TEXCOORD10",
-	"TEXCOORD11",
-	"TEXCOORD12",
-	"TEXCOORD13",
-	"TEXCOORD14",
-	"TEXCOORD15"
-};
-
 RPipeline* R_CreatePipeline(RRenderDevice* dev, RPipelineCreateInfo* info) {
 	RPipeline* pl = (RPipeline*)dev->allocator->Allocate(sizeof(RPipeline));
 	pl->dev = dev;

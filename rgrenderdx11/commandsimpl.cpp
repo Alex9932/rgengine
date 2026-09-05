@@ -90,6 +90,10 @@ static RG_INLINE void CMD_BeginRenderpassImpl(RCommandBuffer* buffer, RCommand* 
 	pViewport.MinDepth = 0.0f;
 	pViewport.MaxDepth = 1.0f;
 	dev->dxctx->RSSetViewports(1, &pViewport);
+
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(dev);
+#endif
 }
 
 static RG_INLINE void CMD_EndRenderpassImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -133,6 +137,9 @@ static RG_INLINE void CMD_BindPipelineImpl(RCommandBuffer* buffer, RCommand* cmd
 		buffer->dev->dxctx->GSSetShader(NULL, NULL, 0);
 		buffer->dev->dxctx->CSSetShader(pl->cs, NULL, 0);
 	}
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(dev);
+#endif
 }
 
 static RG_INLINE void CMD_BindVertexBufferImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -141,6 +148,9 @@ static RG_INLINE void CMD_BindVertexBufferImpl(RCommandBuffer* buffer, RCommand*
 	UINT stride = cmd->data1;
 	UINT offset = cmd->data2;
 	buffer->dev->dxctx->IASetVertexBuffers(slot, 1, &vb->buffer, &stride, &offset);
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(buffer->dev);
+#endif
 }
 
 static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -148,6 +158,9 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 	IndexType indexFormat = (IndexType)cmd->data0;  // Index size in bytes
 	buffer->dev->dxctx->IASetIndexBuffer(ib->buffer, GetIndexType(indexFormat), 0);
 	buffer->dev->dxctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(buffer->dev);
+#endif
 }
 
 static RG_INLINE void CMD_BindDescriptorImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -198,6 +211,9 @@ static RG_INLINE void CMD_BindDescriptorImpl(RCommandBuffer* buffer, RCommand* c
 			case DX_RESOURCE_TYPE_STORAGE_UAV:    { dev->dxctx->CSSetUnorderedAccessViews(slot, 1, (ID3D11UnorderedAccessView**)&cmd->handle, NULL); break; }
 		}
 	}
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(dev);
+#endif
 
 }
 
@@ -219,6 +235,9 @@ static RG_INLINE void CMD_BindSamplerImpl(RCommandBuffer* buffer, RCommand* cmd)
 	else if (stage == RG_SHADER_TYPE_COMPUTE) {
 		buffer->dev->dxctx->CSSetSamplers(slot, 1, &sampler->state);
 	}
+#endif
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(buffer->dev);
 #endif
 }
 
@@ -246,6 +265,9 @@ static RG_INLINE void CMD_UpdatePushConstants(RCommandBuffer* buffer, RCommand* 
 			buffer->dev->dxctx->Unmap(d3d11buffer, 0);
 		}
 	}
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(dev);
+#endif
 }
 
 static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
@@ -262,6 +284,9 @@ static RG_INLINE void CMD_PushConstants(RCommandBuffer* buffer, RCommand* cmd) {
 		case DXRM_STAGE_PIXEL:    { dev->dxctx->PSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
 		case DXRM_STAGE_COMPUTE:  { dev->dxctx->CSSetConstantBuffers(slot, 1, &dev->pushconstant->buffer); break; }
 	}
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(dev);
+#endif
 }
 
 static RG_INLINE void CMD_DrawImGuiImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -274,6 +299,9 @@ static RG_INLINE void CMD_DrawIndexdImpl(RCommandBuffer* buffer, RCommand* cmd) 
 	Uint32 idxcount = cmd->data0;
 	Uint32 idxstart = cmd->data1;
 	buffer->dev->dxctx->DrawIndexed(idxcount, idxstart, 0);
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(buffer->dev);
+#endif
 }
 
 static RG_INLINE void CMD_DispatchImpl(RCommandBuffer* buffer, RCommand* cmd) {
@@ -281,6 +309,9 @@ static RG_INLINE void CMD_DispatchImpl(RCommandBuffer* buffer, RCommand* cmd) {
 	Uint32 groupcount_y = cmd->data1;
 	Uint32 groupcount_z = cmd->data2;
 	buffer->dev->dxctx->Dispatch(groupcount_x, groupcount_y, groupcount_z);
+#if R_DXRENDER_DEBUG
+	DX11_PollInfoQueue(buffer->dev);
+#endif
 }
 
 void R_SubmitCommandBuffer(RCommandBufferSubmitInfo* info) {

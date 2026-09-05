@@ -29,7 +29,10 @@ static UINT GetBufferType(Uint16 type) {
 
 static UINT GetBufferMiscFlags(Uint16 type) {
 	UINT miscFlags = 0;
-	if (type & RG_BUFFER_TYPE_STRUCTURED) miscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	//if (type & RG_BUFFER_TYPE_STRUCTURED) miscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
+	// SPIRV-Corss generates structured buffers as RAW buffers
+	if (type & RG_BUFFER_TYPE_STRUCTURED) miscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 	return miscFlags;
 }
 
@@ -45,13 +48,14 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	// its working perfectly on Nvidia and AMD drivers without this flag LoL
 
 	if (RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_VERTEX) && (RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_UNORDERED) || RG_CHECK_FLAG(info->type, RG_BUFFER_TYPE_STRUCTURED))) {
-		info->type &= ~RG_BUFFER_TYPE_VERTEX;
+		//info->type &= ~RG_BUFFER_TYPE_VERTEX;
 	}
 	
 	buffer->access = info->access;
 	buffer->usage  = info->usage;
 	buffer->type   = info->type;
 	buffer->length = info->length;
+	buffer->stride = info->stride;
 
 	// Make buffer
 	D3D11_BUFFER_DESC buff = {};
@@ -61,6 +65,12 @@ RBuffer* R_CreateBuffer(RRenderDevice* dev, RBufferCreateInfo* info) {
 	buff.CPUAccessFlags = GetBufferCPUAccess(buffer->access);
 	buff.MiscFlags = GetBufferMiscFlags(buffer->type);
 	buff.StructureByteStride = info->stride;
+
+	// No structures, just raw buffer
+	if (RG_CHECK_FLAG(buffer->type, RG_BUFFER_TYPE_STRUCTURED)) {
+		buff.StructureByteStride = 0;
+	}
+	
 
 	D3D11_SUBRESOURCE_DATA data = {};
 	data.pSysMem = info->initialData;
@@ -289,7 +299,7 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 	HRESULT t;
 	for (Uint32 i = 0; i < fb->rtv_count; i++) {
 		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc = {};
-		renderTargetViewDesc.Format = GetFormat(info->rts[i]->format);
+		renderTargetViewDesc.Format = GetFormatRT(info->rts[i]->format);
 		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		renderTargetViewDesc.Texture2D.MipSlice = 0;
 		t = dev->dxdev->CreateRenderTargetView(info->rts[i]->image, &renderTargetViewDesc, &fb->rtv[i]);
@@ -298,7 +308,7 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 	}
 	if (info->dsv) {
 		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
-		depthStencilViewDesc.Format = GetFormatView(info->dsv->format);
+		depthStencilViewDesc.Format = GetFormatRT(info->dsv->format);
 		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		depthStencilViewDesc.Texture2D.MipSlice = 0;
 		t = dev->dxdev->CreateDepthStencilView(info->dsv->image, &depthStencilViewDesc, &fb->dsv);
@@ -366,7 +376,7 @@ RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateIn
 		if (binding->type == RG_DESCRIPTOR_TYPE_IMAGE) {
 
 			D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-			srvDesc.Format = GetFormat(binding->image->format);
+			srvDesc.Format = GetFormatSRV(binding->image->format);
 			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
 			srvDesc.Texture2D.MostDetailedMip = 0;
@@ -389,11 +399,11 @@ RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateIn
 				//	uavDesc.Texture2D.MipSlice = 0;
 				//}
 				//else {
-				uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+				uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 				uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 				uavDesc.Buffer.FirstElement = 0;
-				uavDesc.Buffer.NumElements = binding->buffer->length;
-				uavDesc.Buffer.Flags = 0;
+				uavDesc.Buffer.NumElements = binding->buffer->length / 4;// binding->buffer->stride;
+				uavDesc.Buffer.Flags = D3D11_BUFFEREX_SRV_FLAG_RAW;
 				//}
 				r = dev->dxdev->CreateUnorderedAccessView(binding->buffer->buffer, &uavDesc, &set->entrys[i].uav);
 
@@ -402,18 +412,20 @@ RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateIn
 
 				D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 
-				srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+				srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
 
 				srvDesc.BufferEx.FirstElement = 0;
-				srvDesc.BufferEx.Flags = 0;
-				srvDesc.BufferEx.NumElements = binding->buffer->length;
+				srvDesc.BufferEx.NumElements = binding->buffer->length / 4;// binding->buffer->stride;
+				srvDesc.BufferEx.Flags = D3D11_BUFFEREX_SRV_FLAG_RAW;
 
 				r = dev->dxdev->CreateShaderResourceView(binding->buffer->buffer, &srvDesc, &set->entrys[i].srv);
 			}
 		}
 
-		rgLogInfo(RG_LOG_RENDER, "Error code: %d", r);
+		if (r != S_OK) {
+			__debugbreak();
+		}
 
 	}
 

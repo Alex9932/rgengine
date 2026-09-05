@@ -57,7 +57,7 @@ static void _PollMsg(ID3D11InfoQueue* infoqueue, UINT64 i) {
 	rgLogInfo(RG_LOG_RENDER, "DX11: %s", data->pDescription);
 }
 
-static void PollInfoQueue(RRenderDevice* device) {
+void DX11_PollInfoQueue(RRenderDevice* device) {
 	UINT64 messageCount = device->dxdbginfoqueue->GetNumStoredMessagesAllowedByRetrievalFilter();
 	if (messageCount != 0) {
 		rgLogInfo(RG_LOG_RENDER, "Direct3D Report:");
@@ -66,6 +66,9 @@ static void PollInfoQueue(RRenderDevice* device) {
 		_PollMsg(device->dxdbginfoqueue, i);
 	}
 	device->dxdbginfoqueue->ClearStoredMessages();
+	if (messageCount != 0) {
+		__debugbreak();
+	}
 }
 #endif
 
@@ -78,7 +81,7 @@ static Bool _EventHandler(SDL_Event* event, void* data) {
 			case RG_EVENT_SYSTEM_SIGNAL: {
 				Sint32 signal = (Sint32)event->user.data1;
 #if R_DXRENDER_DEBUG
-				PollInfoQueue(device);
+				DX11_PollInfoQueue(device);
 #endif
 				break;
 			}
@@ -292,7 +295,6 @@ void R_WaitIdle(RRenderDevice* device) {
 	pEventQuery->Release();
 }
 
-static Bool firstswap = true;
 void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 
 	if (!RG_CHECK_FLAG(info->flags, RG_SWAPCHAIN_FLAG_RESIZE)) {
@@ -323,10 +325,7 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 	}
 
 #if R_DXRENDER_DEBUG
-	if (firstswap) {
-		firstswap = false;
-		PollInfoQueue(device);
-	}
+	DX11_PollInfoQueue(device);
 #endif
 }
 
