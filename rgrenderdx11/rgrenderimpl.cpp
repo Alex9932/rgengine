@@ -31,21 +31,27 @@ void R_Setup() {
 	//RG_ERROR_MSG("Direct3D 11 renderer is not support new rendering system!");
 }
 
-static IDXGIAdapter* SelectAdapter(RRenderDevice* device) {
+static void GetAdapterInfo(RRenderDevice* device) {
+	IDXGIDevice*  pDevice  = NULL;
 	IDXGIAdapter* pAdapter = NULL;
-	IDXGIFactory* pFactory = NULL;
-	CreateDXGIFactory(IID_IDXGIFactory, (void**)&pFactory);
-	DXGI_ADAPTER_DESC desc = {};
 
-	// Use first adapter
-	for (Uint32 i = 0; pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND; i++) {
-		pAdapter->GetDesc(&desc);
-		SDL_snprintf(device->cardName, 128, "%ls", desc.Description);
-		rgLogInfo(RG_LOG_RENDER, "Direct3D: %s", device->cardName);
-		break;
-	}
-	pFactory->Release();
-	return pAdapter;
+	HRESULT hr = device->dxdev->QueryInterface(__uuidof(IDXGIDevice), (void**)&pDevice);
+	if (FAILED(hr)) return;
+
+	hr = pDevice->GetAdapter(&pAdapter);
+	pDevice->Release();
+	if (FAILED(hr)) return;
+
+	DXGI_ADAPTER_DESC desc;
+	hr = pAdapter->GetDesc(&desc);
+	if (FAILED(hr)) return;
+	pAdapter->Release();
+
+	SDL_snprintf(device->cardName, 128, "%ls", desc.Description);
+	rgLogInfo(RG_LOG_RENDER, "Direct3D: %s", device->cardName);
+
+	device->dedicatedMem = desc.DedicatedVideoMemory;
+	device->sharedMem    = desc.SharedSystemMemory;
 }
 
 #if R_DXRENDER_DEBUG
@@ -179,8 +185,6 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 	device->wndsize.x = w;
 	device->wndsize.y = h;
 
-	IDXGIAdapter* pAdapter = SelectAdapter(device); // Use in future
-
 	// Swapchain
 
 	device->backbuffer_count = 2; // Buffers needed
@@ -218,6 +222,8 @@ RRenderDevice* R_CreateDevice(RRenderSetupInfo* info) {
 		mt->SetMultithreadProtected(TRUE);
 		mt->Release();
 	}
+
+	GetAdapterInfo(device);
 
 	// Get actual backbuffer count
 	DXGI_SWAP_CHAIN_DESC scDesc;
@@ -350,6 +356,9 @@ void R_SwapBuffers(RRenderDevice* device, RSwapBuffersInfo* info) {
 void R_GetInfo(RRenderDevice* dev, RenderInfo* info) {
 	info->render_name = R_RENDERER_NAME;
 	info->renderer    = dev->cardName;
+
+	info->dedicated_memory = dev->dedicatedMem;
+	info->shared_memory = dev->sharedMem;
 
 	info->buffers_memory = dev->buffersMemLen;
 	info->textures_memory = dev->imageMemLen;

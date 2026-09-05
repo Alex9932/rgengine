@@ -36,6 +36,8 @@ struct RRenderDevice {
 
 	Engine::Allocator* allocator;
 
+	Uint64 dedicatedMem;
+	Uint64 sharedMem;
 	Uint64 buffersMemLen;
 	Uint64 imageMemLen;
 	Uint32 draw_calls;
