@@ -22,7 +22,7 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
 - **Language:** C++
 - **Scripting:** JavaScript
 - **Rendering:** Vulkan / DirectX 11
-- **Shaders:** GLSL / HLSL
+- **Shaders:** GLSL
 - **UI:** ImGui
 - **Platform:** Windows | Linux (Console tools only)
 
@@ -51,6 +51,7 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
   - Built-in debug tools
   - Model tools
   - Scene editing
+  - HLSL generator based on SPIRV-Cross
 
 ---
 
@@ -61,7 +62,6 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
 - Extended editor tools
 - Improved PBR pipeline
 - Vulkan backend with ray tracing support
-- Unified shader language
 
 ---
 
