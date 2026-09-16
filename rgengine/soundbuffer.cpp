@@ -37,7 +37,7 @@ namespace Engine {
 		m_type = SBType_STATIC;
 		m_format = GetFormat(info->channels);
 		alGenBuffers(1, &m_buffer);
-		alBufferData(m_buffer, m_format, info->data, info->samples * info->channels, info->samplerate);
+		alBufferData(m_buffer, m_format, info->data, info->samples * info->channels * sizeof(uint16_t), info->samplerate);
 	}
 
 	SoundBuffer::~SoundBuffer() {

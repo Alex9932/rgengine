@@ -8,7 +8,7 @@
 #include "filesystem.h"
 
 #include <map>
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 
 #include "allocator.h"
 #include "engine.h"

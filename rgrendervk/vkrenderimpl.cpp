@@ -9,7 +9,7 @@
 #include <SDL3/SDL_vulkan.h>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_impl_vulkan.h"
+#include <backends/imgui_impl_vulkan.h>
 
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
@@ -739,10 +739,10 @@ void R_ImGui_Init(RRenderDevice* dev) {
 	info.QueueFamily    = dev->vkqueuefamily;
 	info.Queue          = dev->vkqueue;
 	info.DescriptorPoolSize = 128;
-	info.RenderPass     = dev->imguirenderpass;
 	info.MinImageCount  = dev->vkimagescount;
 	info.ImageCount     = dev->vkimagescount;
-	info.MSAASamples    = VK_SAMPLE_COUNT_1_BIT;
+	info.PipelineInfoMain.RenderPass     = dev->imguirenderpass;
+	info.PipelineInfoMain.MSAASamples    = VK_SAMPLE_COUNT_1_BIT;
 
 	ImGui_ImplVulkan_Init(&info);
 }

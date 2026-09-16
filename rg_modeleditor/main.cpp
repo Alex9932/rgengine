@@ -4,8 +4,8 @@
 #include <rgstring.h>
 #include <filedialog.h>
 #include <filesystem.h>
-#include <imgui/imgui_impl_sdl3.h>
-#include <imgui/imgui.h>
+#include <backends/imgui_impl_sdl3.h>
+#include <imgui.h>
 
 #include "renderer.h"
 #include "vertexbuffer.h"

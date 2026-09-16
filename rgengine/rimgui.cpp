@@ -9,8 +9,8 @@
 #include <vector>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl3.h"
+#include <imgui.h>
+#include <backends/imgui_impl_sdl3.h>
 
 namespace Engine {
 	namespace Render {

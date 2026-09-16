@@ -2,9 +2,9 @@
 #include "rgstb.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #undef STB_VORBIS_HEADER_ONLY
-#include <stb/stb_vorbis.h>
+#include <stb_vorbis.c>
 
 Uint8* RG_STB_load_from_file(String path, int* width, int* height, int* components, int required_components) {
     rgLogInfo(RG_LOG_SYSTEM, "Loading image: %s", path);
@@ -45,7 +45,8 @@ stb_vorbis_info RG_STB_vorbis_get_info(stb_vorbis* f) {
 }
 
 void RG_STB_vorbis_get_info_ptr(stb_vorbis* f, stb_vorbis_info* d) {
-    stb_vorbis_get_info_ptr(f, d);
+    *d = stb_vorbis_get_info(f);
+    //stb_vorbis_get_info_ptr(f, d);
 }
 
 Uint32 RG_STB_vorbis_stream_length_in_samples(stb_vorbis* f) {

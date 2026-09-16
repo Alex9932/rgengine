@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "rgengine",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "sdl3",
+    "mujs",
+    "cjson",
+    "libiconv",
+    "assimp",
+    "freetype",
+    "zlib",
+    "nativefiledialog-extended",
+    "openal-soft",
+    "bullet3"
+  ]
+}

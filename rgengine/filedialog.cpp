@@ -5,7 +5,7 @@
 #include "engine.h"
 
 #include <nfd.h>
-#include <nfd_sdl3.h>
+#include "rgnfd_sdl3.h"
 
 namespace Engine {
 

@@ -18,8 +18,9 @@
 #endif
 
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl3.h"
+
+#include <imgui.h>
+#include <backends/imgui_impl_sdl3.h>
 
 struct Surface {
     SDL_Surface* surface;
@@ -31,6 +32,8 @@ namespace Engine {
     // Default screen resolution
     static const Uint32  w_init_width     = 1600;
     static const Uint32  w_init_height    = 900;
+    //static const Uint32  w_init_width     = 1280;
+    //static const Uint32  w_init_height    = 720;
 
     static Engine::Timer timer;
     static Surface       icn_surface;

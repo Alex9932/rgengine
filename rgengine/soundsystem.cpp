@@ -93,6 +93,7 @@ namespace Engine {
 		Source* src = RequestSource();
 		if (!src) {
 			rgLogError(RG_LOG_SYSTEM, "No sound source available.");
+			return;
 		}
 
 		src->srcstate = SourceState_PLAYING;
@@ -135,13 +136,19 @@ namespace Engine {
 			vec3 vel = { 0, 0, 0 };
 			vec3 pos = t_cam->GetPosition();
 			vec3 rot = t_cam->GetRotation();
-			vec3 up  = { 0, 1, 0 };
 
-			// TODO: rewrite this
-			vec3 fwd;
-			fwd.x = SDL_sinf(rot.y);
-			fwd.y = -SDL_tanf(rot.x);
-			fwd.z = -SDL_cosf(rot.y);
+			vec3 cam_fwd = { 0, 0, -1 };
+			vec3 cam_up  = { 0, 1, 0 };
+
+			vec3 fwd = {};
+			vec3 up  = {};
+
+			vec3_rotate(&fwd, cam_fwd, rot);
+			vec3_rotate(&up,  cam_up,  rot);
+
+			//fwd.x = SDL_sinf(rot.y);
+			//fwd.y = -SDL_tanf(rot.x);
+			//fwd.z = -SDL_cosf(rot.y);
 
 			this->SetListenerPosition(pos);
 			this->SetListenerVelocity(vel);

@@ -67,8 +67,53 @@ It’s designed to be both a **sandbox for engine development** and a **foundati
 
 ## ⚙️ Build
 
-Currently, **rgengine** is built using **Microsoft Visual Studio**.  
-A **Premake5**-based build system is planned to enable easy project generation for multiple platforms and compilers (MSVC, GCC, Clang, etc).
+This project uses [Premake5](https://premake.github.io/) to generate build files.
+
+### 1. Prepare
+
+Install Premake5
+
+- **Windows**: download `premake5.exe` and add it to your `PATH`.
+- **Linux / macOS**: use your package manager or download the binary.
+
+Install dependencies
+
+On Windows
+
+```bash
+vcpkg install
+```
+
+On Linux
+
+Use your package manager to install dev libraries:
+- sdl3
+- mujs
+- cjson
+- iconv
+- assimp
+- freetype
+- zlib
+- nativefiledialog-extended
+- openal-soft
+- bullet3
+
+
+### 2. Generate project files
+
+From the project root:
+
+```bash
+premake5 gmake2      # Makefile (Linux/macOS)
+premake5 vs2026      # Visual Studio 2026 (Windows)
+premake5 xcode4      # Xcode (macOS)
+```
+
+### 3. Build
+
+- **Makefile**: run `make`
+- **Visual Studio**: open the generated `.sln` and build.
+- **Xcode**: open the project and build.
 
 ---
 

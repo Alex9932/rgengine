@@ -15,7 +15,7 @@
 #include <meshtool.h>
 #include <filesystem.h>
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 
 using namespace Engine;
 

@@ -8,7 +8,7 @@
 #define R_RENDERER_NAME      "DirectX 11"
 #define R_RENDERER_SHORTNAME "dx11"
 
-#define R_DXRENDER_DEBUG 1
+#define R_DXRENDER_DEBUG 0
 
 #define R_MAX_COMMANDS_PER_BUFFER 256
 

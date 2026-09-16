@@ -5,7 +5,7 @@
 
 #include "phcomponent.h"
 
-#include "bullet/btBulletDynamicsCommon.h"
+#include <bullet/btBulletDynamicsCommon.h>
 
 #define RG_PH_MOTIONSTATES 1024
 

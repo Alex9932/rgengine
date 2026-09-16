@@ -23,6 +23,8 @@
 
 #include <rmodelmanager.h>
 
+#include <soundsystem.h>
+
 using namespace Engine;
 
 
@@ -42,11 +44,54 @@ static int val = 0;
 static const char* items[] = { "None", "Stand", "Walk", "Run", "Squat", "Sneaking", "Idle", "Do Idle 1" , "Do Idle 2" , "Do Idle 3" };
 
 
+static SoundBuffer* sndbuff[4] = {};
+static StreamBuffer* sndstream = NULL;
+static SoundSource* sndsrc = NULL;
+
+static SoundBuffer* CreateSoundBuffer(String file) {
+
+	RG_STB_VORBIS stream = RG_STB_vorbis_open_file(file, NULL, NULL);
+	stb_vorbis_info v_info;
+	RG_STB_vorbis_get_info_ptr(stream.stream, &v_info);
+
+	// Get "stream" size
+
+	Uint32 amount = RG_STB_vorbis_stream_length_in_samples(stream.stream); // Samples per channel
+	void* data_buffer = rg_malloc(sizeof(Uint16) * amount * v_info.channels);
+	rgLogInfo(RG_LOG_GAME, "OGG: %d %d %d", v_info.channels, v_info.sample_rate, amount);
+
+	// Read all data
+	RG_STB_vorbis_get_samples_short_interleaved(stream.stream, v_info.channels, (short*)data_buffer, amount);
+
+	// Create buffer
+	SoundBufferCreateInfo info = {};
+	info.channels   = v_info.channels;
+	info.samplerate = v_info.sample_rate;
+	info.samples    = amount;
+	info.data       = data_buffer;
+
+	SoundBuffer* buffer = GetSoundSystem()->CreateBuffer(&info);
+
+	// Clean up
+	RG_STB_vorbis_close(&stream);
+	rg_free(data_buffer);
+
+	return buffer;
+}
+
 static Bool Handler(SDL_Event* event) {
 
-	//if () {
-
-	//}
+	if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_F) {
+		// Play sound
+		Uint32 idx = rand() % 4;
+		rgLogInfo(RG_LOG_GAME, "Play sound %d", idx);
+		PlaySoundInfo info = {};
+		info.buffer = sndbuff[idx];
+		info.position = {0, 1, 0};
+		info.speed = 1;
+		info.volume = 1;
+		GetSoundSystem()->PlaySound(&info);
+	}
 
 	return true;
 
@@ -110,11 +155,6 @@ class Application : public BaseGame {
 
 		void MainUpdate() {
 
-			if (IsKeyDown(SDL_SCANCODE_W)) {
-
-			}
-
-
 			Render::SetGlobalLight(&desc);
 		
 			// Recalculate projection
@@ -174,24 +214,6 @@ class Application : public BaseGame {
 			// Load geometry
 
 
-			// Create player entity
-			player = world->NewEntity();
-			//player->SetAABB(&info.aabb);
-			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("Gilberta"));
-			// Scale visual
-			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
-			player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
-
-			// Load animations
-			anim[0] = pm2anim.ImportAnimation("gamedata/anims/fluorite-stand.anim");
-			anim[1] = pm2anim.ImportAnimation("gamedata/anims/fluorite-walk.anim");
-			anim[2] = pm2anim.ImportAnimation("gamedata/anims/fluorite-capoeira.anim");
-
-			for (Uint32 i = 0; i <3; i++) {
-				anim[i]->SetRepeat(true);
-			}
-
-			//kmodel->GetAnimator()->PlayAnimation(anim[0]);
 
 
 
@@ -212,8 +234,8 @@ class Application : public BaseGame {
 			fminfo.info.as_static = &sinfo;
 			pm2.FreeModelData(&fminfo);
 #endif
-			//R3D_StaticModel* level_mdl_handle = GetStaticModel("Sponza");
-			R3D_StaticModel* level_mdl_handle = GetStaticModel("NewSponza_Main_glTF_003");
+			R3D_StaticModel* level_mdl_handle = GetStaticModel("Sponza");
+			//R3D_StaticModel* level_mdl_handle = GetStaticModel("NewSponza_Main_glTF_003");
 			//R3D_StaticModel* level_mdl_handle = GetStaticModel("flatplane");
 			mat4 model = MAT4_IDENTITY();
 			AABB aabb = { { -99999, -99999, -99999 }, { 99999, 99999, 99999 } };
@@ -234,9 +256,59 @@ class Application : public BaseGame {
 				world->NewStatic(level_mdl_handle, &model, &aabb);
 			}
 
+
+			// Create player entity
+			player = world->NewEntity();
+			//player->SetAABB(&info.aabb);
+			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("Untitled"));
+			//player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("fluorite"));
+			// Scale visual
+			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
+			//player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
+
+			// Load animations
+			anim[0] = pm2anim.ImportAnimation("gamedata/anims/gilberta-idle.anim");
+			anim[1] = pm2anim.ImportAnimation("gamedata/anims/gilberta-overlook.anim");
+			//anim[0] = pm2anim.ImportAnimation("gamedata/anims/fluorite-stand.anim");
+			//anim[1] = pm2anim.ImportAnimation("gamedata/anims/fluorite-walk.anim");
+			anim[2] = pm2anim.ImportAnimation("gamedata/anims/fluorite-capoeira.anim");
+
+			for (Uint32 i = 0; i <3; i++) {
+				anim[i]->SetRepeat(true);
+			}
+
+			//kmodel->GetAnimator()->PlayAnimation(anim[0]);
+
+
+			// Load sounds
+			//sndbuff[0] = CreateSoundBuffer("gamedata/sounds/music/caramellooped.ogg");
+			sndbuff[0] = CreateSoundBuffer("gamedata/sounds/ak47/ak47_shoot.ogg");
+			sndbuff[1] = CreateSoundBuffer("gamedata/sounds/ak47/ak47_shoot1.ogg");
+			sndbuff[2] = CreateSoundBuffer("gamedata/sounds/ak47/ak47_shoot2.ogg");
+			sndbuff[3] = CreateSoundBuffer("gamedata/sounds/ak47/ak47_shoot3.ogg");
+			
+			sndstream = RG_NEW(StreamBuffer)("gamedata/sounds/music/caramellooped.ogg");
+			sndsrc = GetSoundSystem()->NewSoundSource();
+
+			sndsrc->SetBuffer(sndstream);
+			sndsrc->SetRepeat(true);
+			//sndsrc->Play();
+			player->AttachComponent(sndsrc);
+
+			RegisterEventHandler(Handler);
 		}
 
 		void Quit() {
+
+			GetSoundSystem()->DeleteSoundSource(sndsrc);
+
+			GetSoundSystem()->DestroyBuffer(sndbuff[0]);
+			GetSoundSystem()->DestroyBuffer(sndbuff[1]);
+			GetSoundSystem()->DestroyBuffer(sndbuff[2]);
+			GetSoundSystem()->DestroyBuffer(sndbuff[3]);
+			RG_DELETE(StreamBuffer, sndstream);
+
+			FreeEventHandler(Handler);
 		
 			GetWorld()->ClearWorld();
 

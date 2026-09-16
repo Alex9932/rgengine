@@ -126,6 +126,15 @@ namespace Engine {
 			plinfo.layout        = &layout;
 			plinfo.cullmode      = RG_RENDERPASS_CULLMODE_BACK;
 			plinfo.fillmode      = RG_RENDERPASS_FILLMODE_SOLID;
+
+			plinfo.blendstates[0].blendEnable    = 0; // Enable blend
+			plinfo.blendstates[0].colorBlendOp   = RG_BLEND_OP_ADD;
+			plinfo.blendstates[0].srcColorFactor = RG_BLEND_FACTOR_SRC_ALPHA;
+			plinfo.blendstates[0].dstColorFactor = RG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			plinfo.blendstates[0].alphaBlendOp   = RG_BLEND_OP_ADD;
+			plinfo.blendstates[0].srcAlphaFactor = RG_BLEND_FACTOR_ONE;
+			plinfo.blendstates[0].dstAlphaFactor = RG_BLEND_FACTOR_ZERO;
+
 			pipeline = ctx->CreatePipeline(dev, &plinfo);
 
 			RFramebufferCreateInfo fbinfo = {};
@@ -157,13 +166,11 @@ namespace Engine {
 			RRenderDevice* dev = GetRenderDevice();
 			RenderBackend* ctx = GetRenderContext();
 			RShaderCreateInfo vsinfo = {};
-			vsinfo.isCompiled = true;
 			vsinfo.name = "gbuffer.vs";
 			vsinfo.type = RG_SHADER_TYPE_VERTEX;
 			vs = ctx->CreateShader(dev, &vsinfo);
 
 			RShaderCreateInfo psinfo = {};
-			psinfo.isCompiled = true;
 			psinfo.name = "gbuffer.ps";
 			psinfo.type = RG_SHADER_TYPE_PIXEL;
 			ps = ctx->CreateShader(dev, &psinfo);

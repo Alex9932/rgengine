@@ -4,7 +4,7 @@
 #include "profiler.h"
 #include "engine.h"
 
-#include "imgui/imgui_widget_flamegraph.h"
+//#include <imgui/imgui_widget_flamegraph.h>
 
 namespace Engine {
     namespace Render {
@@ -93,7 +93,7 @@ namespace Engine {
                 ImGui::Text("%s: %.3lfms", secsrc, time);
             }
 
-            ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, sections, 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
+            //ImGuiWidgetFlameGraph::PlotFlame("Main thread", ProfilerValueGetter, prof, sections, 0, "Main Thread", FLT_MAX, FLT_MAX, ImVec2(400, 0));
 
             ImGui::End();
         }

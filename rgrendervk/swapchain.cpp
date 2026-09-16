@@ -83,7 +83,7 @@ static void MakeSwapchain(RRenderDevice* device) {
 
 	// Image count
 
-	device->vkimagescount = capabilities.minImageCount + 1;
+	device->vkimagescount = capabilities.minImageCount + 2;
 	device->vkimagescount = SDL_min(device->vkimagescount, R_VK_FRAMES_IN_FLIGHT);
 	//Uint32 maximages = SDL_min(capabilities.maxImageCount, R_VK_FRAMES_IN_FLIGHT);
 	//if (capabilities.maxImageCount > 0 && device->vkimagescount > maximages) {
