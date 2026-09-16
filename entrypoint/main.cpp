@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
 		"-fsjson",
 		"fsgame.json",
 		"-render",
-		"rgrenderdx11.dll",
-		//"rgrendervk.dll",
+		//"rgrenderdx11.dll",
+		"rgrendervk.dll",
 		"-game",
 		"rg_3da.dll"
 		//"rg_leveleditor.dll"
