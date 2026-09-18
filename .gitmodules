@@ -8,3 +8,6 @@
 	path = thirdparty/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule "libgilberta"]
+	path = libgilberta
+	url = https://github.com/Alex9932/libgilberta.git
