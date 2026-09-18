@@ -53,7 +53,8 @@ function rg_vcpkg_runtime()
                 "{COPYDIR} " ..
                     path.join(vcpkg, "debug", "bin") ..
                     " " ..
-                    path.join("%{cfg.targetdir}")
+                    --path.join("%{cfg.targetdir}")
+                    path.join(RG_ROOT, "build", "bin", "Debug")
             }
 
         filter "configurations:Release"
@@ -61,7 +62,8 @@ function rg_vcpkg_runtime()
                 "{COPYDIR} " ..
                     path.join(vcpkg, "bin") ..
                     " " ..
-                    path.join("%{cfg.targetdir}")
+                    --path.join("%{cfg.targetdir}")
+                    path.join(RG_ROOT, "build", "bin", "Release")
 
             }
 

@@ -1,15 +1,16 @@
+include "premake/common.lua"
+
 workspace "rgengine"
     location "build"
     architecture "x86_64"
     configurations { "Debug", "Release" }
     startproject "entrypoint"
+    debugdir(path.join(RG_ROOT, "resources"))
 
     filter "system:windows"
         systemversion "latest"
 
     filter {}
-
-include "premake/common.lua"
 
 include "rgengine"
 include "rgrendervk"
