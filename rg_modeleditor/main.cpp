@@ -1,4 +1,6 @@
 #define GAME_DLL
+#define IS_MMDLIB 0
+
 #include <rgentrypoint.h>
 #include <event.h>
 #include <rgstring.h>
@@ -19,8 +21,9 @@
 #include <animexporter.h>
 #include <animimporter.h>
 
+#if IS_MMDLIB
 #include <mmdimporter.h>
-
+#endif
 
 #define ALBEDO_TEXTURE 0
 #define NORMAL_TEXTURE 1
@@ -60,10 +63,13 @@ static AnimExporter anim_export;
 static AnimImporter anim_importer;
 
 static GeomImporter geom_importer;
+
+#if IS_MMDLIB
 static PMDImporter pmd_importer;
 static PMXImporter pmx_importer;
 
 static VMDImporter vmd_importer;
+#endif
 
 static const void* loaderdata = NULL;
 
@@ -140,6 +146,7 @@ static void LoadModel() {
 			SDL_snprintf(model_extra.mat_names[i].name, 128, "%s", info.matInfo[i].texture);
 		}
 	}
+#if IS_MMDLIB
 	else if (rg_streql(MDL_EXT, "pmd")) {
 
 		pmd_importer.ImportRiggedModel(&importinfo);
@@ -158,6 +165,7 @@ static void LoadModel() {
 
 		loader = (Engine::RiggedModelImporter*)&pmx_importer;
 	}
+#endif
 	else {
 		// Use custom loaders
 
@@ -795,16 +803,19 @@ static void DrawAnimationTab(Uint32* uid) {
 			FS_ReplaceSeparators(path, p);
 			FS_SeparatePathFile(p, 256, f, 256, path); // and reuse it as file path
 			rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
-			if (rg_strenw(path, "vmd")) {
-				Animation* anim = vmd_importer.ImportAnimation(path, kmodel);
-				anims[animcount] = anim;
-				animcount++;
-			}
-			else if (rg_strenw(path, "anim")) {
+			
+			if (rg_strenw(path, "anim")) {
 				Animation* anim = anim_importer.ImportAnimation(path);
 				anims[animcount] = anim;
 				animcount++;
 			}
+#if IS_MMDLIB
+			else if (rg_strenw(path, "vmd")) {
+				Animation* anim = vmd_importer.ImportAnimation(path, kmodel);
+				anims[animcount] = anim;
+				animcount++;
+			}
+#endif
 			else {
 				LoadAnimationInfo animinfo = {};
 				char errmsg[256] = {};

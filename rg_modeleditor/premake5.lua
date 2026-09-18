@@ -4,7 +4,7 @@ project "rg_modeleditor"
 
     files {
         "**.h", "**.cpp", "**.c",
-        path.join(RG_THIRDPARTY, "imgui", "backends", "imgui_impl_sdl3.cpp"),
+        --path.join(RG_THIRDPARTY, "imgui", "backends", "imgui_impl_sdl3.cpp"),
         path.join(RG_THIRDPARTY, "imgui", "backends", "imgui_impl_opengl3.cpp")
     }
 
@@ -14,17 +14,25 @@ project "rg_modeleditor"
     links {
         "rgengine",
         "SDL3",
-        "cjson",
-        "assimp"
+        "cjson"
     }
 
     filter "system:windows"
+        filter "configurations:Debug"
+            links { "assimp-vc145-mtd" }
+
+        filter "configurations:Release"
+            links { "assimp-vc145-mt" }
+
+        filter {}
+
         links {
             "opengl32"
         }
 
     filter "system:linux"
         links {
+            "assimp",
             "GL"
         }
 

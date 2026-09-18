@@ -8,7 +8,7 @@
 #include "menubar.h"
 #include "dockerglobal.h"
 
-#include <imgui/imgui.h>
+#include <imgui.h>
 #include <engine.h>
 
 void MenubarDraw() {

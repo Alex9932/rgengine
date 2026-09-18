@@ -78,7 +78,9 @@ function rg_engine_includes()
         path.join(RG_ROOT, "rgengine", "include"),
         path.join(RG_ROOT, "rgengine"),
         path.join(RG_THIRDPARTY, "stb"),
-        path.join(RG_THIRDPARTY, "imgui")
+        path.join(RG_THIRDPARTY, "imgui"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src"),
+        path.join(RG_THIRDPARTY, "dirent", "include")
     }
 end
 
@@ -92,6 +94,12 @@ function rg_engine_imgui_cpp()
         path.join(RG_THIRDPARTY, "imgui", "imgui_tables.cpp"),
         path.join(RG_THIRDPARTY, "imgui", "imgui_widgets.cpp"),
         path.join(RG_THIRDPARTY, "imgui", "imgui_demo.cpp"),
-        path.join(RG_THIRDPARTY, "imgui", "backends", "imgui_impl_sdl3.cpp")
+        path.join(RG_THIRDPARTY, "imgui", "backends", "imgui_impl_sdl3.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "GraphEditor.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "ImCurveEdit.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "ImGradient.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "ImGuizmo.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "ImSequencer.cpp"),
+        path.join(RG_THIRDPARTY, "imguizmo", "src", "ImVectorEditor.cpp")
     }
 end

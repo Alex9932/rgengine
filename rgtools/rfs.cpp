@@ -15,7 +15,7 @@
 #include <filesystem.h>
 #include <allocator.h>
 #include <rgstring.h>
-#include <imgui/dirent/dirent.h>
+#include <dirent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

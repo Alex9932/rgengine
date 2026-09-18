@@ -1,6 +1,6 @@
 #include "viewport.h"
-#include <imgui/imgui.h>
-#include <imgui/ImGuizmo.h>
+#include <imgui.h>
+#include <ImGuizmo.h>
 
 #include <render.h>
 

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include <spirv_cross/spirv_hlsl.hpp>
+#include <spirv_hlsl.hpp>
 #include <d3dcompiler.h>
 
 #define DX_RESOURCE_TYPE_PUSHCONSTANT_BINDING 0xFF // For runtime mapping

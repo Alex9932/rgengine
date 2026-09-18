@@ -8,7 +8,7 @@
 
 #include <objimporter.h>
 #include <pm2importer.h>
-#include <mmdimporter.h>
+//#include <mmdimporter.h>
 
 #include <rgstring.h>
 
@@ -27,8 +27,8 @@ using namespace Engine;
 
 //static ObjImporter objImporter;
 static PM2Importer pm2Importer;
-static PMDImporter pmdImporter;
-static PMXImporter pmxImporter;
+//static PMDImporter pmdImporter;
+//static PMXImporter pmxImporter;
 
 static void OpenModel(String _path, R3DStaticModelInfo* info) {
 	char path[256];
@@ -49,6 +49,7 @@ static void OpenModel(String _path, R3DStaticModelInfo* info) {
 	//else if (rg_strenw(path, "obj")) {
 	//	objImporter.ImportModel(path, info);
 	//}
+#if 0
 	else if (rg_strenw(path, "pmd")) {
 		ImportModelInfo i = {};
 		i.path = "";
@@ -63,6 +64,7 @@ static void OpenModel(String _path, R3DStaticModelInfo* info) {
 		i.info.as_static = info;
 		pmxImporter.ImportModel(&i);
 	}
+#endif
 }
 
 

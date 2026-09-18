@@ -15,7 +15,7 @@
 
 //#include <objimporter.h>
 #include <pm2importer.h>
-#include <mmdimporter.h>
+//#include <mmdimporter.h>
 
 #include <rgstring.h>
 
@@ -28,8 +28,8 @@ using namespace Engine;
 
 //static ObjImporter objImporter;
 static PM2Importer pm2Importer;
-static PMDImporter pmdImporter;
-static PMXImporter pmxImporter;
+//static PMDImporter pmdImporter;
+//static PMXImporter pmxImporter;
 
 
 static void ImportPM2(String path, Entity* ent) {

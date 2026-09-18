@@ -2,7 +2,7 @@
 #define _DOCKERGLOBAL_H
 
 #include <rgtypes.h>
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 extern Bool docker_opt_fullscreen;
 extern Bool docker_opt_padding;

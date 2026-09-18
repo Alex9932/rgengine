@@ -6,7 +6,7 @@
  */
 
 #include "popup.h"
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 #include <window.h>
 

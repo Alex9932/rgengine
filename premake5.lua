@@ -14,13 +14,11 @@ workspace "rgengine"
 
 include "rgengine"
 include "rgrendervk"
---include "mmdlib"
 
 include "rgtools"
 include "rg_3da"
 include "rg_leveleditor"
 include "rg_modeleditor"
---include "rg_server"
 
 include "entrypoint"
 

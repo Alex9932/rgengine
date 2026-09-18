@@ -2,7 +2,7 @@
 #define _UICOMPONENT_H
 
 #include <rgvector.h>
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 class UIComponent {
 	public:
