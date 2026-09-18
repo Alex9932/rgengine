@@ -373,3 +373,8 @@ FodyWeavers.xsd
 /resources/gamedata/sponzaobj
 /resources/vmd/vmd
 /include/mujs_.h
+/$old_arch
+/build
+/vcpkg_installed
+/resources/platform/shaders/dx11
+/resources/platform/shaders/vk
