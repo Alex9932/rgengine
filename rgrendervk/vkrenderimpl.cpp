@@ -12,7 +12,7 @@
 #include <backends/imgui_impl_vulkan.h>
 
 #define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #define R_VK_SEPARATE_QUEUES 0
 

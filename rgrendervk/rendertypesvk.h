@@ -4,7 +4,7 @@
 #include <rendertypes.h>
 #include <vulkan/vulkan.h>
 #include <allocator.h>
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #define R_RENDERER_NAME      "Vulkan"
 #define R_RENDERER_SHORTNAME "vk"
