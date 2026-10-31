@@ -1,6 +1,7 @@
 #version 430 core
 
 #define NORMALMAP 1
+#define RECONSTRUCTZ 1
 
 layout(location = 0) in vec3 o_position;
 layout(location = 1) in vec3 o_T;
@@ -40,7 +41,16 @@ void main() {
 
 #if NORMALMAP
 	mat3 TBN = mat3(normalize(o_T), normalize(o_B), normalize(o_N));
+	
+#if RECONSTRUCTZ
+	// Reconstruct Z
+	vec2 nRG = t_norm.xy * 2.0 - 1.0;
+	float nZ = sqrt(1.0 - nRG.x*nRG.x - nRG.y*nRG.y);
+	vec3 nmap = normalize(vec3(nRG, nZ));
+#else
 	vec3 nmap = t_norm * 2.0 - 1.0;
+#endif
+
 	N = normalize(TBN * nmap);
 #else
 	N = normalize(o_N);
