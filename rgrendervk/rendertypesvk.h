@@ -100,6 +100,11 @@ struct RImage {
 	RFormat        format;
 	VkImageLayout  layout;
 	Uint32         usage;
+	Uint16         width;
+	Uint16         height;
+	Uint16         depth;
+	Uint8          type;
+	Uint8          _padding;
 };
 
 struct RCommandBuffer {
@@ -171,6 +176,26 @@ static RG_INLINE VkIndexType GetVkIndexType(IndexType type) {
 		case RG_INDEX_U16: return VK_INDEX_TYPE_UINT16;
 		case RG_INDEX_U8:  return VK_INDEX_TYPE_UINT8;
 		default: return VK_INDEX_TYPE_UINT16;
+	}
+}
+
+static VkImageType GetImageType(Uint8 type) {
+	switch (type) {
+		case RG_IMAGE_TYPE_TEXTURE_1D:   return VK_IMAGE_TYPE_1D;
+		case RG_IMAGE_TYPE_TEXTURE_2D:   return VK_IMAGE_TYPE_2D;
+		case RG_IMAGE_TYPE_TEXTURE_3D:   return VK_IMAGE_TYPE_3D;
+		case RG_IMAGE_TYPE_TEXTURE_CUBE: return VK_IMAGE_TYPE_2D;
+		default: return VK_IMAGE_TYPE_2D;
+	}
+}
+
+static VkImageViewType GetImageViewType(Uint8 type) {
+	switch (type) {
+		case RG_IMAGE_TYPE_TEXTURE_1D:   return VK_IMAGE_VIEW_TYPE_1D;
+		case RG_IMAGE_TYPE_TEXTURE_2D:   return VK_IMAGE_VIEW_TYPE_2D;
+		case RG_IMAGE_TYPE_TEXTURE_3D:   return VK_IMAGE_VIEW_TYPE_3D;
+		case RG_IMAGE_TYPE_TEXTURE_CUBE: return VK_IMAGE_VIEW_TYPE_CUBE;
+		default: return VK_IMAGE_VIEW_TYPE_2D;
 	}
 }
 

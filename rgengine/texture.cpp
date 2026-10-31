@@ -40,10 +40,11 @@ namespace Engine {
 			Uint8* data = RG_STB_load_from_file(path, &w, &h, &c, 4);
 
 			RImageCreateInfo imginfo = {};
-			imginfo.width = w;
+			imginfo.width  = w;
 			imginfo.height = h;
 			imginfo.format = RG_FORMAT_R8G8B8A8_UNORM;
-			imginfo.flags = tptr->flags;
+			imginfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
+			imginfo.flags  = tptr->flags;
 			imginfo.initialData = data;
 
 			tptr->img = rctx->CreateImage(rdev, &imginfo);

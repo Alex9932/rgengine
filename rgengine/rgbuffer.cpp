@@ -30,6 +30,7 @@ namespace Engine {
 
 			RImageCreateInfo cainfo = {}; // Color attachments
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
 			cainfo.width  = wndSize->x;
 			cainfo.height = wndSize->y;
 			rtargets[0] = ctx->CreateImage(dev, &cainfo);
@@ -38,7 +39,8 @@ namespace Engine {
 
 			RImageCreateInfo dbinfo = {}; // Depth attachment
 			dbinfo.format = RG_FORMAT_D32;
-			dbinfo.width = wndSize->x;
+			dbinfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
+			dbinfo.width  = wndSize->x;
 			dbinfo.height = wndSize->y;
 			depthbuffer = ctx->CreateImage(dev, &dbinfo);
 

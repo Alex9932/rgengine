@@ -166,11 +166,6 @@ static RG_INLINE void CMD_BindIndexBufferImpl(RCommandBuffer* buffer, RCommand* 
 }
 
 static RG_INLINE void CMD_BindDescriptorImpl(RCommandBuffer* buffer, RCommand* cmd) {
-	//RDescriptorEntry* entry = (RDescriptorEntry*)cmd->buffer;
-	//Uint8 stage = (cmd->_off0 & 0xF000) >> 12; // Upper 4 bits
-	//Uint8 reg   = (cmd->_off0 & 0x0F00) >> 8;  // Middle 4 bits
-	//Uint8 slot  = (cmd->_off0 & 0x00FF);       // Lower 8 bits
-
 	RRenderDevice* dev = buffer->dev;
 
 	Uint8 stage = (Uint8)cmd->_off1;

@@ -51,19 +51,28 @@ struct RBuffer {
 	RRenderDevice* dev;
 	ID3D11Buffer*  buffer;
 	Uint64         length;
-	Uint8          access;
-	Uint8          usage;
 	Uint16         type;
 	Uint16         stride;
-	Uint16 _offset;
+	Uint16         _offset;
+	Uint8          access;
+	Uint8          usage;
 };
 
 struct RImage {
 	RRenderDevice*   dev;
-	ID3D11Texture2D* image;
+	union {
+		ID3D11Texture2D* image; // Compatibility
+		ID3D11Texture1D* image1d;
+		ID3D11Texture2D* image2d;
+		ID3D11Texture3D* image3d;
+	};
 	RFormat		     format;
+	Uint32           _padding0;
 	Uint16		     width;
 	Uint16		     height;
+	Uint16		     depth;
+	Uint8            type;
+	Uint8            _padding1;
 };
 
 #define R_CMD_NOP                0x0000

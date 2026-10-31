@@ -131,31 +131,67 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	image->format = info->format;
 	image->width  = info->width;
 	image->height = info->height;
+	image->depth  = info->depth;
+	image->type   = info->type;
 
-	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width     = info->width;
-	textureDesc.Height    = info->height;
-	textureDesc.MipLevels = 0;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format    = GetFormat(info->format);
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Usage     = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-	if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
-		textureDesc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
-		textureDesc.MipLevels = 1;
-	} else {
-		textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-		textureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	HRESULT r = 0;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		D3D11_TEXTURE1D_DESC textureDesc1D = {};
+		textureDesc1D.Width     = info->width;
+		textureDesc1D.MipLevels = 1;
+		textureDesc1D.ArraySize = 1;
+		textureDesc1D.Format    = GetFormat(info->format);
+		textureDesc1D.Usage     = D3D11_USAGE_DEFAULT;
+		textureDesc1D.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		textureDesc1D.CPUAccessFlags = 0;
+		r = dev->dxdev->CreateTexture1D(&textureDesc1D, NULL, &image->image1d);
+		image->height = 1;
+		image->depth  = 1;
+	}
+	else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		D3D11_TEXTURE2D_DESC textureDesc2D = {};
+		textureDesc2D.Width     = info->width;
+		textureDesc2D.Height    = info->height;
+		textureDesc2D.MipLevels = 0;
+		textureDesc2D.ArraySize = 1;
+		textureDesc2D.Format    = GetFormat(info->format);
+		textureDesc2D.SampleDesc.Count = 1;
+		textureDesc2D.SampleDesc.Quality = 0;
+		textureDesc2D.Usage     = D3D11_USAGE_DEFAULT;
+		textureDesc2D.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		textureDesc2D.CPUAccessFlags = 0;
+		if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
+			textureDesc2D.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+			textureDesc2D.MipLevels = 1;
+		} else {
+			textureDesc2D.BindFlags |= D3D11_BIND_RENDER_TARGET;
+			textureDesc2D.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
+		r = dev->dxdev->CreateTexture2D(&textureDesc2D, NULL, &image->image2d);
+		image->depth = 1;
+	}
+	else if (info->type == RG_IMAGE_TYPE_TEXTURE_3D) {
+		D3D11_TEXTURE3D_DESC textureDesc3D = {};
+		textureDesc3D.Width     = info->width;
+		textureDesc3D.Height    = info->height;
+		textureDesc3D.Depth     = info->depth;
+		textureDesc3D.MipLevels = 0;
+		textureDesc3D.Format    = GetFormat(info->format);
+		textureDesc3D.Usage     = D3D11_USAGE_DEFAULT;
+		textureDesc3D.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		textureDesc3D.MiscFlags = 0;
+		if (info->format == RG_FORMAT_D24S8 || info->format == RG_FORMAT_D32) {
+			textureDesc3D.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+			textureDesc3D.MipLevels = 1;
+		} else {
+			textureDesc3D.BindFlags |= D3D11_BIND_RENDER_TARGET;
+			textureDesc3D.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
+		textureDesc3D.CPUAccessFlags = 0;
+		r = dev->dxdev->CreateTexture3D(&textureDesc3D, NULL, &image->image3d);
 	}
 
-	textureDesc.CPUAccessFlags = 0;
-	HRESULT r = dev->dxdev->CreateTexture2D(&textureDesc, NULL, &image->image);
-	//if(r != )
-
-	dev->imageMemLen += info->width * info->height * GetFormatSize(info->format);
+	dev->imageMemLen += image->width * image->height * image->depth * GetFormatSize(info->format);
 
 	if (info->initialData) {
 		// TODO: Support other formats and mip levels
@@ -168,8 +204,18 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 
 void R_DestroyImage(RImage* image) {
 	RRenderDevice* dev = image->dev;
-	dev->imageMemLen -= image->width * image->height * GetFormatSize(image->format);
-	image->image->Release();
+	dev->imageMemLen -= image->width * image->height * image->depth * GetFormatSize(image->format);
+
+	if (image->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		image->image1d->Release();
+	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		image->image2d->Release();
+	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		image->image3d->Release();
+	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		image->image2d->Release();
+	}
+	
 	dev->allocator->Deallocate(image);
 }
 

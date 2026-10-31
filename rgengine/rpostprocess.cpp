@@ -102,6 +102,7 @@ namespace Engine {
 
 			RImageCreateInfo cainfo = {}; // Color attachments
 			cainfo.format = RG_FORMAT_R8G8B8A8_UNORM;
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
 			cainfo.width  = size->x;
 			cainfo.height = size->y;
 			rtarget = ctx->CreateImage(dev, &cainfo);
@@ -183,6 +184,7 @@ namespace Engine {
 
 
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
 			cainfo.width  = blur_p1.x;
 			cainfo.height = blur_p1.y;
 			rt_blur1x = ctx->CreateImage(dev, &cainfo);
@@ -281,6 +283,7 @@ namespace Engine {
 			ssgi_size = { size->x / 2, size->y / 2 };
 
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
 			cainfo.width  = ssgi_size.x;
 			cainfo.height = ssgi_size.y;
 			rt_ssgi = ctx->CreateImage(dev, &cainfo);
@@ -356,7 +359,8 @@ namespace Engine {
 			ssr_size = { size->x / 2, size->y / 2 };
 			
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT;
-			cainfo.width = ssr_size.x;
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
+			cainfo.width  = ssr_size.x;
 			cainfo.height = ssr_size.y;
 			rt_ssr = ctx->CreateImage(dev, &cainfo);
 

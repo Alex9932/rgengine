@@ -374,19 +374,30 @@ void R_UpdateBuffer(RUpdateBufferInfo* info) {
 
 RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
-	image->dev = dev;
-	image->length = info->width * info->height * GetImageFormatSize(info->format);
+	image->dev    = dev;
+	image->type   = info->type;
+	image->width  = info->width;
+	image->height = info->height;
+	image->depth  = info->depth;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		image->height = 1;
+		image->depth  = 1;
+	} else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		image->depth = 1;
+	}
+
+	image->length = image->width * image->height * image->depth * GetImageFormatSize(info->format);
 	image->format = info->format;
 	image->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image->usage  = RG_IMAGE_USAGE_UNDEFINED;
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType     = VK_IMAGE_TYPE_2D;
+	imageInfo.imageType     = GetImageType(info->type);// VK_IMAGE_TYPE_2D;
 	imageInfo.format        = GetImageFormat(info->format);
-	imageInfo.extent.width  = info->width;
-	imageInfo.extent.height = info->height;
-	imageInfo.extent.depth  = 1;
+	imageInfo.extent.width  = image->width;
+	imageInfo.extent.height = image->height;
+	imageInfo.extent.depth  = image->depth;
 	imageInfo.arrayLayers   = 1;
 	imageInfo.mipLevels     = 1;
 	imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
@@ -404,6 +415,9 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	}
 	imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		imageInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
 
 	VmaAllocationCreateInfo allocCreateInfo = {};
 	allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
@@ -427,7 +441,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	VkImageViewCreateInfo viewInfo = {};
 	viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image                           = image->image;
-	viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.viewType                        = GetImageViewType(info->type);// VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format                          = GetImageFormat(info->format);
 	viewInfo.subresourceRange.aspectMask     = aspect;
 	viewInfo.subresourceRange.baseMipLevel   = 0;

@@ -172,6 +172,7 @@ namespace Engine {
 
 			RImageCreateInfo cainfo = {}; // Color attachments
 			cainfo.format = RG_FORMAT_R16G16B16A16_FLOAT; // Use 32-bit floats?
+			cainfo.type   = RG_IMAGE_TYPE_TEXTURE_2D;
 			cainfo.width  = size->x;
 			cainfo.height = size->y;
 			rtarget = ctx->CreateImage(dev, &cainfo);
