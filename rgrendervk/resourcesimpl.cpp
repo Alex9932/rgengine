@@ -372,6 +372,20 @@ void R_UpdateBuffer(RUpdateBufferInfo* info) {
 	}
 }
 
+static Uint64 GetImageSize(RImage* img) {
+	Uint64 w = img->width;
+	Uint64 h = img->height;
+	Uint64 d = img->depth;
+	if (img->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		h = d = 1;
+	} else if (img->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		d = 1;
+	} else if (img->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		d = 6;
+	}
+	return w * h * d * GetImageFormatSize(img->format);
+}
+
 RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
 	image->dev    = dev;
@@ -382,11 +396,10 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	if (info->type == RG_IMAGE_TYPE_TEXTURE_1D) {
 		image->height = 1;
 		image->depth  = 1;
-	} else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+	} else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D || info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
 		image->depth = 1;
 	}
 
-	image->length = image->width * image->height * image->depth * GetImageFormatSize(info->format);
 	image->format = info->format;
 	image->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image->usage  = RG_IMAGE_USAGE_UNDEFINED;
@@ -399,6 +412,9 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	imageInfo.extent.height = image->height;
 	imageInfo.extent.depth  = image->depth;
 	imageInfo.arrayLayers   = 1;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		imageInfo.arrayLayers = 6;
+	}
 	imageInfo.mipLevels     = 1;
 	imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
@@ -453,7 +469,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	// Upload initial data if provided
 	if (info->initialData) {
 		RBufferCreateInfo stagingInfo = {};
-		stagingInfo.length = image->length;
+		stagingInfo.length = GetImageSize(image);
 		stagingInfo.type   = RG_BUFFER_TYPE_VK_TSRC;
 		stagingInfo.usage  = RG_BUFFER_USAGE_DYNAMIC;
 		stagingInfo.access = RG_BUFFER_ACCESS_CPU_WRITE;
@@ -463,7 +479,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 		R_DestroyBuffer(stagingBuffer);
 	}
 
-	dev->imageMemLen += image->length;
+	dev->imageMemLen += GetImageSize(image);
 
 	return image;
 }
@@ -472,7 +488,7 @@ void R_DestroyImage(RImage* image) {
 	RRenderDevice* dev = image->dev;
 	vkDestroyImageView(dev->vkdev, image->view, dev->vkalloc);
 	vmaDestroyImage(dev->vmaallocator, image->image, image->allocation);
-	dev->imageMemLen -= image->length;
+	dev->imageMemLen -= GetImageSize(image);
 	dev->allocator->Deallocate(image);
 }
 

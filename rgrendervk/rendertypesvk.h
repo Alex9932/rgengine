@@ -96,15 +96,15 @@ struct RImage {
 	VkImage        image;
 	VkImageView    view;
 	VmaAllocation  allocation;
-	Uint32         length;
+	Uint32         usage;
 	RFormat        format;
 	VkImageLayout  layout;
-	Uint32         usage;
+	Uint32         _padding0;
 	Uint16         width;
 	Uint16         height;
 	Uint16         depth;
 	Uint8          type;
-	Uint8          _padding;
+	Uint8          _padding1;
 };
 
 struct RCommandBuffer {

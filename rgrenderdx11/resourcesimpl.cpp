@@ -125,6 +125,22 @@ void R_UpdateBuffer(RUpdateBufferInfo* info) {
 // IMAGE
 //////////////////////////////////////////////////////////
 
+static Uint64 GetImageSize(RImage* img) {
+	Uint64 w = img->width;
+	Uint64 h = img->height;
+	Uint64 d = img->depth;
+	if (img->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		h = d = 1;
+	}
+	else if (img->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+		d = 1;
+	}
+	else if (img->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		d = 6;
+	}
+	return w * h * d * GetFormatSize(img->format);
+}
+
 RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	RImage* image = (RImage*)dev->allocator->Allocate(sizeof(RImage));
 	image->dev    = dev;
@@ -133,6 +149,12 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	image->height = info->height;
 	image->depth  = info->depth;
 	image->type   = info->type;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+		image->height = 1;
+		image->depth  = 1;
+	} else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D || info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		image->depth = 1;
+	}
 
 	HRESULT r = 0;
 	if (info->type == RG_IMAGE_TYPE_TEXTURE_1D) {
@@ -148,7 +170,7 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 		image->height = 1;
 		image->depth  = 1;
 	}
-	else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+	else if (info->type == RG_IMAGE_TYPE_TEXTURE_2D || info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
 		D3D11_TEXTURE2D_DESC textureDesc2D = {};
 		textureDesc2D.Width     = info->width;
 		textureDesc2D.Height    = info->height;
@@ -167,6 +189,12 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 			textureDesc2D.BindFlags |= D3D11_BIND_RENDER_TARGET;
 			textureDesc2D.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 		}
+
+		if (info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+			textureDesc2D.ArraySize = 6;
+			textureDesc2D.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
+		}
+
 		r = dev->dxdev->CreateTexture2D(&textureDesc2D, NULL, &image->image2d);
 		image->depth = 1;
 	}
@@ -191,7 +219,12 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 		r = dev->dxdev->CreateTexture3D(&textureDesc3D, NULL, &image->image3d);
 	}
 
-	dev->imageMemLen += image->width * image->height * image->depth * GetFormatSize(info->format);
+	if (FAILED(r)) {
+		dev->allocator->Deallocate(image);
+		return NULL;
+	}
+
+	dev->imageMemLen += GetImageSize(image);
 
 	if (info->initialData) {
 		// TODO: Support other formats and mip levels
@@ -204,13 +237,13 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 
 void R_DestroyImage(RImage* image) {
 	RRenderDevice* dev = image->dev;
-	dev->imageMemLen -= image->width * image->height * image->depth * GetFormatSize(image->format);
+	dev->imageMemLen -= GetImageSize(image);
 
 	if (image->type == RG_IMAGE_TYPE_TEXTURE_1D) {
 		image->image1d->Release();
 	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_2D) {
 		image->image2d->Release();
-	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_3D) {
 		image->image3d->Release();
 	} else if (image->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
 		image->image2d->Release();
