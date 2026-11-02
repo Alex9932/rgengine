@@ -266,8 +266,19 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 	for (Uint32 i = 0; i < fb->rtv_count; i++) {
 		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc = {};
 		renderTargetViewDesc.Format = GetFormatRT(info->rts[i]->format);
-		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-		renderTargetViewDesc.Texture2D.MipSlice = 0;
+		if (info->rts[i]->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+			renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+			renderTargetViewDesc.Texture2D.MipSlice = 0;
+		} else if (info->rts[i]->type == RG_IMAGE_TYPE_TEXTURE_3D) {
+			renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE3D;
+			renderTargetViewDesc.Texture3D.MipSlice = 0;
+		} else if (info->rts[i]->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+			renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+			renderTargetViewDesc.Texture2DArray.FirstArraySlice = 0;
+			renderTargetViewDesc.Texture2DArray.MipSlice = 0;
+			renderTargetViewDesc.Texture2DArray.ArraySize = 6;
+		}
+
 		t = dev->dxdev->CreateRenderTargetView(info->rts[i]->image, &renderTargetViewDesc, &fb->rtv[i]);
 		RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
 		//fb->rtv[i] = info->rts[i]->image;
@@ -277,6 +288,15 @@ RFramebuffer* R_CreateFramebuffer(RRenderDevice* dev, RFramebufferCreateInfo* in
 		depthStencilViewDesc.Format = GetFormatRT(info->dsv->format);
 		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		depthStencilViewDesc.Texture2D.MipSlice = 0;
+		if (info->dsv->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+			depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+			depthStencilViewDesc.Texture2D.MipSlice = 0;
+		} else if (info->dsv->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+			depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+			depthStencilViewDesc.Texture2DArray.FirstArraySlice = 0;
+			depthStencilViewDesc.Texture2DArray.MipSlice = 0;
+			depthStencilViewDesc.Texture2DArray.ArraySize = 6;
+		}
 		t = dev->dxdev->CreateDepthStencilView(info->dsv->image, &depthStencilViewDesc, &fb->dsv);
 		//RG_ASSERT_MSG(SUCCEEDED(t), "Unable create backbuffer view");
 		//fb->dsv = info->dsv->dsv;
@@ -343,10 +363,23 @@ RDescriptorSet* R_CreateDescriptorSet(RRenderDevice* dev, RDescriptorSetCreateIn
 
 			D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Format = GetFormatSRV(binding->image->format);
-			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-
-			srvDesc.Texture2D.MostDetailedMip = 0;
-			srvDesc.Texture2D.MipLevels = -1;
+			if (binding->image->type == RG_IMAGE_TYPE_TEXTURE_1D) {
+				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
+				srvDesc.Texture1D.MostDetailedMip = 0;
+				srvDesc.Texture1D.MipLevels = -1;
+			} else if (binding->image->type == RG_IMAGE_TYPE_TEXTURE_2D) {
+				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+				srvDesc.Texture2D.MostDetailedMip = 0;
+				srvDesc.Texture2D.MipLevels = -1;
+			} else if (binding->image->type == RG_IMAGE_TYPE_TEXTURE_3D) {
+				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+				srvDesc.Texture3D.MostDetailedMip = 0;
+				srvDesc.Texture3D.MipLevels = -1;
+			} else if (binding->image->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+				srvDesc.TextureCube.MostDetailedMip = 0;
+				srvDesc.TextureCube.MipLevels = -1;
+			}
 
 			r = dev->dxdev->CreateShaderResourceView(binding->image->image, &srvDesc, &set->entrys[i].srv);
 			if (binding->image->format != RG_FORMAT_D24S8 && binding->image->format != RG_FORMAT_D32) {

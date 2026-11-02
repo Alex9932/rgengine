@@ -464,6 +464,9 @@ RImage* R_CreateImage(RRenderDevice* dev, RImageCreateInfo* info) {
 	viewInfo.subresourceRange.levelCount     = imageInfo.mipLevels;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount     = 1;
+	if (info->type == RG_IMAGE_TYPE_TEXTURE_CUBE) {
+		viewInfo.subresourceRange.layerCount = 6;
+	}
 	vkCreateImageView(dev->vkdev, &viewInfo, dev->vkalloc, &image->view);
 
 	// Upload initial data if provided

@@ -93,13 +93,18 @@ typedef struct RSwapBuffersInfo {
 
 #define RG_IMAGE_FLAG_GENERATE_MIPMAPS  0x01
 
+#define RG_IMAGE_TYPE_TEXTURE_1D        0x00
+#define RG_IMAGE_TYPE_TEXTURE_2D        0x01
+#define RG_IMAGE_TYPE_TEXTURE_3D        0x02
+#define RG_IMAGE_TYPE_TEXTURE_CUBE      0x03
+
 typedef struct RImageCreateInfo {
 	RFormat format;
 	Uint16  width; // max 65536
 	Uint16  height;
+	Uint16  depth;
 	Uint8   flags;
-	Uint8   _off1;
-	Uint16  _off2;
+	Uint8   type;
 	// TODO: add generate mipmaps
 	void*   initialData;
 } RImageCreateInfo;
