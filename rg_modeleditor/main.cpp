@@ -212,7 +212,8 @@ static void OpenModel() {
 	// Open filedialog
 	char raw_path[512] = {};
 	char path[512] = {};
-	FD_Filter filters[6] = {
+	FD_Filter filters[7] = {
+		{"glTF model", "glb"},
 		{"FBX model", "fbx"},
 		{"Wavefront model", "obj"},
 		{"COLLADA dae", "dae"},
@@ -220,7 +221,7 @@ static void OpenModel() {
 		{"MMD Polygon model", "pmd"},
 		{"MMD eXtended polygon model", "pmx"}
 	};
-	if (ShowOpenDialog(raw_path, 512, filters, 6)) {
+	if (ShowOpenDialog(raw_path, 512, filters, 7)) {
 		FS_ReplaceSeparators(path, raw_path);
 		rgLogInfo(RG_LOG_SYSTEM, ":> %s", path);
 
@@ -338,7 +339,7 @@ static void CopyTextures(R3DRiggedModelInfo* mdlinfo, VertexBuffer* buffer, Stri
 
 		// Replace path to name
 		SDL_snprintf(mdlinfo->matInfo[i].texture, 128, "%s", newmat);
-		mdlinfo->matInfo[i].color = buffer->colors[i];
+		mdlinfo->matInfo[i].color = buffer->colors[i].rgb;
 	}
 }
 
@@ -599,7 +600,7 @@ static void DrawMaterialsTab(Uint32* uid) {
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0); ImGui::Text("Color");
-				ImGui::TableSetColumnIndex(1); ImGui::ColorEdit3("##matColor", buffer->colors[i].array);
+				ImGui::TableSetColumnIndex(1); ImGui::ColorEdit4("##matColor", buffer->colors[i].array);
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
@@ -881,6 +882,8 @@ static void DrawGUI() {
 		}
 	}
 
+	Bool isAnimationTab = false;
+
 	ImGui::Begin("Model importer");
 
 	Uint32 uid = 0;
@@ -912,6 +915,7 @@ static void DrawGUI() {
 
 		//if (animcount == 0) { ImGui::BeginDisabled(); }
 		if (ImGui::BeginTabItem("Animations")) {
+			isAnimationTab = true;
 			DrawAnimationTab(&uid);
 			ImGui::EndTabItem();
 		}
@@ -923,6 +927,14 @@ static void DrawGUI() {
 	}
 
 	ImGui::End();
+
+	if (isAnimationTab) {
+		ImGui::Begin("Timeline");
+
+		ImGui::Text("Animation timeline");
+
+		ImGui::End();
+	}
 }
 
 class Application : public BaseGame {
@@ -936,18 +948,20 @@ public:
 
 	String GetName() { return "Model importer"; }
 
-	void MainUpdate() {
-		camcontrol->Update();
-		camera->Update(GetDeltaTime());
-
-		//static Engine::KinematicsModel* kmodel = NULL;
-		//static Engine::Animation* anim = NULL;
+	void FixedUpdate(Float64 dt) {
 		if (kmodel && isModelLoaded) {
-			kmodel->GetAnimator()->Update(GetDeltaTime());
+			kmodel->GetAnimator()->Update(dt);
 			kmodel->RebuildSkeleton();
 			kmodel->SolveCCDIK();
 			kmodel->RecalculateTransform();
+		}
+	}
 
+	void MainUpdate(Float64 dt, Float64 alpha) {
+		camcontrol->Update();
+		camera->Update(dt);
+
+		if (kmodel && isModelLoaded) {
 			mat4* mptr = GetRenderBoneMatPtr(rstate);
 			SDL_memcpy(mptr, kmodel->GetTransforms(), sizeof(mat4) * kmodel->GetBoneCount());
 

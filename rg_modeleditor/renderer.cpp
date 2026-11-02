@@ -464,7 +464,13 @@ static void DrawAxis() {
 	glBindVertexArray(axis_buffer.vao);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, axis_texture);
-	glDrawElements(GL_LINES, 90, GL_UNSIGNED_SHORT, 0);
+
+	glLineWidth(3.0f);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+	glLineWidth(1.0f);
+	glDrawElements(GL_LINES, 84, GL_UNSIGNED_SHORT, (void*)12);
+
+	//glDrawElements(GL_LINES, 90, GL_UNSIGNED_SHORT, 0);
 }
 
 static mat4 bone_mats[1024];
@@ -602,6 +608,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
+	glDisable(GL_BLEND);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -639,7 +646,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 	glUniform1i(glGetUniformLocation(state->shader, "t_unit0"), 0);   // albedo
 	glUniform1i(glGetUniformLocation(state->shader, "t_unit1"), 1);   // normal
 	glUniform1i(glGetUniformLocation(state->shader, "t_unit2"), 2);   // pbr
-	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
+	glUniform4f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1, 1);
 	glUniform3f(glGetUniformLocation(state->shader, "viewpos"), pos.x, pos.y, pos.z);
 	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 1); // Do light calculation
 
@@ -656,7 +663,7 @@ void DoRender(RenderState* state, Engine::Camera* camera) {
 
 	glUniformMatrix4fv(glGetUniformLocation(state->shader, "mdl"), 1, GL_FALSE, m4_identity.m);
 	glUniform1i(glGetUniformLocation(state->shader, "animDisable"), 1);
-	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1);
+	glUniform4f(glGetUniformLocation(state->shader, "mat_color"), 1, 1, 1, 1);
 	glUniform1i(glGetUniformLocation(state->shader, "calclight"), 0);
 	glUniform1i(glGetUniformLocation(state->shader, "flipuv"), 0);
 
@@ -737,13 +744,13 @@ void SetRenderMeshHilight(RenderState* state, Sint32 meshid) { state->meshhiligh
 void SetRenderCullMode(RenderState* state, Sint32 mode) { state->cullmode = mode; }
 
 void SetMaterialState(RenderState* state, VertexBuffer* vb, Uint32 mat, Uint32 meshid) {
-	vec3 color = vb->colors[mat];
+	vec4 color = vb->colors[mat];
 
 	// Flags
 	glUniform1i(glGetUniformLocation(state->shader, "flipuv"), vb->pairs->flipuv);
 
 	// Set material color
-	glUniform3f(glGetUniformLocation(state->shader, "mat_color"), color.r, color.g, color.b);
+	glUniform4f(glGetUniformLocation(state->shader, "mat_color"), color.r, color.g, color.b, color.a);
 
 	if (state->meshhilight == meshid) {
 		glUniform3f(glGetUniformLocation(state->shader, "mat_color"), 2.8, 2.4, 0.4);

@@ -76,7 +76,10 @@ void MakeVBuffer(R3DRiggedModelInfo* info, ModelExtraData* extra, String mdlpath
 		buffer.textures[i * 3]     = GetTexture(alb_path);
 		buffer.textures[i * 3 + 1] = GetTexture(nrm_path);
 		buffer.textures[i * 3 + 2] = GetTexture(pbr_path);
-		buffer.colors[i] = info->matInfo[i].color;
+		buffer.colors[i].r = info->matInfo[i].color.r;
+		buffer.colors[i].g = info->matInfo[i].color.g;
+		buffer.colors[i].b = info->matInfo[i].color.b;
+		buffer.colors[i].a = 1;
 	}
 
 	buffer.isLoaded = true;
