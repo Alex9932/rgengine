@@ -153,7 +153,18 @@ class Application : public BaseGame {
 
 		~Application() {}
 
-		void MainUpdate() {
+
+		void FixedUpdate(Float64 dt) {
+			RiggedModelComponent* rmc = player->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
+			KinematicsModel* km = rmc->GetKinematicsModel();
+			// Calculate skeleton
+			km->GetAnimator()->Update(dt);
+			km->RebuildSkeleton();
+			km->SolveCCDIK();
+			km->RecalculateTransform();
+		}
+
+		void MainUpdate(Float64 dt, Float64 alpha) {
 
 			Render::SetGlobalLight(&desc);
 		
@@ -165,7 +176,7 @@ class Application : public BaseGame {
 
 			// Update camera
 			cam_controller->Update();
-			camera->Update(GetDeltaTime());
+			camera->Update(dt);
 
 			R3D_CameraInfo cam = {};
 			cam.projection = *camera->GetProjection();
@@ -175,11 +186,6 @@ class Application : public BaseGame {
 		
 			RiggedModelComponent* rmc = player->GetComponent(Component_RIGGEDMODELCOMPONENT)->AsRiggedModelComponent();
 			KinematicsModel* km = rmc->GetKinematicsModel();
-			// Calculate skeleton
-			km->GetAnimator()->Update(GetDeltaTime());
-			km->RebuildSkeleton();
-			km->SolveCCDIK();
-			km->RecalculateTransform();
 
 			R3DUpdateBufferInfo binfo = {};
 			binfo.offset = 0;
@@ -260,14 +266,17 @@ class Application : public BaseGame {
 			// Create player entity
 			player = world->NewEntity();
 			//player->SetAABB(&info.aabb);
-			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("Untitled"));
+			//player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("Untitled"));
+			player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("chr_0013_aglina"));
 			//player->AttachComponent(GetModelSystem()->NewRiggedModelComponent("fluorite"));
 			// Scale visual
 			//player->GetTransform()->SetScale({ 0.1f, 0.1f, 0.1f });
 			//player->GetTransform()->SetScale({ 1.5f, 1.5f, 1.5f });
 
 			// Load animations
-			anim[0] = pm2anim.ImportAnimation("gamedata/anims/gilberta-idle.anim");
+			
+			anim[0] = pm2anim.ImportAnimation("gamedata/anims/A_actor_aglina_ui_overview_loop.anim");
+			//anim[0] = pm2anim.ImportAnimation("gamedata/anims/gilberta-idle.anim");
 			anim[1] = pm2anim.ImportAnimation("gamedata/anims/gilberta-overlook.anim");
 			//anim[0] = pm2anim.ImportAnimation("gamedata/anims/fluorite-stand.anim");
 			//anim[1] = pm2anim.ImportAnimation("gamedata/anims/fluorite-walk.anim");

@@ -1,9 +1,9 @@
 #ifndef _KINEMATICSMODEL_H
 #define _KINEMATICSMODEL_H
 
-#define RG_MAX_BONE_COUNT 1024 // Max bones in skeleton
-#define RG_MAX_IK_LINK_LIST 32 // Max bones in IK list
-#define RG_MAX_IKLIST_COUNT 32 // Max IK lists in skeleton
+#define RG_MAX_BONE_COUNT   1024 // Max bones in skeleton
+#define RG_MAX_IK_LINK_LIST 32   // Max bones in IK list
+#define RG_MAX_IKLIST_COUNT 32   // Max IK lists in skeleton
 
 #include "rgtypes.h"
 #include "rgmath.h"
@@ -11,18 +11,21 @@
 #include "animator.h"
 
 typedef struct Bone {
-    Uint32 hash;
     mat4   transform;
     mat4   offset;
     quat   offset_rot;
     vec3   offset_pos;
+    Uint32 hash;
+    vec3   offset_scale; // Rest scale (local)
     Sint32 parent;
     vec3   position;
     Sint32 id;
+    vec3   scale;
+    Uint8  _offset0[4];
     quat   rotation;
     vec3   limitation;
     bool   has_limit;
-    Uint8  _offset[3];
+    Uint8  _offset1[3];
     char   name[32];
 } Bone;
 
@@ -39,10 +42,11 @@ typedef struct BoneInfo {
     mat4   offset;
     quat   offset_rot;
     vec3   offset_pos;
+    vec3   offset_scale; // (0,0,0) = not set (old loaders) -> treated as (1,1,1)
     Sint32 parent;
     vec3   limitation;
     bool   has_limit;
-    bool   _padding[3];
+    bool   _padding[7];
     char   name[32];
 } BoneInfo;
 
@@ -51,7 +55,6 @@ typedef struct KinematicsModelCreateInfo {
     Uint32          ik_count;
     BoneInfo*       bones_info;
     IKList*         ik_info;
-    //R3D_BoneBuffer* buffer_handle;
     mat4            globalInv;
 } KinematicsModelCreateInfo;
 
@@ -59,7 +62,6 @@ namespace Engine {
 
     class KinematicsModel {
         private:
-            //R3D_BoneBuffer* handle;
             Animator* animator;
             Uint32 bone_count;
             Uint32 iklist_count;
@@ -79,6 +81,8 @@ namespace Engine {
             RG_DECLSPEC void RecalculateTransform();
             RG_DECLSPEC void RebuildIK(IKList* ik);
 
+            RG_DECLSPEC Float32 ValidateRestPose();
+
             RG_DECLSPEC Bone* GetBoneByCRCHash(Uint32 hash);
             RG_DECLSPEC Bone* GetBone(Uint32 id);
             RG_DECLSPEC Bone* GetBone(String name);
@@ -87,8 +91,6 @@ namespace Engine {
             RG_INLINE Bone* GetBones()      { return this->bones; }
             RG_INLINE mat4* GetTransforms() { return this->bone_transform; }
             RG_INLINE mat4* GetGlobalInv()  { return &this->globalInv; }
-
-            //RG_INLINE R3D_BoneBuffer* GetBufferHandle() { return this->handle; }
 
             RG_INLINE IKList* GetIKLists()    { return this->iklist; }
             RG_INLINE Uint32 GetIKListCount() { return this->iklist_count; }

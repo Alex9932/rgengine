@@ -4,10 +4,11 @@
 #include "rgtypes.h"
 #include "rgmath.h"
 #include <vector>
+#include <unordered_map>
 
 typedef struct BoneKeyFrame {
     Float32 timestamp;
-    vec3    scale;
+	vec3    scale;      // (0, 0, 0) = "no data" -> Automatically replace with (1, 1, 1) scale
     quat    rotation;
     vec3    translation;
     vec4    interp_x;
@@ -21,15 +22,16 @@ namespace Engine {
     class AnimationTrack {
         private:
             std::vector<BoneKeyFrame> keyframes;
+            char   name[32];
             Uint32 frames      = 0;
             Uint32 nameCRCHash = 0;
-            char   name[32];
             Uint32 framecount  = 0;
 
         public:
             RG_INLINE AnimationTrack(String name) {
+                SDL_memset(this->name, 0, 32);
                 SDL_strlcpy(this->name, name, 32);
-                this->nameCRCHash = rgCRC32(name, (Uint32)SDL_strlen(name));
+                this->nameCRCHash = rgCRC32(this->name, (Uint32)SDL_strlen(this->name));
             }
             RG_INLINE ~AnimationTrack() {}
 
@@ -46,6 +48,7 @@ namespace Engine {
         private:
             AnimationTrack* base_pointer = NULL;
             std::vector<AnimationTrack*> bone_tracks;
+            std::unordered_map<Uint32, AnimationTrack*> track_map;
             double  anim_time  = 0;
             double  anim_fps   = 30; // VMD animations in 30 fps
             double  anim_speed = 1;

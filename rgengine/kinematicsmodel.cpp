@@ -4,8 +4,39 @@
 
 namespace Engine {
 
+    static Uint32 HashBoneName(String name) {
+        char buf[32];
+        SDL_memset(buf, 0, 32);
+        SDL_strlcpy(buf, name, 32);
+        return rgCRC32(buf, (Uint32)SDL_strlen(buf));
+    }
+
+    static mat4 ComposeLocal(Bone* bone) {
+        mat4 translate = MAT4_IDENTITY();
+        mat4 rotate = MAT4_IDENTITY();
+        mat4_fromquat(&rotate, bone->rotation);
+        mat4_translate(&translate, bone->position);
+
+        mat4 local_transform = translate * rotate;
+
+        if (bone->scale.x != 1.0f || bone->scale.y != 1.0f || bone->scale.z != 1.0f) {
+            mat4 scale = MAT4_IDENTITY();
+            scale.m00 = bone->scale.x;
+            scale.m11 = bone->scale.y;
+            scale.m22 = bone->scale.z;
+            local_transform = local_transform * scale;
+        }
+
+        return local_transform;
+    }
+
     KinematicsModel::KinematicsModel(KinematicsModelCreateInfo* info) {
-        this->bone_count = info->bone_count;
+        Uint32 count = info->bone_count;
+        if (count > RG_MAX_BONE_COUNT) {
+            rgLogError(RG_LOG_SYSTEM, "KinematicsModel: too many bones (%u), clamped to %d", count, RG_MAX_BONE_COUNT);
+            count = RG_MAX_BONE_COUNT;
+        }
+        this->bone_count = count;
         this->iklist_count = info->ik_count;
         this->globalInv = info->globalInv;
         for (Uint32 i = 0; i < this->bone_count; i++) {
@@ -14,27 +45,38 @@ namespace Engine {
             SDL_memset(bone->name, 0, 32);
             SDL_strlcpy(bone->name, binfo->name, 32);
 
-            bone->hash       = rgCRC32(bone->name, SDL_strlen(bone->name));
-            bone->parent     = binfo->parent;
-            bone->id         = i;
-            bone->position   = { 0, 0, 0 };
-            bone->rotation.x = 0;
-            bone->rotation.y = 0;
-            bone->rotation.z = 0;
-            bone->rotation.w = 1;
-            bone->offset     = binfo->offset;
-            bone->offset_pos = binfo->offset_pos;
-            bone->offset_rot = binfo->offset_rot;
-            bone->has_limit  = binfo->has_limit;
-            bone->limitation = binfo->limitation;
-            bone->transform  = MAT4_IDENTITY();
+            // Loaders that don't know about rest rotation / scale leave them zeroed
+            // TODO: Rewrite loaders
+            quat rest_rot   = binfo->offset_rot;
+            vec3 rest_scale = binfo->offset_scale;
+            if (rest_rot.x == 0 && rest_rot.y == 0 && rest_rot.z == 0 && rest_rot.w == 0) {
+                rest_rot.x = 0; rest_rot.y = 0; rest_rot.z = 0; rest_rot.w = 1;
+            }
+            if (rest_scale.x == 0 && rest_scale.y == 0 && rest_scale.z == 0) {
+                rest_scale.x = 1; rest_scale.y = 1; rest_scale.z = 1;
+            }
+
+            bone->hash         = rgCRC32(bone->name, SDL_strlen(bone->name));
+            bone->parent       = binfo->parent;
+            bone->id           = i;
+            bone->offset       = binfo->offset;
+            bone->offset_pos   = binfo->offset_pos;
+            bone->offset_rot   = binfo->offset_rot;
+            bone->offset_scale = binfo->offset_scale;
+
+            // Start in the rest pose (was identity -> model collapsed until the first Animator::Update)
+            bone->position     = binfo->offset_pos;
+            bone->rotation     = rest_rot;
+            bone->scale        = rest_scale;
+            bone->has_limit    = binfo->has_limit;
+            bone->limitation   = binfo->limitation;
+            bone->transform    = MAT4_IDENTITY();
             //rgLogInfo(RG_LOG_SYSTEM, "Bone: %d -> %d (%d), %s (%d) %d", i, bone->parent, binfo->parent, bone->name, SDL_strlen(bone->name), bone->hash);
         }
         for (Uint32 i = 0; i < this->iklist_count; i++) {
             this->iklist[i] = info->ik_info[i];
         }
 
-        //this->handle = info->buffer_handle;
         this->animator = RG_NEW_CLASS(Engine::GetDefaultAllocator(), Animator)(this);
         RebuildSkeleton();
     }
@@ -49,6 +91,7 @@ namespace Engine {
         }
     }
 
+    // NOTE: requires bones[i].parent < i (parents first).
     void KinematicsModel::RebuildSkeleton() {
         for (Uint32 i = 0; i < this->bone_count; i++) {
             Bone* bone = &this->bones[i];
@@ -57,25 +100,35 @@ namespace Engine {
                 parent_transform = this->bones[bone->parent].transform;
             }
 
-            mat4 translate;
-            mat4 rotate = MAT4_IDENTITY();
-            mat4_fromquat(&rotate, bone->rotation);
-            mat4_translate(&translate, bone->position);
-
-            mat4 local_transform = translate * rotate;
+            mat4 local_transform = ComposeLocal(bone);
             bone->transform = parent_transform * local_transform;
         }
     }
 
     void KinematicsModel::RecalculateTransform() {
-        //rgLogInfo(RG_LOG_SYSTEM, " ~ ~ ~ ~ ~ ~ ~");
         for (Uint32 i = 0; i < this->bone_count; i++) {
             this->bone_transform[i] = this->globalInv * this->bones[i].transform * this->bones[i].offset;
-            //rgLogInfo(RG_LOG_SYSTEM, "Bone: %d %s", i, this->bones[i].name);
-            //PM(this->bone_transform[i]);
-            //PM(this->bones[i].transform);
-            //PM(this->bones[i].offset);
         }
+    }
+
+    Float32 KinematicsModel::ValidateRestPose() {
+        mat4 identity = MAT4_IDENTITY();
+        Float32 worst = 0.0f;
+        Uint32 worst_id = 0;
+
+        for (Uint32 i = 0; i < this->bone_count; i++) {
+            mat4 m = this->bones[i].transform * this->bones[i].offset;
+            for (Uint32 k = 0; k < 16; k++) {
+                Float32 d = SDL_fabsf(m.m[k] - identity.m[k]);
+                if (d > worst) { worst = d; worst_id = i; }
+            }
+        }
+
+        if (this->bone_count > 0) {
+            rgLogInfo(RG_LOG_SYSTEM, "KinematicsModel: Rest pose deviation from identity: %f (worst bone %u '%s')",
+                worst, worst_id, this->bones[worst_id].name);
+        }
+        return worst;
     }
 
     Bone* KinematicsModel::GetBone(Uint32 id) {
@@ -93,8 +146,7 @@ namespace Engine {
     }
 
     Bone* KinematicsModel::GetBone(String name) {
-        Uint32 hash = rgCRC32(name, SDL_strlen(name));
-        return GetBoneByCRCHash(hash);
+        return GetBoneByCRCHash(HashBoneName(name));
     }
 
     void KinematicsModel::SolveCCDIK() {
@@ -107,27 +159,19 @@ namespace Engine {
 #if 1
         for (Sint32 i = ik->bones - 1; i >= 0; i--) {
             Bone* bone = &this->bones[ik->list[i]];
-            mat4 parent_transform = this->bones[bone->parent].transform;
-            mat4 translate;
-            mat4 rotate = MAT4_IDENTITY();
-            mat4_fromquat(&rotate, bone->rotation);
-            mat4_translate(&translate, bone->position);
-            mat4 local_transform = translate * rotate;
-            bone->transform = parent_transform * local_transform;
-            //        rgLogInfo(RG_LOG_SYSTEM, "IK Bone: %d -> %d %s", ik->list[i], bone->parent, bone->name);
+            mat4 parent_transform = MAT4_IDENTITY();
+            if (bone->parent > -1) {
+                parent_transform = this->bones[bone->parent].transform;
+            }
+            bone->transform = parent_transform * ComposeLocal(bone);
         }
 
         Bone* bone = &this->bones[ik->effector];
-        mat4 parent_transform = this->bones[bone->parent].transform;
-        mat4 translate;
-        mat4 rotate = MAT4_IDENTITY();
-        mat4_fromquat(&rotate, bone->rotation);
-        mat4_translate(&translate, bone->position);
-        mat4 local_transform = translate * rotate;
-        bone->transform = parent_transform * local_transform;
-        //    rgLogInfo(RG_LOG_SYSTEM, "IK Bone: %d -> %d %s", ik->effector, bone->parent, bone->name);
-
-        //    exit(1);
+        mat4 parent_transform = MAT4_IDENTITY();
+        if (bone->parent > -1) {
+            parent_transform = this->bones[bone->parent].transform;
+        }
+        bone->transform = parent_transform * ComposeLocal(bone);
 #else
         this->RebuildSkeleton();
 #endif

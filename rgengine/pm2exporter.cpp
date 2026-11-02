@@ -186,8 +186,8 @@ namespace Engine {
 	}
 
 	static void WriteIndexData(FSWriter* writer, Uint32 count, void* indices, IndexType type) {
-		Uint32 indexsize = 2;
-		if (count > 0xFFFF) { indexsize = 4; }
+		Uint32 indexsize = type;
+		//if (count > 0xFFFF) { indexsize = 4; }
 		void* dst_indices = rg_malloc(indexsize * count);
 
 		if (indexsize == 2) {

@@ -17,16 +17,23 @@
 
 #include <cjson/cJSON.h>
 
+#include <vector>
+#include <unordered_map>
+
 using namespace Engine;
 
 static Assimp::Importer importer;
 
+#define RG_GEOM_DEBUG_REST 1
+
+#if 0
 struct Node {
 	String name;
 	mat4   local;
 	mat4   global;
-	Uint32 numChilds;
-	Node* childs[128];
+	//Uint32 numChilds;
+	//Node* childs[128];
+	std::vector<Node*> childs;
 	Node* parent;
 	aiNode* ainode;
 };
@@ -38,12 +45,19 @@ struct LoadSkeletonState {
 	Uint32 bone_counter = 0;
 	Uint32 node_idx;
 };
-
+#endif
 
 struct BoneData {
 	Sint16 index;
 	Sint16 parent;
 	aiMatrix4x4 offset;
+};
+
+struct BoneRec {
+	std::string   name;
+	aiMatrix4x4   offset;
+	const aiNode* node;
+	Sint32        parent;
 };
 
 struct Vertex {
@@ -56,12 +70,14 @@ struct ImportState {
 	R3DRiggedModelInfo* info;
 	ModelExtraData* extra;
 	std::map<const aiNode*, aiMatrix4x4> nodetransforms;
-	std::map<size_t, BoneData> bones;
+	std::map<size_t, BoneData> bones; // name hash -> skinning bone
+	std::vector<BoneRec> bone_list;
 	std::vector<Vertex> vertices;
 	std::vector<Uint32> indices;
 	Uint32 cur_vtx = 0;
 	Uint32 cur_idx = 0;
 	Uint32 cur_mesh = 0;
+	Uint32 mesh_capacity = 0;
 	Uint32 boneCounter = 0;
 	Bool   isVRM = false;
 	Bool   animationOnly = false;
@@ -95,6 +111,7 @@ struct GLBChunkHeader {
 	Uint32 chunkType;
 };
 
+#if 0
 static void ParseJSONVRM(String jsonstr, BoneInfo* bones) {
 	cJSON* root = cJSON_Parse(jsonstr);
 	if (!root) { rgLogError(RG_LOG_SYSTEM, "Invalid JSON chunk!"); return; }
@@ -162,15 +179,18 @@ static void ProcessVRM(String path, BoneInfo* bones) {
 
 
 }
+#endif
 
 struct ImportSceneData {
 	Assimp::Importer importer;
 };
 
-void FreeScene(ImportSceneData* ptr) { // Use pointer in future if needed
+void FreeScene(ImportSceneData* ptr) {
+	if (!ptr) { return; }
 	ptr->importer.FreeScene();
-	delete(ptr);
-	//rg_free(ptr); ???
+	//delete ptr;
+	ptr->~ImportSceneData();
+	rg_free(ptr);
 }
 
 static const aiScene* LoadScene(ImportState* state, String path, String file, char* m_errorstr, size_t msglen, ImportSceneData** data) {
@@ -203,7 +223,7 @@ static const aiScene* LoadScene(ImportState* state, String path, String file, ch
 			aiProcess_CalcTangentSpace;
 	}
 
-
+#if 0
 	if (rg_strenw(file, "vrm")) {
 		// VRM files are actually GLTF (GLB) files with extra data
 		state->isVRM = true;
@@ -215,24 +235,30 @@ static const aiScene* LoadScene(ImportState* state, String path, String file, ch
 	} else {
 		scene = cimporter->ReadFile(fullpath, flags);
 	}
+#else
+	scene = cimporter->ReadFile(fullpath, flags);
+#endif
 
 
 	if (!scene) {
 		String error = cimporter->GetErrorString();
 		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: %s", error);
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
+		if (data) { FreeScene(*data); *data = NULL; }
 		return scene;
 	}
 
 	if (!scene->mRootNode) {
 		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: No root node!");
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
+		if (data) { FreeScene(*data); *data = NULL; }
 		return scene;
 	}
 
-	if (RG_CHECK_FLAG(scene->mFlags, AI_SCENE_FLAGS_INCOMPLETE)) {
+	if (RG_CHECK_FLAG(scene->mFlags, AI_SCENE_FLAGS_INCOMPLETE) && !state->animationOnly) {
 		SDL_snprintf(m_errorstr, msglen, "ASSIMP ERROR: Scene incomplete");
 		rgLogError(RG_LOG_SYSTEM, "%s", m_errorstr);
+		if (data) { FreeScene(*data); *data = NULL; }
 		return scene;
 	}
 
@@ -243,7 +269,12 @@ static const aiScene* LoadScene(ImportState* state, String path, String file, ch
 	for (Uint32 i = 0; i < scene->mNumTextures; i++) {
 		aiTexture* tex = scene->mTextures[i];
 		//SDL_snprintf(texpath, 128, "%s/*%s", path, &tex->mFilename.C_Str()[1]);
+		if (tex->mHeight != 0) {
+			rgLogWarn(RG_LOG_SYSTEM, "SKIP RAW TEXTURE: %s", tex->mFilename.C_Str());
+			continue;
+		}
 		SDL_snprintf(texpath, 128, "%s/%d", path, i);
+		rgLogInfo(RG_LOG_SYSTEM, "Copy embedding [%u]: %s", tex->mWidth, texpath);
 		FSWriter writer(texpath);
 		writer.Write(tex->pcData, tex->mWidth);
 		writer.Flush();
@@ -258,9 +289,108 @@ const aiScene* LoadScene(String path, String file, char* errorstr, size_t msglen
 	return LoadScene(&state, path, file, errorstr, msglen, data);
 }
 
-static Sint16 FindBone(ImportState* state, size_t bnamehash) {
-	if(state->bones.count(bnamehash) == 0) { return -1; }
-	return state->bones[bnamehash].index;
+static Sint16 FindBoneIndex(ImportState* state, size_t bnamehash) {
+	auto it = state->bones.find(bnamehash); // iterator
+	if (it == state->bones.end()) { return -1; }
+	return it->second.index;
+}
+
+struct BoneSource {
+	std::string name;
+	aiMatrix4x4 offset;
+	bool        registered = false;
+};
+
+static void CalculateTransform(ImportState* state, const aiNode* node, aiMatrix4x4* t);
+
+static bool MarkSkeletonNodes(const aiNode* node, const std::map<size_t, BoneSource>& sources, std::set<const aiNode*>& needed) {
+	bool need = sources.find(rgHash(node->mName.C_Str(), node->mName.length)) != sources.end();
+	for (Uint32 i = 0; i < node->mNumChildren; i++) {
+		if (MarkSkeletonNodes(node->mChildren[i], sources, needed)) { need = true; } // no short-circuit: visit all children
+	}
+	if (need) { needed.insert(node); }
+	return need;
+}
+
+static void RegisterSkeletonNode(ImportState* state, const aiNode* node, Sint32 parent,
+	const std::map<size_t, BoneSource>& sources, const std::set<const aiNode*>& needed) {
+	if (needed.count(node) == 0) { return; }
+
+	if (state->bone_list.size() >= RG_MAX_BONE_COUNT) {
+		rgLogError(RG_LOG_SYSTEM, "[geom] Too many bones (max %d), node '%s' dropped", RG_MAX_BONE_COUNT, node->mName.C_Str());
+		return;
+	}
+
+	Sint32 idx = (Sint32)state->bone_list.size();
+	size_t hash = rgHash(node->mName.C_Str(), node->mName.length);
+
+	BoneRec rec;
+	rec.name = node->mName.C_Str();
+	rec.node = node;
+	rec.parent = parent;
+
+	auto it = sources.find(hash);
+	if (it != sources.end() && state->bones.count(hash) == 0) {
+		// Skinning bone: vertex weights refer to this index
+		rec.offset = it->second.offset;
+
+		BoneData bdata = {};
+		bdata.index = (Sint16)idx;
+		bdata.parent = (Sint16)parent;
+		bdata.offset = rec.offset;
+		state->bones[hash] = bdata;
+	}
+	else {
+		// Joint-only node (scene root, armature, helper). No vertex references it, but it is part of the
+		// chain. offset = inverse(global bind) makes its skin matrix identity in the rest pose, which is
+		// what rigidly bound (unweighted) vertices need.
+		aiMatrix4x4 g;
+		CalculateTransform(state, node, &g);
+		g.Inverse();
+		rec.offset = g;
+	}
+
+	state->bone_list.push_back(rec);
+	state->boneCounter = (Uint32)state->bone_list.size();
+
+	char* dstname = state->extra->bone_names[idx].name;
+	SDL_memset(dstname, 0, 128);
+	SDL_snprintf(dstname, 128, "%s", node->mName.C_Str());
+
+	for (Uint32 i = 0; i < node->mNumChildren; i++) {
+		RegisterSkeletonNode(state, node->mChildren[i], idx, sources, needed);
+	}
+}
+
+static void RegisterBones(ImportState* state) {
+	std::map<size_t, BoneSource> sources;
+	const aiScene* scene = state->scene;
+
+	for (Uint32 m = 0; m < scene->mNumMeshes; m++) {
+		const aiMesh* mesh = scene->mMeshes[m];
+		for (Uint32 b = 0; b < mesh->mNumBones; b++) {
+			const aiBone* bone = mesh->mBones[b];
+			size_t hash = rgHash(bone->mName.C_Str(), bone->mName.length);
+			if (sources.count(hash) == 0) {
+				BoneSource src;
+				src.name = bone->mName.C_Str();
+				src.offset = bone->mOffsetMatrix;
+				sources[hash] = src;
+			}
+		}
+	}
+
+	if (sources.empty()) { return; }
+
+	std::set<const aiNode*> needed;
+	MarkSkeletonNodes(scene->mRootNode, sources, needed);
+	RegisterSkeletonNode(state, scene->mRootNode, -1, sources, needed);
+
+	if (state->bones.size() != sources.size()) {
+		rgLogWarn(RG_LOG_SYSTEM, "[geom] %u skinning bones have no node in the hierarchy (their weights are ignored)",
+			(Uint32)(sources.size() - state->bones.size()));
+	}
+
 }
 
 static Sint32 ChooseBoneSlot(Vertex* vt, Float32 weight) {
@@ -292,32 +422,17 @@ static Sint32 ChooseBoneSlot(Vertex* vt, Float32 weight) {
 static void LoadBoneWeights(ImportState* state, const aiMesh* mesh, Uint32 vertexoffset) {
 	for (Uint32 boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
 		
-
 		aiString name = mesh->mBones[boneIndex]->mName;
 		size_t hash = rgHash(name.C_Str(), name.length);
 
-		Sint16 bidx = FindBone(state, hash);
+		Sint16 bidx = FindBoneIndex(state, hash);
 		if (bidx == -1) {
-			BoneData bdata = {};
-			bdata.index = state->boneCounter;
-			bdata.parent = 0; // TODO: Add parent bone id or remove it form structure
-			bdata.offset = mesh->mBones[boneIndex]->mOffsetMatrix;
-			
-			state->bones[hash] = bdata;
-			bidx = state->boneCounter;
-			state->boneCounter++;
+			rgLogError(RG_LOG_SYSTEM, "[geom] Bone '%s' was not registered", name.C_Str());
+			continue;
 		}
-
-		// Save bone name
-		char* dstname = state->extra->bone_names[bidx].name;
-		SDL_memset(dstname, 0, 128);
-		SDL_snprintf(dstname, 128, "%s", name.C_Str());
-
 
 		aiVertexWeight* weights = mesh->mBones[boneIndex]->mWeights;
 		Uint32 numWeights = mesh->mBones[boneIndex]->mNumWeights;
-
-		//vec4 _weights = {};
 
 		for (Uint32 i = 0; i < numWeights; i++) {
 			Uint32 realvidx = weights[i].mVertexId + vertexoffset;
@@ -338,7 +453,14 @@ static void LoadBoneWeights(ImportState* state, const aiMesh* mesh, Uint32 verte
 
 static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x4& transform) {
 
+	if (state->cur_mesh >= state->mesh_capacity) {
+		rgLogError(RG_LOG_SYSTEM, "[geom] Mesh table overflow, mesh '%s' skipped", mesh->mName.C_Str());
+		return;
+	}
+
 	aiMatrix3x3 normalmat(transform);
+	normalmat.Inverse().Transpose();
+	aiMatrix3x3 tangentmat(transform);
 
 	aiVector3D t_vtx;
 	aiVector3D t_nrm;
@@ -352,25 +474,12 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 		vt.w.idx.z = -1;
 		vt.w.idx.w = -1;
 
-		//mat4 t;
-		//mat4 t_inv;
-		//CopyMatrix(&t, transform);
-		//mat4_inverse(&t_inv, t);
-
-		//vec4 v_pos;
-		//CopyVector(&v_pos.xyz, mesh->mVertices[i]);
-		//v_pos.w = 1;
-		//vt.v.pos = (t_inv * v_pos).xyz;
-		//vt.v.pos = (t * v_pos).xyz;
-
 		t_vtx = transform * mesh->mVertices[i];
-		//t_vtx = mesh->mVertices[i];
 		vt.v.pos.x = t_vtx.x;
 		vt.v.pos.y = t_vtx.y;
 		vt.v.pos.z = t_vtx.z;
 		if (mesh->HasNormals()) {
 			t_nrm = normalmat * mesh->mNormals[i];
-			//t_nrm = mesh->mNormals[i];
 			t_nrm.Normalize();
 			vt.v.norm.x = t_nrm.x;
 			vt.v.norm.y = t_nrm.y;
@@ -378,7 +487,6 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 		}
 		if (mesh->HasTangentsAndBitangents()) {
 			t_tan = normalmat * mesh->mTangents[i];
-			//t_tan = mesh->mTangents[i];
 			t_tan.Normalize();
 			vt.v.tang.x = t_tan.x;
 			vt.v.tang.y = t_tan.y;
@@ -398,7 +506,6 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 	for (Uint32 i = 0; i < mesh->mNumFaces; ++i) {
 		aiFace* face = &mesh->mFaces[i];
 		for (Uint32 j = 0; j < face->mNumIndices; ++j) {
-		//for (Sint32 j = face->mNumIndices; j >= 0; --j) {
 			state->indices.push_back(face->mIndices[j] + startvtx);
 			state->cur_idx++;
 		}
@@ -414,7 +521,6 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 
 	LoadBoneWeights(state, mesh, startvtx);
 
-
 	for (Uint32 i = 0; i < mesh->mNumVertices; ++i) {
 		Uint32 realvidx = i + startvtx;
 		Vertex* v = &state->vertices[realvidx];
@@ -426,6 +532,14 @@ static void ProcessMesh(ImportState* state, const aiMesh* mesh, const aiMatrix4x
 			v->w.weight.y /= total;
 			v->w.weight.z /= total;
 			v->w.weight.w /= total;
+		}
+		else {
+			// Bind it rigidly to the root bone.
+			v->w.idx.x = 0;
+			v->w.idx.y = 0;
+			v->w.idx.z = 0;
+			v->w.idx.w = 0;
+			v->w.weight.x = 1.0f;
 		}
 	}
 }
@@ -444,8 +558,9 @@ static void CalculateTransform(ImportState* state, const aiNode* node, aiMatrix4
 		return;
 	}
 
-	if (state->nodetransforms.count(node) != 0) {
-		*t = state->nodetransforms[node];
+	auto it = state->nodetransforms.find(node);
+	if (it != state->nodetransforms.end()) {
+		*t = it->second;
 		return;
 	}
 
@@ -469,7 +584,8 @@ static void ProcessNode(ImportState* state, const aiNode* node) {
 	// Process all meshes in this node
 	for (Uint32 i = 0; i < node->mNumMeshes; i++) {
 		aiMesh* mesh = state->scene->mMeshes[node->mMeshes[i]];
-		ProcessMesh(state, mesh, transform);
+		aiMatrix4x4 mesh_transform = mesh->HasBones() ? aiMatrix4x4() : transform; // aiMatrix4x4() == identity
+		ProcessMesh(state, mesh, mesh_transform);
 	}
 
 	// Recursively process children nodes
@@ -478,11 +594,109 @@ static void ProcessNode(ImportState* state, const aiNode* node) {
 	}
 }
 
+static Uint32 CountMeshRefs(const aiNode* node) {
+	Uint32 n = node->mNumMeshes;
+	for (Uint32 i = 0; i < node->mNumChildren; i++) {
+		n += CountMeshRefs(node->mChildren[i]);
+	}
+	return n;
+}
+
+#if RG_GEOM_DEBUG_REST
+static void DebugRestSkinning(ImportState* is, KinematicsModel* km) {
+	km->RecalculateTransform();
+	mat4* palette = km->GetTransforms();
+	Uint32 bc = km->GetBoneCount();
+
+	float rmin[3] = { 1e30f,  1e30f,  1e30f }, rmax[3] = { -1e30f, -1e30f, -1e30f };
+	float smin[3] = { 1e30f,  1e30f,  1e30f }, smax[3] = { -1e30f, -1e30f, -1e30f };
+	double dsum[3] = { 0, 0, 0 };
+	size_t counted = 0, unweighted = 0;
+	float  maxd = 0.0f;
+	Uint32 maxd_bone = 0;
+
+	for (size_t vi = 0; vi < is->vertices.size(); vi++) {
+		const Vertex& v = is->vertices[vi];
+		float p[3] = { v.v.pos.x, v.v.pos.y, v.v.pos.z };
+		float s[3] = { 0, 0, 0 };
+		float wsum = 0.0f;
+		Uint32 top_bone = 0;
+		float  top_w = -1.0f;
+
+		for (Uint32 k = 0; k < 4; k++) {
+			Sint32 bi = v.w.idx.array[k];
+			float  w = v.w.weight.array[k];
+			if (bi < 0 || bi >= (Sint32)bc || w <= 0.0f) { continue; }
+			const mat4& m = palette[bi];
+			s[0] += w * (m.m00 * p[0] + m.m01 * p[1] + m.m02 * p[2] + m.m03);
+			s[1] += w * (m.m10 * p[0] + m.m11 * p[1] + m.m12 * p[2] + m.m13);
+			s[2] += w * (m.m20 * p[0] + m.m21 * p[1] + m.m22 * p[2] + m.m23);
+			wsum += w;
+			if (w > top_w) { top_w = w; top_bone = (Uint32)bi; }
+		}
+		if (wsum <= 0.0f) { unweighted++; continue; }
+
+		float d2 = 0.0f;
+		for (int c = 0; c < 3; c++) {
+			if (p[c] < rmin[c]) rmin[c] = p[c];
+			if (p[c] > rmax[c]) rmax[c] = p[c];
+			if (s[c] < smin[c]) smin[c] = s[c];
+			if (s[c] > smax[c]) smax[c] = s[c];
+			dsum[c] += (s[c] - p[c]);
+			d2 += (s[c] - p[c]) * (s[c] - p[c]);
+		}
+		float d = SDL_sqrtf(d2);
+		if (d > maxd) { maxd = d; maxd_bone = top_bone; }
+		counted++;
+	}
+
+	rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] bones: %u, vertices: %u (skinned %u, unweighted %u)\n",
+		bc, (Uint32)is->vertices.size(), (Uint32)counted, (Uint32)unweighted);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] RAW  bbox min (%f %f %f) max (%f %f %f)\n",
+		rmin[0], rmin[1], rmin[2], rmax[0], rmax[1], rmax[2]);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] SKIN bbox min (%f %f %f) max (%f %f %f)\n",
+		smin[0], smin[1], smin[2], smax[0], smax[1], smax[2]);
+	if (counted > 0) {
+		rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] mean (skinned - raw) = (%f %f %f), max |delta| = %f at a vertex whose main bone is '%s'\n",
+			(float)(dsum[0] / counted), (float)(dsum[1] / counted), (float)(dsum[2] / counted),
+			maxd, km->GetBone(maxd_bone) ? km->GetBone(maxd_bone)->name : "?");
+	}
+
+	// The top of the chain and the biggest bone positions (a few bones very far away = broken transform / scale)
+	Uint32 far_bone = 0;
+	float  far_dist = 0.0f;
+	for (Uint32 i = 0; i < bc; i++) {
+		Bone* b = km->GetBone(i);
+		if (i < 8) {
+			rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] bone %u '%s' parent %d  local pos (%f %f %f) scale (%f %f %f)  global pos (%f %f %f)\n",
+				i, b->name, (Sint32)b->parent,
+				b->offset_pos.x, b->offset_pos.y, b->offset_pos.z,
+				b->offset_scale.x, b->offset_scale.y, b->offset_scale.z,
+				b->transform.m03, b->transform.m13, b->transform.m23);
+		}
+		float dd = SDL_sqrtf(b->transform.m03 * b->transform.m03 + b->transform.m13 * b->transform.m13 + b->transform.m23 * b->transform.m23);
+		if (dd > far_dist) { far_dist = dd; far_bone = i; }
+	}
+	if (bc > 0) {
+		Bone* b = km->GetBone(far_bone);
+		rgLogInfo(RG_LOG_SYSTEM, "[geom][debug] farthest bone from origin: %u '%s' parent %d, distance %f, local scale (%f %f %f)\n",
+			far_bone, b->name, (Sint32)b->parent, far_dist, b->offset_scale.x, b->offset_scale.y, b->offset_scale.z);
+	}
+}
+#endif
+
 void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 
 	ImportState* state = RG_NEW(ImportState);
-	//ImportSceneData* data = NULL;
 	const aiScene* scene = LoadScene(state, importinfo->path, importinfo->file, m_errorstr, 1024, NULL);
+
+	if (!state->scene) {
+		rgLogError(RG_LOG_SYSTEM, "ImportModelInfo->scene MUST be a valid pointer to aiScene");
+		rgLogError(RG_LOG_SYSTEM, "Failed to load scene!");
+		RG_DELETE(ImportState, state);
+		importinfo->userdata = NULL;
+		return;
+	}
 
 	importinfo->userdata = state;
 
@@ -490,56 +704,72 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 	state->extra = importinfo->extra;
 	state->scene = scene;
 
-	if (!state->scene) {
-		rgLogError(RG_LOG_SYSTEM, "ImportModelInfo->scene MUST be a valid pointer to aiScene");
-		rgLogError(RG_LOG_SYSTEM, "Failed to load scene!");
-		return;
-		//rgLogWarn(RG_LOG_SYSTEM, "OK, try to load scene...");
-		//state->scene = LoadScene(importinfo->path, importinfo->file);
-		//if (!state->scene) {
-		//	rgLogError(RG_LOG_SYSTEM, "Failed to load scene!");
-		//	return;
-		//}
-	}
+	Uint32 meshCount = CountMeshRefs(scene->mRootNode);
+	Uint32 meshAlloc = meshCount > 0 ? meshCount : 1;
+	Uint32 allocMats = scene->mNumMaterials > 0 ? scene->mNumMaterials : 1;
 
-
-	size_t meshinfoSize = state->scene->mNumMeshes * sizeof(R3D_MatMeshInfo);
+	size_t meshinfoSize = meshAlloc * sizeof(R3D_MatMeshInfo);
 	importinfo->info.as_rigged->mInfo = (R3D_MatMeshInfo*)rg_malloc(meshinfoSize);
-	importinfo->info.as_rigged->mCount = state->scene->mNumMeshes;
+	SDL_memset(importinfo->info.as_rigged->mInfo, 0, meshinfoSize);
+	importinfo->info.as_rigged->mCount = 0;
+	state->mesh_capacity = meshAlloc;
 
-	importinfo->extra->mesh_names = (NameField*)rg_malloc(sizeof(NameField) * state->scene->mNumMeshes);
-	importinfo->extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * 1024); // 1024 bones max
+	importinfo->extra->mesh_names = (NameField*)rg_malloc(sizeof(NameField) * meshAlloc);
+	SDL_memset(importinfo->extra->mesh_names, 0, sizeof(NameField) * meshAlloc);
+
+	importinfo->extra->bone_names = (NameField*)rg_malloc(sizeof(NameField) * RG_MAX_BONE_COUNT);
+	SDL_memset(importinfo->extra->bone_names, 0, sizeof(NameField) * RG_MAX_BONE_COUNT);
+
 	// Use as normal map file names
-	importinfo->extra->custom0    = (NameField*)rg_malloc(sizeof(NameField) * state->scene->mNumMaterials);
+	importinfo->extra->custom0 = (NameField*)rg_malloc(sizeof(NameField) * allocMats);
+	SDL_memset(importinfo->extra->custom0, 0, sizeof(NameField) * allocMats);
+
+	importinfo->extra->mat_names = (NameField*)rg_malloc(sizeof(NameField) * allocMats);
+	SDL_memset(importinfo->extra->mat_names, 0, sizeof(NameField) * allocMats);
+
+	// Bones first (parent-first order), then meshes/weights
+	RegisterBones(state);
 
 	ProcessNode(state, state->scene->mRootNode);
-
+	importinfo->info.as_rigged->mCount = state->cur_mesh;
 
 	// De-duplicate vertices
 
 	std::vector<Vertex> new_vertices;
 	std::vector<Uint32> new_indices;
-	std::map<size_t, Uint32> vtx_hashtable;
+	std::unordered_multimap<size_t, Uint32> vtx_hashtable;
+	new_vertices.reserve(state->vertices.size());
+	new_indices.reserve(state->indices.size());
 
 	for (Uint32 i = 0; i < state->indices.size(); i++) {
 		Uint32 idx = state->indices[i];
-		Vertex vtx = state->vertices[idx];
-		size_t vtx_hash = rgHash(&vtx, sizeof(R3D_Vertex));
+		const Vertex& vtx = state->vertices[idx];
+		size_t vtx_hash = rgHash(&vtx, sizeof(Vertex));
 
-		if (vtx_hashtable.count(vtx_hash) == 0) {
-			vtx_hashtable[vtx_hash] = new_vertices.size();
+		Sint64 found = -1;
+		auto range = vtx_hashtable.equal_range(vtx_hash);
+		for (auto it = range.first; it != range.second; ++it) {
+			if (SDL_memcmp(&new_vertices[it->second], &vtx, sizeof(Vertex)) == 0) {
+				found = it->second;
+				break;
+			}
+		}
+
+		if (found < 0) {
+			found = (Sint64)new_vertices.size();
+			vtx_hashtable.insert({ vtx_hash, (Uint32)found });
 			new_vertices.push_back(vtx);
 		}
 
-		new_indices.push_back(vtx_hashtable[vtx_hash]);
+		new_indices.push_back((Uint32)found);
 	}
 
 	// Calculate required space
-	Uint32 totalVertexCount = new_vertices.size();
-	Uint32 totalIndexCount  = new_indices.size();
+	Uint32 totalVertexCount = (Uint32)new_vertices.size();
+	Uint32 totalIndexCount  = (Uint32)new_indices.size();
 	Uint32 indexSize = 2; // Uint16 by default
 
-	if (totalIndexCount > 0xFFFF) {
+	if (totalVertexCount > 0xFFFF) {
 		// Use extended size (Uint32)
 		indexSize = 4;
 	}
@@ -578,37 +808,40 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 		}
 	}
 
+#if 0
 	// Recalculate normals
 	NormalCalculateInfo nrminfo = {};
 	nrminfo.idx_count = new_vertices.size();
 	nrminfo.vertices  = importinfo->info.as_rigged->vertices;
 	nrminfo.indices   = importinfo->info.as_rigged->indices;
 	nrminfo.idxtype   = indexSize;
-//	RecalculateNormals(&nrminfo);
+	RecalculateNormals(&nrminfo);
+#endif
 
 	// Copy material data
-	//info->matInfo
 
-	R3D_MaterialInfo* mtl_array = (R3D_MaterialInfo*)rg_malloc(state->scene->mNumMaterials * sizeof(R3D_MaterialInfo));
+	Uint32 numMats = state->scene->mNumMaterials;
 
-	NameField* matnames_all = (NameField*)rg_malloc(sizeof(NameField) * state->scene->mNumMaterials);
-	NameField* tex_normals  = (NameField*)rg_malloc(sizeof(NameField) * state->scene->mNumMaterials);
+	R3D_MaterialInfo* mtl_array = (R3D_MaterialInfo*)rg_malloc(allocMats * sizeof(R3D_MaterialInfo));
+
+	NameField* matnames_all = (NameField*)rg_malloc(sizeof(NameField) * allocMats);
+	NameField* tex_normals = (NameField*)rg_malloc(sizeof(NameField) * allocMats);
+	SDL_memset(mtl_array, 0, allocMats * sizeof(R3D_MaterialInfo));
+	SDL_memset(matnames_all, 0, sizeof(NameField) * allocMats);
+	SDL_memset(tex_normals, 0, sizeof(NameField) * allocMats);
+
 	std::vector<R3D_MaterialInfo*> mtls;
+	std::vector<size_t> mtl_keys(allocMats, 0);
 	std::map<size_t, Uint32> mtl_hashtable;
 
 	// Skip default material
-	Uint32 matidx = 0;
-	if (importinfo->skipFirstMat) {
-		matidx = 1;
-	}
+	Uint32 firstMat = importinfo->skipFirstMat ? 1 : 0;
 	
-	for (; matidx < state->scene->mNumMaterials; ++matidx) {
+	for (Uint32 matidx = firstMat; matidx < numMats; ++matidx) {
 		aiMaterial* material = state->scene->mMaterials[matidx];
 
-		//R3D_MaterialInfo* minfo = &info->matInfo[i];
 		R3D_MaterialInfo* minfo = &mtl_array[matidx];
 
-#if 1
 		// Color
 		aiColor3D diffuse(1.0f, 1.0f, 1.0f);
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
@@ -653,45 +886,34 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 		}
 		
 
-
+#if 0
 		size_t mtl_hash = rgHash(minfo, sizeof(R3D_MaterialInfo));
+#else
+		size_t mtl_hash = rgHash(minfo, sizeof(R3D_MaterialInfo));
+		size_t nrm_hash = rgHash(tex_normals[matidx].name, SDL_strlen(tex_normals[matidx].name));
+		mtl_hash ^= nrm_hash + 0x9e3779b97f4a7c15ull + (mtl_hash << 6) + (mtl_hash >> 2);
+		mtl_keys[matidx] = mtl_hash;
+#endif
 
 		if (mtl_hashtable.count(mtl_hash) == 0) {
-			mtl_hashtable[mtl_hash] = mtls.size();
+			Uint32 actual_idx = (Uint32)mtls.size();
+			mtl_hashtable[mtl_hash] = actual_idx;
 			mtls.push_back(minfo);
+
+			SDL_snprintf(importinfo->extra->mat_names[actual_idx].name, 128, "%s", matnames_all[matidx].name);
+			SDL_snprintf(importinfo->extra->custom0[actual_idx].name, 128, "%s", tex_normals[matidx].name);
 		}
 
-		rgLogInfo(RG_LOG_SYSTEM, "Material [%lx]: %f %f %f %s", mtl_hash, diffuse.r, diffuse.g, diffuse.b, minfo->texture);
+		rgLogInfo(RG_LOG_SYSTEM, "Material [%zx]: %f %f %f %s", mtl_hash, diffuse.r, diffuse.g, diffuse.b, minfo->texture);
 
-#endif
-#if 0
-		// TMP: Generate random color per material
-		Float32 r = (Float32)(rand() % 10000) / 10000.0f;
-		Float32 g = (Float32)(rand() % 10000) / 10000.0f;
-		Float32 b = (Float32)(rand() % 10000) / 10000.0f;
-		minfo->color.r = r;
-		minfo->color.g = g;
-		minfo->color.b = b;
-
-		rgLogInfo(RG_LOG_SYSTEM, "COLOR: %f %f %f", r, g, b);
-#endif
 	}
 
-
-
-	Uint32 matcount = mtls.size();
+	Uint32 matcount = (Uint32)mtls.size();
 	importinfo->info.as_rigged->matCount = matcount;
 
-	size_t matinfoSize = matcount * sizeof(R3D_MaterialInfo);
+	size_t matinfoSize = (matcount > 0 ? matcount : 1) * sizeof(R3D_MaterialInfo);
 	importinfo->info.as_rigged->matInfo = (R3D_MaterialInfo*)rg_malloc(matinfoSize);
-
-	importinfo->extra->mat_names = (NameField*)rg_malloc(sizeof(NameField) * matcount);
-
-	for (Uint32 i = 0; i < state->scene->mNumMaterials; i++) {
-		size_t mtl_hash = rgHash(&mtl_array[i], sizeof(R3D_MaterialInfo));
-		Uint32 actual_idx = mtl_hashtable[mtl_hash];
-		SDL_snprintf(importinfo->extra->mat_names[actual_idx].name, 128, "%s", matnames_all[i].name);
-	}
+	SDL_memset(importinfo->info.as_rigged->matInfo, 0, matinfoSize);
 
 	for (Uint32 i = 0; i < matcount; i++) {
 		SDL_memcpy(&importinfo->info.as_rigged->matInfo[i], mtls[i], sizeof(R3D_MaterialInfo));
@@ -702,152 +924,88 @@ void GeomImporter::ImportRiggedModel(ImportModelInfo* importinfo) {
 	for (Uint32 i = 0; i < importinfo->info.as_rigged->mCount; i++) {
 		Uint32 midx = importinfo->info.as_rigged->mInfo[i].materialIdx;
 
-		size_t mtl_hash = rgHash(&mtl_array[midx], sizeof(R3D_MaterialInfo));
-		Uint32 actual_idx = mtl_hashtable[mtl_hash];
+		Uint32 actual_idx = 0; // fallback (e.g. skipped default material)
+		if (midx >= firstMat && midx < numMats) {
+			auto it = mtl_hashtable.find(mtl_keys[midx]);
+			if (it != mtl_hashtable.end()) { actual_idx = it->second; }
+		}
 
 		importinfo->info.as_rigged->mInfo[i].materialIdx = actual_idx;
-		SDL_snprintf(importinfo->extra->custom0[actual_idx].name, 128, "%s", tex_normals[midx].name);
 	}
 
 
 	size_t totalMemory = meshinfoSize + matinfoSize + vtxSize + wtxSize + idxSize;
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %ldb", totalMemory);
-	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%ldb idx:%ldb", vtxSize + wtxSize, idxSize);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Used memory: %zub", totalMemory);
+	rgLogInfo(RG_LOG_SYSTEM, "[geom] Vertex buffer: vtx:%zub idx:%zub", vtxSize + wtxSize, idxSize);
 
 	rg_free(tex_normals);
 	rg_free(mtl_array);
 	rg_free(matnames_all);
 }
 
-
-static Uint32 BuildHierarchy(LoadSkeletonState* info, mat4& transform, aiNode* node) {
-	mat4 local;
-	CopyMatrix(&local, node->mTransformation);
-	mat4 global = transform * local;
-
-	Node* n = &info->nodes[info->node_idx];
-
-	n->name      = node->mName.C_Str();
-	n->local     = local;
-	n->global    = global;
-	n->numChilds = node->mNumChildren;
-	n->ainode    = node;
-	n->parent    = NULL;
-
-	Uint32 processedidx = info->node_idx;
-	info->node_idx++;
-
-	for (Uint32 i = 0; i < node->mNumChildren; i++) {
-		Uint32 idx = BuildHierarchy(info, global, node->mChildren[i]);
-		n->childs[i] = &info->nodes[idx];
-		n->childs[i]->parent = n;
-	}
-
-	return processedidx;
-}
-
-static BoneData* FindBone(ImportState* state, String name) {
-
-	size_t hash = rgHash(name, SDL_strlen(name));
-	if (state->bones.count(hash) != 0) {
-		return &state->bones[hash];
-	}
-
-	rgLogError(RG_LOG_SYSTEM, "Bone %s not found in model", name);
-
-	return NULL;
-}
-
-static void BuildSkeleton(ImportState* is, LoadSkeletonState* state, Node* node, Sint32 parent) {
-
-	BoneData* b = FindBone(is, node->name); // Find bone by this name
-
-	Sint32 pidx = parent;
-
-	if (b != NULL) {
-		Sint32 bidx = state->bone_counter;
-		BoneInfo* dstinfo = &state->bones[b->index];
-
-		SDL_snprintf(dstinfo->name, 32, "%s", node->name);
-		CopyMatrix(&dstinfo->offset, b->offset);
-		dstinfo->parent = parent;
-
-		dstinfo->has_limit = false;
-		dstinfo->limitation = {};
-
-		// Some matrix magic //
-		mat4 gtransform;
-		mat4_inverse(&gtransform, dstinfo->offset);
-
-		mat4 pinv = MAT4_IDENTITY();
-		if (parent != -1) {
-			pinv = state->bones[parent].offset;
-		}
-		mat4_decompose(&dstinfo->offset_pos, &dstinfo->offset_rot, NULL, node->local);
-
-		pidx = bidx;
-		rgLogInfo(RG_LOG_SYSTEM, "Bone: %s -> %d", dstinfo->name, dstinfo->parent);
-		state->bone_counter++;
-	}
-	else {
-		/* No bone for this node */
-	}
-
-	for (Uint32 i = 0; i < node->numChilds; i++) {
-		BuildSkeleton(is, state, node->childs[i], pidx);
-	}
-}
-
 KinematicsModel* GeomImporter::LoadSkeleton(ImportModelInfo* info) {
-	LoadSkeletonState state = {};
-
 	ImportState* is = (ImportState*)info->userdata;
-	if (!is->scene) { return NULL; }
+	if (!is || !is->scene) { return NULL; }
 
-	state.bones = (BoneInfo*)rg_malloc(sizeof(BoneInfo) * 1024);
+	Uint32 boneCount = (Uint32)is->bone_list.size();
+	BoneInfo* bones = (BoneInfo*)rg_malloc(sizeof(BoneInfo) * RG_MAX_BONE_COUNT);
+	SDL_memset(bones, 0, sizeof(BoneInfo) * RG_MAX_BONE_COUNT);
 
-	state.scene = is->scene;
+	for (Uint32 i = 0; i < boneCount; i++) {
+		const BoneRec& rec = is->bone_list[i];
+		BoneInfo* bi = &bones[i];
+		SDL_snprintf(bi->name, 32, "%s", rec.name.c_str());
+		bi->parent = rec.parent;
+		CopyMatrix(&bi->offset, rec.offset);
 
-	state.nodes = (Node*)rg_malloc(sizeof(Node) * is->nodetransforms.size());
-	state.node_idx = 0;
+		aiVector3D   s, p;
+		aiQuaternion q;
+		rec.node->mTransformation.Decompose(s, q, p);
+		CopyVector(&bi->offset_pos, p);
+		CopyVector(&bi->offset_rot, q);
+		CopyVector(&bi->offset_scale, s);
 
-	// Build hierarchy
-	mat4 root = MAT4_IDENTITY();
-	BuildHierarchy(&state, root, state.scene->mRootNode);
+		bi->has_limit = false;
+		bi->limitation = {};
+		
+		if (bi->parent >= (Sint32)i) {
+			rgLogError(RG_LOG_SYSTEM, "[geom] Bone %u (%s) has parent %d >= own index", i, bi->name, (Sint32)bi->parent);
+		}
+	}
 
-	// Build skeleton
-
-	state.bone_counter = 0;
-	BuildSkeleton(is, &state, &state.nodes[0], -1);
-
-	rg_free(state.nodes);
-
+#if 0
 	// Process VRM extra data
 	if (is->isVRM) {
 		char fullpath[512];
 		SDL_snprintf(fullpath, 512, "%s/%s", info->path, info->file);
 		ProcessVRM(fullpath, state.bones);
 	}
-
+#endif
 
 	KinematicsModelCreateInfo mk_info = {};
 
-	mk_info.bone_count = state.bone_counter;
-	mk_info.bones_info = state.bones;
+	mk_info.bone_count = boneCount;
+	mk_info.bones_info = bones;
 
 	mk_info.ik_count = 0;
 	mk_info.ik_info = NULL;
-	//mk_info.buffer_handle = NULL;
 
 	mat4 globalTransform = MAT4_IDENTITY();
 	mat4_inverse(&mk_info.globalInv, globalTransform);
 	KinematicsModel* km = RG_NEW(KinematicsModel)(&mk_info);
 
-	rg_free(state.bones);
+	rg_free(bones);
+
+	km->ValidateRestPose();
+#if RG_GEOM_DEBUG_REST
+	DebugRestSkinning(is, km);
+#endif
 
 	return km;
 }
 
 const aiScene* GeomImporter::GetAIScene(ImportModelInfo* info) {
-	return ((ImportState*)info->userdata)->scene;
+	ImportState* is = (ImportState*)info->userdata;
+	return is ? is->scene : NULL;
+	//return ((ImportState*)info->userdata)->scene;
 }

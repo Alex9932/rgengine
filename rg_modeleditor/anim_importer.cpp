@@ -86,59 +86,67 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 
 #endif
 
-static aiVector3D InterpolatePosition(aiNodeAnim* node, Float64 time) {
-	if (node->mNumPositionKeys == 0) return aiVector3D(0, 0, 0);
+template<typename K>
+static Float32 FindSegment(const K* keys, Uint32 count, Float64 time, Uint32* i0, Uint32* i1) {
+	if (time <= keys[0].mTime) { *i0 = *i1 = 0; return 0.0f; }
+	if (time >= keys[count - 1].mTime) { *i0 = *i1 = count - 1; return 0.0f; }
+
+	Uint32 lo = 0;
+	Uint32 hi = count - 1;
+	while (hi - lo > 1) {
+		Uint32 mid = (lo + hi) / 2;
+		if (keys[mid].mTime <= time) { lo = mid; }
+		else { hi = mid; }
+	}
+
+	*i0 = lo;
+	*i1 = hi;
+
+	Float64 dt = keys[hi].mTime - keys[lo].mTime;
+	if (dt <= 1e-9) { return 0.0f; }
+	return (Float32)((time - keys[lo].mTime) / dt);
+}
+
+
+static aiVector3D InterpolatePosition(aiNodeAnim* node, Float64 time, const aiVector3D& rest) {
+	if (node->mNumPositionKeys == 0) return rest;
 	if (node->mNumPositionKeys == 1) return node->mPositionKeys[0].mValue;
 
-	// Find surrounding keys
-	for (Uint32 i = 0; i < node->mNumPositionKeys - 1; i++) {
-		Float64 t0 = node->mPositionKeys[i].mTime;
-		Float64 t1 = node->mPositionKeys[i + 1].mTime;
-		if (time < t1) {
-			Float64 factor = (time - t0) / (t1 - t0);
-			return node->mPositionKeys[i].mValue + (node->mPositionKeys[i + 1].mValue - node->mPositionKeys[i].mValue) * (Float32)factor;
-		}
-	}
-
-	return node->mPositionKeys[node->mNumPositionKeys - 1].mValue;
+	Uint32 i0, i1;
+	Float32 f = FindSegment(node->mPositionKeys, node->mNumPositionKeys, time, &i0, &i1);
+	const aiVector3D& a = node->mPositionKeys[i0].mValue;
+	const aiVector3D& b = node->mPositionKeys[i1].mValue;
+	return a + (b - a) * f;
 }
 
-static aiQuaternion InterpolateRotation(aiNodeAnim* node, Float64 time) {
-	if (node->mNumRotationKeys == 0) return aiQuaternion(1, 0, 0, 0);
+static aiQuaternion InterpolateRotation(aiNodeAnim* node, Float64 time, const aiQuaternion& rest) {
+	if (node->mNumRotationKeys == 0) return rest;
 	if (node->mNumRotationKeys == 1) return node->mRotationKeys[0].mValue;
 
-	// Find surrounding keys
-	for (Uint32 i = 0; i < node->mNumRotationKeys - 1; i++) {
-		Float64 t0 = node->mRotationKeys[i].mTime;
-		Float64 t1 = node->mRotationKeys[i + 1].mTime;
-		if (time < t1) {
-			Float64 factor = (time - t0) / (t1 - t0);
-			aiQuaternion q;
-			aiQuaternion::Interpolate(q, node->mRotationKeys[i].mValue, node->mRotationKeys[i + 1].mValue, factor);
-			q.Normalize();
-			return q;
-			//return node->mRotationKeys[i].mValue + (node->mRotationKeys[i + 1].mValue - node->mRotationKeys[i].mValue) * (Float32)factor;
-		}
-	}
-
-	return node->mRotationKeys[node->mNumRotationKeys - 1].mValue;
+	Uint32 i0, i1;
+	Float32 f = FindSegment(node->mRotationKeys, node->mNumRotationKeys, time, &i0, &i1);
+	aiQuaternion q;
+	aiQuaternion::Interpolate(q, node->mRotationKeys[i0].mValue, node->mRotationKeys[i1].mValue, f);
+	q.Normalize();
+	return q;
 }
 
-static aiVector3D InterpolateScaling(aiNodeAnim* node, Float64 time) {
-	if (node->mNumScalingKeys == 0) return aiVector3D(0, 0, 0);
+static aiVector3D InterpolateScaling(aiNodeAnim* node, Float64 time, const aiVector3D& rest) {
+	if (node->mNumScalingKeys == 0) return rest;
 	if (node->mNumScalingKeys == 1) return node->mScalingKeys[0].mValue;
 
-	// Find surrounding keys
-	for (Uint32 i = 0; i < node->mNumScalingKeys - 1; i++) {
-		Float64 t0 = node->mScalingKeys[i].mTime;
-		Float64 t1 = node->mScalingKeys[i + 1].mTime;
-		if (time < t1) {
-			Float64 factor = (time - t0) / (t1 - t0);
-			return node->mScalingKeys[i].mValue + (node->mScalingKeys[i + 1].mValue - node->mScalingKeys[i].mValue) * (Float32)factor;
-		}
-	}
+	Uint32 i0, i1;
+	Float32 f = FindSegment(node->mScalingKeys, node->mNumScalingKeys, time, &i0, &i1);
+	const aiVector3D& a = node->mScalingKeys[i0].mValue;
+	const aiVector3D& b = node->mScalingKeys[i1].mValue;
+	return a + (b - a) * f;
+}
 
-	return node->mScalingKeys[node->mNumScalingKeys - 1].mValue;
+static Uint32 BoneNameHash(String name) {
+	char buf[32];
+	SDL_memset(buf, 0, 32);
+	SDL_strlcpy(buf, name, 32);
+	return rgCRC32(buf, (Uint32)SDL_strlen(buf));
 }
 
 Animation* LoadAnimation(LoadAnimationInfo* info) {
@@ -158,7 +166,6 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 
 	Float32 lastframe = 0;
 
-
 	for (Uint32 i = 0; i < animation->mNumChannels; i++) {
 		aiNodeAnim* node = animation->mChannels[i];
 		String name = node->mNodeName.C_Str();
@@ -170,6 +177,10 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 
 		Bone* bone = info->km->GetBoneByCRCHash(hash);
 		if (!bone) { continue; } // Skip animation for this bone
+
+		const aiVector3D   rest_pos(bone->offset_pos.x, bone->offset_pos.y, bone->offset_pos.z);
+		const aiQuaternion rest_rot(bone->offset_rot.w, bone->offset_rot.x, bone->offset_rot.y, bone->offset_rot.z); // (w, x, y, z)
+		const aiVector3D   rest_scl(bone->offset_scale.x, bone->offset_scale.y, bone->offset_scale.z);
 
 		std::set<Float64> keyframe_times;
 		for (Uint32 j = 0; j < node->mNumPositionKeys; j++) {
@@ -185,9 +196,9 @@ Animation* LoadAnimation(LoadAnimationInfo* info) {
 		for (Float64 time : keyframe_times) {
 
 			BoneKeyFrame keyframe = {};
-			CopyVector(&keyframe.translation, InterpolatePosition(node, time));
-			CopyVector(&keyframe.rotation, InterpolateRotation(node, time));
-			CopyVector(&keyframe.scale, InterpolateScaling(node, time));
+			CopyVector(&keyframe.translation, InterpolatePosition(node, time, rest_pos));
+			CopyVector(&keyframe.rotation, InterpolateRotation(node, time, rest_rot));
+			CopyVector(&keyframe.scale, InterpolateScaling(node, time, rest_scl));
 
 			keyframe.translation = keyframe.translation - bone->offset_pos; // if needed
 

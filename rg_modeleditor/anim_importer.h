@@ -5,7 +5,7 @@
 #include <assimp/scene.h>
 
 namespace Engine {
-	struct KinematicsModel;
+	class KinematicsModel;
 }
 
 typedef struct LoadAnimationInfo {
