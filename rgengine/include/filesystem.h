@@ -12,10 +12,6 @@
 #include "rgvector.h"
 #include <stdio.h>
 
-#define RG_FREAD(ptr, size, count, handle)  if(fread(ptr, size, count, handle) != count) { \
-												rgLogError(RG_LOG_SYSTEM, "IO Error!");    \
-											}
-
 #define RG_FS_SEEK_SET 0x00000000
 #define RG_FS_SEEK_CUR 0x00000001
 #define RG_FS_SEEK_END 0x00000002

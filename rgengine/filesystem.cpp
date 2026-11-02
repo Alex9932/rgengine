@@ -17,6 +17,11 @@
 
 #include "window.h"
 
+
+#define RG_FREAD(ptr, size, count, handle)  if(fread(ptr, size, count, handle) != count) { \
+												rgLogError(RG_LOG_SYSTEM, "IO Error!");    \
+											}
+
 struct rg_fs_header {
     char magic[4];
     Uint32 files;
@@ -252,7 +257,7 @@ namespace Engine {
     }
 
     void Filesystem_Destroy() {
-        std::map<Uint32, rg_filesystem*>::iterator it = filesystems.begin();
+        FSMAP::iterator it = filesystems.begin();
         for (; it != filesystems.end(); it++) {
             Umount(it->first);
         }
@@ -268,7 +273,7 @@ namespace Engine {
 #ifdef RG_PLATFORM_WINDOWS
         CreateDirectoryA(path, NULL);
 #else
-#error FS_MakeDir is not implemented yet!
+#error FS_MakeDir for POSIX systems is not implemented yet!
 #endif
     }
 
@@ -291,39 +296,41 @@ namespace Engine {
     // RFS packages
     Sint32 Mount(String file) {
         FILE* f = fopen(file, "rb");
-        if (f) {
-            rg_filesystem* fs = (rg_filesystem*)allocator->Allocate(sizeof(rg_filesystem));
-            fs->file_stream = f;
-            RG_FREAD(&fs->header, sizeof(rg_fs_header), 1, fs->file_stream);
+        if (!f) { return -1; }
 
-            if (fs->header.magic[0] != 'r' || fs->header.magic[1] != 'f' || fs->header.magic[2] != 's') {
-                SDL_snprintf(string_buffer, 128, "Invalid header at %s!", file);
-                RG_ERROR_MSG(string_buffer);
-            }
+        rg_filesystem* fs = (rg_filesystem*)allocator->Allocate(sizeof(rg_filesystem));
+        fs->file_stream = f;
+        RG_FREAD(&fs->header, sizeof(rg_fs_header), 1, fs->file_stream);
 
-            fs->files = (rg_fs_file*)allocator->Allocate(sizeof(rg_fs_file) * fs->header.files);
-            fs->hash_array = (Uint32*)allocator->Allocate(sizeof(Uint32) * fs->header.files);
-            RG_FREAD(fs->files, sizeof(rg_fs_file), fs->header.files, fs->file_stream);
-            fs_id++;
-
-            // Generate hash array
-            for (Uint32 i = 0; i < fs->header.files; i++) {
-                String fstr = fs->files[i].name;
-                fs->hash_array[i] = rgCRC32(fstr, (Uint32)SDL_strlen(fstr));
-                if (CheckHash(fs->hash_array[i])) {
-                    rgLogWarn(RG_LOG_SYSTEM, "Hash collision %s [%d] in %s", fstr, fs->hash_array[i], file);
-                }
-                if (IsDebug()) {
-                    rgLogInfo(RG_LOG_SYSTEM, "File: %s", fstr);
-                }
-            }
-
-            filesystems[fs_id] = fs;
-            rgLogInfo(RG_LOG_SYSTEM, "Mounting %s, %d files mapped. Used memory: %ldKb", file, fs->header.files, (Uint32)allocator->GetAllocatedMemory() / 1000);
-
-            return fs_id;
+        if (fs->header.magic[0] != 'r' || fs->header.magic[1] != 'f' || fs->header.magic[2] != 's') {
+            SDL_snprintf(string_buffer, 128, "Invalid header at %s!", file);
+            RG_ERROR_MSG(string_buffer);
         }
-        return -1;
+
+        fs->files = (rg_fs_file*)allocator->Allocate(sizeof(rg_fs_file) * fs->header.files);
+        fs->hash_array = (Uint32*)allocator->Allocate(sizeof(Uint32) * fs->header.files);
+        RG_FREAD(fs->files, sizeof(rg_fs_file), fs->header.files, fs->file_stream);
+        fs_id++;
+
+        // Generate hash array
+        for (Uint32 i = 0; i < fs->header.files; i++) {
+            String fstr = fs->files[i].name;
+            fs->hash_array[i] = rgCRC32(fstr, (Uint32)SDL_strlen(fstr));
+            if (CheckHash(fs->hash_array[i])) {
+                rgLogWarn(RG_LOG_SYSTEM, "Hash collision %s [%d] in %s", fstr, fs->hash_array[i], file);
+            }
+            if (IsDebug()) {
+                rgLogInfo(RG_LOG_SYSTEM, "File: %s", fstr);
+            }
+        }
+
+        filesystems[fs_id] = fs;
+
+        // TODO: Add sort by CRC
+
+        rgLogInfo(RG_LOG_SYSTEM, "Mounting %s, %d files mapped. Used memory: %ldKb", file, fs->header.files, (Uint32)allocator->GetAllocatedMemory() / 1000);
+
+        return fs_id;
     }
 
     void Umount(Sint32 fs_uid) {
@@ -336,7 +343,7 @@ namespace Engine {
         allocator->Deallocate(fs->files);
         allocator->Deallocate(fs->hash_array);
         allocator->Deallocate(fs);
-        filesystems[fs_uid] = NULL;
+        filesystems.erase((Uint32)fs_uid);
     }
 
     // Resource
