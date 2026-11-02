@@ -77,6 +77,7 @@ function rg_engine_includes()
     includedirs {
         path.join(RG_ROOT, "rgengine", "include"),
         path.join(RG_ROOT, "rgengine"),
+        path.join(RG_ROOT, "libgilberta", "include"),
         path.join(RG_THIRDPARTY, "stb"),
         path.join(RG_THIRDPARTY, "imgui"),
         path.join(RG_THIRDPARTY, "imguizmo", "src"),

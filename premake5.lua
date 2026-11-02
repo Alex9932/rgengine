@@ -22,6 +22,8 @@ include "rg_modeleditor"
 
 include "entrypoint"
 
+include "libgilberta/libgilberta.lua"
+
 -- Windows only
 filter "system:windows"
     include "rgrenderdx11"
