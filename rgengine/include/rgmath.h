@@ -55,4 +55,69 @@ RG_DECLSPEC Float32 rgRandFloat();
 
 #define rgLerp(x, y, dt) ((x * (1.0 - dt)) + (y * dt))
 
+class RGPCG32 {
+	public:
+		RGPCG32(Uint64 seed = 0x853c49e6748fea9bULL, Uint64 seq = 0xda3e39cb94b95bdbULL) {
+			m_state = 0;
+			m_inc = (seq << 1u) | 1u;
+			NextU32();
+			m_state += seed;
+			NextU32();
+		}
+
+		Uint32 NextU32() {
+			Uint64 old = m_state;
+			m_state = old * 6364136223846793005ULL + m_inc;
+			Uint32 xorshifted = (Uint32)(((old >> 18u) ^ old) >> 27u);
+			Uint32 rot = (Uint32)(old >> 59u);
+			return (xorshifted >> rot) | (xorshifted << ((~rot + 1u) & 31u));
+		}
+
+		Uint64 NextU64() {
+			Uint64 hi = NextU32();
+			Uint64 lo = NextU32();
+			return (hi << 32) | lo;
+		}
+
+	private:
+		Uint64 m_state;
+		Uint64 m_inc;
+};
+
+class RGRNG {
+	public:
+		RGRNG(Uint64 seed = 0x853c49e6748fea9bULL) : m_pcg(seed) {}
+
+		Float32 UnitFloat() {
+			return (m_pcg.NextU32() >> 8) * (1.0f / 16777216.0f);
+		}
+
+		Float64 UnitFloat64() {
+			return (m_pcg.NextU64() >> 11) * (1.0 / 9007199254740992.0);
+		}
+
+		Float32 SignedFloat() { return UnitFloat() * 2.0f - 1.0f; }
+		Float64 SignedFloat64() { return UnitFloat64() * 2.0 - 1.0; }
+
+		Float32 RangeFloat(Float32 lo, Float32 hi) { return lo + UnitFloat() * (hi - lo); }
+		Float64 RangeFloat64(Float64 lo, Float64 hi) { return lo + UnitFloat64() * (hi - lo); }
+
+		Uint32 RangeU32(Uint32 lo, Uint32 hi) {
+			Uint32 n = hi - lo + 1u;
+			if (n == 0) { return m_pcg.NextU32(); }
+			Uint32 threshold = (0u - n) % n;
+			for (;;) {
+				Uint32 r = m_pcg.NextU32();
+				if (r >= threshold) return lo + (r % n);
+			}
+		}
+
+		Sint32 RangeI32(Sint32 lo, Sint32 hi) {
+			return (Sint32)(RangeU32(0u, ((Uint32)hi - (Uint32)lo))) + lo;
+		}
+
+	private:
+		RGPCG32 m_pcg;
+};
+
 #endif

@@ -86,11 +86,13 @@ namespace Engine {
 	static Float32 windRndF  = 5;
 	static vec3    windVec   = {0.8f, 0, -0.2f};
 
-	void RGPhysics::StepSimulation() {
-		Float64 dt = GetDeltaTime();
+	void RGPhysics::StepSimulation(Float64 dt) {
 
 		if (!m_isDisabled) {
 
+			// TODO: DO NOT USE rgRandFloat IN SIMULATION STEPS
+
+#if 0
 			// Apply 'wind'
 			Float32 wx = (windVec.x * windForce) + (rgRandFloat() * windRndF);
 			Float32 wy = (windVec.y * windForce) + (rgRandFloat() * 0.3f * windRndF);
@@ -102,9 +104,9 @@ namespace Engine {
 			for (Uint32 i = 0; i < array.size(); i++) {
 				array[i]->applyCentralForce(wForce);
 			}
-			
+#endif		
 
-			m_world->world->stepSimulation(dt, 5);
+			m_world->world->stepSimulation(dt, 0);
 		}
 
 		std::vector<PHComponent*>::iterator pit = this->m_components.begin();

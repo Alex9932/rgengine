@@ -18,7 +18,7 @@ namespace Engine {
 			RGPhysics();
 			~RGPhysics();
 
-			void StepSimulation();
+			void StepSimulation(Float64 dt);
 			void ClearWorld();
 
 			RG_DECLSPEC PHComponent* NewComponent();

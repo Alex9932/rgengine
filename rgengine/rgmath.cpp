@@ -157,15 +157,15 @@ quat quat_axisAngle(const vec4& axis_angle) {
     quat dest;
     float half = axis_angle.w / 2.0f;
     float s = SDL_sinf(half);
-    dest.x = axis_angle.x * s;
-    dest.y = axis_angle.y * s;
-    dest.z = axis_angle.z * s;
+    dest.x = axis.x * s;
+    dest.y = axis.y * s;
+    dest.z = axis.z * s;
     dest.w = SDL_cosf(half);
     return dest;
 }
 
 Float32 rgRandFloat() {
-    Sint32 rnd = rand();                                // Random int
-    Float32 frnd = (Float32)(rnd % 100000) / 100000.0f; // 0 - 1
-    return frnd * 2 - 1;                                // -1 -- 1
+    static thread_local std::mt19937 gen{ std::random_device{}() };
+    static thread_local std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+    return dist(gen);
 }

@@ -22,7 +22,12 @@ namespace Engine {
 			RG_DECLSPEC World();
 			RG_DECLSPEC ~World();
 
-			RG_DECLSPEC void Update();
+			// Client only
+			RG_DECLSPEC void PresentUpdate(Float64 dt, Float64 alpha);
+
+			RG_DECLSPEC void BeginTick();
+			RG_DECLSPEC void AdvanceStep(Uint64 dt);
+			RG_DECLSPEC void ApplyQueued();
 
 			RG_DECLSPEC Transform* NewTransform();
 			RG_DECLSPEC void FreeTransform(Transform* t);

@@ -62,24 +62,6 @@ namespace Engine {
 		// Add to deletion queue
 		m_entitydelqueue.push_back(e);
 	}
-	/*
-	template <typename T>
-	static void RemoveObject(Allocator* alloc, std::vector<T*>& objects, T* ptr) {
-		std::vector<T*>::iterator it = objects.begin();
-		Uint32 idx = 0;
-		for (; it != objects.end(); it++) {
-			if (*it == ptr) {
-
-				*it = std::move(objects.back());
-				objects.pop_back();
-
-				RG_DELETE_CLASS(alloc, T, ptr);
-				break;
-			}
-			idx++;
-		}
-	}
-	*/
 
 	static void RemoveEntity(Allocator* alloc, std::vector<Entity*>& objects, Entity* s_ptr) {
 		std::vector<Entity*>::iterator it = objects.begin();
@@ -115,24 +97,15 @@ namespace Engine {
 		}
 	}
 
-	void World::Update() {
+	void World::PresentUpdate(Float64 dt, Float64 alpha) {
 
-		Float64 dt = GetDeltaTime();
+	}
 
-		// Remove entities
-		for (size_t i = 0; i < m_entitydelqueue.size(); i++) {
-			FreeComponents(m_entitydelqueue[i]);
-			RemoveEntity(m_allocEntity, m_entities, m_entitydelqueue[i]);
-		}
-		m_entitydelqueue.clear();
+	void World::BeginTick() {
 
-		// Remove static
-		for (size_t i = 0; i < m_staticdelqueue.size(); i++) {
-			R3D_StaticModel* hmdl = m_staticdelqueue[i]->GetModelHandle();
-			Render::DestroyStaticModel(hmdl);
-			RemoveStatic(m_allocStatic, m_static, m_staticdelqueue[i]);
-		}
-		m_staticdelqueue.clear();
+	}
+
+	void World::AdvanceStep(Uint64 dt) {
 
 		// Update
 
@@ -148,7 +121,24 @@ namespace Engine {
 			}
 			ent->Update(dt);
 		}
+	}
 
+	void World::ApplyQueued() {
+
+		// Remove entities
+		for (size_t i = 0; i < m_entitydelqueue.size(); i++) {
+			FreeComponents(m_entitydelqueue[i]);
+			RemoveEntity(m_allocEntity, m_entities, m_entitydelqueue[i]);
+		}
+		m_entitydelqueue.clear();
+
+		// Remove static
+		for (size_t i = 0; i < m_staticdelqueue.size(); i++) {
+			R3D_StaticModel* hmdl = m_staticdelqueue[i]->GetModelHandle();
+			Render::DestroyStaticModel(hmdl);
+			RemoveStatic(m_allocStatic, m_static, m_staticdelqueue[i]);
+		}
+		m_staticdelqueue.clear();
 	}
 
 	Entity* World::GetEntity(Uint32 idx) {

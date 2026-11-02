@@ -55,7 +55,8 @@ class RG_DECLSPEC BaseGame {
     public:
         BaseGame() {}
         virtual ~BaseGame() {}
-        virtual void MainUpdate() {}
+        virtual void MainUpdate(Float64 dt, Float64 alpha) {}
+        virtual void FixedUpdate(Float64 dt) {}
         virtual void Initialize() {}
         virtual void Quit() {}
         virtual String GetName()    { return "unnamed";  }

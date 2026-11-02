@@ -90,6 +90,13 @@ namespace Engine {
     static Float64       frame_time    = 0.0;
     static Float64       uptime        = 0.0;
 
+    static Uint32        tickrate      = 64;
+    static const int     MAX_STEPS     = 5;
+    static Float64       time_scale    = 1.0;
+    static Float64       acc           = 0.0;
+
+    static Uint32        clamps        = 0;
+
     static Timer         timer;
 
     static World*        world         = NULL;
@@ -434,18 +441,15 @@ namespace Engine {
 
     static String profiles[] = {
         "input",
-        "worldupdate",
-        "game",
-        "physics",
-        "audio",
-        "systemupdate",
+        "tick",
+        "present",
         "threads",
-        "render",
+        "swapbuffer",
         "other"
     };
 
     String GetProfile(Uint32 idx) {
-        if (idx < 9) { return profiles[idx]; }
+        if (idx < 6) { return profiles[idx]; }
         return "null";
     }
 
@@ -457,8 +461,12 @@ namespace Engine {
 
         double last_time = timer.GetTime();
         Uint32 frame = 0;
+        Uint32 tick = 0;
 
         while (running) {
+
+            Float64 step = 1.0 / (Float64)tickrate;
+
             core_profiler->Reset();
             frame_time = timer.GetElapsedTime();
             timer.Update();
@@ -469,49 +477,81 @@ namespace Engine {
             UpdateInput();
 
             core_profiler->StartSection(profiles[1]);
-            world->Update();
+            acc += min(frame_time, 0.25) * time_scale;
+            Uint32 steps = 0;
+            while (acc >= step && steps++ < MAX_STEPS) {
+                world->BeginTick();
+                world->AdvanceStep(step);
+                rgphysics->StepSimulation(step);
+                world->ApplyQueued();
+                game_ptr->FixedUpdate(step);
+                tick++;
+                acc -= step;
+            }
+            if (steps == MAX_STEPS) { acc = 0; clamps++; } // Overload, skip ticks
+
+            Uint64 alpha = acc / step;
 
             core_profiler->StartSection(profiles[2]);
-            game_ptr->MainUpdate();
-
-            core_profiler->StartSection(profiles[3]);
-            rgphysics->StepSimulation();
+            world->PresentUpdate(frame_time, alpha);
+            game_ptr->MainUpdate(frame_time, alpha);
 
             if (game_ptr->IsClient()) {
-                core_profiler->StartSection(profiles[4]);
-                soundsystem->Update(GetDeltaTime());
+                soundsystem->Update(frame_time);
             }
 
             if (game_ptr->IsGraphics()) {
                 modelSystem->UpdateComponents();
                 lightSystem->UpdateComponents();
 
-                core_profiler->StartSection(profiles[5]);
                 Render::UpdateSystems();
             }
-            core_profiler->StartSection(profiles[6]);
 
-
+            core_profiler->StartSection(profiles[3]);
             Thread_Execute();
             Thread_WaitForAll();
 
+            core_profiler->StartSection(profiles[4]);
             if (game_ptr->IsGraphics()) {
-                core_profiler->StartSection(profiles[7]);
                 Render::Update();
                 Window_Update();
             }
 
-            core_profiler->StartSection(profiles[8]);
+            core_profiler->StartSection(profiles[5]);
 #if RG_PRINTFPS
             frame++;
+
+
+
+            static Float64 _input = 0;
+            static Float64 _tick = 0;
+            static Float64 _present = 0;
+            static Float64 _threads = 0;
+            static Float64 _swap = 0;
+
 //			if(timer.GetTime() - last_time >= 5.0) {
-//				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame / 5);
+//				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d, tickrate: %d", frame / 5, tick / 5);
             if (timer.GetTime() - last_time >= 1.0) {
-                rgLogInfo(RG_LOG_SYSTEM, "Fps: %d", frame);
+                rgLogInfo(RG_LOG_SYSTEM, "[avg] Fps: %d, tickrate: %d", frame, tick);
+                rgLogInfo(RG_LOG_SYSTEM, "[current] Fps: %d, acc %lf, acc resets: %d", (Uint32)(1.0f / frame_time), acc, clamps);
+                rgLogInfo(RG_LOG_SYSTEM, "Input: %lf ms, tick: %lf ms, present: %lf ms, threads: %lf ms, swap: %lf ms",
+                    _input * 1000,
+                    _tick * 1000,
+                    _present * 1000,
+                    _threads * 1000,
+                    _swap * 1000);
+
                 last_time = timer.GetTime();
                 frame = 0;
+                tick = 0;
             }
 #endif
+
+            _input += core_profiler->GetTime(profiles[0]); _input = _input / 2.0;
+            _tick += core_profiler->GetTime(profiles[1]); _tick = _tick / 2.0;
+            _present += core_profiler->GetTime(profiles[2]); _present = _present / 2.0;
+            _threads += core_profiler->GetTime(profiles[3]); _threads = _threads / 2.0;
+            _swap += core_profiler->GetTime(profiles[4]); _swap = _swap / 2.0;
 
         }
 

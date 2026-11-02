@@ -17,6 +17,9 @@ Uint8* RG_STB_load_from_file(String path, int* width, int* height, int* componen
     }
     //rgLogInfo(RG_LOG_SYSTEM, "+-> Decode", path);
     Uint8* data = stbi_load_from_memory((stbi_uc*)res->data, res->length, width, height, components, required_components);
+    if (!data) {
+        rgLogInfo(RG_LOG_SYSTEM, "+-> Error reason: %s", stbi_failure_reason());
+    }
     //rgLogInfo(RG_LOG_SYSTEM, "+-> Free resource", path);
     Engine::FreeResource(res);
     //    rgLogInfo(RG_LOG_SYSTEM, " Image -> %dx%d %d", *width, *height, *components);
