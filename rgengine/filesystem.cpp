@@ -339,15 +339,12 @@ namespace Engine {
     }
 
     void Umount(Sint32 fs_uid) {
-        if (fs_uid < 0) {
-            rgLogError(RG_LOG_SYSTEM, "Unable to unmount %d filesystem!", fs_uid);
-            return;
-        }
-        rg_filesystem* fs = filesystems[fs_uid];
-        if (!fs) {
+        auto it = filesystems.find(fs_uid);
+        if (it == filesystems.end() || !it->second) {
             rgLogError(RG_LOG_SYSTEM, "Filesystem %d not mounted!", fs_uid);
             return;
         }
+        rg_filesystem* fs = it->second;
         fclose(fs->file_stream);
         allocator->Deallocate(fs->files);
         allocator->Deallocate(fs->hash_array);

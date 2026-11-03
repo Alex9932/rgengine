@@ -479,16 +479,18 @@ namespace Engine {
             core_profiler->StartSection(profiles[1]);
             acc += min(frame_time, 0.25) * time_scale;
             Uint32 steps = 0;
-            while (acc >= step && steps++ < MAX_STEPS) {
+            while (acc >= step && steps < MAX_STEPS) {
                 world->BeginTick();
                 world->AdvanceStep(step);
                 rgphysics->StepSimulation(step);
                 world->ApplyQueued();
                 game_ptr->FixedUpdate(step);
+
                 tick++;
+                steps++;
                 acc -= step;
             }
-            if (steps == MAX_STEPS) { acc = 0; clamps++; } // Overload, skip ticks
+            if (acc >= step) { acc = 0; clamps++; } // Overload, skip ticks
 
             Float64 alpha = acc / step;
 
@@ -518,10 +520,9 @@ namespace Engine {
             }
 
             core_profiler->StartSection(profiles[5]);
+
 #if RG_PRINTFPS
             frame++;
-
-
 
             static Float64 _input = 0;
             static Float64 _tick = 0;
@@ -529,8 +530,10 @@ namespace Engine {
             static Float64 _threads = 0;
             static Float64 _swap = 0;
 
-//			if(timer.GetTime() - last_time >= 5.0) {
-//				rgLogInfo(RG_LOG_SYSTEM, "Fps: %d, tickrate: %d", frame / 5, tick / 5);
+#if 1
+			if(timer.GetTime() - last_time >= 5.0) {
+				rgLogInfo(RG_LOG_SYSTEM, "FPS: %d, TPS: %d", frame / 5, tick / 5);
+#else
             if (timer.GetTime() - last_time >= 1.0) {
                 rgLogInfo(RG_LOG_SYSTEM, "[avg] Fps: %d, tickrate: %d", frame, tick);
                 rgLogInfo(RG_LOG_SYSTEM, "[current] Fps: %d, acc %lf, acc resets: %d", (Uint32)(1.0f / frame_time), acc, clamps);
@@ -540,6 +543,7 @@ namespace Engine {
                     _present * 1000,
                     _threads * 1000,
                     _swap * 1000);
+#endif
 
                 last_time = timer.GetTime();
                 frame = 0;
