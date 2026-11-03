@@ -41,9 +41,9 @@ static VmaMemoryUsage GetUsage(Uint8 usage, Uint8 access) {
 }
 
 static Uint32 GetMipmapLevels(Uint32 w, Uint32 h) {
-	Float32 x = SDL_max(w, h);
+	Float32 x = (Float32)SDL_max(w, h);
 	// log2(x) = ln(x) / ln(2)
-	return (Uint32)SDL_floorf(SDL_logf(x) / SDL_logf(2));
+	return 1 + (Uint32)SDL_floorf(SDL_logf(x) / SDL_logf(2.0f));
 }
 
 static std::mutex t_lock;

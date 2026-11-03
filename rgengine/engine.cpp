@@ -490,7 +490,7 @@ namespace Engine {
             }
             if (steps == MAX_STEPS) { acc = 0; clamps++; } // Overload, skip ticks
 
-            Uint64 alpha = acc / step;
+            Float64 alpha = acc / step;
 
             core_profiler->StartSection(profiles[2]);
             world->PresentUpdate(frame_time, alpha);

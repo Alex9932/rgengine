@@ -67,17 +67,16 @@ namespace Engine {
 
         for (std::map<Uint32, rg_filesystem*>::iterator it = filesystems.begin(); it != filesystems.end(); ++it) {
             rg_filesystem* filesystem = it->second;
+            // TODO: Use binary search
             for (Uint32 i = 0; i < filesystem->header.files; ++i) {
-                //rg_fs_file f = filesystem->files[i];
-                //if(Engine::Utils::streql(f.name, file)) {
-                //    ffs->file = f;
-                //    ffs->filesystem = filesystem;
-                //    return;
-                //}
+                // Fast CRC check
                 if (hash == filesystem->hash_array[i]) {
-                    ffs->file = filesystem->files[i];
-                    ffs->filesystem = filesystem;
-                    return;
+                    // Check full filename
+                    if (rg_streql(file, filesystem->files[i].name)) {
+                        ffs->file = filesystem->files[i];
+                        ffs->filesystem = filesystem;
+                        return;
+                    }
                 }
             }
         }
@@ -257,9 +256,15 @@ namespace Engine {
     }
 
     void Filesystem_Destroy() {
-        FSMAP::iterator it = filesystems.begin();
-        for (; it != filesystems.end(); it++) {
-            Umount(it->first);
+
+        rgLogInfo(RG_LOG_SYSTEM, "Unmounting filesystems...");
+
+        //FSMAP::iterator it = filesystems.begin();
+        //for (; it != filesystems.end(); it++) {
+        //    Umount(it->first);
+        //}
+        while (filesystems.size() != 0) {
+            Umount(filesystems.begin()->first);
         }
 
         filesystems.clear();
@@ -326,7 +331,7 @@ namespace Engine {
 
         filesystems[fs_id] = fs;
 
-        // TODO: Add sort by CRC
+        // TODO: Add sort by CRC !!!
 
         rgLogInfo(RG_LOG_SYSTEM, "Mounting %s, %d files mapped. Used memory: %ldKb", file, fs->header.files, (Uint32)allocator->GetAllocatedMemory() / 1000);
 
@@ -339,6 +344,10 @@ namespace Engine {
             return;
         }
         rg_filesystem* fs = filesystems[fs_uid];
+        if (!fs) {
+            rgLogError(RG_LOG_SYSTEM, "Filesystem %d not mounted!", fs_uid);
+            return;
+        }
         fclose(fs->file_stream);
         allocator->Deallocate(fs->files);
         allocator->Deallocate(fs->hash_array);

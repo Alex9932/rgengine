@@ -26,7 +26,7 @@ namespace Engine {
 			RG_DECLSPEC void PresentUpdate(Float64 dt, Float64 alpha);
 
 			RG_DECLSPEC void BeginTick();
-			RG_DECLSPEC void AdvanceStep(Uint64 dt);
+			RG_DECLSPEC void AdvanceStep(Float64 dt);
 			RG_DECLSPEC void ApplyQueued();
 
 			RG_DECLSPEC Transform* NewTransform();

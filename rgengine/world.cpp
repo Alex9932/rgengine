@@ -105,7 +105,7 @@ namespace Engine {
 
 	}
 
-	void World::AdvanceStep(Uint64 dt) {
+	void World::AdvanceStep(Float64 dt) {
 
 		// Update
 
