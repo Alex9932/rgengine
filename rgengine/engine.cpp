@@ -50,6 +50,23 @@ typedef struct GameModule {
     PFN_MODULE_GETAPPLICATION ModuleGetApplication;
 } GameModule;
 
+typedef struct EngineDiagnostics {
+    String*       arg_strs      = NULL;
+    Float64       uptime        = 0.0;
+    Float64       acc           = 0.0;
+    Sint32        arg_count     = 0;
+    Uint32        num_threads   = 1;
+    Uint32        clamps        = 0;
+    Uint32        frame         = 0;
+    Uint32        tick          = 0;
+    Uint32        fps           = 0;
+    Uint32        tps           = 0;
+    Bool          is_debug      = false;
+    Bool          running       = false;
+    Bool          shutdown_rq   = false;
+    Bool          num_tcustom   = false;
+};
+
 namespace Engine {
 
     static String        rg_assert_message = NULL;
@@ -66,36 +83,25 @@ namespace Engine {
     static char          version_str[64];
     static char          platform_str[64];
 
-    static int           arg_count     = 0;
-    static String*       arg_strs      = NULL;
-
-    static Bool          is_debug      = false;
     static String        fsjson        = NULL;
-    static Uint32        num_threads   = 1;
-    static Bool          num_tcustom   = false;
 
     static String        lib_renderer  = NULL;
     static String        lib_game      = NULL;
 
     static GameModule    game_module   = {};
+    static EngineDiagnostics diagnostics = {};
 
     static BaseGame*     game_ptr      = NULL;
-    static Bool          running       = false;
 
     static STDAllocator* std_allocator = NULL;
     static Profiler*     core_profiler = NULL;
 
-    static Bool          shutdown_rq   = false;
 
     static Float64       frame_time    = 0.0;
-    static Float64       uptime        = 0.0;
 
     static Uint32        tickrate      = 64;
     static const int     MAX_STEPS     = 5;
     static Float64       time_scale    = 1.0;
-    static Float64       acc           = 0.0;
-
-    static Uint32        clamps        = 0;
 
     static Timer         timer;
 
@@ -130,9 +136,13 @@ namespace Engine {
             ToggleFullscreen();
         }
 
+        if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_F4 && IsKeyDown(SDL_SCANCODE_LSHIFT)) {
+            RG_ERROR_MSG("FORCE STOP");
+        }
+
         if (event->type == GetUserEventID() && event->user.code == RG_EVENT_SHUTDOWN_RQ) {
             rgLogInfo(RG_LOG_SYSTEM, "Shutdown request detected!");
-            running = false;
+            diagnostics.running = false;
         }
 
 		// Temporary disabled (SDL3 migration)
@@ -217,45 +227,45 @@ namespace Engine {
     }
 
     Sint32 ProcessArguments(int argc, String* argv) {
-        arg_count = argc;
-        arg_strs = argv;
+        diagnostics.arg_count = argc;
+        diagnostics.arg_strs = argv;
 
-        for (int i = 0; i < arg_count; ++i) {
-            if (rg_streql(arg_strs[i], "-debug")) {
-                is_debug = true;
+        for (int i = 0; i < diagnostics.arg_count; ++i) {
+            if (rg_streql(diagnostics.arg_strs[i], "-debug")) {
+                diagnostics.is_debug = true;
             }
-            else if (rg_streql(arg_strs[i], "-render")) {
-                if (arg_count <= i + 1) {
+            else if (rg_streql(diagnostics.arg_strs[i], "-render")) {
+                if (diagnostics.arg_count <= i + 1) {
                     return -1;
                 }
-                lib_renderer = arg_strs[i + 1];
+                lib_renderer = diagnostics.arg_strs[i + 1];
             }
-            else if (rg_streql(arg_strs[i], "-game")) {
-                if (arg_count <= i + 1) {
+            else if (rg_streql(diagnostics.arg_strs[i], "-game")) {
+                if (diagnostics.arg_count <= i + 1) {
                     return -1;
                 }
-                lib_game = arg_strs[i + 1];
+                lib_game = diagnostics.arg_strs[i + 1];
             }
-            else if (rg_streql(arg_strs[i], "-fsjson")) {
-                if (arg_count <= i + 1) {
+            else if (rg_streql(diagnostics.arg_strs[i], "-fsjson")) {
+                if (diagnostics.arg_count <= i + 1) {
                     return -1;
                 }
-                fsjson = arg_strs[i + 1];
+                fsjson = diagnostics.arg_strs[i + 1];
             }
-            else if (rg_streql(arg_strs[i], "-t")) {
-                if (arg_count <= i + 1) {
+            else if (rg_streql(diagnostics.arg_strs[i], "-t")) {
+                if (diagnostics.arg_count <= i + 1) {
                     return -1;
                 }
-                num_threads = SDL_atoi(arg_strs[i + 1]);
-                num_tcustom = true;
+                diagnostics.num_threads = SDL_atoi(diagnostics.arg_strs[i + 1]);
+                diagnostics.num_tcustom = true;
             }
         }
         return 0;
     }
 
     Bool IsArgument(String arg) {
-        for (int i = 0; i < arg_count; ++i) {
-            if (rg_streql(arg_strs[i], arg)) {
+        for (int i = 0; i < diagnostics.arg_count; ++i) {
+            if (rg_streql(diagnostics.arg_strs[i], arg)) {
                 return true;
             }
         }
@@ -345,7 +355,7 @@ namespace Engine {
     }
 
     void Initialize() {
-        running = true;
+        diagnostics.running = true;
 
         SDL_Init(SDL_INIT_EVENTS);
         SetupSignalHandler();
@@ -375,7 +385,7 @@ namespace Engine {
             SDL_GetSystemRAM());
         rgLogInfo(RG_LOG_SYSTEM, "Using log path: %s", Logger_GetLogPath());
 
-        if (is_debug) {
+        if (diagnostics.is_debug) {
             rgLogWarn(RG_LOG_SYSTEM, " ~ ");
             rgLogWarn(RG_LOG_SYSTEM, " ~ Engine started in DEBUG profile!");
             rgLogWarn(RG_LOG_SYSTEM, " ~ ");
@@ -416,10 +426,10 @@ namespace Engine {
         //Commands_Initialize();
         //Cvars_Initialize();
 
-        if (!num_tcustom) {
-            num_threads = SDL_GetNumLogicalCPUCores();
+        if (!diagnostics.num_tcustom) {
+            diagnostics.num_threads = SDL_GetNumLogicalCPUCores();
         }
-        Thread_Initialize(num_threads);
+        Thread_Initialize(diagnostics.num_threads);
 
         Script_Initialize();
 
@@ -463,23 +473,23 @@ namespace Engine {
         Uint32 frame = 0;
         Uint32 tick = 0;
 
-        while (running) {
+        while (diagnostics.running) {
 
             Float64 step = 1.0 / (Float64)tickrate;
 
             core_profiler->Reset();
             frame_time = timer.GetElapsedTime();
             timer.Update();
-            uptime += frame_time;
+            diagnostics.uptime += frame_time;
 
             core_profiler->StartSection(profiles[0]);
             HandleEvents();
             UpdateInput();
 
             core_profiler->StartSection(profiles[1]);
-            acc += min(frame_time, 0.25) * time_scale;
+            diagnostics.acc += min(frame_time, 0.25) * time_scale;
             Uint32 steps = 0;
-            while (acc >= step && steps < MAX_STEPS) {
+            while (diagnostics.acc >= step && steps < MAX_STEPS) {
                 world->BeginTick();
                 world->AdvanceStep(step);
                 rgphysics->StepSimulation(step);
@@ -488,11 +498,12 @@ namespace Engine {
 
                 tick++;
                 steps++;
-                acc -= step;
+                diagnostics.acc -= step;
+                diagnostics.tick++;
             }
-            if (acc >= step) { acc = 0; clamps++; } // Overload, skip ticks
+            if (diagnostics.acc >= step) { diagnostics.acc = 0; diagnostics.clamps++; } // Overload, skip ticks
 
-            Float64 alpha = acc / step;
+            Float64 alpha = diagnostics.acc / step;
 
             core_profiler->StartSection(profiles[2]);
             world->PresentUpdate(frame_time, alpha);
@@ -520,8 +531,8 @@ namespace Engine {
             }
 
             core_profiler->StartSection(profiles[5]);
-
-#if RG_PRINTFPS
+            
+            diagnostics.frame++;
             frame++;
 
             static Float64 _input = 0;
@@ -532,9 +543,14 @@ namespace Engine {
 
 #if 1
 			if(timer.GetTime() - last_time >= 5.0) {
-				rgLogInfo(RG_LOG_SYSTEM, "FPS: %d, TPS: %d", frame / 5, tick / 5);
 #else
             if (timer.GetTime() - last_time >= 1.0) {
+#endif
+
+#if RG_PRINTFPS
+#if 1
+				rgLogInfo(RG_LOG_SYSTEM, "FPS: %d, TPS: %d", frame / 5, tick / 5);
+#else
                 rgLogInfo(RG_LOG_SYSTEM, "[avg] Fps: %d, tickrate: %d", frame, tick);
                 rgLogInfo(RG_LOG_SYSTEM, "[current] Fps: %d, acc %lf, acc resets: %d", (Uint32)(1.0f / frame_time), acc, clamps);
                 rgLogInfo(RG_LOG_SYSTEM, "Input: %lf ms, tick: %lf ms, present: %lf ms, threads: %lf ms, swap: %lf ms",
@@ -544,12 +560,14 @@ namespace Engine {
                     _threads * 1000,
                     _swap * 1000);
 #endif
-
+#endif
+                diagnostics.fps = frame;
+                diagnostics.tps = tick;
                 last_time = timer.GetTime();
                 frame = 0;
                 tick = 0;
             }
-#endif
+
 
             _input += core_profiler->GetTime(profiles[0]); _input = _input / 2.0;
             _tick += core_profiler->GetTime(profiles[1]); _tick = _tick / 2.0;
@@ -633,7 +651,7 @@ namespace Engine {
     }
 
     void Quit() {
-        shutdown_rq = true;
+        diagnostics.shutdown_rq = true;
         PushEvent(0, RG_EVENT_SHUTDOWN_RQ, NULL, NULL);
     }
 
@@ -648,18 +666,60 @@ namespace Engine {
     }
 
     void HandleError(String message) {
-        rgLogError(RG_LOG_SYSTEM, " * * * * * * * * * ENGINE ERROR * * * * * * * * *");
-        rgLogError(RG_LOG_SYSTEM, "Engine: %s", message);
+
+        // TODO: Rewrite this lines
+        const char* quotes_err[] = {
+            "Try turning it off and on. Then read the log.",
+            "Not a total disaster. Just a partial one.",
+            "The border held, but the download didn't.",
+            "CRC said no. Multiple times.",
+            "Some things broke. Endmin is disappointed.",
+            "Pogranichnik did not clear this run.",
+            "Errors happened. Blame the dolphins.",
+            "Chen refuses to comment on this outcome.",
+            "Half a modpack is still technically a modpack.",
+            "Retry it. Blame the server if it happens twice.",
+            "Gilberta got lost on the way. Rare, but it happens.",
+            "curl exit code: yes.",
+            "This is fine. Probably."
+        };
+
+        size_t poolSize = sizeof(quotes_err) / sizeof(quotes_err[0]);
+
+
+        rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, " * * * * * * * * * ENGINE ERROR * * * * * * * * *\n");
+        rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, " ~ %s", quotes_err[rand() % poolSize]);
+        rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, "[ENGINE]");
+        rgLogError(RG_LOG_SYSTEM, "  IsDebug: %u", diagnostics.is_debug);
+        rgLogError(RG_LOG_SYSTEM, "  Uptime: %lf seconds", diagnostics.uptime);
+        rgLogError(RG_LOG_SYSTEM, "  Error: %s", message);
+        rgLogError(RG_LOG_SYSTEM, "  Threads: %u, Running: %u, stop request: %u", diagnostics.num_threads, diagnostics.running, diagnostics.shutdown_rq);
+        rgLogError(RG_LOG_SYSTEM, "  Commandline[%u]:", diagnostics.arg_count);
+        for (size_t i = 0; i < diagnostics.arg_count; i++) {
+            rgLogError(RG_LOG_SYSTEM, "   %s", diagnostics.arg_strs[i]);
+        }
+
+        rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, "[FRAME]");
+        rgLogError(RG_LOG_SYSTEM, "  FPS/Frame: %u/%u\n", diagnostics.fps / 5, diagnostics.frame);
+        rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, "[SIMULATION]");
+        rgLogError(RG_LOG_SYSTEM, "  TPS/Tick: %u/%u\n", diagnostics.tps / 5, diagnostics.tick);
+        rgLogError(RG_LOG_SYSTEM, "  Acc/clamps: %lf/%u", diagnostics.acc, diagnostics.clamps);
+
         SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
         ExitProcess(0xFFFFFFFF); // Fix abnormal termination
     }
 
     Bool IsDebug() {
-        return is_debug;
+        return diagnostics.is_debug;
     }
 
     Bool IsRunning() {
-        return running;
+        return diagnostics.running;
     }
 
     Float64 GetDeltaTime() {
@@ -667,11 +727,11 @@ namespace Engine {
     }
 
     Float64 GetUptime() {
-        return uptime;
+        return diagnostics.uptime;
     }
 
     Uint32 GetThreads() {
-        return num_threads;
+        return diagnostics.num_threads;
     }
 
     BaseGame* GetGame() {
