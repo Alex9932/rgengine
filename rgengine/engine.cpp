@@ -15,6 +15,7 @@
 #include "engine.h"
 #include "rgstring.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <signal.h>
 
@@ -61,10 +62,12 @@ typedef struct EngineDiagnostics {
     Uint32        tick          = 0;
     Uint32        fps           = 0;
     Uint32        tps           = 0;
+    Sint32        signal        = 0;
     Bool          is_debug      = false;
     Bool          running       = false;
     Bool          shutdown_rq   = false;
     Bool          num_tcustom   = false;
+    Bool          has_signal    = false;
 };
 
 namespace Engine {
@@ -273,32 +276,23 @@ namespace Engine {
     }
 
     static void SignalHandler(int sig) {
+        diagnostics.has_signal = true;
+        diagnostics.signal     = sig;
+    }
 
-        PushEvent(0, RG_EVENT_SYSTEM_SIGNAL, (void*)sig, NULL);
-		HandleEvents(); // Intermediate event handling
-
-        switch (sig) {
-            case SIGINT:   { printf("SIGNAL: Interrupt\n"); Quit(); break; }
-            case SIGILL:   { printf("SIGNAL: Illegal instruction\n"); break; }
-            case SIGFPE:   { printf("SIGNAL: Floating point exception\n"); break; }
-            case SIGSEGV:  { printf("SIGNAL: Segmentation violation\n"); break; }
-            case SIGTERM:  { printf("SIGNAL: Terminate\n"); break; }
-            case SIGBREAK: { printf("SIGNAL: Break\n"); Quit(); break; }
-            case SIGABRT:  { printf("SIGNAL: Abnormal termination\n"); break; }
-            default: { printf("SIGNAL: Terminate (unknown)\n"); break; }
-        }
+    static void ErrorSignalHandler(int sig) {
+		// No expensive operations here, just exit
     }
 
     static void SetupSignalHandler() {
 #if defined(RG_PLATFORM_WINDOWS)
-        // Testing
         signal(SIGINT,   SignalHandler);
-        signal(SIGILL,   SignalHandler);
-        signal(SIGFPE,   SignalHandler);
-        signal(SIGSEGV,  SignalHandler);
         signal(SIGTERM,  SignalHandler);
         signal(SIGBREAK, SignalHandler);
-        signal(SIGABRT,  SignalHandler);
+        signal(SIGSEGV,  ErrorSignalHandler);
+        signal(SIGILL,   ErrorSignalHandler);
+        signal(SIGFPE,   ErrorSignalHandler);
+        signal(SIGABRT,  ErrorSignalHandler);
 #elif defined(RG_PLATFORM_LINUX)
 
 #endif
@@ -532,6 +526,17 @@ namespace Engine {
 
             core_profiler->StartSection(profiles[5]);
             
+            if (diagnostics.has_signal) {
+                switch (diagnostics.signal) {
+                    case SIGINT:   { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Interrupt"); Quit(); break; }
+                    case SIGTERM:  { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Terminate"); break; }
+                    case SIGBREAK: { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Break"); Quit(); break; }
+                    default:       { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Terminate (unknown)"); break; }
+                }
+                rgLogWarn(RG_LOG_SYSTEM, "Requesting shutdown...\n");
+                Quit();
+            }
+
             diagnostics.frame++;
             frame++;
 
@@ -561,8 +566,8 @@ namespace Engine {
                     _swap * 1000);
 #endif
 #endif
-                diagnostics.fps = frame;
-                diagnostics.tps = tick;
+                diagnostics.fps = frame / 5;
+                diagnostics.tps = tick / 5;
                 last_time = timer.GetTime();
                 frame = 0;
                 tick = 0;
@@ -666,51 +671,83 @@ namespace Engine {
     }
 
     void HandleError(String message) {
+		// Lock for first caller thread. Block other threads until the engine is terminated.
 
-        // TODO: Rewrite this lines
-        const char* quotes_err[] = {
+        String quotes_err[] = {
             "Try turning it off and on. Then read the log.",
             "Not a total disaster. Just a partial one.",
-            "The border held, but the download didn't.",
-            "CRC said no. Multiple times.",
             "Some things broke. Endmin is disappointed.",
-            "Pogranichnik did not clear this run.",
             "Errors happened. Blame the dolphins.",
             "Chen refuses to comment on this outcome.",
-            "Half a modpack is still technically a modpack.",
-            "Retry it. Blame the server if it happens twice.",
             "Gilberta got lost on the way. Rare, but it happens.",
-            "curl exit code: yes.",
-            "This is fine. Probably."
+            "This is fine. Probably.",
+			"The engine is on fire. Please call the fire department.",
+            "Undefined behavior. Very defined consequences.",
+            "Congratulations! You found an edge case.",
+            "Everything was working in the previous frame.",
+            "The engine has encountered an unexpected situation.",
+            "Something went wrong. Details are in the log.",
+            "The operation was successful. The result was not.",
+            "The engine is no longer accepting reasonable requests.",
+            "Something somewhere stopped making sense.",
+            "Well, that was unexpected.",
+            "Maybe the next build will be better.",
+            "Somebody forgot to check the return value."
         };
 
         size_t poolSize = sizeof(quotes_err) / sizeof(quotes_err[0]);
-
+        Uint64 uptime_bits = 0;
+        SDL_memcpy(&uptime_bits, &diagnostics.uptime, sizeof(Uint64));
+        size_t rndidx = uptime_bits % poolSize;
 
         rgLogError(RG_LOG_SYSTEM, "");
         rgLogError(RG_LOG_SYSTEM, " * * * * * * * * * ENGINE ERROR * * * * * * * * *\n");
         rgLogError(RG_LOG_SYSTEM, "");
-        rgLogError(RG_LOG_SYSTEM, " ~ %s", quotes_err[rand() % poolSize]);
+        rgLogError(RG_LOG_SYSTEM, " ~ %s", quotes_err[rndidx]);
         rgLogError(RG_LOG_SYSTEM, "");
         rgLogError(RG_LOG_SYSTEM, "[ENGINE]");
         rgLogError(RG_LOG_SYSTEM, "  IsDebug: %u", diagnostics.is_debug);
         rgLogError(RG_LOG_SYSTEM, "  Uptime: %lf seconds", diagnostics.uptime);
         rgLogError(RG_LOG_SYSTEM, "  Error: %s", message);
         rgLogError(RG_LOG_SYSTEM, "  Threads: %u, Running: %u, stop request: %u", diagnostics.num_threads, diagnostics.running, diagnostics.shutdown_rq);
-        rgLogError(RG_LOG_SYSTEM, "  Commandline[%u]:", diagnostics.arg_count);
-        for (size_t i = 0; i < diagnostics.arg_count; i++) {
+        if (lib_game) {
+            rgLogError(RG_LOG_SYSTEM, "  Game: %s", lib_game);
+        }
+        else {
+            rgLogError(RG_LOG_SYSTEM, "  Game: Not present");
+        }
+        rgLogError(RG_LOG_SYSTEM, "  Commandline[%d]:", diagnostics.arg_count);
+        for (Sint32 i = 0; i < diagnostics.arg_count; i++) {
             rgLogError(RG_LOG_SYSTEM, "   %s", diagnostics.arg_strs[i]);
         }
 
         rgLogError(RG_LOG_SYSTEM, "");
+        rgLogError(RG_LOG_SYSTEM, "[RENDER]");
+        if (lib_renderer) {
+            rgLogError(RG_LOG_SYSTEM, "  Backend: %s", lib_renderer);
+            RenderInfo renderer_info = {};
+            Render::GetInfo(&renderer_info);
+
+            rgLogError(RG_LOG_SYSTEM, "  Renderer: %s", renderer_info.renderer);
+            rgLogError(RG_LOG_SYSTEM, "  API: %s", renderer_info.render_name);
+            rgLogError(RG_LOG_SYSTEM, "  GPU memory: %lu Kb", renderer_info.dedicated_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Shared memory: %lu Kb", renderer_info.shared_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Buffers memory: %lu Kb", renderer_info.buffers_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Textures memory: %lu Kb", renderer_info.textures_memory >> 10);
+        }
+        else {
+            rgLogError(RG_LOG_SYSTEM, "  Not present");
+        }
+
+        rgLogError(RG_LOG_SYSTEM, "");
         rgLogError(RG_LOG_SYSTEM, "[FRAME]");
-        rgLogError(RG_LOG_SYSTEM, "  FPS/Frame: %u/%u\n", diagnostics.fps / 5, diagnostics.frame);
+        rgLogError(RG_LOG_SYSTEM, "  FPS/Frame: %u/%u\n", diagnostics.fps, diagnostics.frame);
         rgLogError(RG_LOG_SYSTEM, "");
         rgLogError(RG_LOG_SYSTEM, "[SIMULATION]");
-        rgLogError(RG_LOG_SYSTEM, "  TPS/Tick: %u/%u\n", diagnostics.tps / 5, diagnostics.tick);
+        rgLogError(RG_LOG_SYSTEM, "  TPS/Tick: %u/%u\n", diagnostics.tps, diagnostics.tick);
         rgLogError(RG_LOG_SYSTEM, "  Acc/clamps: %lf/%u", diagnostics.acc, diagnostics.clamps);
 
-        SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
+        //SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
         ExitProcess(0xFFFFFFFF); // Fix abnormal termination
     }
 
