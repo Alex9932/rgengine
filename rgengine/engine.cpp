@@ -281,7 +281,8 @@ namespace Engine {
     }
 
     static void ErrorSignalHandler(int sig) {
-		// No expensive operations here, just exit
+		// No expensive operations here
+        // TODO: just exit
     }
 
     static void SetupSignalHandler() {
@@ -528,9 +529,9 @@ namespace Engine {
             
             if (diagnostics.has_signal) {
                 switch (diagnostics.signal) {
-                    case SIGINT:   { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Interrupt"); Quit(); break; }
+                    case SIGINT:   { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Interrupt"); break; }
                     case SIGTERM:  { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Terminate"); break; }
-                    case SIGBREAK: { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Break"); Quit(); break; }
+                    case SIGBREAK: { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Break"); break; }
                     default:       { rgLogWarn(RG_LOG_SYSTEM, "SIGNAL: Terminate (unknown)"); break; }
                 }
                 rgLogWarn(RG_LOG_SYSTEM, "Requesting shutdown...\n");
@@ -663,6 +664,7 @@ namespace Engine {
     void ForceQuit() {
         rgLogWarn(RG_LOG_SYSTEM, "Engine: FORCE QUIT!");
         Logger_Destroy();
+        // TODO: Add macro for this operation
 #if defined(RG_PLATFORM_WINDOWS)
         ExitProcess(0xFFFFFFFF);
 #else
@@ -671,7 +673,7 @@ namespace Engine {
     }
 
     void HandleError(String message) {
-		// Lock for first caller thread. Block other threads until the engine is terminated.
+		// TODO: Lock for first caller thread. Block other threads until the engine is terminated.
 
         String quotes_err[] = {
             "Try turning it off and on. Then read the log.",
@@ -730,10 +732,10 @@ namespace Engine {
 
             rgLogError(RG_LOG_SYSTEM, "  Renderer: %s", renderer_info.renderer);
             rgLogError(RG_LOG_SYSTEM, "  API: %s", renderer_info.render_name);
-            rgLogError(RG_LOG_SYSTEM, "  GPU memory: %lu Kb", renderer_info.dedicated_memory >> 10);
-            rgLogError(RG_LOG_SYSTEM, "  Shared memory: %lu Kb", renderer_info.shared_memory >> 10);
-            rgLogError(RG_LOG_SYSTEM, "  Buffers memory: %lu Kb", renderer_info.buffers_memory >> 10);
-            rgLogError(RG_LOG_SYSTEM, "  Textures memory: %lu Kb", renderer_info.textures_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  GPU memory: %llu Kb", renderer_info.dedicated_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Shared memory: %llu Kb", renderer_info.shared_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Buffers memory: %llu Kb", renderer_info.buffers_memory >> 10);
+            rgLogError(RG_LOG_SYSTEM, "  Textures memory: %llu Kb", renderer_info.textures_memory >> 10);
         }
         else {
             rgLogError(RG_LOG_SYSTEM, "  Not present");
@@ -748,7 +750,7 @@ namespace Engine {
         rgLogError(RG_LOG_SYSTEM, "  Acc/clamps: %lf/%u", diagnostics.acc, diagnostics.clamps);
 
         //SDL_ShowSimpleMessageBox(0, "rgEngine fatal error", message, GetWindow());
-        ExitProcess(0xFFFFFFFF); // Fix abnormal termination
+        ForceQuit();
     }
 
     Bool IsDebug() {
